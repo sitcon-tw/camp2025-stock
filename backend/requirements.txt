@@ -1,5 +1,0 @@
-fastapi
-uvicorn
-motor
-python-dotenv
-python-telegram-bot
