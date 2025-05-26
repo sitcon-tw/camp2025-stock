@@ -1,9 +1,10 @@
-import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from dotenv import load_dotenv
 import os
+from fastapi import FastAPI, Request, status
+from contextlib import asynccontextmanager
 
 # Load .env
 load_dotenv()
@@ -14,6 +15,29 @@ MONGO_URI = os.getenv("MONGO_URI")
 mongo_client = AsyncIOMotorClient(MONGO_URI)
 db = mongo_client["my_bot_db"]
 users_collection = db["users"]
+
+bot = ApplicationBuilder().token(BOT_TOKEN).build()
+
+print("Bot initialized.")
+
+app = FastAPI()
+
+@asynccontextmanager
+async def lifespan():
+    print("Server started.")
+    yield
+    print("Server stopped.")
+
+@app.get("/webhook", status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
+async def webhook_get(request: Request):
+    return {"success": False, "message": "Method not allowed."}
+
+@app.post("/webhook")
+async def webhook_post(request: Request):
+    update = Update.de_json(await request.json())
+    await bot.process_update(update)
+
+    return {"success": True, "message": "success"}
 
 # Telegram command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,15 +66,5 @@ async def whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("You are not registered yet.")
 
-# Main
-async def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("whoami", whoami))
-
-    print("Bot is running...")
-    await app.run_polling()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+bot.add_handler(CommandHandler("start", start))
+bot.add_handler(CommandHandler("whoami", whoami))
