@@ -1,12 +1,15 @@
-# 範例程式
-from fastapi import FastAPI
-from motor.motor_asyncio import AsyncIOMotorClient
+# SITCON Camp 2025 點數系統主入口
+# 這個文件用於開發環境啟動
 
-app = FastAPI()
 
-# client = AsyncIOMotorClient("mongodb://localhost:27017")
-# db = client["mydatabase"]
+from app.main import app
 
-@app.get("/api/hello")
-async def say_hello():
-    return {"message": "Hello from FastAPI"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )
