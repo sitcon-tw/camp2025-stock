@@ -18,15 +18,15 @@ users_collection = db["users"]
 
 bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
-print("Bot initialized.")
+print("[main] Bot initialized.")
 
 app = FastAPI()
 
 @asynccontextmanager
 async def lifespan():
-    print("Server started.")
+    print("[FastAPI] Server started.")
     yield
-    print("Server stopped.")
+    print("[FastAPI] Server stopped.")
 
 @app.get("/webhook", status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
 async def webhook_get(request: Request):
@@ -36,6 +36,7 @@ async def webhook_get(request: Request):
 async def webhook_post(request: Request):
     update = Update.de_json(await request.json())
     await bot.process_update(update)
+    print("[FastAPI] Server received update.")
 
     return {"success": True, "message": "success"}
 
