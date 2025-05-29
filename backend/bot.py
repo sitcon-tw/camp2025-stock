@@ -7,24 +7,25 @@ from contextlib import asynccontextmanager
 
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBOOK_SECRET = os.getenv("WEBOOK_SECRET")
 
 bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
 print("[main] Bot initialized.")
 
-app = FastAPI()
-
 @asynccontextmanager
-async def lifespan():
+async def lifespan(app: FastAPI):
     print("[FastAPI] Server started.")
     yield
     print("[FastAPI] Server stopped.")
 
-@app.get("/webhook", status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
+app = FastAPI(lifespan=lifespan)
+
+@app.get("/bot/webhook", status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
 async def webhook_get(request: Request):
     return {"success": False, "message": "Method not allowed."}
 
-@app.post("/webhook")
+@app.post("/bot/webhook")
 async def webhook_post(request: Request):
     update = Update.de_json(await request.json())
     await bot.process_update(update)
@@ -32,32 +33,16 @@ async def webhook_post(request: Request):
 
     return {"success": True, "message": "success"}
 
+@app.post("/bot/broadcast/all")
+async def broadcast_all(request: Request):
+
+
 # Telegram command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    user_data = {
-        "_id": user.id,
-        "username": user.username,
-        "first_name": user.first_name,
-        "chat_id": update.effective_chat.id,
-    }
+    await update.message.reply_text(f"Hello {update.effective_user.username}, hello there!")
 
-    existing_user = await users_collection.find_one({"_id": user.id})
-
-    if existing_user:
-        await update.message.reply_text(f"Welcome back, {user.first_name}!")
-    else:
-        await users_collection.insert_one(user_data)
-        await update.message.reply_text(f"Hello {user.first_name}, you're now registered!")
-
-async def whoami(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    record = await users_collection.find_one({"_id": user.id})
-    
-    if record:
-        await update.message.reply_text(f"You are {record['first_name']} (@{record['username']})")
-    else:
-        await update.message.reply_text("You are not registered yet.")
+async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"Hello {update.effective_user.username}, your key is {context.args[0]}, hello there!")
 
 bot.add_handler(CommandHandler("start", start))
-bot.add_handler(CommandHandler("whoami", whoami))
+bot.add_handler(CommandHandler("register", register))
