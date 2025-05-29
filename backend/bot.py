@@ -1,4 +1,3 @@
-from motor.motor_asyncio import AsyncIOMotorClient
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from dotenv import load_dotenv
@@ -6,15 +5,8 @@ import os
 from fastapi import FastAPI, Request, status
 from contextlib import asynccontextmanager
 
-# Load .env
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-MONGO_URI = os.getenv("MONGO_URI")
-
-# MongoDB setup
-mongo_client = AsyncIOMotorClient(MONGO_URI)
-db = mongo_client["my_bot_db"]
-users_collection = db["users"]
 
 bot = ApplicationBuilder().token(BOT_TOKEN).build()
 
