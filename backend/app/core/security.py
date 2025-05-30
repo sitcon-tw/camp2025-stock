@@ -1,0 +1,102 @@
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.config import settings
+import hashlib
+
+# 密碼加密上下文
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT Token 驗證
+security = HTTPBearer()
+
+#　驗證密碼
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+# 密碼 hash
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+    """建立 JWT Token"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
+    
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    return encoded_jwt
+
+
+def verify_token(token: str) -> dict:
+    """驗證 JWT Token"""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def verify_admin_password(password: str) -> bool:
+    """驗證管理員密碼（簡單版本，實際應該用雜湊）"""
+    #TODO: 實際應該用雜湊
+    return password == settings.ADMIN_PASSWORD
+
+
+async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """取得目前管理員（依賴注入）"""
+    try:
+        payload = verify_token(credentials.credentials)
+        # 檢查是否為管理員 token
+        if payload.get("type") == "admin" or payload.get("sub") == "admin":
+            return payload
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not an admin user"
+            )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """取得目前使用者（依賴注入）"""
+    try:
+        payload = verify_token(credentials.credentials)
+        
+        # 檢查 token 類型
+        token_type = payload.get("type", "user")
+        if token_type not in ["user", "admin"]:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type"
+            )
+        
+        return payload
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+def verify_internal_api_key(api_key: str) -> bool:
+    """驗證內部 API 金鑰"""
+    return api_key == settings.INTERNAL_API_KEY
