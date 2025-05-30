@@ -23,22 +23,22 @@ def uvicorn_logger():
             },
         },
         "root": {
-            "level": "DEBUG" if DEBUG else "INFO",
+            "level": "TRACE" if DEBUG else "INFO",
             "handlers": ["default"],
         },
         "loggers": {
             "uvicorn": {
-                "level": "DEBUG" if DEBUG else "INFO",
+                "level": "TRACE" if DEBUG else "INFO",
                 "handlers": ["default"],
                 "propagate": False,
             },
             "uvicorn.error": {
-                "level": "DEBUG" if DEBUG else "INFO",
+                "level": "TRACE" if DEBUG else "INFO",
                 "handlers": ["default"],
                 "propagate": False,
             },
             "uvicorn.access": {
-                "level": "DEBUG" if DEBUG else "INFO",
+                "level": "TRACE" if DEBUG else "INFO",
                 "handlers": ["default"],
                 "propagate": False,
             },
