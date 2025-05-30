@@ -60,3 +60,17 @@ async def webhook_post(request: Request):
 async def broadcast_all(request: Request):
     logger.info("[FastAPI] Broadcast endpoint hit.")
     return {"message": "Broadcast not implemented yet 😾"}
+
+@app.get("/healthz")
+async def healthz():
+    try:
+        await bot.bot.get_me()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"ok": True}
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"ok": False}
+        )
