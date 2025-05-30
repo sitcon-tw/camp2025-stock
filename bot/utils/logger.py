@@ -1,6 +1,11 @@
 import logging
+import os
 import sys
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+DEBUG = bool(os.environ.get("DEBUG", False))
 
 class loggingFormatter(logging.Formatter):
     COLORS = {
@@ -30,7 +35,7 @@ class loggingFormatter(logging.Formatter):
 
 def setup_logger(name: str = None):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
     logger.propagate = False
 
     if not logger.handlers:

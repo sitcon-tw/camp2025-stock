@@ -1,4 +1,10 @@
+import os
+
 from utils.logger import loggingFormatter
+from dotenv import load_dotenv
+
+load_dotenv()
+DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
 
 def uvicorn_logger():
     return {
@@ -17,22 +23,22 @@ def uvicorn_logger():
             },
         },
         "root": {
-            "level": "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",
             "handlers": ["default"],
         },
         "loggers": {
             "uvicorn": {
-                "level": "INFO",
+                "level": "DEBUG" if DEBUG else "INFO",
                 "handlers": ["default"],
                 "propagate": False,
             },
             "uvicorn.error": {
-                "level": "INFO",
+                "level": "DEBUG" if DEBUG else "INFO",
                 "handlers": ["default"],
                 "propagate": False,
             },
             "uvicorn.access": {
-                "level": "INFO",
+                "level": "DEBUG" if DEBUG else "INFO",
                 "handlers": ["default"],
                 "propagate": False,
             },
