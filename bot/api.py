@@ -26,14 +26,14 @@ async def webhook_get(request: Request):
 
 @app.post("/bot/webhook")
 async def webhook_post(request: Request):
-    forward_for_header = request.headers.get("X-Forwarded-For")
+    forward_for_header = request.headers.get("X-Real-IP")
 
     if forward_for_header:
+        logger.info(f"Forward header: {forward_for_header}")
         forward_for_header = forward_for_header.split(",")[0].strip()
     else:
+        logger.info(f"Forward header: None, falling back to origin IP")
         forward_for_header = request.client.host
-
-    logger.info(f"Forwarded header: {forward_for_header}")
 
     if (ip_address(forward_for_header) not in ip_network("149.154.160.0/20")) and (ip_address(forward_for_header) not in ip_network("91.108.4.0/22")):
         return JSONResponse(
