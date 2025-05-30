@@ -1,0 +1,295 @@
+from fastapi import Depends, HTTPException, status
+from app.core.database import get_database, Collections
+from app.schemas.public import (
+    AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
+    GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
+    AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
+    MarketLimitRequest, MarketLimitResponse
+)
+from app.core.security import verify_admin_password, create_access_token
+from app.core.exceptions import (
+    AuthenticationException, UserNotFoundException, 
+    GroupNotFoundException, AdminException
+)
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from datetime import datetime
+from typing import List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+# 管理員服務類別
+class AdminService:
+    def __init__(self, db: AsyncIOMotorDatabase = Depends(get_database)):
+        self.db = db
+    
+    # 管理員登入
+    async def login(self, request: AdminLoginRequest) -> AdminLoginResponse:
+        try:
+            if not verify_admin_password(request.password):
+                raise AuthenticationException("Invalid admin password")
+            
+            # 建立 JWT Token
+            access_token = create_access_token(data={"sub": "admin"})
+            
+            logger.info("Admin login successful")
+            return AdminLoginResponse(token=access_token)
+            
+        except Exception as e:
+            logger.error(f"Admin login failed: {e}")
+            raise AuthenticationException("Login failed")
+    
+    #　查詢使用者資產明細
+    async def get_user_details(self, username: Optional[str] = None) -> List[UserAssetDetail]:
+        try:
+            # 構建查詢條件
+            query = {}
+            if username:
+                query["username"] = username
+            
+            # 查詢使用者資料
+            users_cursor = self.db[Collections.USERS].find(query)
+            users = await users_cursor.to_list(length=None)
+            
+            if not users and username:
+                raise UserNotFoundException(username)
+            
+            result = []
+            for user in users:
+                # 計算使用者的股票持有
+                stock_holding = await self.db[Collections.STOCKS].find_one(
+                    {"user_id": user["_id"]}
+                ) or {"stock_amount": 0}
+                
+                # 取得目前股票價格（假設從市場配置取得）
+                market_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                    {"type": "current_price"}
+                ) or {"price": 20}  # 預設價格
+                
+                current_price = market_config.get("price", 20)
+                stocks = stock_holding.get("stock_amount", 0)
+                stock_value = stocks * current_price
+                
+                # 計算平均成本（從交易記錄計算）
+                avg_cost = await self._calculate_avg_cost(user["_id"])
+                
+                user_detail = UserAssetDetail(
+                    username=user.get("username", user.get("name", "Unknown")),
+                    team=user.get("team", "Unknown"),
+                    points=user.get("points", 0),
+                    stocks=stocks,
+                    avgCost=avg_cost,
+                    stockValue=stock_value,
+                    total=user.get("points", 0) + stock_value
+                )
+                result.append(user_detail)
+            
+            logger.info(f"Retrieved {len(result)} user details")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get user details: {e}")
+            if isinstance(e, (UserNotFoundException, HTTPException)):
+                raise
+            raise AdminException("Failed to retrieve user details")
+    
+    # 給予點數
+    async def give_points(self, request: GivePointsRequest) -> GivePointsResponse:
+        try:
+            if request.type == "user":
+                # 給個人點數
+                user = await self.db[Collections.USERS].find_one(
+                    {"username": request.username}
+                )
+                if not user:
+                    raise UserNotFoundException(request.username)
+                
+                # 更新使用者點數
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user["_id"]},
+                    {"$inc": {"points": request.amount}}
+                )
+                
+                # 記錄點數變化
+                await self._log_point_change(
+                    user["_id"], 
+                    "admin_give", 
+                    request.amount,
+                    note=f"管理員給予點數"
+                )
+                
+                message = f"Successfully gave {request.amount} points to user {request.username}"
+                
+            elif request.type == "group":
+                # 給群組所有成員點數
+                group = await self.db[Collections.GROUPS].find_one(
+                    {"name": request.username}  # 這裡 username 實際是 group name
+                )
+                if not group:
+                    raise GroupNotFoundException(request.username)
+                
+                # 找到群組所有成員
+                users_cursor = self.db[Collections.USERS].find(
+                    {"group_id": group["_id"]}
+                )
+                users = await users_cursor.to_list(length=None)
+                
+                if not users:
+                    raise AdminException(f"No users found in group {request.username}")
+                
+                # 批量更新點數
+                user_ids = [user["_id"] for user in users]
+                await self.db[Collections.USERS].update_many(
+                    {"_id": {"$in": user_ids}},
+                    {"$inc": {"points": request.amount}}
+                )
+                
+                # 記錄所有使用者的點數變化
+                for user in users:
+                    await self._log_point_change(
+                        user["_id"],
+                        "admin_give_group",
+                        request.amount,
+                        note=f"管理員給予群組 {request.username} 點數"
+                    )
+                
+                message = f"Successfully gave {request.amount} points to {len(users)} users in group {request.username}"
+            
+            else:
+                raise AdminException("Invalid type, must be 'user' or 'group'")
+            
+            logger.info(message)
+            return GivePointsResponse(ok=True, message=message)
+            
+        except Exception as e:
+            logger.error(f"Failed to give points: {e}")
+            if isinstance(e, (UserNotFoundException, GroupNotFoundException, AdminException, HTTPException)):
+                raise
+            raise AdminException("Failed to give points")
+    
+    # 建立公告
+    async def create_announcement(self, request: AnnouncementRequest) -> AnnouncementResponse:
+        try:
+            announcement_doc = {
+                "title": request.title,
+                "message": request.message,
+                "broadcast": request.broadcast,
+                "created_at": datetime.utcnow(),
+                "created_by": "admin"
+            }
+            
+            # 儲存公告到資料庫
+            result = await self.db[Collections.ANNOUNCEMENTS].insert_one(announcement_doc)
+            
+            # 如果需要廣播，這裡可以加入 Telegram Bot 推送邏輯
+            if request.broadcast:
+                # TODO: 實作 Telegram Bot 廣播功能
+                logger.info(f"Announcement should be broadcasted: {request.title}")
+            
+            logger.info(f"Announcement created with ID: {result.inserted_id}")
+            return AnnouncementResponse(
+                ok=True, 
+                message="Announcement created successfully"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to create announcement: {e}")
+            raise AdminException("Failed to create announcement")
+    
+    # 更新市場開放時間
+    async def update_market_hours(self, request: MarketUpdateRequest) -> MarketUpdateResponse:
+        try:
+            market_config = {
+                "type": "market_hours",
+                "openTime": [slot.dict() for slot in request.open_time],
+                "updated_at": datetime.utcnow(),
+                "updated_by": "admin"
+            }
+            
+            # 更新或插入市場配置
+            await self.db[Collections.MARKET_CONFIG].update_one(
+                {"type": "market_hours"},
+                {"$set": market_config},
+                upsert=True
+            )
+            
+            logger.info("Market hours updated successfully")
+            return MarketUpdateResponse(ok=True)
+            
+        except Exception as e:
+            logger.error(f"Failed to update market hours: {e}")
+            raise AdminException("Failed to update market hours")
+    
+    # 設定漲跌限制
+    async def set_trading_limit(self, request: MarketLimitRequest) -> MarketLimitResponse:
+        try:
+            limit_config = {
+                "type": "trading_limit",
+                "limitPercent": request.limit_percent,
+                "updated_at": datetime.utcnow(),
+                "updated_by": "admin"
+            }
+            
+            # 更新或插入漲跌限制配置
+            await self.db[Collections.MARKET_CONFIG].update_one(
+                {"type": "trading_limit"},
+                {"$set": limit_config},
+                upsert=True
+            )
+            
+            logger.info(f"Trading limit set to {request.limit_percent}%")
+            return MarketLimitResponse(ok=True)
+            
+        except Exception as e:
+            logger.error(f"Failed to set trading limit: {e}")
+            raise AdminException("Failed to set trading limit")
+    
+    # 計算使用者的平均持股成本
+    async def _calculate_avg_cost(self, user_id: str) -> float:
+        try:
+            # 查詢使用者的買入交易記錄
+            buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
+                "user_id": user_id,
+                "stock_amount": {"$gt": 0},  # 買入訂單
+                "status": "completed"
+            })
+            buy_orders = await buy_orders_cursor.to_list(length=None)
+            
+            if not buy_orders:
+                return 20.0  # 預設初始價格
+            
+            total_cost = 0
+            total_shares = 0
+            
+            for order in buy_orders:
+                cost = order.get("price", 20) * order.get("stock_amount", 0)
+                total_cost += cost
+                total_shares += order.get("stock_amount", 0)
+            
+            return total_cost / total_shares if total_shares > 0 else 20.0
+            
+        except Exception as e:
+            logger.error(f"Failed to calculate average cost: {e}")
+            return 20.0  # 回傳預設價格
+    
+    # 記錄點數變化
+    async def _log_point_change(self, user_id: str, operation_type: str, 
+                               amount: int, note: str = ""):
+        try:
+            # 取得使用者目前餘額
+            user = await self.db[Collections.USERS].find_one({"_id": user_id})
+            current_balance = user.get("points", 0) if user else 0
+            
+            log_entry = {
+                "user_id": user_id,
+                "type": operation_type,
+                "amount": amount,
+                "note": note,
+                "created_at": datetime.utcnow(),
+                "balance_after": current_balance
+            }
+            
+            await self.db[Collections.POINT_LOGS].insert_one(log_entry)
+            
+        except Exception as e:
+            logger.error(f"Failed to log point change: {e}")
