@@ -32,7 +32,7 @@ async def webhook_post(request: Request):
         logger.info(f"Forward header: {forward_for_header}")
         forward_for_header = forward_for_header.split(",")[0].strip()
     else:
-        logger.info(f"Forward header: None, falling back to origin IP")
+        logger.info(f"Forward header: None, falling back to origin IP {request.client.host}")
         forward_for_header = request.client.host
 
     if (ip_address(forward_for_header) not in ip_network("149.154.160.0/20")) and (ip_address(forward_for_header) not in ip_network("91.108.4.0/22")):
