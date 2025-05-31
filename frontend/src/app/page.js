@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <div className="bg-[#0f203e] min-h-screen items-center justify-center pb-36">
-      <div className="flex flex-col h-screen px-8">
+      <div className="flex flex-col h-screen px-8 mb-10">
         <HeaderBar
           currentPrice={currentPrice}
           changePercent={changePercent}
