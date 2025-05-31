@@ -3,13 +3,15 @@ import StockChart from "@/components/StockChart";
 import TradingTabs from "@/components/TradingTabs";
 
 export default function Home() {
-
+  const currentPrice = 70;
+  const changePercent = 20; // 正數表示上漲，負數表示下跌
+  const isPositive = changePercent > 0;
+  const isNegative = changePercent < 0;
 
   return (
     <div className="bg-[#0f203e] min-h-screen items-center justify-center pb-36">
       <div className="flex flex-col h-screen px-8 mb-10">
-        <HeaderBar
-        />
+        <HeaderBar />
         {/* 股市趨勢圖 */}
         <div className="mt-8">
           <StockChart 
