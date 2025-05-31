@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { generateCandlestickData } from '@/lib/stockDataGenerator';
 
-// 動態導入 K線圖組件以避免 SSR 問題
+// 動態導入 K線圖元件以避免 SSR 問題
 const CandlestickChart = dynamic(() => import('@/components/CandlestickChart'), {
   ssr: false,
   loading: () => (
