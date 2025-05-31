@@ -1,8 +1,9 @@
 import HeaderBar from "@/components/HeaderBar";
 import StockChart from "@/components/StockChart";
+import TradingTabs from "@/components/TradingTabs";
 
 export default function Home() {
-  // 模擬數據 - 您可以根據實際需求替換
+
   const currentPrice = 70;
   const changePercent = 20; // 正數表示上漲，負數表示下跌
   const isPositive = changePercent > 0;
@@ -41,8 +42,11 @@ export default function Home() {
               <p className="text-xl font-bold">${currentPrice + 5}</p>
             </div>
           </div>
-        </div>
-      </div>
+        </div>        
+        {/* 五檔股價 和 交易紀錄 的 TAB */}
+        <div className="mt-6">
+          <TradingTabs currentPrice={currentPrice} />
+        </div></div>
     </div>
   );
 }
