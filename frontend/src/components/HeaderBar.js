@@ -1,6 +1,10 @@
 import React from 'react'
 
-export default function HeaderBar({ currentPrice, changePercent, isPositive, isNegative }) {
+export default function HeaderBar() {
+    const currentPrice = 70;
+  const changePercent = 20; // 正數表示上漲，負數表示下跌
+  const isPositive = changePercent > 0;
+  const isNegative = changePercent < 0;
   return (
     <div id="header" className="flex justify-between items-center pt-10">
           <div>
