@@ -16,18 +16,18 @@ class PriceVariationGenerator:
         self.db = None
         
     async def connect_to_database(self):
-        """連接到 MongoDB"""
+        """連線到 MongoDB"""
         try:
             self.client = AsyncIOMotorClient("mongodb://localhost:27017")
             self.db = self.client["sitcon_camp_2025"]
-            print("✅ 成功連接到資料庫")
+            print("✅ 成功連線到資料庫")
             return True
         except Exception as e:
-            print(f"❌ 資料庫連接失敗: {e}")
+            print(f"❌ 資料庫連線失敗: {e}")
             return False
     
     async def close_database(self):
-        """關閉資料庫連接"""
+        """關閉資料庫連線"""
         if self.client:
             self.client.close()
     
@@ -171,7 +171,7 @@ async def main():
     
     generator = PriceVariationGenerator()
     
-    # 連接資料庫
+    # 連線資料庫
     if not await generator.connect_to_database():
         return
     

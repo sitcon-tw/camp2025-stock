@@ -315,7 +315,7 @@ export default function Leaderboard() {
                 {error && (
                     <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 mb-6 text-center">
                         <div className="text-red-400 mb-2">⚠️ 資料載入失敗</div>
-                        <div className="text-sm text-gray-400">正在顯示模擬資料</div>
+                        <div className="text-sm text-gray-400">無法連線到伺服器，請重新整理頁面</div>
                     </div>
                 )}
 

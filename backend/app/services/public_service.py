@@ -198,7 +198,7 @@ class PublicService:
                     username=user.get("username", user.get("name", "Unknown")),
                     team=team_name,
                     points=user.get("points", 0),
-                    stockValue=stock_value
+                    stock_value=stock_value
                 ))
             
             # 按總價值排序（點數 + 股票價值）

@@ -44,11 +44,11 @@ class TradeRecord(BaseModel):
 class LeaderboardEntry(BaseModel):
     username: str = Field(..., description="使用者名稱")
     team: str = Field(..., description="隊伍名稱")
-    points: int = Field(..., description="點數")
+    points: float = Field(..., description="點數")
     stock_value: float = Field(..., description="股票價值", alias="stockValue")
     
     class Config:
-        allow_population_by_field_name = True
+        validate_by_name = True
 
 
 # 市場時間段
