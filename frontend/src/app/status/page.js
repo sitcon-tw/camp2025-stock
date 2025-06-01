@@ -1,4 +1,7 @@
 'use client';
+import Link from 'next/link';
+
+
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
@@ -259,15 +262,15 @@ export default function Status() {
 
         {/* 底部活動資訊 */}
         <div className="flex justify-center gap-8 mt-8">
-          <button className="flex items-center gap-2 text-[#82bee2]">
+          <button className="flex items-center gap-2 text-[#82bee2] hover:text-white transition-colors">
             <span>📤</span>
             <span>分享成績</span>
           </button>
-          <button className="flex items-center gap-2 text-[#82bee2]">
+          <Link href="/leaderboard" className="flex items-center gap-2 text-[#82bee2] hover:text-white transition-colors">
             <span>🏆</span>
             <span>排行榜</span>
-          </button>
-          <button className="flex items-center gap-2 text-[#82bee2]">
+          </Link>
+          <button className="flex items-center gap-2 text-[#82bee2] hover:text-white transition-colors">
             <span>📊</span>
             <span>活動統計</span>
           </button>
