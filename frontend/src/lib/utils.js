@@ -48,7 +48,7 @@ export const generateId = () => {
   return Math.random().toString(36).substr(2, 9);
 };
 
-// 驗證表單數據
+// 驗證表單資料
 export const validateForm = (data, rules) => {
   const errors = {};
   

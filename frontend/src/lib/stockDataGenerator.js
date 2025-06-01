@@ -40,7 +40,7 @@ export const generateCandlestickData = (days = 60, basePrice = 70) => {
   const lastDay = data[data.length - 1];
   const adjustment = basePrice / lastDay.close;
   
-  // 調整所有數據
+  // 調整所有資料
   return data.map(d => ({
     ...d,
     open: d.open * adjustment,

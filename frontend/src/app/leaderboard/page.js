@@ -184,7 +184,7 @@ export default function Leaderboard() {
     const [activeTab, setActiveTab] = useState('individual'); // 'individual' or 'group'
     const [lastUpdated, setLastUpdated] = useState(new Date());
 
-    // 獲取排行榜數據
+    // 獲取排行榜資料
     const fetchLeaderboard = async () => {
         try {
             setLoading(true);
@@ -208,7 +208,7 @@ export default function Leaderboard() {
             console.error('獲取排行榜失敗:', error);
             setError(error.message);
             
-            // 如果 API 失敗，使用模擬數據
+            // 如果 API 失敗，使用模擬資料
             const mockData = generateMockData();
             setLeaderboardData(mockData.individual);
             setGroupLeaderboard(mockData.group);
@@ -248,7 +248,7 @@ export default function Leaderboard() {
             .sort((a, b) => b.totalValue - a.totalValue);
     };
 
-    // 生成模擬數據（當 API 不可用時）
+    // 生成模擬資料（當 API 不可用時）
     const generateMockData = () => {
         const mockIndividual = [
             { username: '張小明', team: '第一組', points: 15000, stockValue: 8500 },
@@ -270,7 +270,7 @@ export default function Leaderboard() {
         return { individual: mockIndividual, group: mockGroup };
     };
 
-    // 重新整理數據
+    // 重新整理資料
     const refreshData = () => {
         fetchLeaderboard();
     };

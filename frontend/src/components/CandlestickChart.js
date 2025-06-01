@@ -7,7 +7,7 @@ const CandlestickChart = ({ data, width = 800, height = 400 }) => {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center bg-[#1a2e4a] rounded-lg" style={{ height: height }}>
-        <div className="text-[#82bee2]">無數據可顯示</div>
+        <div className="text-[#82bee2]">無資料可顯示</div>
       </div>
     );
   }

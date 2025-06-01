@@ -23,8 +23,8 @@ export default function Status() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('日');
 
   useEffect(() => {
-    // 生成 K 線圖數據 - 適合 SITCON Camp 規模
-    const data = generateCandlestickData(30, 1050); // 30個數據點，起始價格1050
+    // 生成 K 線圖資料 - 適合 SITCON Camp 規模
+    const data = generateCandlestickData(30, 1050); // 30個資料點，起始價格1050
     setChartData(data);
 
     // 處理響應式尺寸
@@ -42,7 +42,7 @@ export default function Status() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 模擬 SITCON Camp 2025 股票競賽數據
+  // 模擬 SITCON Camp 2025 股票競賽資料
   const campData = {
     name: "SITCON Camp 2025 股票競賽",
     currentPrice: 1050.25,

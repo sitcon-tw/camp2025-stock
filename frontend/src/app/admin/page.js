@@ -30,7 +30,7 @@ export default function AdminPage() {
     broadcast: true
   });
   
-  // 用戶資產數據
+  // 用戶資產資料
   const [userAssets, setUserAssets] = useState([]);
   const [systemStats, setSystemStats] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState('');
