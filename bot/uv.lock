@@ -30,6 +30,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "python-dotenv" },
     { name = "python-telegram-bot" },
     { name = "uvicorn" },
@@ -38,6 +39,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "python-telegram-bot", specifier = ">=22.1" },
     { name = "uvicorn", specifier = ">=0.34.2" },
