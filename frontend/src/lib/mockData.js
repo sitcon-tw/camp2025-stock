@@ -1,4 +1,4 @@
-// 模擬股票數據
+// 模擬股票資料
 export const mockStockData = {
   symbol: 'SITC',
   name: 'SITCON Camp 專屬',
@@ -39,7 +39,7 @@ export const mockOrderBook = {
   ]
 };
 
-// 模擬排行榜數據
+// 模擬排行榜資料
 export const mockRankings = {
   group: [
     { rank: 1, name: '第一組', score: 2500, change: '+15%' },
@@ -54,7 +54,7 @@ export const mockRankings = {
   ]
 };
 
-// 模擬管理員數據
+// 模擬管理員資料
 export const mockAdminData = {
   currentUser: {
     name: '庫曄',
