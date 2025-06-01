@@ -1,10 +1,18 @@
+from os import environ
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from telegram import Update
+from telegram.constants import ParseMode
 from contextlib import asynccontextmanager
 from bot import bot, initialize
 from utils.logger import setup_logger
 from ipaddress import ip_address, ip_network
+from dotenv import load_dotenv
+from pydantic import BaseModel
+from typing import List
+
+load_dotenv()
+BROADCAST_CHANNELS = environ.get("BROADCAST_CHANNELS").split(",")
 
 logger = setup_logger(__name__)
 
@@ -56,10 +64,40 @@ async def webhook_post(request: Request):
             content={"ok": False, "message": "Error processing update."}
         )
 
+class Broadcast(BaseModel):
+    title: str
+    message: str
+
+class BroadcastSelective(Broadcast):
+    channel: List[int]
+
+@app.post("/bot/broadcast/")
+async def broadcast(request: BroadcastSelective):
+    logger.info("[FastAPI] Selective broadcast endpoint hit.")
+    for channel in request.channel:
+        try:
+            await bot.bot.send_message(channel, f"""
+            📢 *{request.title}*
+            
+            {request.message}
+            """, parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as e:
+            logger.error(f"Error broadcasting message: {e}")
+    return {"ok": True}
+
 @app.post("/bot/broadcast/all")
-async def broadcast_all(request: Request):
+async def broadcast_all(request: Broadcast):
     logger.info("[FastAPI] Broadcast endpoint hit.")
-    return {"message": "Broadcast not implemented yet 😾"}
+    for channel in BROADCAST_CHANNELS:
+        try:
+            await bot.bot.send_message(channel, f"""
+            📢 *{request.title}*
+            
+            {request.message}
+            """, parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as e:
+            logger.error(f"Error broadcasting message: {e}")
+    return {"ok": True}
 
 @app.get("/healthz")
 async def healthz():
