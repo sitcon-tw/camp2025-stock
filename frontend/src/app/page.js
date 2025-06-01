@@ -8,12 +8,12 @@ import { getPriceSummary } from "@/lib/api";
 
 export default function Home() {
   const [stockData, setStockData] = useState({
-    lastPrice: 20.0,
+    lastPrice: 70,
     change: 0,
-    changePercent: "0.0%",
-    high: 20.0,
-    low: 20.0,
-    open: 20.0,
+    changePercent: 0,
+    high: 75,
+    low: 65,
+    open: 70,
     volume: 0
   });
   const [loading, setLoading] = useState(true);
@@ -68,7 +68,9 @@ export default function Home() {
         )}
         
         {/* 股市趨勢圖 */}
-        <div className="mt-8">
+        <div className="mt-8" style={{
+          marginBottom: '6rem',
+        }}>
           <StockChart 
             currentPrice={currentPrice}
             changePercent={changePercent}
