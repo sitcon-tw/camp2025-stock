@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import HeaderBar from '@/components/HeaderBar';
 
 export default function AdminPage() {
+  const router = useRouter();
+  
   // 狀態管理
   const [adminToken, setAdminToken] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,7 +14,6 @@ export default function AdminPage() {
   const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
   
   // 表單狀態
-  const [loginPassword, setLoginPassword] = useState('');
   const [givePointsForm, setGivePointsForm] = useState({
     type: 'user',
     username: '',
@@ -43,44 +45,19 @@ export default function AdminPage() {
 
   // 檢查登入狀態
   useEffect(() => {
+    const isAdmin = localStorage.getItem('isAdmin');
     const token = localStorage.getItem('adminToken');
-    if (token) {
-      setAdminToken(token);
-      setIsLoggedIn(true);
-      fetchUserAssets(token);
-      fetchSystemStats(token);
+    
+    if (!isAdmin || !token) {
+      router.push('/login');
+      return;
     }
-  }, []);
 
-  // 管理員登入
-  const handleAdminLogin = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password: loginPassword }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAdminToken(data.token);
-        setIsLoggedIn(true);
-        localStorage.setItem('adminToken', data.token);
-        await fetchUserAssets(data.token);
-        await fetchSystemStats(data.token);
-        showNotification('登入成功！', 'success');
-      } else {
-        showNotification('登入失敗，請檢查密碼', 'error');
-      }
-    } catch (error) {
-      console.error('登入錯誤:', error);
-      showNotification('登入時發生錯誤', 'error');
-    }
-    setLoading(false);
-  };
+    setAdminToken(token);
+    setIsLoggedIn(true);
+    fetchUserAssets(token);
+    fetchSystemStats(token);
+  }, [router]);
 
   // 登出
   const handleLogout = () => {
@@ -89,6 +66,7 @@ export default function AdminPage() {
     localStorage.removeItem('adminToken');
     setUserAssets([]);
     setSystemStats(null);
+    router.push('/'); // Redirect to home or login page
   };
 
   // 獲取用戶資產
@@ -301,60 +279,13 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // 如果未登入，顯示登入表單
+  // 如果未登入，重定向到登入頁面
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-900">
-        <HeaderBar />
-        
-        {/* 通知元件 */}
-        {notification.show && (
-          <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-            notification.type === 'success' ? 'bg-green-600 text-white' :
-            notification.type === 'error' ? 'bg-red-600 text-white' :
-            'bg-blue-600 text-white'
-          }`}>
-            <div className="flex items-center space-x-2">
-              {notification.type === 'success' && (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {notification.type === 'error' && (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-              <span>{notification.message}</span>
-            </div>
-          </div>
-        )}
-        
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-md mx-auto bg-gray-800 rounded-lg p-6">
-            <h1 className="text-2xl font-bold text-white mb-6 text-center">管理員登入</h1>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">
-                  管理員密碼
-                </label>
-                <input
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="請輸入管理員密碼"
-                />
-              </div>
-              <button
-                onClick={handleAdminLogin}
-                disabled={loading || !loginPassword}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              >
-                {loading ? '登入中...' : '登入'}
-              </button>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">正在檢查登入狀態...</p>
         </div>
       </div>
     );
@@ -401,9 +332,6 @@ export default function AdminPage() {
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">康堤橙名</h2>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors">
-                登出
-              </button>
             </div>
 
             <div className="space-y-4">

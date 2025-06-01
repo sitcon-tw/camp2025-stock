@@ -14,25 +14,40 @@ export default function Login() {
     setIsLoading(true);
     setError('');
 
-    setTimeout(() => {
-      if (adminCode.trim() === '') {
-        setError('請輸入管理員密碼');
-        setIsLoading(false);
-        return;
-      }
+    if (adminCode.trim() === '') {
+      setError('請輸入管理員密碼');
+      setIsLoading(false);
+      return;
+    }
 
-      // for debug use only!!!
-      if (adminCode === 'admin123') {
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: adminCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 儲存認證資訊
         localStorage.setItem('isAdmin', 'true');
+        localStorage.setItem('adminToken', data.token);
         localStorage.setItem('adminCode', adminCode);
 
+        // 跳轉到管理頁面
         router.push('/admin');
       } else {
-        setError('管理員密碼錯誤');
+        setError(data.detail || '管理員密碼錯誤');
       }
-
+    } catch (error) {
+      console.error('登入錯誤:', error);
+      setError('登入失敗，請檢查網路連線');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -54,6 +69,11 @@ export default function Login() {
               type="password"
               value={adminCode}
               onChange={(e) => setAdminCode(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSubmit(e);
+                }
+              }}
               className="w-full px-4 py-3 bg-transparent border-2 border-[#294565] rounded-lg
                        text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400
                        transition-colors duration-200"
@@ -64,7 +84,7 @@ export default function Login() {
 
           {/* Error message */}
           {error && (
-            <div className="text-red-400 text-sm text-center">
+            <div className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-lg p-3">
               {error}
             </div>
           )}
@@ -72,7 +92,9 @@ export default function Login() {
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full py-3 text-md rounded-xl bg-[#81c0e7] text-[#092e58] hover:from-cyan-500 hover:to-blue-500 font-bold"
+            className="w-full py-3 text-md rounded-xl bg-[#81c0e7] text-[#092e58] 
+                     hover:bg-[#70b3d9] disabled:bg-gray-500 disabled:cursor-not-allowed 
+                     font-bold transition-colors duration-200"
           >
             {isLoading ? '登入中...' : '登入'}
           </button>
