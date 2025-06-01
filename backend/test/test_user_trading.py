@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-股票交易資料生成器
-創建多個用戶並生成 100 筆交易資料
+股票交易資料產生器
+創建多個使用者並產生 100 筆交易資料
 """
 
 import requests
@@ -13,7 +13,7 @@ from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
 
-# 模擬用戶資料
+# 模擬使用者資料
 MOCK_USERS = [
     {"username": "trader_alice", "email": "alice@example.com", "team": "Team Alpha"},
     {"username": "trader_bob", "email": "bob@example.com", "team": "Team Beta"},
@@ -52,7 +52,7 @@ class TradingDataGenerator:
         return False
         
     def register_user(self, user_data):
-        """註冊用戶"""
+        """註冊使用者"""
         try:
             response = requests.post(
                 f"{BASE_URL}/api/user/register",
@@ -62,23 +62,23 @@ class TradingDataGenerator:
             if response.status_code == 200:
                 result = response.json()
                 if result.get("success"):
-                    print(f"✅ 用戶 {user_data['username']} 註冊成功")
+                    print(f"✅ 使用者 {user_data['username']} 註冊成功")
                     self.registered_users.append(user_data)
                     return True
                 else:
                     if "已存在" in result.get('message', ''):
-                        print(f"⚠️  用戶 {user_data['username']} 已存在，跳過")
+                        print(f"⚠️  使用者 {user_data['username']} 已存在，跳過")
                         self.registered_users.append(user_data)
                         return True
                     else:
-                        print(f"❌ 用戶 {user_data['username']} 註冊失敗: {result.get('message')}")
+                        print(f"❌ 使用者 {user_data['username']} 註冊失敗: {result.get('message')}")
                         return False
         except Exception as e:
-            print(f"❌ 註冊用戶 {user_data['username']} 時發生錯誤: {e}")
+            print(f"❌ 註冊使用者 {user_data['username']} 時發生錯誤: {e}")
             return False
             
     def login_user(self, username):
-        """用戶登入"""
+        """使用者登入"""
         try:
             response = requests.post(
                 f"{BASE_URL}/api/user/login",
@@ -90,17 +90,17 @@ class TradingDataGenerator:
                 if result.get("success"):
                     token = result.get("token")
                     self.user_tokens[username] = token
-                    print(f"✅ 用戶 {username} 登入成功")
+                    print(f"✅ 使用者 {username} 登入成功")
                     return token
                 else:
-                    print(f"❌ 用戶 {username} 登入失敗: {result.get('message')}")
+                    print(f"❌ 使用者 {username} 登入失敗: {result.get('message')}")
                     return None
         except Exception as e:
-            print(f"❌ 用戶 {username} 登入時發生錯誤: {e}")
+            print(f"❌ 使用者 {username} 登入時發生錯誤: {e}")
             return None
             
     def give_user_points(self, username, points=50000):
-        """給用戶添加點數"""
+        """給使用者增加點數"""
         if not self.admin_token:
             return False
             
@@ -119,20 +119,20 @@ class TradingDataGenerator:
             if response.status_code == 200:
                 result = response.json()
                 if result.get("ok"):
-                    print(f"✅ 給用戶 {username} 添加 {points} 點數")
+                    print(f"✅ 給使用者 {username} 增加 {points} 點數")
                     return True
                 else:
-                    print(f"❌ 給用戶 {username} 添加點數失敗: {result.get('message')}")
+                    print(f"❌ 給使用者 {username} 增加點數失敗: {result.get('message')}")
                     return False
             else:
-                print(f"❌ 給用戶 {username} 添加點數失敗: {response.status_code}")
+                print(f"❌ 給使用者 {username} 增加點數失敗: {response.status_code}")
                 return False
         except Exception as e:
-            print(f"❌ 給用戶 {username} 添加點數時發生錯誤: {e}")
+            print(f"❌ 給使用者 {username} 增加點數時發生錯誤: {e}")
             return False
             
     def get_current_price(self):
-        """獲取當前股價"""
+        """獲取目前股價"""
         try:
             response = requests.get(f"{BASE_URL}/api/price/summary")
             if response.status_code == 200:
@@ -175,7 +175,7 @@ class TradingDataGenerator:
             return False
             
     def generate_random_order(self, current_price):
-        """生成隨機訂單"""
+        """產生隨機訂單"""
         order_type = random.choice(["market", "market", "limit"])  # 更多市價單
         side = random.choice(["buy", "sell"])
         quantity = random.randint(1, 10)
@@ -187,7 +187,7 @@ class TradingDataGenerator:
         }
         
         if order_type == "limit":
-            # 限價單的價格在當前價格 ±10% 範圍內
+            # 限價單的價格在目前價格 ±10% 範圍內
             price_variation = random.uniform(0.9, 1.1)
             order["price"] = round(current_price * price_variation, 2)
             
@@ -195,55 +195,55 @@ class TradingDataGenerator:
 
 
 def generate_100_trades():
-    """生成 100 筆交易資料"""
+    """產生 100 筆交易資料"""
     generator = TradingDataGenerator()
     
-    print("🚀 開始生成 100 筆股票交易資料...")
+    print("🚀 開始產生 100 筆股票交易資料...")
     
     # 1. 管理員登入
     print("\n🔑 管理員登入...")
     if not generator.get_admin_token():
-        print("❌ 無法獲取管理員權限，無法添加用戶資金")
+        print("❌ 無法獲取管理員權限，無法增加使用者資金")
         return False
     
-    # 2. 註冊用戶
-    print(f"\n📝 註冊 {len(MOCK_USERS)} 個模擬用戶...")
+    # 2. 註冊使用者
+    print(f"\n📝 註冊 {len(MOCK_USERS)} 個模擬使用者...")
     for user_data in MOCK_USERS:
         generator.register_user(user_data)
         time.sleep(0.1)  # 避免請求過快
         
     if not generator.registered_users:
-        print("❌ 沒有成功註冊任何用戶")
+        print("❌ 沒有成功註冊任何使用者")
         return False
         
-    # 3. 用戶登入
-    print(f"\n🔐 用戶登入...")
+    # 3. 使用者登入
+    print(f"\n🔐 使用者登入...")
     for user_data in generator.registered_users:
         generator.login_user(user_data["username"])
         time.sleep(0.1)
         
     if not generator.user_tokens:
-        print("❌ 沒有成功登入任何用戶")
+        print("❌ 沒有成功登入任何使用者")
         return False
         
-    # 4. 給用戶添加初始點數
-    print(f"\n💰 給用戶添加初始交易資金...")
+    # 4. 給使用者增加初始點數
+    print(f"\n💰 給使用者增加初始交易資金...")
     for username in generator.user_tokens.keys():
-        generator.give_user_points(username, 50000)  # 給每個用戶 50,000 點數
+        generator.give_user_points(username, 50000)  # 給每個使用者 50,000 點數
         time.sleep(0.1)
         
-    # 5. 開始生成交易
-    print(f"\n📈 開始生成 100 筆交易...")
+    # 5. 開始產生交易
+    print(f"\n📈 開始產生 100 筆交易...")
     target_trades = 100
     
     while generator.trade_count < target_trades:
-        # 隨機選擇一個用戶
+        # 隨機選擇一個使用者
         username = random.choice(list(generator.user_tokens.keys()))
         
-        # 獲取當前股價
+        # 獲取目前股價
         current_price = generator.get_current_price()
         
-        # 生成隨機訂單
+        # 產生隨機訂單
         order = generator.generate_random_order(current_price)
         
         # 下單
@@ -252,19 +252,19 @@ def generate_100_trades():
         # 隨機等待一段時間（0.1-1秒）
         time.sleep(random.uniform(0.1, 1.0))
         
-    print(f"\n🎉 成功生成 {generator.trade_count} 筆交易記錄！")
+    print(f"\n🎉 成功產生 {generator.trade_count} 筆交易記錄！")
     
     # 6. 顯示統計信息
     print(f"\n📊 交易統計:")
-    print(f"   - 註冊用戶數: {len(generator.registered_users)}")
-    print(f"   - 成功登入用戶數: {len(generator.user_tokens)}")
+    print(f"   - 註冊使用者數: {len(generator.registered_users)}")
+    print(f"   - 成功登入使用者數: {len(generator.user_tokens)}")
     print(f"   - 總交易筆數: {generator.trade_count}")
     
     return True
 def main():
     """主函數"""
     print("="*60)
-    print("🏦 股票交易資料生成器")
+    print("🏦 股票交易資料產生器")
     print("="*60)
     
     # 檢查服務是否執行
@@ -277,11 +277,11 @@ def main():
         print("❌ 無法連線到後端服務，請先啟動: python main.py")
         return
     
-    # 執行交易資料生成
+    # 執行交易資料產生
     try:
         success = generate_100_trades()
         if success:
-            print("\n✅ 交易資料生成完成！")
+            print("\n✅ 交易資料產生完成！")
             print("\n🔍 您現在可以：")
             print("   1. 訪問前端頁面 http://localhost:3000")
             print("   2. 查看交易記錄和市場深度")
@@ -292,9 +292,9 @@ def main():
             print("   - GET /api/market/trades - 最新交易")
             print("   - GET /api/leaderboard - 排行榜")
         else:
-            print("\n⚠️  交易資料生成失敗，請檢查錯誤訊息。")
+            print("\n⚠️  交易資料產生失敗，請檢查錯誤訊息。")
     except KeyboardInterrupt:
-        print("\n\n👋 程序被用戶中斷")
+        print("\n\n👋 程序被使用者中斷")
     except Exception as e:
         print(f"\n❌ 程序執行過程中發生錯誤: {e}")
     

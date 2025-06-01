@@ -208,10 +208,9 @@ export default function Leaderboard() {
             console.error('獲取排行榜失敗:', error);
             setError(error.message);
             
-            // 如果 API 失敗，使用模擬資料
-            const mockData = generateMockData();
-            setLeaderboardData(mockData.individual);
-            setGroupLeaderboard(mockData.group);
+            // API 失敗時設為空陣列
+            setLeaderboardData([]);
+            setGroupLeaderboard([]);
         } finally {
             setLoading(false);
         }
@@ -246,28 +245,6 @@ export default function Leaderboard() {
                 totalValue: team.totalPoints + team.totalStockValue
             }))
             .sort((a, b) => b.totalValue - a.totalValue);
-    };
-
-    // 生成模擬資料（當 API 不可用時）
-    const generateMockData = () => {
-        const mockIndividual = [
-            { username: '張小明', team: '第一組', points: 15000, stockValue: 8500 },
-            { username: '李小華', team: '第二組', points: 14200, stockValue: 8800 },
-            { username: '王小美', team: '第一組', points: 13800, stockValue: 8200 },
-            { username: '陳小強', team: '第三組', points: 13500, stockValue: 7900 },
-            { username: '林小雨', team: '第二組', points: 13200, stockValue: 7600 },
-            { username: '黃小龍', team: '第三組', points: 12800, stockValue: 7200 },
-            { username: '劉小芳', team: '第一組', points: 12500, stockValue: 6800 },
-            { username: '趙小剛', team: '第二組', points: 12200, stockValue: 6500 },
-        ];
-
-        const mockGroup = [
-            { teamName: '第一組', memberCount: 3, totalPoints: 41300, totalStockValue: 23500, totalValue: 64800 },
-            { teamName: '第二組', memberCount: 3, totalPoints: 39600, totalStockValue: 22900, totalValue: 62500 },
-            { teamName: '第三組', memberCount: 2, totalPoints: 26300, totalStockValue: 15100, totalValue: 41400 },
-        ];
-
-        return { individual: mockIndividual, group: mockGroup };
     };
 
     // 重新整理資料

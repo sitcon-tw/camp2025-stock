@@ -1,11 +1,8 @@
 'use client';
 import Link from 'next/link';
-
-
-
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { generateCandlestickData } from '@/lib/stockDataGenerator';
+import { getPriceSummary, getHistoricalPrices } from '@/lib/api';
 
 // 動態導入 K線圖元件以避免 SSR 問題
 const CandlestickChart = dynamic(() => import('@/components/CandlestickChart'), {
@@ -19,13 +16,53 @@ const CandlestickChart = dynamic(() => import('@/components/CandlestickChart'), 
 
 export default function Status() {
   const [chartData, setChartData] = useState([]);
+  const [currentStockData, setCurrentStockData] = useState({
+    lastPrice: 20.0,
+    change: 0,
+    changePercent: "0.0%",
+    high: 20.0,
+    low: 20.0,
+    open: 20.0,
+    volume: 0
+  });
   const [chartDimensions, setChartDimensions] = useState({ width: 800, height: 400 });
   const [selectedTimeframe, setSelectedTimeframe] = useState('日');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // 生成 K 線圖資料 - 適合 SITCON Camp 規模
-    const data = generateCandlestickData(30, 1050); // 30個資料點，起始價格1050
-    setChartData(data);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // 獲取目前股票價格摘要和歷史資料
+        const [priceData, historicalData] = await Promise.all([
+          getPriceSummary(),
+          getHistoricalPrices(24)
+        ]);
+
+        setCurrentStockData(priceData);
+        
+        // 處理歷史資料為 K 線圖格式
+        if (historicalData && historicalData.length > 0) {
+          const processedData = processHistoricalDataForCandlestick(historicalData);
+          setChartData(processedData);
+        }
+        
+        setError(null);
+      } catch (err) {
+        console.error('獲取股票資料失敗:', err);
+        setError('無法獲取股票資料');
+        
+        // 如果 API 失敗，產生基於目前價格的基本資料
+        const fallbackData = generateFallbackCandlestickData(currentStockData.lastPrice);
+        setChartData(fallbackData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
 
     // 處理響應式尺寸
     const handleResize = () => {
@@ -102,6 +139,60 @@ export default function Status() {
     beta: 1.15,
     rsi: 65.4,
     macd: 2.35
+  };
+
+  // 處理歷史資料為 K 線圖格式
+  const processHistoricalDataForCandlestick = (historicalData) => {
+    const dataByDate = {};
+    
+    // 按日期分組資料
+    historicalData.forEach(trade => {
+      const date = new Date(trade.timestamp).toDateString();
+      if (!dataByDate[date]) {
+        dataByDate[date] = [];
+      }
+      dataByDate[date].push(trade.price);
+    });
+    
+    // 轉換為 K 線格式
+    return Object.keys(dataByDate).map(dateStr => {
+      const prices = dataByDate[dateStr];
+      const date = new Date(dateStr);
+      
+      return {
+        date,
+        open: prices[0],
+        high: Math.max(...prices),
+        low: Math.min(...prices),
+        close: prices[prices.length - 1],
+        volume: prices.length * 100 // 估算成交量
+      };
+    }).sort((a, b) => a.date - b.date);
+  };
+
+  // 產生後備 K 線資料
+  const generateFallbackCandlestickData = (basePrice = 20.0) => {
+    const data = [];
+    let currentPrice = basePrice;
+    const days = 30;
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - (days - i));
+      
+      const open = currentPrice;
+      const volatility = (Math.random() - 0.5) * 0.1;
+      const close = open * (1 + volatility);
+      
+      const high = Math.max(open, close) * (1 + Math.random() * 0.05);
+      const low = Math.min(open, close) * (1 - Math.random() * 0.05);
+      const volume = Math.floor(Math.random() * 1000) + 500;
+      
+      data.push({ date, open, high, low, close, volume });
+      currentPrice = close;
+    }
+    
+    return data;
   };
 
   return (

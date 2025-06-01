@@ -59,7 +59,7 @@ const StockDetails = ({ stockData = {} }) => {
         <h2 className="text-[#82bee2] text-xl font-bold mb-4">價格資訊</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <DetailCard 
-            title="當前價格" 
+            title="目前價格" 
             value={currentPrice.toFixed(2)} 
             isPrice={true}
           />

@@ -43,7 +43,7 @@ export const getPriceBgColorClass = (change) => {
   return 'bg-gray-800';
 };
 
-// 生成隨機ID
+// 產生隨機ID
 export const generateId = () => {
   return Math.random().toString(36).substr(2, 9);
 };

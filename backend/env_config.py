@@ -13,7 +13,7 @@ def check_env_config():
     
     env_path = Path(__file__).parent / '.env'
     if not env_path.exists():
-        print("錯誤: .env 文件不存在，請先執行 --generate 生成範例文件")
+        print("錯誤: .env 文件不存在，請先執行 --generate 產生範例文件")
         return False
     
     load_dotenv(env_path)
@@ -50,7 +50,7 @@ def check_env_config():
 
 
 def generate_sample_env():
-    """生成範例 .env 文件"""
+    """產生範例 .env 文件"""
     content = """# MongoDB 連線 URI
 MONGO_URI=mongodb://localhost:27017
 
@@ -87,7 +87,7 @@ DEBUG=True
     with open(sample_path, 'w', encoding='utf-8') as f:
         f.write(content)
     
-    print(f"範例配置文件已生成: {sample_path}")
+    print(f"範例配置文件已產生: {sample_path}")
     print("請複製範例為 .env 並填入實際值")
 
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     else:
         success = check_env_config()
         if not success:
-            print("提示: 執行 'python env_config.py --generate' 生成範例配置文件")
+            print("提示: 執行 'python env_config.py --generate' 產生範例配置文件")
             sys.exit(1)
         else:
             print("準備就緒，執行 'python main.py' 啟動服務")

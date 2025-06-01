@@ -30,7 +30,7 @@ export default function AdminPage() {
     broadcast: true
   });
   
-  // 用戶資產資料
+  // 使用者資產資料
   const [userAssets, setUserAssets] = useState([]);
   const [systemStats, setSystemStats] = useState(null);
   const [userSearchTerm, setUserSearchTerm] = useState('');
@@ -69,7 +69,7 @@ export default function AdminPage() {
     router.push('/'); // Redirect to home or login page
   };
 
-  // 獲取用戶資產
+  // 獲取使用者資產
   const fetchUserAssets = async (token, searchUser = null) => {
     try {
       const url = searchUser ? `/api/admin/user?user=${encodeURIComponent(searchUser)}` : '/api/admin/user';
@@ -82,10 +82,10 @@ export default function AdminPage() {
         const data = await response.json();
         setUserAssets(data);
       } else {
-        console.warn('無法獲取用戶資產，可能是權限問題');
+        console.warn('無法獲取使用者資產，可能是權限問題');
       }
     } catch (error) {
-      console.error('獲取用戶資產失敗:', error);
+      console.error('獲取使用者資產失敗:', error);
     }
   };
 
@@ -236,7 +236,7 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // 搜索用戶
+  // 搜索使用者
   const handleUserSearch = () => {
     if (adminToken) {
       fetchUserAssets(adminToken, userSearchTerm.trim() || null);
@@ -581,7 +581,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-400">{systemStats.total_users}</div>
-                  <div className="text-gray-400 text-sm">總用戶數</div>
+                  <div className="text-gray-400 text-sm">總使用者數</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-400">{systemStats.total_groups}</div>
@@ -603,10 +603,10 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 用戶資產列表 */}
+          {/* 使用者資產列表 */}
           {userAssets.length > 0 && (
             <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2">
-              <h2 className="text-xl font-bold text-white mb-4">用戶資產明細</h2>
+              <h2 className="text-xl font-bold text-white mb-4">使用者資產明細</h2>
               
               {/* 搜索框 */}
               <div className="flex space-x-2 mb-4">
@@ -614,7 +614,7 @@ export default function AdminPage() {
                   type="text"
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
-                  placeholder="搜索用戶名稱..."
+                  placeholder="搜索使用者名稱..."
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
                 />
@@ -638,7 +638,7 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-600">
-                      <th className="text-left text-gray-300 py-3 px-2">用戶名</th>
+                      <th className="text-left text-gray-300 py-3 px-2">使用者名</th>
                       <th className="text-left text-gray-300 py-3 px-2">隊伍</th>
                       <th className="text-right text-gray-300 py-3 px-2">點數</th>
                       <th className="text-right text-gray-300 py-3 px-2">持股數</th>
@@ -661,7 +661,7 @@ export default function AdminPage() {
                 </table>
                 {userAssets.length > 20 && (
                   <div className="text-center text-gray-400 text-sm mt-4">
-                    顯示前20個用戶，共{userAssets.length}個用戶
+                    顯示前20個使用者，共{userAssets.length}個使用者
                   </div>
                 )}
               </div>

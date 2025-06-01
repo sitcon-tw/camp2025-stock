@@ -307,7 +307,7 @@ class PublicService:
             
             real_trades = await trades_cursor.to_list(length=None)
             
-            # 獲取當前價格
+            # 獲取目前價格
             current_price = await self._get_current_stock_price()
             
             if len(real_trades) >= 10:
@@ -320,11 +320,11 @@ class PublicService:
                     })
                 return history
             else:
-                # 生成模擬歷史資料
+                # 產生模擬歷史資料
                 history = []
                 data_points = min(hours * 2, 100)  # 每30分鐘一個點，最多100個點
                 
-                # 基礎價格（當前價格的90%-110%範圍）
+                # 基礎價格（目前價格的90%-110%範圍）
                 base_price = current_price * (0.9 + random.random() * 0.2)
                 
                 for i in range(data_points):
@@ -332,19 +332,19 @@ class PublicService:
                     time_offset = timedelta(hours=hours) * (i / (data_points - 1))
                     timestamp = start_time + time_offset
                     
-                    # 生成價格（漸變到當前價格）
+                    # 產生價格（漸變到目前價格）
                     progress = i / (data_points - 1)
                     
                     # 隨機波動
                     volatility = (random.random() - 0.5) * 0.05 * current_price  # 5%的波動
                     
-                    # 趨勢：逐漸向當前價格靠近
+                    # 趨勢：逐漸向目前價格靠近
                     trend_price = base_price + (current_price - base_price) * progress
                     
                     # 最終價格
                     price = max(trend_price + volatility, current_price * 0.5)  # 確保不會過低
                     
-                    # 最後一個點設為當前價格
+                    # 最後一個點設為目前價格
                     if i == data_points - 1:
                         price = current_price
                     

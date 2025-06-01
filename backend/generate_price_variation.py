@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-股票價格變化生成器
+股票價格變化產生器
 直接向資料庫插入不同價格的交易記錄來模擬真實市場波動
 """
 
@@ -32,7 +32,7 @@ class PriceVariationGenerator:
             self.client.close()
     
     async def generate_realistic_price_series(self, base_price: float = 20.0, count: int = 50) -> list:
-        """生成真實的價格序列"""
+        """產生真實的價格序列"""
         prices = [base_price]
         current_price = base_price
         
@@ -49,7 +49,7 @@ class PriceVariationGenerator:
                 # 大幅波動 ±5%
                 change_percent = random.uniform(-0.05, 0.05)
             
-            # 添加趨勢性：讓價格有一定的連續性
+            # 增加趨勢性：讓價格有一定的連續性
             if i > 0:
                 previous_change = (prices[-1] - prices[-2]) / prices[-2] if len(prices) >= 2 else 0
                 # 60% 機率延續前一次的趨勢方向
@@ -65,7 +65,7 @@ class PriceVariationGenerator:
         return prices
     
     async def get_existing_users(self) -> list:
-        """獲取現有用戶列表"""
+        """獲取現有使用者列表"""
         cursor = self.db.users.find({}, {"username": 1})
         users = []
         async for user in cursor:
@@ -74,21 +74,21 @@ class PriceVariationGenerator:
     
     async def create_realistic_trades(self, count: int = 50):
         """創建具有真實價格變化的交易記錄"""
-        print(f"📈 生成 {count} 筆具有價格變化的交易記錄...")
+        print(f"📈 產生 {count} 筆具有價格變化的交易記錄...")
         
-        # 獲取用戶列表
+        # 獲取使用者列表
         users = await self.get_existing_users()
         if not users:
-            print("❌ 沒有找到用戶，請先運行 generate_trading_data.py")
+            print("❌ 沒有找到使用者，請先運行 generate_trading_data.py")
             return
         
-        print(f"📋 找到 {len(users)} 個用戶")
+        print(f"📋 找到 {len(users)} 個使用者")
         
-        # 生成價格序列
+        # 產生價格序列
         prices = await self.generate_realistic_price_series(20.0, count)
         print(f"💰 價格範圍: ${min(prices):.2f} - ${max(prices):.2f}")
         
-        # 生成時間序列（過去24小時）
+        # 產生時間序列（過去24小時）
         now = datetime.now(timezone.utc)
         start_time = now - timedelta(hours=24)
         time_intervals = []
@@ -99,7 +99,7 @@ class PriceVariationGenerator:
         trades_created = 0
         
         for i in range(count):
-            # 隨機選擇用戶
+            # 隨機選擇使用者
             username = random.choice(users)
             price = prices[i]
             quantity = random.randint(1, 10)
@@ -125,7 +125,7 @@ class PriceVariationGenerator:
                 # 插入交易記錄
                 await self.db.stock_orders.insert_one(trade_record)
                 
-                # 同時更新用戶的股票和點數
+                # 同時更新使用者的股票和點數
                 user_update = {}
                 if side == "buy":
                     user_update = {
@@ -166,7 +166,7 @@ class PriceVariationGenerator:
 
 async def main():
     """主函數"""
-    print("📈 股票價格變化生成器啟動")
+    print("📈 股票價格變化產生器啟動")
     print("=" * 50)
     
     generator = PriceVariationGenerator()
@@ -176,11 +176,11 @@ async def main():
         return
     
     try:
-        # 生成價格變化交易
+        # 產生價格變化交易
         await generator.create_realistic_trades(50)
         
         print("\n" + "=" * 50)
-        print("✨ 價格變化生成完成！")
+        print("✨ 價格變化產生完成！")
         print("🔄 請重新載入前端頁面查看價格變化")
         
     finally:

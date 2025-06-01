@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getPriceDepth, getRecentTrades } from '@/lib/api';
 
-const TradingTabs = ({ currentPrice = 70 }) => {
+const TradingTabs = ({ currentPrice = 20.0 }) => {
   const [activeTab, setActiveTab] = useState('orderbook');
   const [orderbookData, setOrderbookData] = useState({
     sells: [],
@@ -38,31 +38,13 @@ const TradingTabs = ({ currentPrice = 70 }) => {
         console.error('獲取交易資料失敗:', err);
         setError('無法獲取交易資料');
         
-        // 使用模擬資料作為後備
+        // API 失敗時設為空陣列
         setOrderbookData({
-          sells: [
-            { price: currentPrice + 5, quantity: 1250 },
-            { price: currentPrice + 4, quantity: 2100 },
-            { price: currentPrice + 3, quantity: 1800 },
-            { price: currentPrice + 2, quantity: 3200 },
-            { price: currentPrice + 1, quantity: 2800 },
-          ],
-          buys: [
-            { price: currentPrice - 1, quantity: 2900 },
-            { price: currentPrice - 2, quantity: 3100 },
-            { price: currentPrice - 3, quantity: 1900 },
-            { price: currentPrice - 4, quantity: 2400 },
-            { price: currentPrice - 5, quantity: 1600 },
-          ]
+          sells: [],
+          buys: []
         });
         
-        setTradeHistory([
-          { timestamp: '14:32:15', price: currentPrice, quantity: 500 },
-          { timestamp: '14:31:42', price: currentPrice - 1, quantity: 300 },
-          { timestamp: '14:31:05', price: currentPrice + 1, quantity: 800 },
-          { timestamp: '14:30:33', price: currentPrice - 2, quantity: 450 },
-          { timestamp: '14:30:12', price: currentPrice + 2, quantity: 650 },
-        ]);
+        setTradeHistory([]);
       } finally {
         setLoading(false);
       }
@@ -105,7 +87,7 @@ const TradingTabs = ({ currentPrice = 70 }) => {
             </div>
           </div>
 
-          {/* 當前價格 */}
+          {/* 目前價格 */}
           <div className="border-t border-b border-[#82bee2]/20 py-2 text-center">
             <span className="text-white font-bold text-lg">${currentPrice.toFixed(2)}</span>
           </div>

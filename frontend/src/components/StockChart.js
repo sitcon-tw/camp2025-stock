@@ -26,7 +26,7 @@ ChartJS.register(
   Filler
 );
 
-const StockChart = ({ currentPrice = 70, changePercent = 20 }) => {
+const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
   const [chartData, setChartData] = useState({ data: [], labels: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,9 +51,8 @@ const StockChart = ({ currentPrice = 70, changePercent = 20 }) => {
           
           setChartData({ data, labels });
         } else {
-          // 如果沒有歷史資料，生成模擬資料
-          const fallbackData = generateFallbackData();
-          setChartData(fallbackData);
+          // 如果沒有歷史資料，設為空陣列
+          setChartData({ data: [], labels: [] });
         }
         
         setError(null);
@@ -61,9 +60,8 @@ const StockChart = ({ currentPrice = 70, changePercent = 20 }) => {
         console.error('獲取歷史資料失敗:', err);
         setError('無法獲取歷史資料');
         
-        // 使用模擬資料作為後備
-        const fallbackData = generateFallbackData();
-        setChartData(fallbackData);
+        // API 失敗時設為空陣列
+        setChartData({ data: [], labels: [] });
       } finally {
         setLoading(false);
       }
@@ -77,37 +75,6 @@ const StockChart = ({ currentPrice = 70, changePercent = 20 }) => {
     return () => clearInterval(interval);
   }, [currentPrice]);
 
-  // 生成模擬資料的後備函數
-  const generateFallbackData = () => {
-    const basePrice = currentPrice * 0.95; // 從當前價格的95%開始
-    const dataPoints = 30;
-    const data = [];
-    const labels = [];
-    
-    for (let i = 0; i < dataPoints; i++) {
-      // 生成隨機波動，最終趨向當前價格
-      const progress = i / (dataPoints - 1);
-      const volatility = (Math.random() * 4 - 2) * (1 - progress); // 波動隨時間減少
-      const trendTowardsCurrentPrice = (currentPrice - basePrice) * progress;
-      const price = basePrice + trendTowardsCurrentPrice + volatility;
-      
-      data.push(Math.max(price, currentPrice * 0.8)); // 確保價格不會過低
-      
-      // 生成時間標籤
-      const date = new Date();
-      date.setMinutes(date.getMinutes() - (dataPoints - i) * 2); // 每2分鐘一個點
-      labels.push(date.toLocaleTimeString('zh-TW', { 
-        hour: '2-digit', 
-        minute: '2-digit'
-      }));
-    }
-    
-    // 確保最後一個點是當前價格
-    data[dataPoints - 1] = currentPrice;
-    
-    return { data, labels };
-  };
-  
   // 決定線條顏色（基於整體趨勢）
   const isPositive = changePercent > 0;
   const lineColor = isPositive ? '#ef4444' : '#22c55e'; // 紅色上漲，綠色下跌

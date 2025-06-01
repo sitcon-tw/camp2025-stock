@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-股票交易資料生成器
+股票交易資料產生器
 創建100筆交易資料來測試API和填充資料庫
 """
 
@@ -20,8 +20,8 @@ class TradingDataGenerator:
         self.tokens = {}
         
     def create_users(self, count: int = 10) -> bool:
-        """創建測試用戶"""
-        print(f"📝 創建 {count} 個測試用戶...")
+        """創建測試使用者"""
+        print(f"📝 創建 {count} 個測試使用者...")
         
         teams = ["火箭隊", "閃電隊", "雷神隊", "極速隊", "無敵隊"]
         
@@ -34,7 +34,7 @@ class TradingDataGenerator:
             }
             
             try:
-                # 註冊用戶
+                # 註冊使用者
                 response = requests.post(
                     f"{self.base_url}/api/user/register",
                     json=user_data
@@ -43,19 +43,19 @@ class TradingDataGenerator:
                 if response.status_code == 200:
                     result = response.json()
                     if result["success"]:
-                        print(f"✅ 用戶 {username} 註冊成功")
+                        print(f"✅ 使用者 {username} 註冊成功")
                         self.users.append(username)
                     else:
                         if "已存在" in result['message']:
-                            print(f"⚠️  用戶 {username} 已存在，跳過")
+                            print(f"⚠️  使用者 {username} 已存在，跳過")
                             self.users.append(username)
                         else:
-                            print(f"❌ 用戶 {username} 註冊失敗: {result['message']}")
+                            print(f"❌ 使用者 {username} 註冊失敗: {result['message']}")
                 else:
-                    print(f"❌ 用戶 {username} 註冊請求失敗: {response.status_code}")
+                    print(f"❌ 使用者 {username} 註冊請求失敗: {response.status_code}")
                     
             except Exception as e:
-                print(f"❌ 創建用戶 {username} 異常: {e}")
+                print(f"❌ 創建使用者 {username} 異常: {e}")
                 
             # 稍微延遲避免過於頻繁的請求
             time.sleep(0.1)
@@ -63,8 +63,8 @@ class TradingDataGenerator:
         return len(self.users) > 0
     
     def login_users(self) -> bool:
-        """為所有用戶登入並獲取token"""
-        print(f"🔐 為 {len(self.users)} 個用戶進行登入...")
+        """為所有使用者登入並獲取token"""
+        print(f"🔐 為 {len(self.users)} 個使用者進行登入...")
         
         success_count = 0
         for username in self.users:
@@ -80,22 +80,22 @@ class TradingDataGenerator:
                     if result["success"]:
                         self.tokens[username] = result["token"]
                         success_count += 1
-                        print(f"✅ 用戶 {username} 登入成功")
+                        print(f"✅ 使用者 {username} 登入成功")
                     else:
-                        print(f"❌ 用戶 {username} 登入失敗: {result['message']}")
+                        print(f"❌ 使用者 {username} 登入失敗: {result['message']}")
                 else:
-                    print(f"❌ 用戶 {username} 登入請求失敗: {response.status_code}")
+                    print(f"❌ 使用者 {username} 登入請求失敗: {response.status_code}")
                     
             except Exception as e:
-                print(f"❌ 用戶 {username} 登入異常: {e}")
+                print(f"❌ 使用者 {username} 登入異常: {e}")
                 
             time.sleep(0.1)
         
-        print(f"✅ 成功登入 {success_count}/{len(self.users)} 個用戶")
+        print(f"✅ 成功登入 {success_count}/{len(self.users)} 個使用者")
         return success_count > 0
     
     def get_current_price(self) -> float:
-        """獲取當前股價"""
+        """獲取目前股價"""
         try:
             response = requests.get(f"{self.base_url}/api/price/summary")
             if response.status_code == 200:
@@ -106,8 +106,8 @@ class TradingDataGenerator:
         return 20.0
     
     def generate_realistic_price(self, base_price: float) -> float:
-        """生成合理的交易價格"""
-        # 在基準價格的 ±5% 範圍內生成價格
+        """產生合理的交易價格"""
+        # 在基準價格的 ±5% 範圍內產生價格
         variation = random.uniform(-0.05, 0.05)
         price = base_price * (1 + variation)
         return round(price, 2)
@@ -117,12 +117,12 @@ class TradingDataGenerator:
         print(f"📈 開始創建 {count} 筆交易...")
         
         if not self.tokens:
-            print("❌ 沒有可用的用戶token，無法進行交易")
+            print("❌ 沒有可用的使用者token，無法進行交易")
             return 0
         
         successful_trades = 0
         current_price = self.get_current_price()
-        print(f"💰 當前股價: ${current_price}")
+        print(f"💰 目前股價: ${current_price}")
         
         # 交易類型配比：70%市價單，30%限價單
         order_types = ["market"] * 70 + ["limit"] * 30
@@ -130,7 +130,7 @@ class TradingDataGenerator:
         sides = ["buy"] * 60 + ["sell"] * 40
         
         for i in range(count):
-            # 隨機選擇用戶
+            # 隨機選擇使用者
             username = random.choice(list(self.tokens.keys()))
             token = self.tokens[username]
             headers = {"Authorization": f"Bearer {token}"}
@@ -150,10 +150,10 @@ class TradingDataGenerator:
             # 如果是限價單，設定價格
             if order_type == "limit":
                 if side == "buy":
-                    # 買單價格稍低於當前價
+                    # 買單價格稍低於目前價
                     price = self.generate_realistic_price(current_price * 0.98)
                 else:
-                    # 賣單價格稍高於當前價
+                    # 賣單價格稍高於目前價
                     price = self.generate_realistic_price(current_price * 1.02)
                 order_data["price"] = price
             
@@ -174,7 +174,7 @@ class TradingDataGenerator:
                         
                         print(f"✅ [{i+1:3d}] {username}: {order_info} - {result['message']}")
                         
-                        # 如果有成交價格，更新當前價格參考
+                        # 如果有成交價格，更新目前價格參考
                         if result.get("executed_price"):
                             current_price = result["executed_price"]
                     else:
@@ -199,7 +199,7 @@ class TradingDataGenerator:
             response = requests.get(f"{self.base_url}/api/price/summary")
             if response.status_code == 200:
                 summary = response.json()
-                print(f"   💰 當前價格: ${summary['lastPrice']}")
+                print(f"   💰 目前價格: ${summary['lastPrice']}")
                 print(f"   📈 漲跌幅: {summary['changePercent']}")
                 print(f"   📊 成交量: {summary['volume']}")
                 print(f"   🔼 最高價: ${summary['high']}")
@@ -231,13 +231,13 @@ class TradingDataGenerator:
             print("   ❌ 無法獲取五檔報價")
     
     def give_initial_points(self) -> bool:
-        """給所有用戶初始點數"""
-        print("💰 給用戶添加初始點數...")
+        """給所有使用者初始點數"""
+        print("💰 給使用者增加初始點數...")
         
         # 先嘗試獲取管理員 token
         admin_token = self.get_admin_token()
         if not admin_token:
-            print("❌ 無法獲取管理員權限，跳過添加點數")
+            print("❌ 無法獲取管理員權限，跳過增加點數")
             return False
         
         headers = {"Authorization": f"Bearer {admin_token}"}
@@ -248,7 +248,7 @@ class TradingDataGenerator:
                 give_points_data = {
                     "target_type": "user",
                     "target": username,
-                    "points": 5000,  # 給每個用戶 5000 點數
+                    "points": 5000,  # 給每個使用者 5000 點數
                     "note": "交易測試初始資金"
                 }
                 
@@ -262,18 +262,18 @@ class TradingDataGenerator:
                     result = response.json()
                     if result["success"]:
                         success_count += 1
-                        print(f"✅ 用戶 {username} 獲得 5000 點數")
+                        print(f"✅ 使用者 {username} 獲得 5000 點數")
                     else:
-                        print(f"❌ 給用戶 {username} 添加點數失敗: {result['message']}")
+                        print(f"❌ 給使用者 {username} 增加點數失敗: {result['message']}")
                 else:
-                    print(f"❌ 給用戶 {username} 添加點數請求失敗: {response.status_code}")
+                    print(f"❌ 給使用者 {username} 增加點數請求失敗: {response.status_code}")
                     
             except Exception as e:
-                print(f"❌ 給用戶 {username} 添加點數異常: {e}")
+                print(f"❌ 給使用者 {username} 增加點數異常: {e}")
                 
             time.sleep(0.1)
         
-        print(f"✅ 成功給 {success_count}/{len(self.users)} 個用戶添加點數")
+        print(f"✅ 成功給 {success_count}/{len(self.users)} 個使用者增加點數")
         return success_count > 0
     
     def get_admin_token(self) -> str:
@@ -296,37 +296,37 @@ class TradingDataGenerator:
 
 def main():
     """主函數"""
-    print("🚀 股票交易資料生成器啟動")
+    print("🚀 股票交易資料產生器啟動")
     print("=" * 50)
     
     generator = TradingDataGenerator()
     
-    # 1. 創建用戶
+    # 1. 創建使用者
     if not generator.create_users(10):
-        print("❌ 創建用戶失敗，退出程序")
+        print("❌ 創建使用者失敗，退出程序")
         return
     
     print("\n" + "=" * 50)
     
-    # 2. 用戶登入
+    # 2. 使用者登入
     if not generator.login_users():
-        print("❌ 用戶登入失敗，退出程序")
+        print("❌ 使用者登入失敗，退出程序")
         return
     
     print("\n" + "=" * 50)
     
-    # 3. 生成交易
+    # 3. 產生交易
     success_count = generator.create_trades(100)
     
     print("\n" + "=" * 50)
-    print(f"🎉 交易生成完成!")
+    print(f"🎉 交易產生完成!")
     print(f"   ✅ 成功創建: {success_count}/100 筆交易")
     
     # 4. 顯示市場摘要
     generator.show_market_summary()
     
     print("\n" + "=" * 50)
-    print("✨ 資料生成完成，你可以在前端頁面查看結果！")
+    print("✨ 資料產生完成，你可以在前端頁面查看結果！")
 
 if __name__ == "__main__":
     main()

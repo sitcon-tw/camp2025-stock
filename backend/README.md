@@ -70,7 +70,7 @@ uv pip install -e .
 ### 2. 設定環境變數
 
 ```bash
-# 生成 .env.example 文件 (如果沒有)
+# 產生 .env.example 文件 (如果沒有)
 python env_config.py --generate
 
 # 重新命名 (在你填入正確的值之後)
@@ -88,7 +88,7 @@ python check_config.py
 # 使用 Docker
 docker run -d -p 27017:27017 --name mongodb mongo:latest
 
-# 或使用本地安裝的 MongoDB
+# 或使用本機安裝的 MongoDB
 mongod --dbpath /path/to/data/directory
 ```
 

@@ -8,12 +8,12 @@ import { getPriceSummary } from "@/lib/api";
 
 export default function Home() {
   const [stockData, setStockData] = useState({
-    lastPrice: 70,
+    lastPrice: 20.0,
     change: 0,
-    changePercent: 0,
-    high: 75,
-    low: 65,
-    open: 70,
+    changePercent: "0.0%",
+    high: 20.0,
+    low: 20.0,
+    open: 20.0,
     volume: 0
   });
   const [loading, setLoading] = useState(true);
