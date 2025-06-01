@@ -1,256 +1,302 @@
 #!/usr/bin/env python3
 """
-快速測試使用者交易功能的腳本
-測試完整的使用者註冊、登入、交易流程
+股票交易資料生成器
+創建多個用戶並生成 100 筆交易資料
 """
 
 import requests
 import json
 import sys
+import random
+import time
+from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
 
-def test_user_registration_and_trading():
-    """測試使用者註冊和交易功能"""
-    print("🧪 測試使用者註冊和交易功能...")
-    
-    # 1. 使用者註冊
-    print("\n📝 1. 測試使用者註冊...")
-    registration_data = {
-        "username": "測試小王",
-        "email": "test_wang@example.com",
-        "team": "測試隊"
-    }
-    
-    try:
-        response = requests.post(
-            f"{BASE_URL}/api/user/register",
-            json=registration_data
-        )
+# 模擬用戶資料
+MOCK_USERS = [
+    {"username": "trader_alice", "email": "alice@example.com", "team": "Team Alpha"},
+    {"username": "trader_bob", "email": "bob@example.com", "team": "Team Beta"},
+    {"username": "trader_charlie", "email": "charlie@example.com", "team": "Team Gamma"},
+    {"username": "trader_diana", "email": "diana@example.com", "team": "Team Delta"},
+    {"username": "trader_eve", "email": "eve@example.com", "team": "Team Epsilon"},
+    {"username": "trader_frank", "email": "frank@example.com", "team": "Team Zeta"},
+    {"username": "trader_grace", "email": "grace@example.com", "team": "Team Eta"},
+    {"username": "trader_henry", "email": "henry@example.com", "team": "Team Theta"},
+    {"username": "trader_ivy", "email": "ivy@example.com", "team": "Team Iota"},
+    {"username": "trader_jack", "email": "jack@example.com", "team": "Team Kappa"},
+]
+
+class TradingDataGenerator:
+    def __init__(self):
+        self.registered_users = []
+        self.user_tokens = {}
+        self.trade_count = 0
+        self.admin_token = None
         
-        if response.status_code == 200:
-            result = response.json()
-            if result["success"]:
-                print(f"✅ 使用者註冊成功: {result['message']}")
-                user_id = result.get("user_id")
-            else:
-                print(f"⚠️  使用者註冊失敗: {result['message']}")
-                if "已存在" in result['message']:
-                    print("   使用者可能已存在，繼續測試登入...")
+    def get_admin_token(self):
+        """獲取管理員 token"""
+        try:
+            response = requests.post(
+                f"{BASE_URL}/api/admin/login",
+                json={"password": "admin123"}  # 預設管理員密碼
+            )
+            if response.status_code == 200:
+                result = response.json()
+                if "token" in result:
+                    self.admin_token = result["token"]
+                    print("✅ 管理員登入成功")
+                    return True
+        except Exception as e:
+            print(f"⚠️  管理員登入失敗: {e}")
+        return False
+        
+    def register_user(self, user_data):
+        """註冊用戶"""
+        try:
+            response = requests.post(
+                f"{BASE_URL}/api/user/register",
+                json=user_data
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    print(f"✅ 用戶 {user_data['username']} 註冊成功")
+                    self.registered_users.append(user_data)
+                    return True
                 else:
+                    if "已存在" in result.get('message', ''):
+                        print(f"⚠️  用戶 {user_data['username']} 已存在，跳過")
+                        self.registered_users.append(user_data)
+                        return True
+                    else:
+                        print(f"❌ 用戶 {user_data['username']} 註冊失敗: {result.get('message')}")
+                        return False
+        except Exception as e:
+            print(f"❌ 註冊用戶 {user_data['username']} 時發生錯誤: {e}")
+            return False
+            
+    def login_user(self, username):
+        """用戶登入"""
+        try:
+            response = requests.post(
+                f"{BASE_URL}/api/user/login",
+                json={"username": username}
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    token = result.get("token")
+                    self.user_tokens[username] = token
+                    print(f"✅ 用戶 {username} 登入成功")
+                    return token
+                else:
+                    print(f"❌ 用戶 {username} 登入失敗: {result.get('message')}")
+                    return None
+        except Exception as e:
+            print(f"❌ 用戶 {username} 登入時發生錯誤: {e}")
+            return None
+            
+    def give_user_points(self, username, points=50000):
+        """給用戶添加點數"""
+        if not self.admin_token:
+            return False
+            
+        try:
+            headers = {"Authorization": f"Bearer {self.admin_token}"}
+            response = requests.post(
+                f"{BASE_URL}/api/admin/users/give-points",
+                json={
+                    "username": username,
+                    "type": "user",
+                    "amount": points
+                },
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("ok"):
+                    print(f"✅ 給用戶 {username} 添加 {points} 點數")
+                    return True
+                else:
+                    print(f"❌ 給用戶 {username} 添加點數失敗: {result.get('message')}")
                     return False
-        else:
-            print(f"❌ 使用者註冊請求失敗: {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"❌ 使用者註冊異常: {e}")
-        return False
-    
-    # 2. 使用者登入
-    print("\n🔐 2. 測試使用者登入...")
-    login_data = {
-        "username": "測試小王"
-    }
-    
-    try:
-        response = requests.post(
-            f"{BASE_URL}/api/user/login",
-            json=login_data
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            if result["success"]:
-                user_token = result["token"]
-                user_info = result["user"]
-                print(f"✅ 使用者登入成功")
-                print(f"   - 使用者: {user_info['username']}")
-                print(f"   - 隊伍: {user_info['team']}")
-                print(f"   - 點數: {user_info['points']}")
             else:
-                print(f"❌ 使用者登入失敗: {result['message']}")
+                print(f"❌ 給用戶 {username} 添加點數失敗: {response.status_code}")
                 return False
-        else:
-            print(f"❌ 使用者登入請求失敗: {response.status_code}")
+        except Exception as e:
+            print(f"❌ 給用戶 {username} 添加點數時發生錯誤: {e}")
             return False
-    except Exception as e:
-        print(f"❌ 使用者登入異常: {e}")
+            
+    def get_current_price(self):
+        """獲取當前股價"""
+        try:
+            response = requests.get(f"{BASE_URL}/api/price/summary")
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("current_price", 100.0)
+        except Exception:
+            pass
+        return 100.0  # 預設價格
+        
+    def place_order(self, username, order_data):
+        """下股票訂單"""
+        token = self.user_tokens.get(username)
+        if not token:
+            return False
+            
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        try:
+            response = requests.post(
+                f"{BASE_URL}/api/user/stock/order",
+                json=order_data,
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    self.trade_count += 1
+                    side_chinese = "買入" if order_data["side"] == "buy" else "賣出"
+                    type_chinese = "市價單" if order_data["order_type"] == "market" else "限價單"
+                    price_info = f"@{order_data.get('price', 'market')}" if order_data["order_type"] == "limit" else "@市價"
+                    
+                    print(f"✅ [{self.trade_count:3d}] {username} {side_chinese} {order_data['quantity']} 股 ({type_chinese} {price_info})")
+                    return True
+                else:
+                    print(f"❌ {username} 下單失敗: {result.get('message')}")
+                    return False
+        except Exception as e:
+            print(f"❌ {username} 下單時發生錯誤: {e}")
+            return False
+            
+    def generate_random_order(self, current_price):
+        """生成隨機訂單"""
+        order_type = random.choice(["market", "market", "limit"])  # 更多市價單
+        side = random.choice(["buy", "sell"])
+        quantity = random.randint(1, 10)
+        
+        order = {
+            "order_type": order_type,
+            "side": side,
+            "quantity": quantity
+        }
+        
+        if order_type == "limit":
+            # 限價單的價格在當前價格 ±10% 範圍內
+            price_variation = random.uniform(0.9, 1.1)
+            order["price"] = round(current_price * price_variation, 2)
+            
+        return order
+
+
+def generate_100_trades():
+    """生成 100 筆交易資料"""
+    generator = TradingDataGenerator()
+    
+    print("🚀 開始生成 100 筆股票交易資料...")
+    
+    # 1. 管理員登入
+    print("\n🔑 管理員登入...")
+    if not generator.get_admin_token():
+        print("❌ 無法獲取管理員權限，無法添加用戶資金")
         return False
     
-    # 3. 查詢投資組合
-    print("\n📊 3. 測試查詢投資組合...")
-    headers = {"Authorization": f"Bearer {user_token}"}
-    
-    try:
-        response = requests.get(
-            f"{BASE_URL}/api/user/portfolio",
-            headers=headers
-        )
+    # 2. 註冊用戶
+    print(f"\n📝 註冊 {len(MOCK_USERS)} 個模擬用戶...")
+    for user_data in MOCK_USERS:
+        generator.register_user(user_data)
+        time.sleep(0.1)  # 避免請求過快
         
-        if response.status_code == 200:
-            portfolio = response.json()
-            print(f"✅ 投資組合查詢成功")
-            print(f"   - 使用者: {portfolio['username']}")
-            print(f"   - 點數: {portfolio['points']}")
-            print(f"   - 持股: {portfolio['stocks']}")
-            print(f"   - 股票價值: {portfolio['stockValue']}")
-            print(f"   - 總資產: {portfolio['totalValue']}")
-        else:
-            print(f"❌ 投資組合查詢失敗: {response.status_code}")
-            print(f"   回應: {response.text}")
-            return False
-    except Exception as e:
-        print(f"❌ 投資組合查詢異常: {e}")
+    if not generator.registered_users:
+        print("❌ 沒有成功註冊任何用戶")
         return False
-    
-    # 4. 測試下限價買單
-    print("\n📈 4. 測試下限價買單...")
-    buy_order = {
-        "order_type": "limit",
-        "side": "buy",
-        "quantity": 2,
-        "price": 19.5
-    }
-    
-    try:
-        response = requests.post(
-            f"{BASE_URL}/api/user/stock/order",
-            json=buy_order,
-            headers=headers
-        )
         
-        if response.status_code == 200:
-            result = response.json()
-            if result["success"]:
-                print(f"✅ 限價買單成功")
-                print(f"   - 訂單ID: {result.get('order_id', 'N/A')}")
-                print(f"   - 訊息: {result['message']}")
-            else:
-                print(f"⚠️  限價買單失敗: {result['message']}")
-        else:
-            print(f"❌ 限價買單請求失敗: {response.status_code}")
-            print(f"   回應: {response.text}")
-    except Exception as e:
-        print(f"❌ 限價買單異常: {e}")
-    
-    # 5. 測試下市價買單
-    print("\n📈 5. 測試下市價買單...")
-    market_buy_order = {
-        "order_type": "market",
-        "side": "buy",
-        "quantity": 1
-    }
-    
-    try:
-        response = requests.post(
-            f"{BASE_URL}/api/user/stock/order",
-            json=market_buy_order,
-            headers=headers
-        )
+    # 3. 用戶登入
+    print(f"\n🔐 用戶登入...")
+    for user_data in generator.registered_users:
+        generator.login_user(user_data["username"])
+        time.sleep(0.1)
         
-        if response.status_code == 200:
-            result = response.json()
-            if result["success"]:
-                print(f"✅ 市價買單成功")
-                print(f"   - 訂單ID: {result.get('order_id', 'N/A')}")
-                print(f"   - 成交價格: {result.get('executed_price', 'N/A')}")
-                print(f"   - 成交數量: {result.get('executed_quantity', 'N/A')}")
-            else:
-                print(f"⚠️  市價買單失敗: {result['message']}")
-        else:
-            print(f"❌ 市價買單請求失敗: {response.status_code}")
-            print(f"   回應: {response.text}")
-    except Exception as e:
-        print(f"❌ 市價買單異常: {e}")
-    
-    # 6. 再次查詢投資組合
-    print("\n📊 6. 交易後查詢投資組合...")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/api/user/portfolio",
-            headers=headers
-        )
+    if not generator.user_tokens:
+        print("❌ 沒有成功登入任何用戶")
+        return False
         
-        if response.status_code == 200:
-            portfolio = response.json()
-            print(f"✅ 交易後投資組合:")
-            print(f"   - 點數: {portfolio['points']}")
-            print(f"   - 持股: {portfolio['stocks']}")
-            print(f"   - 股票價值: {portfolio['stockValue']}")
-            print(f"   - 總資產: {portfolio['totalValue']}")
-            print(f"   - 平均成本: {portfolio['avgCost']}")
-        else:
-            print(f"❌ 交易後投資組合查詢失敗: {response.status_code}")
-    except Exception as e:
-        print(f"❌ 交易後投資組合查詢異常: {e}")
-    
-    # 7. 查詢點數記錄
-    print("\n📝 7. 查詢點數記錄...")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/api/user/points/history?limit=10",
-            headers=headers
-        )
+    # 4. 給用戶添加初始點數
+    print(f"\n💰 給用戶添加初始交易資金...")
+    for username in generator.user_tokens.keys():
+        generator.give_user_points(username, 50000)  # 給每個用戶 50,000 點數
+        time.sleep(0.1)
         
-        if response.status_code == 200:
-            logs = response.json()
-            print(f"✅ 點數記錄查詢成功，共 {len(logs)} 筆記錄")
-            for i, log in enumerate(logs[:3]):  # 只顯示前3筆
-                print(f"   {i+1}. {log['type']}: {log['amount']} ({log['note']})")
-        else:
-            print(f"❌ 點數記錄查詢失敗: {response.status_code}")
-    except Exception as e:
-        print(f"❌ 點數記錄查詢異常: {e}")
+    # 5. 開始生成交易
+    print(f"\n📈 開始生成 100 筆交易...")
+    target_trades = 100
     
-    # 8. 查詢股票訂單記錄
-    print("\n📋 8. 查詢股票訂單記錄...")
-    try:
-        response = requests.get(
-            f"{BASE_URL}/api/user/stock/orders?limit=10",
-            headers=headers
-        )
+    while generator.trade_count < target_trades:
+        # 隨機選擇一個用戶
+        username = random.choice(list(generator.user_tokens.keys()))
         
-        if response.status_code == 200:
-            orders = response.json()
-            print(f"✅ 股票訂單記錄查詢成功，共 {len(orders)} 筆記錄")
-            for i, order in enumerate(orders):
-                print(f"   {i+1}. {order['side']} {order['quantity']}股 @ {order['price']} ({order['status']})")
-        else:
-            print(f"❌ 股票訂單記錄查詢失敗: {response.status_code}")
-    except Exception as e:
-        print(f"❌ 股票訂單記錄查詢異常: {e}")
+        # 獲取當前股價
+        current_price = generator.get_current_price()
+        
+        # 生成隨機訂單
+        order = generator.generate_random_order(current_price)
+        
+        # 下單
+        generator.place_order(username, order)
+        
+        # 隨機等待一段時間（0.1-1秒）
+        time.sleep(random.uniform(0.1, 1.0))
+        
+    print(f"\n🎉 成功生成 {generator.trade_count} 筆交易記錄！")
     
-    print("\n✅ 使用者交易功能測試完成！")
+    # 6. 顯示統計信息
+    print(f"\n📊 交易統計:")
+    print(f"   - 註冊用戶數: {len(generator.registered_users)}")
+    print(f"   - 成功登入用戶數: {len(generator.user_tokens)}")
+    print(f"   - 總交易筆數: {generator.trade_count}")
+    
     return True
-
-
 def main():
     """主函數"""
     print("="*60)
-    print("🧪 使用者交易功能測試")
+    print("🏦 股票交易資料生成器")
     print("="*60)
     
     # 檢查服務是否執行
     try:
         response = requests.get(f"{BASE_URL}/health")
         if response.status_code != 200:
-            print("❌ 服務未正常執行，請先啟動: python main.py")
+            print("❌ 後端服務未正常執行，請先啟動: python main.py")
             return
     except:
-        print("❌ 無法連線到服務，請先啟動: python main.py")
+        print("❌ 無法連線到後端服務，請先啟動: python main.py")
         return
     
-    # 執行測試
+    # 執行交易資料生成
     try:
-        success = test_user_registration_and_trading()
+        success = generate_100_trades()
         if success:
-            print("\n🎉 所有測試通過！使用者交易功能正常工作。")
+            print("\n✅ 交易資料生成完成！")
+            print("\n🔍 您現在可以：")
+            print("   1. 訪問前端頁面 http://localhost:3000")
+            print("   2. 查看交易記錄和市場深度")
+            print("   3. 測試排行榜功能")
+            print("\n📊 可用的 API 端點：")
+            print("   - GET /api/price/summary - 價格摘要")
+            print("   - GET /api/market/depth - 市場深度")
+            print("   - GET /api/market/trades - 最新交易")
+            print("   - GET /api/leaderboard - 排行榜")
         else:
-            print("\n⚠️  部分測試失敗，請檢查錯誤訊息。")
+            print("\n⚠️  交易資料生成失敗，請檢查錯誤訊息。")
     except KeyboardInterrupt:
-        print("\n\n👋 測試被使用者中斷")
+        print("\n\n👋 程序被用戶中斷")
     except Exception as e:
-        print(f"\n❌ 測試過程中發生錯誤: {e}")
+        print(f"\n❌ 程序執行過程中發生錯誤: {e}")
     
     print("="*60)
 

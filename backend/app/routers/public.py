@@ -186,3 +186,28 @@ async def get_system_stats(
             "marketOpen": False,
             "timestamp": "2025-05-29T00:00:00Z"
         }
+
+
+@router.get(
+    "/price/history",
+    response_model=List[dict],
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢歷史價格資料",
+    description="查詢歷史股價資料，用於繪製走勢圖"
+)
+async def get_price_history(
+    hours: int = Query(24, ge=1, le=168, description="查詢過去幾小時的資料（1-168小時）"),
+    public_service: PublicService = Depends()
+) -> List[dict]:
+    """
+    查詢歷史價格資料
+    
+    Args:
+        hours: 查詢過去幾小時的資料，預設24小時，最多7天(168小時)
+        
+    Returns:
+        List[dict]: 歷史價格資料列表，包含時間戳和價格
+    """
+    return await public_service.get_price_history(hours)
