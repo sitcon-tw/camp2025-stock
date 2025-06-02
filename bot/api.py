@@ -13,6 +13,7 @@ from typing import List
 
 load_dotenv()
 BROADCAST_CHANNELS = environ.get("BROADCAST_CHANNELS").split(",")
+WEBHOOK_SECRET = environ.get("WEBHOOK_SECRET")
 
 logger = setup_logger(__name__)
 
@@ -20,6 +21,8 @@ logger = setup_logger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Server started.")
     await initialize()
+    if not WEBHOOK_SECRET:
+        logger.warning("WEBHOOK_SECRET was not set!")
     yield
     logger.info("Server stopped.")
 
@@ -34,16 +37,7 @@ async def webhook_get(request: Request):
 
 @app.post("/bot/webhook")
 async def webhook_post(request: Request):
-    forward_for_header = request.headers.get("X-Forwarded-For")
-
-    if forward_for_header:
-        logger.info(f"Forward header: {forward_for_header}")
-        forward_for_header = forward_for_header.split(",")[0].strip()
-    else:
-        logger.info(f"Forward header: None, falling back to origin IP {request.client.host}")
-        forward_for_header = request.client.host
-
-    if (ip_address(forward_for_header) not in ip_network("149.154.160.0/20")) and (ip_address(forward_for_header) not in ip_network("91.108.4.0/22")):
+    if not request.headers.get("X-Telegram-Bot-Api-Secret-Token") == WEBHOOK_SECRET:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"ok": False, "message": "Forbidden"}
