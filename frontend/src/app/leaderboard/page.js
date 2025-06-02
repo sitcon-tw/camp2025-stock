@@ -22,17 +22,16 @@ function RankingItem({ rank, user, isGroup = false }) {
     };
 
     return (
-        <div className={`bg-gradient-to-r ${
-            rank <= 3 
-                ? 'from-[#1a2e4a] to-[#2a4e6a] border-[#82bee2]/30' 
-                : 'from-[#19325e] to-[#1a2e4a] border-[#82bee2]/20'
-        } flex w-full max-w-4xl rounded-xl p-4 items-center border transition-all duration-300 hover:border-[#82bee2]/50 hover:shadow-lg`}>
+        <div className={`bg-gradient-to-r ${rank <= 3
+            ? 'from-[#1a2e4a] to-[#2a4e6a] border-[#82bee2]/30'
+            : 'from-[#19325e] to-[#1a2e4a] border-[#82bee2]/20'
+            } flex w-full max-w-4xl rounded-xl p-4 items-center border transition-all duration-300 hover:border-[#82bee2]/50 hover:shadow-lg`}>
             <div className="flex items-center justify-center w-12 h-12 mr-4">
                 <span className={`${rank <= 3 ? 'text-2xl' : 'text-[#82bee2] font-bold text-lg'}`}>
                     {getRankIcon(rank)}
                 </span>
             </div>
-            
+
             <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-lg font-semibold text-[#82bee2]">
@@ -50,7 +49,7 @@ function RankingItem({ rank, user, isGroup = false }) {
                     <span className="font-semibold">總價值: <span className="text-[#82bee2]">{formatValue(totalValue)}</span></span>
                 </div>
             </div>
-            
+
             <div className="text-right">
                 <div className="text-xl font-bold text-[#82bee2]">
                     {formatValue(totalValue)}
@@ -80,17 +79,16 @@ function GroupRankingItem({ rank, group }) {
     };
 
     return (
-        <div className={`bg-gradient-to-r ${
-            rank <= 3 
-                ? 'from-[#1a2e4a] to-[#2a4e6a] border-[#82bee2]/30' 
-                : 'from-[#19325e] to-[#1a2e4a] border-[#82bee2]/20'
-        } flex w-full max-w-4xl rounded-xl p-4 items-center border transition-all duration-300 hover:border-[#82bee2]/50 hover:shadow-lg`}>
+        <div className={`bg-gradient-to-r ${rank <= 3
+            ? 'from-[#1a2e4a] to-[#2a4e6a] border-[#82bee2]/30'
+            : 'from-[#19325e] to-[#1a2e4a] border-[#82bee2]/20'
+            } flex w-full max-w-4xl rounded-xl p-4 items-center border transition-all duration-300 hover:border-[#82bee2]/50 hover:shadow-lg`}>
             <div className="flex items-center justify-center w-12 h-12 mr-4">
                 <span className={`${rank <= 3 ? 'text-2xl' : 'text-[#82bee2] font-bold text-lg'}`}>
                     {getRankIcon(rank)}
                 </span>
             </div>
-            
+
             <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-lg font-semibold text-[#82bee2]">
@@ -106,7 +104,7 @@ function GroupRankingItem({ rank, group }) {
                     <span>平均: <span className="text-cyan-400">{formatValue(Math.round(group.totalValue / group.memberCount))}</span></span>
                 </div>
             </div>
-            
+
             <div className="text-right">
                 <div className="text-xl font-bold text-[#82bee2]">
                     {formatValue(group.totalValue)}
@@ -164,10 +162,9 @@ function RankingList({ title, items, isGroup = false, loading = false }) {
                                 user={item}
                             />
                         )
-                    ))
-                ) : (
+                    ))) : (
                     <div className="text-center text-gray-400 py-8">
-                        <div className="text-4xl mb-4">📊</div>
+                        <div className="text-4xl mb-4">統計</div>
                         <div>目前還沒有{isGroup ? '組別' : '個人'}資料</div>
                     </div>
                 )}
@@ -191,23 +188,23 @@ export default function Leaderboard() {
             setError(null);
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/leaderboard`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
             setLeaderboardData(data);
-            
+
             // 處理組別排行榜
             const groupData = processGroupLeaderboard(data);
             setGroupLeaderboard(groupData);
-            
+
             setLastUpdated(new Date());
         } catch (error) {
             console.error('獲取排行榜失敗:', error);
             setError(error.message);
-            
+
             // API 失敗時設為空陣列
             setLeaderboardData([]);
             setGroupLeaderboard([]);
@@ -255,7 +252,7 @@ export default function Leaderboard() {
     // 初始載入
     useEffect(() => {
         fetchLeaderboard();
-        
+
         // 設置自動刷新（每30秒）
         const interval = setInterval(() => {
             fetchLeaderboard();
@@ -270,7 +267,7 @@ export default function Leaderboard() {
                 {/* 標題區域 */}
                 <div className="text-center mb-6">
                     <h1 className="text-3xl font-bold text-[#82bee2] mb-2">
-                        🏆 SITCON Camp 2025 排行榜
+                        排行榜
                     </h1>
                     <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
                         <span>最後更新: {lastUpdated.toLocaleTimeString()}</span>
@@ -279,7 +276,6 @@ export default function Leaderboard() {
                             disabled={loading}
                             className="flex items-center gap-1 text-[#82bee2] hover:text-white transition-colors disabled:opacity-50"
                         >
-                            <span className={loading ? 'animate-spin' : ''}>🔄</span>
                             重新整理
                         </button>
                     </div>
@@ -290,21 +286,19 @@ export default function Leaderboard() {
                     <div className="bg-[#1a2e4a] rounded-lg p-1 flex">
                         <button
                             onClick={() => setActiveTab('individual')}
-                            className={`px-6 py-2 rounded-md transition-all duration-300 ${
-                                activeTab === 'individual'
-                                    ? 'bg-[#82bee2] text-[#0f203e] font-semibold'
-                                    : 'text-[#82bee2] hover:bg-[#82bee2]/10'
-                            }`}
+                            className={`px-6 py-2 rounded-md transition-all duration-300 ${activeTab === 'individual'
+                                ? 'bg-[#82bee2] text-[#0f203e] font-semibold'
+                                : 'text-[#82bee2] hover:bg-[#82bee2]/10'
+                                }`}
                         >
                             個人排行
                         </button>
                         <button
                             onClick={() => setActiveTab('group')}
-                            className={`px-6 py-2 rounded-md transition-all duration-300 ${
-                                activeTab === 'group'
-                                    ? 'bg-[#82bee2] text-[#0f203e] font-semibold'
-                                    : 'text-[#82bee2] hover:bg-[#82bee2]/10'
-                            }`}
+                            className={`px-6 py-2 rounded-md transition-all duration-300 ${activeTab === 'group'
+                                ? 'bg-[#82bee2] text-[#0f203e] font-semibold'
+                                : 'text-[#82bee2] hover:bg-[#82bee2]/10'
+                                }`}
                         >
                             組別排行
                         </button>
@@ -314,7 +308,7 @@ export default function Leaderboard() {
                 {/* 錯誤提示 */}
                 {error && (
                     <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 mb-6 text-center">
-                        <div className="text-red-400 mb-2">⚠️ 資料載入失敗</div>
+                        <div className="text-red-400 mb-2">資料載入失敗</div>
                         <div className="text-sm text-gray-400">無法連線到伺服器，請重新整理頁面</div>
                     </div>
                 )}
@@ -322,53 +316,20 @@ export default function Leaderboard() {
                 {/* 排行榜內容 */}
                 <div className="max-w-6xl mx-auto">
                     {activeTab === 'individual' ? (
-                        <RankingList 
-                            title="個人排行榜" 
-                            items={leaderboardData} 
+                        <RankingList
+                            title="個人排行榜"
+                            items={leaderboardData}
                             loading={loading}
                         />
                     ) : (
-                        <RankingList 
-                            title="組別排行榜" 
-                            items={groupLeaderboard} 
+                        <RankingList
+                            title="組別排行榜"
+                            items={groupLeaderboard}
                             isGroup={true}
                             loading={loading}
                         />
                     )}
                 </div>
-
-                {/* 統計資訊 */}
-                {!loading && (
-                    <div className="bg-[#1a2e4a] rounded-lg p-6 mt-8 max-w-4xl mx-auto">
-                        <h3 className="text-[#82bee2] font-semibold mb-4 text-center">📊 統計資訊</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div>
-                                <div className="text-2xl font-bold text-[#82bee2]">
-                                    {leaderboardData.length}
-                                </div>
-                                <div className="text-sm text-gray-400">參與者</div>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-yellow-400">
-                                    {leaderboardData.reduce((sum, user) => sum + user.points, 0).toLocaleString()}
-                                </div>
-                                <div className="text-sm text-gray-400">總點數</div>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-green-400">
-                                    {leaderboardData.reduce((sum, user) => sum + (user.stockValue || 0), 0).toLocaleString()}
-                                </div>
-                                <div className="text-sm text-gray-400">股票總值</div>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-bold text-cyan-400">
-                                    {groupLeaderboard.length}
-                                </div>
-                                <div className="text-sm text-gray-400">參與組別</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );

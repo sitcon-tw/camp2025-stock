@@ -8,10 +8,8 @@ export default function Navbar() {
 
     const getIconColor = (path) => {
         return pathname === path ? 'text-[#4b87cc]' : 'text-[#82bee2]';
-    };
-
-    return (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#0f203e] p-4 flex justify-around items-center border-t-2 border-[#4f6f97] py-4">
+    }; return (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0f203e] p-4 flex justify-around items-center border-t-2 border-[#4f6f97] py-4 z-50 h-20">
             <Link href="/" className={getIconColor('/')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-home">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />

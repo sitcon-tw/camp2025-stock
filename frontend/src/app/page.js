@@ -36,10 +36,10 @@ export default function Home() {
     };
 
     fetchStockData();
-    
+
     // 每30秒更新一次資料
     const interval = setInterval(fetchStockData, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -47,36 +47,32 @@ export default function Home() {
   const changePercent = parseFloat(stockData.changePercent) || 0;
   const isPositive = changePercent > 0;
   const isNegative = changePercent < 0;
-
   return (
-    <div className="bg-[#0f203e] min-h-screen items-center justify-center pb-36">
-      <div className="flex flex-col h-screen px-8 mb-10">
+    <div className="bg-[#0f203e] min-h-screen pb-10">
+      <div className="flex flex-col px-8">
         <HeaderBar />
-        
+
         {/* 載入狀態 */}
         {loading && (
           <div className="flex justify-center items-center mt-8">
             <div className="text-[#82bee2] text-lg">載入中...</div>
           </div>
         )}
-        
+
         {/* 錯誤狀態 */}
         {error && (
           <div className="mt-8 p-4 bg-red-900/30 border border-red-600 rounded-lg">
             <div className="text-red-400 text-sm">{error}</div>
           </div>
         )}
-        
         {/* 股市趨勢圖 */}
-        <div className="mt-8" style={{
-          marginBottom: '6rem',
-        }}>
-          <StockChart 
+        <div className="mt-8 mb-6">
+          <StockChart
             currentPrice={currentPrice}
             changePercent={changePercent}
           />
         </div>
-        
+
         {/* 開盤價 今日最低 今日最高 */}
         <div className="mt-4">
           <h4 className="text-[#82bee2] text-lg font-semibold mb-2">今日股市資訊</h4>
@@ -95,7 +91,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
+
         {/* 成交量資訊 */}
         <div className="mt-4">
           <div className="bg-[#1a2e4a] p-4 rounded-lg">
@@ -103,7 +99,7 @@ export default function Home() {
             <p className="text-xl font-bold">{stockData.volume.toLocaleString()} 股</p>
           </div>
         </div>
-        
+
         {/* 五檔股價 和 交易紀錄 的 TAB */}
         <div className="mt-6">
           <TradingTabs currentPrice={currentPrice} />

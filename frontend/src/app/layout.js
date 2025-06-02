@@ -49,8 +49,7 @@ export default function RootLayout({ children }) {
     <html lang="zh-TW">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#565A70" />
+        <link rel="manifest" href="/manifest.json" />        <meta name="theme-color" content="#0f203e" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Camp2025 股票" />
@@ -58,10 +57,11 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
-        <meta name="msapplication-TileColor" content="#565A70" />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} mb-20`}>
-        {children}
+        <meta name="msapplication-TileColor" content="#0f203e" />
+      </head>      <body className={`${geistSans.variable} ${geistMono.variable} bg-[#0f203e] min-h-screen`}>
+        <div className="pb-24 bg-[#0f203e] min-h-screen">
+          {children}
+        </div>
         <Navbar />
       </body>
     </html>

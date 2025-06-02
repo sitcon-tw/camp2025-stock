@@ -1,2 +1,40 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+/* 全域背景色設定 - 強制所有元素使用統一背景色 */
+html,
+body {
+    background-color: #0f203e !important;
+    min-height: 100vh !important;
+}
+
+/* 強制所有容器背景色 */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* 強制所有主要容器背景色 */
+#__next,
+main,
+.page-container,
+.container,
+.bg-base-100,
+.bg-base-200,
+.bg-base-300,
+[data-theme] {
+    background-color: #0f203e !important;
+}
+
+/* daisyUI 主題覆蓋 */
+[data-theme="light"],
+[data-theme="dark"],
+.theme-light,
+.theme-dark {
+    background-color: #0f203e !important;
+}
+
+.bg-default {
+    background-color: #0f203e !important;
+}

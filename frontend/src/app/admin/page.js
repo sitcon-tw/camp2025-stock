@@ -6,13 +6,13 @@ import HeaderBar from '@/components/HeaderBar';
 
 export default function AdminPage() {
   const router = useRouter();
-  
+
   // 狀態管理
   const [adminToken, setAdminToken] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
-  
+
   // 表單狀態
   const [givePointsForm, setGivePointsForm] = useState({
     type: 'user',
@@ -29,7 +29,7 @@ export default function AdminPage() {
     message: '',
     broadcast: true
   });
-  
+
   // 使用者資產資料
   const [userAssets, setUserAssets] = useState([]);
   const [systemStats, setSystemStats] = useState(null);
@@ -47,7 +47,7 @@ export default function AdminPage() {
   useEffect(() => {
     const isAdmin = localStorage.getItem('isAdmin');
     const token = localStorage.getItem('adminToken');
-    
+
     if (!isAdmin || !token) {
       router.push('/login');
       return;
@@ -208,7 +208,7 @@ export default function AdminPage() {
         const today = new Date();
         const startTime = new Date(today.toDateString() + ' ' + time.start);
         const endTime = new Date(today.toDateString() + ' ' + time.end);
-        
+
         return {
           start: Math.floor(startTime.getTime() / 1000),
           end: Math.floor(endTime.getTime() / 1000)
@@ -282,7 +282,7 @@ export default function AdminPage() {
   // 如果未登入，重定向到登入頁面
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white">正在檢查登入狀態...</p>
@@ -290,16 +290,14 @@ export default function AdminPage() {
       </div>
     );
   }
-
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[#0f203e] pb-24">
       {/* 通知元件 */}
       {notification.show && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-          notification.type === 'success' ? 'bg-green-600 text-white' :
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${notification.type === 'success' ? 'bg-green-600 text-white' :
           notification.type === 'error' ? 'bg-red-600 text-white' :
-          'bg-blue-600 text-white'
-        }`}>
+            'bg-blue-600 text-white'
+          }`}>
           <div className="flex items-center space-x-2">
             {notification.type === 'success' && (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,7 +313,7 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-white">管理頁面</h1>
@@ -327,9 +325,8 @@ export default function AdminPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 康堤橙名 - 給予點數功能 */}
-          <div className="bg-gray-800 rounded-lg p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">          {/* 康堤橙名 - 給予點數功能 */}
+          <div className="bg-[#1a2e4a] rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">康堤橙名</h2>
             </div>
@@ -348,13 +345,12 @@ export default function AdminPage() {
                     })}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-[#1a2e4a] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
                 <span className="text-gray-300">群組</span>
               </div>
 
-              {/* 給誰 */}
-              <div>
+              {/* 給誰 */}              <div>
                 <label className="block text-gray-300 text-sm font-medium mb-2">
                   給誰（操尋選擇）
                 </label>
@@ -365,13 +361,12 @@ export default function AdminPage() {
                     ...givePointsForm,
                     username: e.target.value
                   })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="輸入使用者名稱或群組名稱"
                 />
               </div>
 
-              {/* 給多少 */}
-              <div>
+              {/* 給多少 */}              <div>
                 <label className="block text-gray-300 text-sm font-medium mb-2">
                   給多少
                 </label>
@@ -382,12 +377,11 @@ export default function AdminPage() {
                     ...givePointsForm,
                     amount: e.target.value
                   })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              {/* 理由 */}
-              <div>
+              {/* 理由 */}              <div>
                 <label className="block text-gray-300 text-sm font-medium mb-2">
                   理由
                 </label>
@@ -398,22 +392,18 @@ export default function AdminPage() {
                     ...givePointsForm,
                     reason: e.target.value
                   })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </div>
-
-              <button
+              </div>              <button
                 onClick={handleGivePoints}
                 disabled={loading || !givePointsForm.username}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-[#1a2e4a] text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
                 {loading ? '發放中...' : '發放'}
               </button>
             </div>
-          </div>
-
-          {/* 發布公告 */}
-          <div className="bg-gray-800 rounded-lg p-6">
+          </div>          {/* 發布公告 */}
+          <div className="bg-[#1a2e4a] rounded-lg p-6">
             <h2 className="text-xl font-bold text-white mb-4">發布公告</h2>
             <div className="space-y-4">
               {/* 公告標題 */}
@@ -428,13 +418,12 @@ export default function AdminPage() {
                     ...announcementForm,
                     title: e.target.value
                   })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="輸入公告標題"
                 />
               </div>
 
-              {/* 公告內容 */}
-              <div>
+              {/* 公告內容 */}              <div>
                 <label className="block text-gray-300 text-sm font-medium mb-2">
                   公告內容
                 </label>
@@ -445,40 +434,35 @@ export default function AdminPage() {
                     message: e.target.value
                   })}
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="輸入公告內容"
                 />
               </div>
 
               {/* 廣播選項 */}
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="broadcast"
-                  checked={announcementForm.broadcast}
-                  onChange={(e) => setAnnouncementForm({
-                    ...announcementForm,
-                    broadcast: e.target.checked
-                  })}
-                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                />
+              <div className="flex items-center space-x-3">                <input
+                type="checkbox"
+                id="broadcast"
+                checked={announcementForm.broadcast}
+                onChange={(e) => setAnnouncementForm({
+                  ...announcementForm,
+                  broadcast: e.target.checked
+                })}
+                className="w-4 h-4 text-blue-600 bg-[#1a2e4a] border border-[#82bee2]/30 rounded focus:ring-blue-500"
+              />
                 <label htmlFor="broadcast" className="text-gray-300 text-sm">
                   廣播到 Telegram Bot
                 </label>
-              </div>
-
-              <button
+              </div>              <button
                 onClick={handleCreateAnnouncement}
                 disabled={loading || !announcementForm.title.trim() || !announcementForm.message.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-[#1a2e4a] text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
                 {loading ? '發布中...' : '發布公告'}
               </button>
             </div>
-          </div>
-
-          {/* 當日股票漲跌限制 */}
-          <div className="bg-gray-800 rounded-lg p-6">
+          </div>          {/* 當日股票漲跌限制 */}
+          <div className="bg-[#1a2e4a] rounded-lg p-6">
             <h2 className="text-xl font-bold text-white mb-4">當日股票漲跌限制</h2>
             <div className="space-y-4">
               <div className="relative">
@@ -495,29 +479,27 @@ export default function AdminPage() {
                     }
                   }}
                   placeholder="輸入百分比數字 (0-100)"
-                  className="w-full px-3 py-2 pr-8 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 pr-8 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="absolute right-3 top-2 text-gray-400 pointer-events-none">%</span>
               </div>
               <button
                 onClick={handleSetTradingLimit}
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-[#1a2e4a] text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
                 {loading ? '設定中...' : '設定'}
               </button>
             </div>
-          </div>
-
-          {/* 允許交易時間 */}
-          <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2">
+          </div>          {/* 允許交易時間 */}
+          <div className="bg-[#1a2e4a] rounded-lg p-6 lg:col-span-2">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white">允許交易時間</h2>
               <div className="flex space-x-2">
                 <button
                   onClick={saveMarketTimes}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-[#1a2e4a] text-white px-4 py-2 rounded-md text-sm transition-colors"
                 >
                   {loading ? '儲存中...' : '儲存時間'}
                 </button>
@@ -531,10 +513,10 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               {marketTimes.map((time, index) => (
-                <div key={index} className="flex items-center space-x-4 bg-gray-700 p-3 rounded-md">
+                <div key={index} className="flex items-center space-x-4 bg-[#1a2e4a] p-3 rounded-md">
                   <button
                     onClick={() => toggleFavorite(index)}
                     className={`p-1 rounded ${time.favorite ? 'text-yellow-400' : 'text-gray-400'}`}
@@ -543,24 +525,23 @@ export default function AdminPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
                   </button>
-                  
-                  <div className="flex items-center space-x-2 flex-1">
-                    <input
-                      type="time"
-                      value={time.start}
-                      onChange={(e) => updateMarketTime(index, 'start', e.target.value)}
-                      className="bg-gray-600 border border-gray-500 rounded px-2 py-1 text-white text-sm"
-                    />
+
+                  <div className="flex items-center space-x-2 flex-1">                    <input
+                    type="time"
+                    value={time.start}
+                    onChange={(e) => updateMarketTime(index, 'start', e.target.value)}
+                    className="bg-[#1a2e4a] border border-[#82bee2]/30 rounded px-2 py-1 text-white text-sm"
+                  />
                     <span className="text-gray-300">-</span>
                     <input
                       type="time"
                       value={time.end}
                       onChange={(e) => updateMarketTime(index, 'end', e.target.value)}
-                      className="bg-gray-600 border border-gray-500 rounded px-2 py-1 text-white text-sm"
+                      className="bg-[#1a2e4a] border border-[#82bee2]/30 rounded px-2 py-1 text-white text-sm"
                     />
                     <span className="text-gray-400 text-sm">早晨</span>
                   </div>
-                  
+
                   <button
                     onClick={() => removeMarketTime(index)}
                     className="text-red-400 hover:text-red-300 p-1"
@@ -572,11 +553,9 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* 系統統計 */}
+          </div>          {/* 系統統計 */}
           {systemStats && (
-            <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2">
+            <div className="bg-[#1a2e4a] rounded-lg p-6 lg:col-span-2">
               <h2 className="text-xl font-bold text-white mb-4">系統統計</h2>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="text-center">
@@ -601,13 +580,11 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* 使用者資產列表 */}
+          )}          {/* 使用者資產列表 */}
           {userAssets.length > 0 && (
-            <div className="bg-gray-800 rounded-lg p-6 lg:col-span-2">
+            <div className="bg-[#1a2e4a] rounded-lg p-6 lg:col-span-2">
               <h2 className="text-xl font-bold text-white mb-4">使用者資產明細</h2>
-              
+
               {/* 搜索框 */}
               <div className="flex space-x-2 mb-4">
                 <input
@@ -615,7 +592,7 @@ export default function AdminPage() {
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                   placeholder="搜索使用者名稱..."
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 bg-[#1a2e4a] border border-[#82bee2]/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
                 />
                 <button
@@ -648,7 +625,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {userAssets.slice(0, 20).map((user, index) => (
-                      <tr key={index} className="border-b border-gray-700 hover:bg-gray-700 transition-colors">
+                      <tr key={index} className="border-b border-gray-700 hover:bg-[#1a2e4a] transition-colors">
                         <td className="text-white py-3 px-2 font-medium">{user.username}</td>
                         <td className="text-gray-300 py-3 px-2">{user.team}</td>
                         <td className="text-right text-white py-3 px-2">{user.points.toLocaleString()}</td>

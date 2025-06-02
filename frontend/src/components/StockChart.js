@@ -35,31 +35,31 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     const fetchHistoricalData = async () => {
       try {
         setLoading(true);
-        
+
         // 獲取過去6小時的歷史價格資料
         const historicalData = await getHistoricalPrices(6);
-        
+
         if (historicalData && historicalData.length > 0) {
           const data = historicalData.map(item => item.price);
           const labels = historicalData.map(item => {
             const date = new Date(item.timestamp);
-            return date.toLocaleTimeString('zh-TW', { 
-              hour: '2-digit', 
+            return date.toLocaleTimeString('zh-TW', {
+              hour: '2-digit',
               minute: '2-digit'
             });
           });
-          
+
           setChartData({ data, labels });
         } else {
           // 如果沒有歷史資料，設為空陣列
           setChartData({ data: [], labels: [] });
         }
-        
+
         setError(null);
       } catch (err) {
         console.error('獲取歷史資料失敗:', err);
         setError('無法獲取歷史資料');
-        
+
         // API 失敗時設為空陣列
         setChartData({ data: [], labels: [] });
       } finally {
@@ -68,10 +68,10 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     };
 
     fetchHistoricalData();
-    
+
     // 每分鐘更新一次圖表
     const interval = setInterval(fetchHistoricalData, 60000);
-    
+
     return () => clearInterval(interval);
   }, [currentPrice]);
 
@@ -96,7 +96,10 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         borderColor: '#82bee2',
         borderWidth: 1,
         callbacks: {
-          label: function(context) {
+          title: function (context) {
+            return `時間: ${context[0].label}`;
+          },
+          label: function (context) {
             return `價格: $${context.parsed.y.toFixed(2)}`;
           }
         }
@@ -109,13 +112,9 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     },
     scales: {
       x: {
-        display: true,
+        display: false, // 隱藏 x 軸，避免破版
         grid: {
-          color: 'rgba(130, 190, 226, 0.1)',
-        },
-        ticks: {
-          color: '#82bee2',
-          maxTicksLimit: 6,
+          display: false,
         },
       },
       y: {
@@ -126,7 +125,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         },
         ticks: {
           color: '#82bee2',
-          callback: function(value) {
+          callback: function (value) {
             return '$' + value.toFixed(0);
           }
         },
@@ -155,7 +154,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
           const chart = context.chart;
           const { ctx, chartArea } = chart;
           if (!chartArea) return null;
-          
+
           const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
           gradient.addColorStop(0, gradientColor);
           gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -188,14 +187,13 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
   return (
     <div className="w-full h-64 md:h-80">
       <div className="mb-4">
-        <h3 className="text-[#82bee2] text-lg font-semibold mb-2">SITC 股價走勢</h3>
+        <h3 className="text-[#82bee2] text-lg font-semibold mb-2">股價走勢圖</h3>
         <div className="flex items-center space-x-4">
-          <span className="text-white text-2xl font-bold">${currentPrice.toFixed(2)}</span>
-          <span className={`text-lg font-semibold ${
-            changePercent > 0 ? 'text-red-400' : changePercent < 0 ? 'text-green-400' : 'text-gray-400'
-          }`}>
+          {/* <span className="text-white text-2xl font-bold">${currentPrice.toFixed(2)}</span> */}
+          {/* <span className={`text-lg font-semibold ${changePercent > 0 ? 'text-red-400' : changePercent < 0 ? 'text-green-400' : 'text-gray-400'
+            }`}>
             {changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%
-          </span>
+          </span> */}
         </div>
       </div>
       <div className="h-full">
