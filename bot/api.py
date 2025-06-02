@@ -34,7 +34,7 @@ async def webhook_get(request: Request):
 
 @app.post("/bot/webhook")
 async def webhook_post(request: Request):
-    forward_for_header = request.headers.get("X-Real-IP")
+    forward_for_header = request.headers.get("X-Forwarded-For")
 
     if forward_for_header:
         logger.info(f"Forward header: {forward_for_header}")
