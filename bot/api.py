@@ -6,7 +6,6 @@ from telegram.constants import ParseMode
 from contextlib import asynccontextmanager
 from bot import bot, initialize
 from utils.logger import setup_logger
-from ipaddress import ip_address, ip_network
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
