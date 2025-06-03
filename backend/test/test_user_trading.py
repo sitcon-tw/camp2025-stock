@@ -14,7 +14,7 @@ from datetime import datetime
 
 # 配置
 BASE_URL = "http://localhost:8000"
-ADMIN_PASSWORD = "password"  # 替換為實際的管理員密碼
+ADMIN_PASSWORD = "admin123"  # 替換為實際的管理員密碼
 
 # 測試資料
 TEAMS = ["紅隊", "藍隊", "綠隊"]
@@ -107,8 +107,9 @@ class TradingTestRunner:
                     if resp.status == 200:
                         data = await resp.json()
                         if data.get("success"):
-                            self.user_tokens[player['username']] = data["token"]
-                            await self.log(f"✅ 登入成功: {player['username']}")
+                            token = data["token"]
+                            self.user_tokens[player['username']] = token
+                            await self.log(f"✅ 登入成功: {player['username']}，token={token}")
                         else:
                             await self.log(f"❌ 登入失敗: {player['username']} - {data.get('message')}")
                     else:
@@ -239,55 +240,71 @@ class TradingTestRunner:
             # 取得目前股價
             current_price = await self.get_current_price()
             
-            # 隨機決定交易類型 (增加限價單比例來創造價格差異)
+            # 隨機決定交易類型和方向
             side = random.choice(["buy", "sell"])
-            order_type = random.choices(["market", "limit"], weights=[30, 70])[0]  # 70% 限價單
+            order_type = random.choice(["market", "limit"])
             quantity = random.randint(1, 3)
             
-            # 更激進的限價單價格策略
+            price = None
             if order_type == "limit":
+                # 限價單價格設定
                 if side == "buy":
-                    # 買單：更大的價格範圍，創造競爭
-                    price_range = random.choice([
-                        current_price + random.randint(-3, -1),  # 低價搶購
-                        current_price + random.randint(0, 2),    # 接近市價
-                        current_price + random.randint(2, 5)     # 高價搶購
-                    ])
-                    price = max(price_range, 15)
+                    price = max(15, current_price + random.randint(-3, 3))
                 else:
-                    # 賣單：更大的價格範圍
-                    price_range = random.choice([
-                        current_price + random.randint(-2, 0),   # 低價急售
-                        current_price + random.randint(1, 3),    # 正常賣價
-                        current_price + random.randint(3, 6)     # 高價等待
-                    ])
-                    price = max(price_range, 16)
-            else:
-                price = None
+                    price = max(16, current_price + random.randint(-2, 4))
             
-            # 下單
             success = await self.place_order(trader, order_type, side, quantity, price)
             
             if success:
-                # 隨機等待，讓撮合有時間執行
-                await asyncio.sleep(random.uniform(0.2, 0.8))
+                await asyncio.sleep(random.uniform(0.1, 0.5))
             else:
                 await asyncio.sleep(0.1)
+
+    async def simulate_transfers(self):
+        """模擬玩家間點數轉帳"""
+        await self.log("🔄 開始模擬點數轉帳...")
+        usernames = list(self.user_tokens.keys())
+        for _ in range(10):
+            sender = random.choice(usernames)
+            receiver = random.choice([u for u in usernames if u != sender])
+            amount = random.randint(1, 10)
+            
+            try:
+                headers = {"Authorization": f"Bearer {self.user_tokens[sender]}"}
+                async with self.session.post(
+                    f"{BASE_URL}/api/user/transfer",
+                    json={"to_username": receiver, "amount": amount, "note": "測試轉帳"},
+                    headers=headers
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get("ok") or data.get("success"):
+                            await self.log(f"💸 {sender} 轉帳 {amount} 點給 {receiver} 成功，回傳: {data.get('message')}")
+                        else:
+                            await self.log(f"❌ {sender} 轉帳失敗: {data.get('message')}")
+                    else:
+                        await self.log(f"❌ {sender} 轉帳請求失敗: {resp.status}")
+            except Exception as e:
+                await self.log(f"❌ {sender} 轉帳錯誤: {e}")
+            await asyncio.sleep(0.3)
     
     async def simulate_final_settlement(self):
-        """模擬最終結算"""
-        await self.log("🏁 開始最終結算...")
-        
-        # 取得所有持股玩家，強制以20元賣出所有持股
-        settlement_price = 20
-        
-        for username in self.user_tokens.keys():
-            portfolio = await self.get_user_portfolio(username)
-            if portfolio and portfolio.get("stocks", 0) > 0:
-                stocks = portfolio["stocks"]
-                await self.log(f"🔄 {username} 強制結算 {stocks} 股 @ {settlement_price}元")
-                await self.place_order(username, "market", "sell", stocks)
-                await asyncio.sleep(0.2)
+        """模擬最終結算（使用後端 API）"""
+        await self.log("🏁 開始最終結算 (透過 API)...")
+
+        try:
+            headers = {"Authorization": f"Bearer {self.admin_token}"}
+            async with self.session.post(
+                f"{BASE_URL}/api/admin/final-settlement",
+                headers=headers
+            ) as resp:
+                data = await resp.json()
+                if resp.status == 200 and data.get("ok"):
+                    await self.log(f"✅ 最終結算完成: {data.get('message')}")
+                else:
+                    await self.log(f"❌ 最終結算失敗: {data}")
+        except Exception as e:
+            await self.log(f"❌ 發送最終結算請求失敗: {e}")
     
     async def show_final_results(self):
         """顯示最終結果"""
@@ -366,11 +383,14 @@ class TradingTestRunner:
         
         # 6. 活躍交易
         await self.simulate_active_trading(70)  # 減少到70筆，因為前面已有交易
-        
-        # 7. 最終結算
+
+        # 7. 模擬點數轉帳
+        await self.simulate_transfers()
+
+        # 8. 最終結算
         await self.simulate_final_settlement()
         
-        # 8. 顯示結果
+        # 9. 顯示結果
         await self.show_market_status()
         await self.show_final_results()
         
