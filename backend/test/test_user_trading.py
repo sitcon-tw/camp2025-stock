@@ -1,305 +1,395 @@
 #!/usr/bin/env python3
 """
-股票交易資料產生器
-創建多個使用者並產生 100 筆交易資料
+SITCON Camp 2025 股票交易系統測試腳本
+註冊10個玩家，分3個隊伍，執行100筆交易測試
 """
 
-import requests
+import asyncio
+import aiohttp
 import json
-import sys
 import random
 import time
+from typing import List, Dict, Any
 from datetime import datetime
 
+# 配置
 BASE_URL = "http://localhost:8000"
+ADMIN_PASSWORD = "password"  # 替換為實際的管理員密碼
 
-# 模擬使用者資料
-MOCK_USERS = [
-    {"username": "trader_alice", "email": "alice@example.com", "team": "Team Alpha"},
-    {"username": "trader_bob", "email": "bob@example.com", "team": "Team Beta"},
-    {"username": "trader_charlie", "email": "charlie@example.com", "team": "Team Gamma"},
-    {"username": "trader_diana", "email": "diana@example.com", "team": "Team Delta"},
-    {"username": "trader_eve", "email": "eve@example.com", "team": "Team Epsilon"},
-    {"username": "trader_frank", "email": "frank@example.com", "team": "Team Zeta"},
-    {"username": "trader_grace", "email": "grace@example.com", "team": "Team Eta"},
-    {"username": "trader_henry", "email": "henry@example.com", "team": "Team Theta"},
-    {"username": "trader_ivy", "email": "ivy@example.com", "team": "Team Iota"},
-    {"username": "trader_jack", "email": "jack@example.com", "team": "Team Kappa"},
+# 測試資料
+TEAMS = ["紅隊", "藍隊", "綠隊"]
+PLAYERS = [
+    {"username": f"player_{i+1:02d}", "email": f"player{i+1:02d}@sitcon.org", "team": TEAMS[i % 3]}
+    for i in range(10)
 ]
 
-class TradingDataGenerator:
+class TradingTestRunner:
     def __init__(self):
-        self.registered_users = []
-        self.user_tokens = {}
-        self.trade_count = 0
+        self.session = None
         self.admin_token = None
+        self.user_tokens = {}
+        self.user_stats = {}
+        self.trade_count = 0
         
-    def get_admin_token(self):
-        """獲取管理員 token"""
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session:
+            await self.session.close()
+    
+    async def log(self, message: str):
+        """記錄日誌"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {message}")
+    
+    async def admin_login(self):
+        """管理員登入"""
         try:
-            response = requests.post(
+            async with self.session.post(
                 f"{BASE_URL}/api/admin/login",
-                json={"password": "admin123"}  # 預設管理員密碼
-            )
-            if response.status_code == 200:
-                result = response.json()
-                if "token" in result:
-                    self.admin_token = result["token"]
-                    print("✅ 管理員登入成功")
-                    return True
-        except Exception as e:
-            print(f"⚠️  管理員登入失敗: {e}")
-        return False
-        
-    def register_user(self, user_data):
-        """註冊使用者"""
-        try:
-            response = requests.post(
-                f"{BASE_URL}/api/user/register",
-                json=user_data
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get("success"):
-                    print(f"✅ 使用者 {user_data['username']} 註冊成功")
-                    self.registered_users.append(user_data)
+                json={"password": ADMIN_PASSWORD}
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    self.admin_token = data["token"]
+                    await self.log("✅ 管理員登入成功")
                     return True
                 else:
-                    if "已存在" in result.get('message', ''):
-                        print(f"⚠️  使用者 {user_data['username']} 已存在，跳過")
-                        self.registered_users.append(user_data)
-                        return True
+                    await self.log(f"❌ 管理員登入失敗: {resp.status}")
+                    return False
+        except Exception as e:
+            await self.log(f"❌ 管理員登入錯誤: {e}")
+            return False
+    
+    async def register_players(self):
+        """註冊所有玩家"""
+        await self.log("🎮 開始註冊玩家...")
+        
+        for player in PLAYERS:
+            try:
+                async with self.session.post(
+                    f"{BASE_URL}/api/user/register",
+                    json=player
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get("success"):
+                            await self.log(f"✅ 註冊成功: {player['username']} ({player['team']})")
+                            
+                            # 初始化玩家統計
+                            self.user_stats[player['username']] = {
+                                "team": player['team'],
+                                "points": 100,
+                                "stocks": 0,
+                                "trades": 0
+                            }
+                        else:
+                            await self.log(f"❌ 註冊失敗: {player['username']} - {data.get('message')}")
                     else:
-                        print(f"❌ 使用者 {user_data['username']} 註冊失敗: {result.get('message')}")
-                        return False
-        except Exception as e:
-            print(f"❌ 註冊使用者 {user_data['username']} 時發生錯誤: {e}")
-            return False
-            
-    def login_user(self, username):
-        """使用者登入"""
-        try:
-            response = requests.post(
-                f"{BASE_URL}/api/user/login",
-                json={"username": username}
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get("success"):
-                    token = result.get("token")
-                    self.user_tokens[username] = token
-                    print(f"✅ 使用者 {username} 登入成功")
-                    return token
-                else:
-                    print(f"❌ 使用者 {username} 登入失敗: {result.get('message')}")
-                    return None
-        except Exception as e:
-            print(f"❌ 使用者 {username} 登入時發生錯誤: {e}")
-            return None
-            
-    def give_user_points(self, username, points=50000):
-        """給使用者增加點數"""
-        if not self.admin_token:
-            return False
-            
-        try:
-            headers = {"Authorization": f"Bearer {self.admin_token}"}
-            response = requests.post(
-                f"{BASE_URL}/api/admin/users/give-points",
-                json={
-                    "username": username,
-                    "type": "user",
-                    "amount": points
-                },
-                headers=headers
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get("ok"):
-                    print(f"✅ 給使用者 {username} 增加 {points} 點數")
-                    return True
-                else:
-                    print(f"❌ 給使用者 {username} 增加點數失敗: {result.get('message')}")
-                    return False
-            else:
-                print(f"❌ 給使用者 {username} 增加點數失敗: {response.status_code}")
-                return False
-        except Exception as e:
-            print(f"❌ 給使用者 {username} 增加點數時發生錯誤: {e}")
-            return False
-            
-    def get_current_price(self):
-        """獲取目前股價"""
-        try:
-            response = requests.get(f"{BASE_URL}/api/price/summary")
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("current_price", 100.0)
-        except Exception:
-            pass
-        return 100.0  # 預設價格
+                        await self.log(f"❌ 註冊請求失敗: {player['username']} - {resp.status}")
+            except Exception as e:
+                await self.log(f"❌ 註冊錯誤: {player['username']} - {e}")
         
-    def place_order(self, username, order_data):
-        """下股票訂單"""
-        token = self.user_tokens.get(username)
-        if not token:
-            return False
-            
-        headers = {"Authorization": f"Bearer {token}"}
+        await asyncio.sleep(1)  # 等待註冊完成
+    
+    async def login_players(self):
+        """所有玩家登入"""
+        await self.log("🔑 開始玩家登入...")
         
+        for player in PLAYERS:
+            try:
+                async with self.session.post(
+                    f"{BASE_URL}/api/user/login",
+                    json={"username": player['username']}
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if data.get("success"):
+                            self.user_tokens[player['username']] = data["token"]
+                            await self.log(f"✅ 登入成功: {player['username']}")
+                        else:
+                            await self.log(f"❌ 登入失敗: {player['username']} - {data.get('message')}")
+                    else:
+                        await self.log(f"❌ 登入請求失敗: {player['username']} - {resp.status}")
+            except Exception as e:
+                await self.log(f"❌ 登入錯誤: {player['username']} - {e}")
+        
+        await asyncio.sleep(1)
+    
+    async def get_current_price(self) -> int:
+        """取得目前股價"""
         try:
-            response = requests.post(
-                f"{BASE_URL}/api/user/stock/order",
-                json=order_data,
-                headers=headers
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                if result.get("success"):
-                    self.trade_count += 1
-                    side_chinese = "買入" if order_data["side"] == "buy" else "賣出"
-                    type_chinese = "市價單" if order_data["order_type"] == "market" else "限價單"
-                    price_info = f"@{order_data.get('price', 'market')}" if order_data["order_type"] == "limit" else "@市價"
-                    
-                    print(f"✅ [{self.trade_count:3d}] {username} {side_chinese} {order_data['quantity']} 股 ({type_chinese} {price_info})")
-                    return True
-                else:
-                    print(f"❌ {username} 下單失敗: {result.get('message')}")
-                    return False
-        except Exception as e:
-            print(f"❌ {username} 下單時發生錯誤: {e}")
+            async with self.session.get(f"{BASE_URL}/api/price/current") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return data.get("price", 20)
+                return 20
+        except:
+            return 20
+    
+    async def place_order(self, username: str, order_type: str, side: str, quantity: int, price: int = None) -> bool:
+        """下訂單"""
+        if username not in self.user_tokens:
             return False
-            
-    def generate_random_order(self, current_price):
-        """產生隨機訂單"""
-        order_type = random.choice(["market", "market", "limit"])  # 更多市價單
-        side = random.choice(["buy", "sell"])
-        quantity = random.randint(1, 10)
         
-        order = {
+        order_data = {
             "order_type": order_type,
             "side": side,
             "quantity": quantity
         }
         
-        if order_type == "limit":
-            # 限價單的價格在目前價格 ±10% 範圍內
-            price_variation = random.uniform(0.9, 1.1)
-            order["price"] = round(current_price * price_variation, 2)
+        if order_type == "limit" and price:
+            order_data["price"] = price
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            async with self.session.post(
+                f"{BASE_URL}/api/user/stock/order",
+                json=order_data,
+                headers=headers
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data.get("success"):
+                        self.trade_count += 1
+                        self.user_stats[username]["trades"] += 1
+                        
+                        # 記錄交易
+                        order_desc = f"{side.upper()} {quantity}股"
+                        if order_type == "market":
+                            order_desc += " (市價)"
+                        else:
+                            order_desc += f" @ {price}元"
+                        
+                        await self.log(f"📈 {username}: {order_desc} - {data.get('message')}")
+                        return True
+                    else:
+                        await self.log(f"❌ {username} 下單失敗: {data.get('message')}")
+                return False
+        except Exception as e:
+            await self.log(f"❌ {username} 下單錯誤: {e}")
+            return False
+    
+    async def get_user_portfolio(self, username: str) -> Dict[str, Any]:
+        """取得使用者投資組合"""
+        if username not in self.user_tokens:
+            return {}
+        
+        try:
+            headers = {"Authorization": f"Bearer {self.user_tokens[username]}"}
+            async with self.session.get(
+                f"{BASE_URL}/api/user/portfolio",
+                headers=headers
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                return {}
+        except:
+            return {}
+    
+    async def simulate_scenario_trading(self):
+        """模擬您範例中的具體交易場景"""
+        await self.log("🎭 開始模擬範例交易場景...")
+        
+        # 場景 1: A 買 3 張，B 買 1 張 (各20元)
+        await self.log("📖 場景1: 初始購買")
+        await self.place_order("player_01", "market", "buy", 3)  # A
+        await asyncio.sleep(0.5)
+        await self.place_order("player_02", "market", "buy", 1)  # B
+        await asyncio.sleep(1)
+        
+        # 場景 2: A 想21元賣3張，B 想25元買3張 (應該21元成交)
+        await self.log("📖 場景2: A 賣21元，B 買25元")
+        await self.place_order("player_01", "limit", "sell", 3, 21)  # A 賣
+        await asyncio.sleep(0.5)
+        await self.place_order("player_02", "limit", "buy", 3, 25)   # B 買
+        await asyncio.sleep(2)  # 等待撮合
+        
+        # 場景 3: A 想25元賣，B 想20元買 (不會成交，價差太大)
+        await self.log("📖 場景3: A 賣25元，B 買20元 (應不成交)")
+        await self.place_order("player_01", "limit", "sell", 1, 25)  # A 賣
+        await asyncio.sleep(0.5)
+        await self.place_order("player_02", "limit", "buy", 1, 20)   # B 買
+        await asyncio.sleep(2)
+        
+        # 添加一些其他玩家的交易來創造市場活力
+        await self.log("📖 場景4: 其他玩家加入交易")
+        await self.place_order("player_03", "limit", "buy", 2, 22)   # C 買22元
+        await asyncio.sleep(0.5)
+        await self.place_order("player_04", "limit", "sell", 1, 23)  # D 賣23元
+        await asyncio.sleep(0.5)
+        await self.place_order("player_05", "market", "buy", 1)      # E 市價買
+        await asyncio.sleep(2)
+    
+    async def simulate_active_trading(self, num_trades: int = 80):
+        """模擬活躍交易階段"""
+        await self.log(f"💹 開始活躍交易階段 ({num_trades} 筆交易)...")
+        
+        active_players = list(self.user_tokens.keys())
+        
+        for i in range(num_trades):
+            if self.trade_count >= 100:
+                break
+                
+            # 隨機選擇玩家
+            trader = random.choice(active_players)
             
-        return order
-
-
-def generate_100_trades():
-    """產生 100 筆交易資料"""
-    generator = TradingDataGenerator()
+            # 取得目前股價
+            current_price = await self.get_current_price()
+            
+            # 隨機決定交易類型 (增加限價單比例來創造價格差異)
+            side = random.choice(["buy", "sell"])
+            order_type = random.choices(["market", "limit"], weights=[30, 70])[0]  # 70% 限價單
+            quantity = random.randint(1, 3)
+            
+            # 更激進的限價單價格策略
+            if order_type == "limit":
+                if side == "buy":
+                    # 買單：更大的價格範圍，創造競爭
+                    price_range = random.choice([
+                        current_price + random.randint(-3, -1),  # 低價搶購
+                        current_price + random.randint(0, 2),    # 接近市價
+                        current_price + random.randint(2, 5)     # 高價搶購
+                    ])
+                    price = max(price_range, 15)
+                else:
+                    # 賣單：更大的價格範圍
+                    price_range = random.choice([
+                        current_price + random.randint(-2, 0),   # 低價急售
+                        current_price + random.randint(1, 3),    # 正常賣價
+                        current_price + random.randint(3, 6)     # 高價等待
+                    ])
+                    price = max(price_range, 16)
+            else:
+                price = None
+            
+            # 下單
+            success = await self.place_order(trader, order_type, side, quantity, price)
+            
+            if success:
+                # 隨機等待，讓撮合有時間執行
+                await asyncio.sleep(random.uniform(0.2, 0.8))
+            else:
+                await asyncio.sleep(0.1)
     
-    print("🚀 開始產生 100 筆股票交易資料...")
+    async def simulate_final_settlement(self):
+        """模擬最終結算"""
+        await self.log("🏁 開始最終結算...")
+        
+        # 取得所有持股玩家，強制以20元賣出所有持股
+        settlement_price = 20
+        
+        for username in self.user_tokens.keys():
+            portfolio = await self.get_user_portfolio(username)
+            if portfolio and portfolio.get("stocks", 0) > 0:
+                stocks = portfolio["stocks"]
+                await self.log(f"🔄 {username} 強制結算 {stocks} 股 @ {settlement_price}元")
+                await self.place_order(username, "market", "sell", stocks)
+                await asyncio.sleep(0.2)
     
-    # 1. 管理員登入
-    print("\n🔑 管理員登入...")
-    if not generator.get_admin_token():
-        print("❌ 無法獲取管理員權限，無法增加使用者資金")
-        return False
+    async def show_final_results(self):
+        """顯示最終結果"""
+        await self.log("📊 最終結果統計:")
+        await self.log("=" * 60)
+        
+        total_points = 0
+        team_stats = {team: {"players": 0, "total_points": 0} for team in TEAMS}
+        
+        for username in self.user_tokens.keys():
+            portfolio = await self.get_user_portfolio(username)
+            if portfolio:
+                points = portfolio.get("points", 0)
+                stocks = portfolio.get("stocks", 0)
+                stock_value = portfolio.get("stockValue", 0)
+                total_value = portfolio.get("totalValue", 0)
+                trades = self.user_stats[username]["trades"]
+                team = self.user_stats[username]["team"]
+                
+                await self.log(
+                    f"👤 {username:10} ({team:2}): "
+                    f"{points:3}點 + {stocks}股({stock_value}元) = {total_value}元 "
+                    f"(交易{trades}次)"
+                )
+                
+                total_points += total_value
+                team_stats[team]["players"] += 1
+                team_stats[team]["total_points"] += total_value
+        
+        await self.log("=" * 60)
+        await self.log(f"💰 總點數: {total_points} (應為 1000)")
+        await self.log(f"📈 總交易數: {self.trade_count}")
+        
+        await self.log("\n🏆 隊伍排行:")
+        for team, stats in sorted(team_stats.items(), key=lambda x: x[1]["total_points"], reverse=True):
+            avg_points = stats["total_points"] / stats["players"] if stats["players"] > 0 else 0
+            await self.log(f"  {team}: {stats['total_points']}點 (平均 {avg_points:.1f}點/人)")
     
-    # 2. 註冊使用者
-    print(f"\n📝 註冊 {len(MOCK_USERS)} 個模擬使用者...")
-    for user_data in MOCK_USERS:
-        generator.register_user(user_data)
-        time.sleep(0.1)  # 避免請求過快
-        
-    if not generator.registered_users:
-        print("❌ 沒有成功註冊任何使用者")
-        return False
-        
-    # 3. 使用者登入
-    print(f"\n🔐 使用者登入...")
-    for user_data in generator.registered_users:
-        generator.login_user(user_data["username"])
-        time.sleep(0.1)
-        
-    if not generator.user_tokens:
-        print("❌ 沒有成功登入任何使用者")
-        return False
-        
-    # 4. 給使用者增加初始點數
-    print(f"\n💰 給使用者增加初始交易資金...")
-    for username in generator.user_tokens.keys():
-        generator.give_user_points(username, 50000)  # 給每個使用者 50,000 點數
-        time.sleep(0.1)
-        
-    # 5. 開始產生交易
-    print(f"\n📈 開始產生 100 筆交易...")
-    target_trades = 100
+    async def show_market_status(self):
+        """顯示市場狀態"""
+        try:
+            async with self.session.get(f"{BASE_URL}/api/price/summary") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    await self.log("📈 市場狀態:")
+                    await self.log(f"  目前股價: {data.get('lastPrice')}元")
+                    await self.log(f"  今日漲跌: {data.get('change')} ({data.get('changePercent')})")
+                    await self.log(f"  成交量: {data.get('volume')}")
+        except Exception as e:
+            await self.log(f"❌ 無法取得市場狀態: {e}")
     
-    while generator.trade_count < target_trades:
-        # 隨機選擇一個使用者
-        username = random.choice(list(generator.user_tokens.keys()))
+    async def run_full_test(self):
+        """執行完整測試"""
+        await self.log("🎯 開始 SITCON Camp 2025 股票交易測試")
+        await self.log("=" * 60)
         
-        # 獲取目前股價
-        current_price = generator.get_current_price()
-        
-        # 產生隨機訂單
-        order = generator.generate_random_order(current_price)
-        
-        # 下單
-        generator.place_order(username, order)
-        
-        # 隨機等待一段時間（0.1-1秒）
-        time.sleep(random.uniform(0.1, 1.0))
-        
-    print(f"\n🎉 成功產生 {generator.trade_count} 筆交易記錄！")
-    
-    # 6. 顯示統計信息
-    print(f"\n📊 交易統計:")
-    print(f"   - 註冊使用者數: {len(generator.registered_users)}")
-    print(f"   - 成功登入使用者數: {len(generator.user_tokens)}")
-    print(f"   - 總交易筆數: {generator.trade_count}")
-    
-    return True
-def main():
-    """主函數"""
-    print("="*60)
-    print("🏦 股票交易資料產生器")
-    print("="*60)
-    
-    # 檢查服務是否執行
-    try:
-        response = requests.get(f"{BASE_URL}/health")
-        if response.status_code != 200:
-            print("❌ 後端服務未正常執行，請先啟動: python main.py")
+        # 1. 管理員登入
+        if not await self.admin_login():
+            await self.log("❌ 測試中止：管理員登入失敗")
             return
-    except:
-        print("❌ 無法連線到後端服務，請先啟動: python main.py")
-        return
-    
-    # 執行交易資料產生
-    try:
-        success = generate_100_trades()
-        if success:
-            print("\n✅ 交易資料產生完成！")
-            print("\n🔍 您現在可以：")
-            print("   1. 訪問前端頁面 http://localhost:3000")
-            print("   2. 查看交易記錄和市場深度")
-            print("   3. 測試排行榜功能")
-            print("\n📊 可用的 API 端點：")
-            print("   - GET /api/price/summary - 價格摘要")
-            print("   - GET /api/market/depth - 市場深度")
-            print("   - GET /api/market/trades - 最新交易")
-            print("   - GET /api/leaderboard - 排行榜")
-        else:
-            print("\n⚠️  交易資料產生失敗，請檢查錯誤訊息。")
-    except KeyboardInterrupt:
-        print("\n\n👋 程序被使用者中斷")
-    except Exception as e:
-        print(f"\n❌ 程序執行過程中發生錯誤: {e}")
-    
-    print("="*60)
+        
+        # 2. 註冊玩家
+        await self.register_players()
+        
+        # 3. 玩家登入
+        await self.login_players()
+        
+        # 4. 顯示初始狀態
+        await self.log(f"\n👥 成功註冊 {len(self.user_tokens)} 個玩家")
+        for team in TEAMS:
+            count = sum(1 for stats in self.user_stats.values() if stats["team"] == team)
+            await self.log(f"  {team}: {count} 人")
+        
+        # 5. 模擬範例場景
+        await self.simulate_scenario_trading()
+        
+        # 6. 活躍交易
+        await self.simulate_active_trading(70)  # 減少到70筆，因為前面已有交易
+        
+        # 7. 最終結算
+        await self.simulate_final_settlement()
+        
+        # 8. 顯示結果
+        await self.show_market_status()
+        await self.show_final_results()
+        
+        await self.log("\n🎉 測試完成！")
 
+async def main():
+    """主函數"""
+    try:
+        async with TradingTestRunner() as runner:
+            await runner.run_full_test()
+    except KeyboardInterrupt:
+        print("\n⏹️  測試被用戶中斷")
+    except Exception as e:
+        print(f"\n❌ 測試過程中發生錯誤: {e}")
 
 if __name__ == "__main__":
-    main()
+    # 執行測試
+    print("🚀 SITCON Camp 2025 股票交易系統測試腳本")
+    print("確保後端服務運行在 http://localhost:8000")
+    print("按 Ctrl+C 可隨時停止測試\n")
+    
+    asyncio.run(main())
