@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.services.admin_service import AdminService
+from app.services.admin_service import AdminService, get_admin_service
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
@@ -29,7 +29,7 @@ router = APIRouter()
 # 管理員登入
 async def admin_login(
     request: AdminLoginRequest,
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ) -> AdminLoginResponse:
     return await admin_service.login(request)
 
@@ -47,7 +47,7 @@ async def admin_login(
 async def get_users(
     user: Optional[str] = None,
     current_admin=Depends(get_current_admin),
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ) -> List[UserAssetDetail]:
     """查詢使用者資產明細
     
@@ -76,7 +76,7 @@ async def get_users(
 async def give_points(
     request: GivePointsRequest,
     current_admin=Depends(get_current_admin),
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ) -> GivePointsResponse:
     """給予點數
     
@@ -104,7 +104,7 @@ async def give_points(
 async def create_announcement(
     request: AnnouncementRequest,
     current_admin=Depends(get_current_admin),
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ) -> AnnouncementResponse:
     """發布公告
     
@@ -132,7 +132,7 @@ async def create_announcement(
 async def update_market_hours(
     request: MarketUpdateRequest,
     current_admin=Depends(get_current_admin),
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ) -> MarketUpdateResponse:
     """更新市場開放時間
     
@@ -160,7 +160,7 @@ async def update_market_hours(
 async def set_trading_limit(
     request: MarketLimitRequest,
     current_admin=Depends(get_current_admin),
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ) -> MarketLimitResponse:
     """設定漲跌限制
     
@@ -185,7 +185,7 @@ async def set_trading_limit(
 async def get_announcements(
     limit: int = 20,
     current_admin=Depends(get_current_admin),
-    admin_service: AdminService = Depends()
+    admin_service: AdminService = Depends(get_admin_service)
 ):
     """取得公告列表"""
     # 這個功能在原始 API 規格書中沒有，但對管理員很有用
@@ -263,3 +263,47 @@ async def get_system_stats(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve system statistics"
         )
+
+# 取得所有學員資料
+@router.get(
+    "/students",
+    summary="取得所有學員資料",
+    description="取得所有學員的基本資料，包括使用者名稱、所屬隊伍等"
+)
+async def get_students(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """取得所有學員資料"""
+    try:
+        return await admin_service.list_all_users()
+        
+    except Exception as e:
+        logger.error(f"Failed to get students: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve student data"
+        )
+    
+# 取得所有隊伍資料
+@router.get(
+    "/teams",
+    summary="取得所有隊伍資料",
+    description="取得所有隊伍的基本資料，包括隊伍名稱、成員數量等"
+)
+async def get_teams(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """取得所有隊伍資料"""
+    try:
+        return await admin_service.list_all_teams()
+        
+    except Exception as e:
+        logger.error(f"Failed to get teams: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve team data"
+        )
+    
+ 

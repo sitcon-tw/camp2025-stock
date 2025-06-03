@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 from app.core.database import get_database, Collections
 from app.schemas.public import (
@@ -13,15 +14,23 @@ from app.core.exceptions import (
 )
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
+# 依賴注入函數
+def get_admin_service() -> AdminService:
+    """AdminService 的依賴注入函數"""
+    return AdminService()
+
 # 管理員服務類別
 class AdminService:
-    def __init__(self, db: AsyncIOMotorDatabase = Depends(get_database)):
-        self.db = db
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        if db is None:
+            self.db = get_database()
+        else:
+            self.db = db
     
     # 管理員登入
     async def login(self, request: AdminLoginRequest) -> AdminLoginResponse:
@@ -293,3 +302,31 @@ class AdminService:
             
         except Exception as e:
             logger.error(f"Failed to log point change: {e}")
+
+    # 列出所有學員，回傳其使用者名稱和所屬隊伍
+    async def list_all_users(self) -> List[Dict[str, str]]:
+        try:
+            users_cursor = self.db[Collections.USERS].find({}, {"username": 1, "team": 1})
+            users = await users_cursor.to_list(length=None)
+            
+            result = [{"username": user["username"], "team": user.get("team", "Unknown")} for user in users]
+            logger.info(f"Retrieved {len(result)} users")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to list all users: {e}")
+            raise AdminException("Failed to retrieve user list")
+
+    # 列出所有團隊，回傳其名稱和成員數量
+    async def list_all_teams(self) -> List[Dict[str, str]]:
+        try:
+            teams_cursor = self.db[Collections.GROUPS].find({}, {"name": 1, "member_count": 1})
+            teams = await teams_cursor.to_list(length=None)
+            
+            result = [{"name": team["name"], "member_count": team.get("member_count", 0)} for team in teams]
+            logger.info(f"Retrieved {len(result)} groups")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to list all teams: {e}")
+            raise AdminException("Failed to retrieve team list")    
