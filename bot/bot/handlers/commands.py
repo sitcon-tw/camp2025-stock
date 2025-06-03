@@ -143,3 +143,9 @@ async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 😿 我沒有叫做 `{context.args[1]}` 的指令！
                 """)
             return
+
+async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        f"""
+        來財
+        """, parse_mode=ParseMode.MARKDOWN_V2)
