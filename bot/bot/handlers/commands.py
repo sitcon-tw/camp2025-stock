@@ -1,15 +1,9 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, Application, ContextTypes, CommandHandler, ChatMemberHandler
 from telegram.constants import ParseMode
-from dotenv import load_dotenv
+from telegram.ext import ContextTypes
 from utils.logger import setup_logger
-from os import getenv
 
 logger = setup_logger(__name__)
-
-load_dotenv()
-BOT_TOKEN = getenv("TELEGRAM_BOT_TOKEN")
-
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     username = update.effective_user.username
@@ -124,54 +118,3 @@ async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 😿 什麼指令是 `{context.args[1]}`？
                 """)
             return
-
-async def welcome_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_member_update = update.chat_member
-
-    old_member_status = chat_member_update.old_chat_member.status if chat_member_update.old_chat_member else None
-    new_member_status = chat_member_update.new_chat_member.status if chat_member_update.new_chat_member else None
-
-    if (old_member_status not in [ChatMember.MEMBER, ChatMember.OWNER, ChatMember.ADMINISTRATOR] and
-        new_member_status in [ChatMember.MEMBER, ChatMember.OWNER, ChatMember.ADMINISTRATOR]):
-
-        new_member = chat_member_update.new_chat_member.user
-        chat = update.effective_chat
-
-        if new_member and chat:
-            await context.bot.send_message(
-                chat_id=chat.id,
-                text=f"""
-                👋 你好 *{new_member.full_name}* ！
-歡迎加入 SITCON Camp 的小隊群組！我是喵券機，你在這個營隊中一直會看到我哦！
-
-這個群組是小隊 _*3*_ 的，請不要走錯地方囉
-如果你是這個小隊的，請在你的 email 裡面找一找一個 *註冊碼*，並在這個聊天室輸入 `/register 註冊碼` 來註冊
->例如你的註冊碼是 `1234567890`，就要在這個小隊的頻道裡面輸入 `/register 1234567890`
-                """,
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
-            logger.info(f"{new_member.username} joined chat {chat.id}")
-
-bot = ApplicationBuilder().token(BOT_TOKEN).build()
-
-bot.add_handler(ChatMemberHandler(welcome_member, ChatMemberHandler.CHAT_MEMBER))
-bot.add_handler(CommandHandler("start", start))
-bot.add_handler(CommandHandler("register", register))
-bot.add_handler(CommandHandler("point", point))
-bot.add_handler(CommandHandler("stock", stock))
-
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error("Exception while handling an update:", exc_info=context.error)
-
-bot.add_error_handler(error_handler)
-
-async def initialize():
-    await bot.initialize()
-    await bot.bot.set_my_commands([
-        ("start", "喵喵喵喵"),
-        ("register", "註冊你自己！"),
-        ("point", "查看小隊們與自己的點數"),
-        ("stock", "買賣點數")
-    ])
-
-__all__ = ["bot", "initialize"]

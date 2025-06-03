@@ -21,4 +21,4 @@ if __name__ == "__main__":
         logger.info("Development mode is on, auto reload is enabled")
     else:
         logger.info("Development mode is off, auto reload is not enabled")
-    uvicorn.run("api:app", host="0.0.0.0", port=PORT, reload=ENVIRONMENT, log_config=uvicorn_logger())
+    uvicorn.run("api.app:server", host="0.0.0.0", port=PORT, reload=ENVIRONMENT, log_config=uvicorn_logger())
