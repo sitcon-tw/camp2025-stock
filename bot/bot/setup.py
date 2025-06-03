@@ -6,7 +6,7 @@ from utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error("Exception while handling an update:", exc_info=context.error)
+    logger.error(f"Exception while handling an update: {context.error}")
 
 async def initialize():
     bot.add_handler(CommandHandler("start", commands.start))
