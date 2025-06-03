@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from utils.logger import setup_logger
@@ -71,37 +71,52 @@ async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
+        buttons = [
+            [InlineKeyboardButton(text="複製買入指令", copy_text=CopyTextButton("/stock buy "))],
+            [InlineKeyboardButton(text="複製買出指令", copy_text=CopyTextButton("/stock buy "))],
+            [InlineKeyboardButton(text="複製查看股價指令", copy_text=CopyTextButton("/stock list "))]
+        ]
+
         await update.message.reply_text(
             f"""
-            🐱 你想要做什麼事情呢？
+            🐱 *三幣指數股交易系統*
 
-- `/stock buy 數量` 買入 `數量` 張三幣指數股
-- `/stock sell 數量` 賣出 `數量` 張三幣指數股
-- `/stock list` 查看持有股票與現價
-            """, parse_mode=ParseMode.MARKDOWN_V2)
+*/stock buy 數量* 買入三幣指數股
+*/stock sell 數量* 賣出三幣指數股
+*/stock list* 查看持有股票與現價
+            """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
         return
 
-    if (context.args[0] == "buy" or context.args[0] == "sell") and not context.args[1]:
+    if (context.args[0] == "buy" or context.args[0] == "sell") and len(context.args) <= 1:
         is_sell_command = context.args[0] == "sell"
 
         await update.message.reply_text(
             f"""
-            ❓ 你要 {is_sell_command and "賣出" or "買入"} 多少張三幣指數股？
+            ❓ 你要{is_sell_command and "賣出" or "買入"}多少張三幣指數股？
+請把要{is_sell_command and "賣出" or "買入"}的數量加在指令後面哦
             """)
         return
 
     match context.args[0]:
         case "buy":
+            buttons = [
+                [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
+            ]
+
             await update.message.reply_text(
                 f"""
-                ✅ 成果買入 {context.args[1]} 張三幣指數股，你現在有 *好多張* 三幣指數股
-                """, parse_mode=ParseMode.MARKDOWN_V2)
+                ✅ 成功買入 {context.args[1]} 張三幣指數股，你現在有 *好多張* 三幣指數股
+                """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
             return
         case "sell":
+            buttons = [
+                [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
+            ]
+
             await update.message.reply_text(
                 f"""
-                ✅ 成果賣出 {context.args[1]} 張三幣指數股，你現在有 *好少張* 三幣指數股
-                """, parse_mode=ParseMode.MARKDOWN_V2)
+                ✅ 成功賣出 {context.args[1]} 張三幣指數股，你現在有 *好少張* 三幣指數股
+                """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
             return
         case "list":
             await update.message.reply_text(
@@ -115,6 +130,6 @@ async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         case _:
             await update.message.reply_text(
                 f"""
-                😿 什麼指令是 `{context.args[1]}`？
+                😿 我沒有叫做 `{context.args[1]}` 的指令！
                 """)
             return
