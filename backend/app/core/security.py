@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import settings
 import hashlib
@@ -97,6 +97,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         )
 
 
-def verify_internal_api_key(api_key: str) -> bool:
+def verify_bot_api_key(api_key: str) -> bool:
     """驗證內部 API 金鑰"""
     return api_key == settings.INTERNAL_API_KEY
+
+
+def verify_bot_token(token: str = Header(..., alias="token")) -> bool:
+    """BOT API 驗證機制 - 驗證 token"""
+    if token != settings.INTERNAL_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    return True

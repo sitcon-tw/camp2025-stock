@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import admin, public, user
+from app.routers import admin, public, user, bot
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.config import settings
 import logging
@@ -42,6 +42,12 @@ app.include_router(
     user.router, 
     prefix="/api/user", 
     tags=["User APIs - 使用者功能"]
+)
+
+app.include_router(
+    bot.router, 
+    prefix="/api/bot", 
+    tags=["Bot APIs - BOT 專用功能"]
 )
 
 app.include_router(
