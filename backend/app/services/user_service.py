@@ -600,7 +600,7 @@ class UserService:
                     {"_id": user_oid},
                     {"$inc": {"points": -trade_amount}}
                 )
-                await self.db[Collections.STOCK_HOLDINGS].update_one(
+                await self.db[Collections.STOCKS].update_one(
                     {"user_id": user_oid},
                     {"$inc": {"stock_amount": quantity}},
                     upsert=True
@@ -611,7 +611,7 @@ class UserService:
                     {"_id": user_oid},
                     {"$inc": {"points": trade_amount}}
                 )
-                await self.db[Collections.STOCK_HOLDINGS].update_one(
+                await self.db[Collections.STOCKS].update_one(
                     {"user_id": user_oid},
                     {"$inc": {"stock_amount": -quantity}}
                 )
@@ -695,7 +695,7 @@ class UserService:
                             {"_id": buy_order["user_id"]},
                             {"$inc": {"points": -trade_amount}}
                         )
-                        await self.db[Collections.STOCK_HOLDINGS].update_one(
+                        await self.db[Collections.STOCKS].update_one(
                             {"user_id": buy_order["user_id"]},
                             {"$inc": {"stock_amount": trade_quantity}},
                             upsert=True
@@ -706,7 +706,7 @@ class UserService:
                             {"_id": sell_order["user_id"]},
                             {"$inc": {"points": trade_amount}}
                         )
-                        await self.db[Collections.STOCK_HOLDINGS].update_one(
+                        await self.db[Collections.STOCKS].update_one(
                             {"user_id": sell_order["user_id"]},
                             {"$inc": {"stock_amount": -trade_quantity}}
                         )
