@@ -60,6 +60,71 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 *想現在就試試看嗎？*點一下底下的按鈕，開啟_*喵券機股票交易頁面吧！*_
         """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
 
+async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # TODO: Data fetching
+
+    await update.message.reply_text(
+        f"""
+        👥 小隊 _*3*_ 隊員們目前的點數
+
+• 王小明 *13 點*
+• 王大明 *1044 點*
+• 王聰明 *0 點*
+• *王有錢* *1555 點*
+
+🤑 小隊目前共：*好多* 點
+        """, parse_mode=ParseMode.MARKDOWN_V2)
+
+async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.args:
+        await update.message.reply_text(
+            f"""
+            🐱 你想要做什麼事情呢？
+
+- `/stock buy 數量` 買入 `數量` 張三幣指數股
+- `/stock sell 數量` 賣出 `數量` 張三幣指數股
+- `/stock list` 查看持有股票與現價
+            """, parse_mode=ParseMode.MARKDOWN_V2)
+        return
+
+    if (context.args[0] == "buy" or context.args[0] == "sell") and not context.args[1]:
+        is_sell_command = context.args[0] == "sell"
+
+        await update.message.reply_text(
+            f"""
+            ❓ 你要 {is_sell_command and "賣出" or "買入"} 多少張三幣指數股？
+            """)
+        return
+
+    match context.args[0]:
+        case "buy":
+            await update.message.reply_text(
+                f"""
+                ✅ 成果買入 {context.args[1]} 張三幣指數股，你現在有 *好多張* 三幣指數股
+                """, parse_mode=ParseMode.MARKDOWN_V2)
+            return
+        case "sell":
+            await update.message.reply_text(
+                f"""
+                ✅ 成果賣出 {context.args[1]} 張三幣指數股，你現在有 *好少張* 三幣指數股
+                """, parse_mode=ParseMode.MARKDOWN_V2)
+            return
+        case "list":
+            await update.message.reply_text(
+                f"""
+                🏦 三幣指數股目前股價：
+
+📈 上漲：+10%
+💰 目前股價：$100
+                """, parse_mode=ParseMode.MARKDOWN_V2)
+            return
+        case _:
+            await update.message.reply_text(
+                f"""
+                😿 什麼指令是 `{context.args[1]}`？
+                """)
+            return
+
 async def welcome_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_member_update = update.chat_member
 
@@ -79,7 +144,7 @@ async def welcome_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 👋 你好 *{new_member.full_name}* ！
 歡迎加入 SITCON Camp 的小隊群組！我是喵券機，你在這個營隊中一直會看到我哦！
 
-這個群組是小隊 __*3*__ 的，請不要走錯地方囉
+這個群組是小隊 _*3*_ 的，請不要走錯地方囉
 如果你是這個小隊的，請在你的 email 裡面找一找一個 *註冊碼*，並在這個聊天室輸入 `/register 註冊碼` 來註冊
 >例如你的註冊碼是 `1234567890`，就要在這個小隊的頻道裡面輸入 `/register 1234567890`
                 """,
