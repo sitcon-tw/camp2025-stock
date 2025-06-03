@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 from app.core.database import get_database, Collections
 from app.schemas.public import (
@@ -11,10 +12,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# 公開服務類
+# 依賴注入函數
+def get_public_service() -> PublicService:
+    """PublicService 的依賴注入函數"""
+    return PublicService()
+
+# 公開服務類別
 class PublicService:
-    def __init__(self, db: AsyncIOMotorDatabase = Depends(get_database)):
-        self.db = db
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        if db is None:
+            self.db = get_database()
+        else:
+            self.db = db
     
     # 取得股票價格摘要
     async def get_price_summary(self) -> PriceSummary:

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.services.user_service import UserService
+from app.services.user_service import UserService, get_user_service
 from app.schemas.user import (
     UserRegistrationRequest, UserRegistrationResponse,
     UserLoginRequest, UserLoginResponse, UserPortfolio,
@@ -26,7 +26,7 @@ router = APIRouter()
 )
 async def register_user(
     request: UserRegistrationRequest,
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> UserRegistrationResponse:
     """
     使用者註冊
@@ -48,7 +48,7 @@ async def register_user(
 )
 async def login_user(
     request: UserLoginRequest,
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> UserLoginResponse:
     """
     使用者登入
@@ -72,7 +72,7 @@ async def login_user(
 )
 async def get_portfolio(
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> UserPortfolio:
     """
     查詢使用者投資組合
@@ -92,7 +92,7 @@ async def get_portfolio(
 async def get_point_history(
     limit: int = 50,
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> List[UserPointLog]:
     """
     查詢使用者點數記錄
@@ -117,7 +117,7 @@ async def get_point_history(
 async def place_stock_order(
     request: StockOrderRequest,
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> StockOrderResponse:
     """
     下股票訂單
@@ -140,7 +140,7 @@ async def place_stock_order(
 async def get_stock_orders(
     limit: int = 50,
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> List[UserStockOrder]:
     """
     查詢使用者股票訂單記錄
@@ -165,7 +165,7 @@ async def get_stock_orders(
 async def transfer_points(
     request: TransferRequest,
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ) -> TransferResponse:
     """
     點數轉帳
@@ -188,7 +188,7 @@ async def transfer_points(
 )
 async def get_user_profile(
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ):
     """
     查詢使用者基本資料
@@ -230,7 +230,7 @@ async def get_user_profile(
 )
 async def get_user_dashboard(
     current_user=Depends(get_current_user),
-    user_service: UserService = Depends()
+    user_service: UserService = Depends(get_user_service)
 ):
     """
     使用者儀表板

@@ -18,7 +18,7 @@ class PriceSummary(BaseModel):
     limit_percent: float = Field(..., description="漲跌限制百分比", alias="limitPercent")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 # 委託簿條目
@@ -48,7 +48,7 @@ class LeaderboardEntry(BaseModel):
     stock_value: float = Field(..., description="股票價值", alias="stockValue")
     
     class Config:
-        validate_by_name = True
+        populate_by_name = True
 
 
 # 市場時間段
@@ -64,7 +64,7 @@ class MarketStatus(BaseModel):
     open_time: List[MarketTimeSlot] = Field(..., description="開放時間列表", alias="openTime")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 # ========== 管理員 API 相關模型 ==========
@@ -90,7 +90,7 @@ class UserAssetDetail(BaseModel):
     total: float = Field(..., description="總資產")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 # 給點數請求
@@ -124,7 +124,7 @@ class MarketUpdateRequest(BaseModel):
     open_time: List[MarketTimeSlot] = Field(..., description="開放時間列表", alias="openTime")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 # 市場時間更新回應
@@ -137,7 +137,7 @@ class MarketLimitRequest(BaseModel):
     limit_percent: float = Field(..., description="漲跌限制百分比", alias="limitPercent")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 # 漲跌限制設定回應

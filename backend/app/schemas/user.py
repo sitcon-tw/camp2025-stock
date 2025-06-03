@@ -90,7 +90,7 @@ class UserPortfolio(BaseModel):
     avg_cost: float = Field(..., description="平均成本", alias="avgCost")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 # 轉帳請求

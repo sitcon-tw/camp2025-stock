@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 from app.core.database import get_database, Collections
 from app.schemas.user import (
@@ -20,10 +21,18 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-# 使用者服務類
+# 依賴注入函數
+def get_user_service() -> UserService:
+    """UserService 的依賴注入函數"""
+    return UserService()
+
+# 使用者服務類別
 class UserService:
-    def __init__(self, db: AsyncIOMotorDatabase = Depends(get_database)):
-        self.db = db
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        if db is None:
+            self.db = get_database()
+        else:
+            self.db = db
     
     # 使用者註冊
     async def register_user(self, request: UserRegistrationRequest) -> UserRegistrationResponse:

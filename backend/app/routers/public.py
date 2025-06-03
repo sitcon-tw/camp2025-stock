@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from app.services.public_service import PublicService
+from app.services.public_service import PublicService, get_public_service
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
     MarketStatus, ErrorResponse
@@ -22,7 +22,7 @@ router = APIRouter()
     description="查詢 SITC 股票的即時報價摘要，包括最後成交價、漲跌幅、最高最低價等資訊"
 )
 async def get_price_summary(
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ) -> PriceSummary:
     """
     查詢 SITC 股票的即時報價摘要
@@ -43,7 +43,7 @@ async def get_price_summary(
     description="查詢目前的五檔掛單（買一～五、賣一～五）"
 )
 async def get_price_depth(
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ) -> PriceDepth:
     """
     查詢目前的五檔掛單
@@ -65,7 +65,7 @@ async def get_price_depth(
 )
 async def get_recent_trades(
     limit: int = Query(20, ge=1, le=100, description="查詢筆數限制（1-100筆）"),
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ) -> List[TradeRecord]:
     """
     查詢最近成交記錄
@@ -89,7 +89,7 @@ async def get_recent_trades(
     description="查詢使用者排行榜，包含點數和股票價值"
 )
 async def get_leaderboard(
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ) -> List[LeaderboardEntry]:
     """
     查詢排行榜
@@ -110,7 +110,7 @@ async def get_leaderboard(
     description="查詢目前交易市場狀態，包括是否開放和開放時間"
 )
 async def get_market_status(
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ) -> MarketStatus:
     """
     查詢目前交易市場狀態
@@ -129,7 +129,7 @@ async def get_market_status(
     description="快速查詢目前股票價格"
 )
 async def get_current_price(
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ):
     """查詢目前股價"""
     try:
@@ -154,7 +154,7 @@ async def get_current_price(
     description="查詢系統基本統計資訊"
 )
 async def get_system_stats(
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ):
     """查詢系統統計資訊"""
     try:
@@ -199,7 +199,7 @@ async def get_system_stats(
 )
 async def get_price_history(
     hours: int = Query(24, ge=1, le=168, description="查詢過去幾小時的資料（1-168小時）"),
-    public_service: PublicService = Depends()
+    public_service: PublicService = Depends(get_public_service)
 ) -> List[dict]:
     """
     查詢歷史價格資料
