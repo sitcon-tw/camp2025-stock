@@ -157,6 +157,8 @@ bot = ApplicationBuilder().token(BOT_TOKEN).build()
 bot.add_handler(ChatMemberHandler(welcome_member, ChatMemberHandler.CHAT_MEMBER))
 bot.add_handler(CommandHandler("start", start))
 bot.add_handler(CommandHandler("register", register))
+bot.add_handler(CommandHandler("point", point))
+bot.add_handler(CommandHandler("stock", stock))
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error("Exception while handling an update:", exc_info=context.error)
@@ -167,7 +169,9 @@ async def initialize():
     await bot.initialize()
     await bot.bot.set_my_commands([
         ("start", "喵喵喵喵"),
-        ("register", "註冊你自己！")
+        ("register", "註冊你自己！"),
+        ("point", "查看小隊們與自己的點數"),
+        ("stock", "買賣點數")
     ])
 
 __all__ = ["bot", "initialize"]
