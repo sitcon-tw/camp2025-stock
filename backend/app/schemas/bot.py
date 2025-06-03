@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional
+from typing import Optional, List, Any, Dict
 from app.schemas.user import (
     UserRegistrationResponse, UserPortfolio, StockOrderResponse,
     TransferResponse, UserPointLog, UserStockOrder
@@ -84,3 +84,32 @@ class BotStockOrdersRequest(BaseModel):
 class BotProfileRequest(BaseModel):
     """BOT 查詢使用者資料請求"""
     from_user: str = Field(..., description="使用者名稱")
+
+
+# ========== Telegram Webhook 和 Broadcast 模型 ==========
+
+class TelegramWebhookRequest(BaseModel):
+    """Telegram Webhook 請求模型"""
+    update_id: int = Field(..., description="更新 ID")
+    message: Optional[Dict[str, Any]] = Field(None, description="訊息內容")
+    callback_query: Optional[Dict[str, Any]] = Field(None, description="回調查詢")
+    # 可以根據需要添加更多 Telegram API 欄位
+
+
+class BroadcastRequest(BaseModel):
+    """廣播訊息請求模型"""
+    title: str = Field(..., description="訊息標題")
+    message: str = Field(..., description="訊息內容")
+    groups: List[int] = Field(..., description="目標群組 ID 列表")
+
+
+class BroadcastAllRequest(BaseModel):
+    """全員廣播訊息請求模型"""
+    title: str = Field(..., description="訊息標題")
+    message: str = Field(..., description="訊息內容")
+
+
+class BroadcastResponse(BaseModel):
+    """廣播回應模型"""
+    ok: bool = Field(True, description="操作結果")
+    message: Optional[str] = Field(None, description="回應訊息")

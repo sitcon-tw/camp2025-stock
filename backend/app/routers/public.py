@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from app.services.public_service import PublicService, get_public_service
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
-    MarketStatus, ErrorResponse
+    MarketStatus, TradingHoursResponse, ErrorResponse
 )
 from typing import List
 import logging
@@ -119,6 +119,27 @@ async def get_market_status(
         MarketStatus: 市場開放狀態和時間資訊
     """
     return await public_service.get_market_status()
+
+
+@router.get(
+    "/trading-hours",
+    response_model=TradingHoursResponse,
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢交易時間列表",
+    description="查詢目前設定的交易時間段列表，包含目前是否在交易時間內"
+)
+async def get_trading_hours(
+    public_service: PublicService = Depends(get_public_service)
+) -> TradingHoursResponse:
+    """
+    查詢交易時間列表
+    
+    Returns:
+        TradingHoursResponse: 交易時間段列表和目前狀態
+    """
+    return await public_service.get_trading_hours()
 
 
 # 額外的便利端點

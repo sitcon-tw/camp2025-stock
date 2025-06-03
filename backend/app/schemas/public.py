@@ -67,6 +67,16 @@ class MarketStatus(BaseModel):
         populate_by_name = True
 
 
+# 交易時間列表回應
+class TradingHoursResponse(BaseModel):
+    trading_hours: List[MarketTimeSlot] = Field(..., description="交易時間列表", alias="tradingHours")
+    current_time: str = Field(..., description="目前時間", alias="currentTime")
+    is_currently_open: bool = Field(..., description="目前是否在交易時間內", alias="isCurrentlyOpen")
+    
+    class Config:
+        populate_by_name = True
+
+
 # ========== 管理員 API 相關模型 ==========
 
 # 管理員登入請求

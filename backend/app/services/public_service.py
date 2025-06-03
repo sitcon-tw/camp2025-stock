@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException, status
 from app.core.database import get_database, Collections
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
-    MarketStatus, OrderBookEntry, MarketTimeSlot
+    MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot
 )
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
@@ -380,3 +380,49 @@ class PublicService:
                 })
             
             return list(reversed(history))
+    
+    # 取得交易時間列表
+    async def get_trading_hours(self) -> TradingHoursResponse:
+        try:
+            # 取得市場開放時間配置
+            market_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "market_hours"}
+            )
+            
+            current_time = datetime.now(timezone.utc)
+            current_timestamp = int(current_time.timestamp())
+            
+            # 預設開放時間（如果沒有配置）
+            default_open_times = [
+                MarketTimeSlot(
+                    start=int(current_time.replace(hour=9, minute=0, second=0).timestamp()),
+                    end=int(current_time.replace(hour=17, minute=0, second=0).timestamp())
+                )
+            ]
+            
+            if market_config and "openTime" in market_config:
+                trading_hours = [
+                    MarketTimeSlot(start=slot["start"], end=slot["end"])
+                    for slot in market_config["openTime"]
+                ]
+            else:
+                trading_hours = default_open_times
+            
+            # 檢查目前是否在交易時間內
+            is_currently_open = any(
+                slot.start <= current_timestamp <= slot.end
+                for slot in trading_hours
+            )
+            
+            return TradingHoursResponse(
+                tradingHours=trading_hours,
+                currentTime=current_time.isoformat(),
+                isCurrentlyOpen=is_currently_open
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to get trading hours: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve trading hours"
+            )
