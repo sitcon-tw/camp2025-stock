@@ -69,24 +69,23 @@ export default function HeaderBar() {
             <div className="h-6 w-12 bg-[#82bee2]/20 rounded mb-2"></div>
           </div>
         ) : (
-          <>
-            <h1 className="text-[#82bee2] text-3xl font-bold">
-              {currentPrice}
-            </h1>
+          <>            <h1 className="text-[#82bee2] text-3xl font-bold">
+            {Math.round(currentPrice)}
+          </h1>
             <h1
               className={`mt-1 font-semibold ${isPositive
-                ? "text-red-500"
+                ? "text-[#D55E74]"
                 : isNegative
                   ? "text-green-500"
                   : "text-gray-500"
                 }`}
             >
-              {isPositive ? "▲" : isNegative ? "▼" : ""}
-              {Math.abs(changePercent).toFixed(1)}%
+              <span className='text-xs'>{isPositive ? "▲ " : isNegative ? "▼ " : ""}</span>
+              {Math.abs(changePercent).toFixed(1)}% (今天)
             </h1>
           </>
         )}
-        <h1 className="text-[#82bee2] text-sm font-bold mt-1">開放交易</h1>
+        <h1 className="text-[#82bee2] text-md font-bold mt-1">開放交易</h1>
       </div>
     </div>
   )

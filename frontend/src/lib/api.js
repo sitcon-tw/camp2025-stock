@@ -1,10 +1,10 @@
-// API 配置
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://visit-bar-spouse-tournaments.trycloudflare.com';
 
-// 通用 API 請求函數
+// API 請求通用函數
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultOptions = {
     headers: {
       'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ async function apiRequest(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       throw new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
     }
@@ -27,35 +27,126 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
-// 獲取股票價格摘要
+// 取得股票價格摘要
 export async function getPriceSummary() {
   return apiRequest('/api/price/summary');
 }
 
-// 獲取五檔報價
+// 取得五檔報價
 export async function getPriceDepth() {
   return apiRequest('/api/price/depth');
 }
 
-// 獲取最近成交記錄
+// 取得最近成交記錄
 export async function getRecentTrades(limit = 20) {
   return apiRequest(`/api/price/trades?limit=${limit}`);
 }
 
-// 獲取歷史價格資料（基於交易記錄）
+// 取得歷史價格資料
 export async function getHistoricalPrices(hours = 24) {
   return apiRequest(`/api/price/history?hours=${hours}`);
 }
 
-// 獲取排行榜
+// 取得排行榜資料
 export async function getLeaderboard() {
   return apiRequest('/api/leaderboard');
 }
 
-// 獲取市場狀態
+// 取得市場狀態
 export async function getMarketStatus() {
   return apiRequest('/api/status');
 }
 
-// 導出 API 基礎 URL 供其他組件使用
+// 管理員登入
+export async function adminLogin(password) {
+  return apiRequest('/api/admin/login', {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
+}
+
+// 管理員相關 API
+export async function getUserAssets(token, searchUser = null) {
+  const url = searchUser ? `/api/admin/user?user=${encodeURIComponent(searchUser)}` : '/api/admin/user';
+  return apiRequest(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export async function getSystemStats(token) {
+  return apiRequest('/api/admin/stats', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+export async function givePoints(token, username, type, amount) {
+  return apiRequest('/api/admin/users/give-points', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, type, amount }),
+  });
+}
+
+export async function setTradingLimit(token, limitPercent) {
+  return apiRequest('/api/admin/market/set-limit', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ limit_percent: limitPercent }),
+  });
+}
+
+export async function updateMarketTimes(token, openTime) {
+  return apiRequest('/api/admin/market/update', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ openTime }),
+  });
+}
+
+export async function createAnnouncement(token, title, message, broadcast) {
+  return apiRequest('/api/admin/announcement', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ title, message, broadcast }),
+  });
+}
+
+// 獲取所有學生列表
+export async function getStudents(token) {
+  return apiRequest('/api/admin/students', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+// 獲取所有團隊列表
+export async function getTeams(token) {
+  return apiRequest('/api/admin/teams', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
 export { API_BASE_URL };

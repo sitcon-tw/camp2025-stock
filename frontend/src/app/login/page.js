@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminLogin } from '@/lib/api';
 
 export default function Login() {
   const [adminCode, setAdminCode] = useState('');
@@ -18,33 +19,19 @@ export default function Login() {
       setError('請輸入管理員密碼');
       setIsLoading(false);
       return;
-    }
+    } try {
+      const data = await adminLogin(adminCode);
 
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password: adminCode }),
-      });
+      // 儲存認證資訊
+      localStorage.setItem('isAdmin', 'true');
+      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('adminCode', adminCode);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // 儲存認證資訊
-        localStorage.setItem('isAdmin', 'true');
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminCode', adminCode);
-
-        // 跳轉到管理頁面
-        router.push('/admin');
-      } else {
-        setError(data.detail || '管理員密碼錯誤');
-      }
+      // 跳轉到管理頁面
+      router.push('/admin');
     } catch (error) {
       console.error('登入錯誤:', error);
-      setError('登入失敗，請檢查網路連線');
+      setError(error.message || '登入失敗，請檢查網路連線');
     } finally {
       setIsLoading(false);
     }

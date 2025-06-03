@@ -2,14 +2,15 @@
 export const formatPrice = (price) => {
   return new Intl.NumberFormat('zh-TW', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(price);
+    maximumFractionDigits: 0,
+  }).format(Math.round(price));
 };
 
 // 格式化百分比
 export const formatPercent = (percent) => {
-  const sign = percent >= 0 ? '+' : '';
-  return `${sign}${percent.toFixed(1)}%`;
+  const numPercent = parseFloat(percent) || 0;
+  const sign = numPercent >= 0 ? '+' : '';
+  return `${sign}${numPercent.toFixed(1)}%`;
 };
 
 // 格式化時間
@@ -43,6 +44,38 @@ export const getPriceBgColorClass = (change) => {
   return 'bg-gray-800';
 };
 
+// 計算基於百分比閾值的顏色
+export const getPercentageBasedColor = (currentPrice, dataRange, thresholdPercent = 30) => {
+  if (!dataRange || dataRange.length === 0) {
+    return '#82bee2'; // 預設顏色
+  }
+
+  const maxPrice = Math.max(...dataRange);
+  const minPrice = Math.min(...dataRange);
+  const priceRange = maxPrice - minPrice;
+  const threshold = maxPrice - (priceRange * thresholdPercent / 100);
+
+  if (currentPrice <= threshold) {
+    return '#ef4444'; // 紅色 - 價格低於閾值
+  } else if (currentPrice >= maxPrice * 0.9) {
+    return '#22c55e'; // 綠色 - 價格接近最高點
+  } else {
+    return '#82bee2'; // 預設藍色
+  }
+};
+
+// 判斷價格是否低於百分比閾值
+export const isPriceBelowThreshold = (currentPrice, dataRange, thresholdPercent = 30) => {
+  if (!dataRange || dataRange.length === 0) return false;
+
+  const maxPrice = Math.max(...dataRange);
+  const minPrice = Math.min(...dataRange);
+  const priceRange = maxPrice - minPrice;
+  const threshold = maxPrice - (priceRange * thresholdPercent / 100);
+
+  return currentPrice <= threshold;
+};
+
 // 產生隨機ID
 export const generateId = () => {
   return Math.random().toString(36).substr(2, 9);
@@ -51,28 +84,28 @@ export const generateId = () => {
 // 驗證表單資料
 export const validateForm = (data, rules) => {
   const errors = {};
-  
+
   Object.keys(rules).forEach(field => {
     const rule = rules[field];
     const value = data[field];
-    
+
     if (rule.required && (!value || value.toString().trim() === '')) {
       errors[field] = `${rule.label || field} 為必填項目`;
     }
-    
+
     if (rule.min && value < rule.min) {
       errors[field] = `${rule.label || field} 不能小於 ${rule.min}`;
     }
-    
+
     if (rule.max && value > rule.max) {
       errors[field] = `${rule.label || field} 不能大於 ${rule.max}`;
     }
-    
+
     if (rule.pattern && !rule.pattern.test(value)) {
       errors[field] = `${rule.label || field} 格式不正確`;
     }
   });
-  
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors
@@ -100,7 +133,7 @@ export const debounce = (func, wait) => {
 // 節流函數
 export const throttle = (func, limit) => {
   let inThrottle;
-  return function() {
+  return function () {
     const args = arguments;
     const context = this;
     if (!inThrottle) {
