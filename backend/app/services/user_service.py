@@ -560,7 +560,7 @@ class UserService:
             # 如果買價 >= 賣價，則成交
             if buy_order and sell_order and buy_order["price"] >= sell_order["price"]:
                 await self._execute_matched_orders(buy_order, sell_order)
-                # 遞归呼叫，繼續撮合下一筆
+                # 遞迴呼叫，繼續撮合下一筆
                 await self._try_match_orders()
         
         except Exception as e:

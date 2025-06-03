@@ -330,3 +330,47 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to list all teams: {e}")
             raise AdminException("Failed to retrieve team list")    
+        
+    # 最終結算：將所有使用者的股票以固定價格換算為點數並清空股票
+    async def final_settlement(self, final_price: int = 20) -> GivePointsResponse:
+        try:
+            users_cursor = self.db[Collections.USERS].find({})
+            users = await users_cursor.to_list(length=None)
+            updated_users = 0
+
+            for user in users:
+                user_id = user["_id"]
+                stocks_doc = await self.db[Collections.STOCKS].find_one({"user_id": user_id}) or {}
+                stock_amount = stocks_doc.get("stock_amount", 0)
+
+                if stock_amount > 0:
+                    gain = stock_amount * final_price
+
+                    # 更新點數與清除股票
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": user_id},
+                        {
+                            "$inc": {"points": gain},
+                        }
+                    )
+                    await self.db[Collections.STOCKS].update_one(
+                        {"user_id": user_id},
+                        {"$set": {"stock_amount": 0}}
+                    )
+
+                    await self._log_point_change(
+                        user_id=user_id,
+                        operation_type="final_settlement",
+                        amount=gain,
+                        note=f"最終結算：{stock_amount} 股 × {final_price} 元"
+                    )
+
+                    updated_users += 1
+
+            message = f"Final settlement complete for {updated_users} users"
+            logger.info(message)
+            return GivePointsResponse(ok=True, message=message)
+
+        except Exception as e:
+            logger.error(f"Failed during final settlement: {e}")
+            raise AdminException("Failed during final settlement")

@@ -307,3 +307,28 @@ async def get_teams(
         )
     
  
+# 最終結算（將所有使用者持股以固定價格轉點數，並清除其股票）
+@router.post(
+    "/final-settlement",
+    response_model=GivePointsResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="執行最終結算",
+    description="將所有使用者的持股以固定價格轉換為點數，並清除其股票"
+)
+async def final_settlement(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> GivePointsResponse:
+    """最終結算
+    
+    Args:
+        current_admin: 目前管理員（自動注入）
+        admin_service: 管理員服務（自動注入）
+
+    Returns:
+        操作結果
+    """
+    return await admin_service.final_settlement()
