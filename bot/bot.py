@@ -30,7 +30,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    username = update.effective_user.username
     if not context.args:
         await update.message.reply_text(
             """
@@ -43,7 +42,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     key = context.args[0]
-    logger.info(f"/register triggered by {username}, key: {key}")
+    logger.info(f"/register triggered by {update.effective_chat.username}, key: {key}")
 
     # TODO: Fetch user's information here
 
@@ -53,7 +52,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         f"""
-        😸 喵嗚，{username}，原來你就是 *王小明* 啊！
+        😸 喵嗚，{update.effective_chat.username}，原來你就是 *王小明* 啊！
 
 很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友 😺
 我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！
