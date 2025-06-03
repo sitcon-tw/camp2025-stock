@@ -70,10 +70,10 @@ class AdminService:
                     {"user_id": user["_id"]}
                 ) or {"stock_amount": 0}
                 
-                # 取得目前股票價格（假設從市場配置取得）
+                # 取得目前股票價格（假設從市場配置取得，單位：元）
                 market_config = await self.db[Collections.MARKET_CONFIG].find_one(
                     {"type": "current_price"}
-                ) or {"price": 20}  # 預設價格
+                ) or {"price": 20}  # 預設價格 20 元
                 
                 current_price = market_config.get("price", 20)
                 stocks = stock_holding.get("stock_amount", 0)
@@ -253,8 +253,8 @@ class AdminService:
             logger.error(f"Failed to set trading limit: {e}")
             raise AdminException("Failed to set trading limit")
     
-    # 計算使用者的平均持股成本
-    async def _calculate_avg_cost(self, user_id: str) -> float:
+    # 計算使用者的平均持股成本（單位：元）
+    async def _calculate_avg_cost(self, user_id: str) -> int:
         try:
             # 查詢使用者的買入交易記錄
             buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
@@ -265,7 +265,7 @@ class AdminService:
             buy_orders = await buy_orders_cursor.to_list(length=None)
             
             if not buy_orders:
-                return 20.0  # 預設初始價格
+                return 20  # 預設初始價格（20 元）
             
             total_cost = 0
             total_shares = 0
@@ -275,11 +275,11 @@ class AdminService:
                 total_cost += cost
                 total_shares += order.get("stock_amount", 0)
             
-            return total_cost / total_shares if total_shares > 0 else 20.0
+            return int(total_cost / total_shares) if total_shares > 0 else 20
             
         except Exception as e:
             logger.error(f"Failed to calculate average cost: {e}")
-            return 20.0  # 回傳預設價格
+            return 20  # 回傳預設價格
     
     # 記錄點數變化
     async def _log_point_change(self, user_id: str, operation_type: str, 

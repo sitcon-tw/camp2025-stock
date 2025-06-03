@@ -8,14 +8,14 @@ from datetime import datetime
 
 # 股票價格摘要
 class PriceSummary(BaseModel):
-    last_price: float = Field(..., description="最後成交價", alias="lastPrice")
+    last_price: int = Field(..., description="最後成交價（元）", alias="lastPrice")
     change: str = Field(..., description="漲跌幅度")
     change_percent: str = Field(..., description="漲跌百分比", alias="changePercent")
-    high: float = Field(..., description="最高價")
-    low: float = Field(..., description="最低價")
-    open: float = Field(..., description="開盤價")
+    high: int = Field(..., description="最高價（元）")
+    low: int = Field(..., description="最低價（元）")
+    open: int = Field(..., description="開盤價（元）")
     volume: int = Field(..., description="成交量")
-    limit_percent: float = Field(..., description="漲跌限制百分比", alias="limitPercent")
+    limit_percent: int = Field(..., description="漲跌限制（basis points，1bp=0.01%）", alias="limitPercent")
     
     class Config:
         populate_by_name = True
@@ -23,7 +23,7 @@ class PriceSummary(BaseModel):
 
 # 委託簿條目
 class OrderBookEntry(BaseModel):
-    price: float = Field(..., description="價格")
+    price: int = Field(..., description="價格（元）")
     quantity: int = Field(..., description="數量")
 
 
@@ -35,7 +35,7 @@ class PriceDepth(BaseModel):
 
 # 成交記錄
 class TradeRecord(BaseModel):
-    price: float = Field(..., description="成交價格")
+    price: int = Field(..., description="成交價格（元）")
     quantity: int = Field(..., description="成交數量")
     timestamp: str = Field(..., description="成交時間")
 
@@ -44,8 +44,8 @@ class TradeRecord(BaseModel):
 class LeaderboardEntry(BaseModel):
     username: str = Field(..., description="使用者名稱")
     team: str = Field(..., description="隊伍名稱")
-    points: float = Field(..., description="點數")
-    stock_value: float = Field(..., description="股票價值", alias="stockValue")
+    points: int = Field(..., description="點數")
+    stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
     
     class Config:
         populate_by_name = True
@@ -85,9 +85,9 @@ class UserAssetDetail(BaseModel):
     team: str = Field(..., description="所屬隊伍")
     points: int = Field(..., description="點數餘額")
     stocks: int = Field(..., description="持股數量")
-    avg_cost: float = Field(..., description="平均成本", alias="avgCost")
-    stock_value: float = Field(..., description="股票價值", alias="stockValue")
-    total: float = Field(..., description="總資產")
+    avg_cost: int = Field(..., description="平均成本（元）", alias="avgCost")
+    stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
+    total: int = Field(..., description="總資產（元）")
     
     class Config:
         populate_by_name = True
@@ -134,7 +134,7 @@ class MarketUpdateResponse(BaseModel):
 
 # 漲跌限制設定請求
 class MarketLimitRequest(BaseModel):
-    limit_percent: float = Field(..., description="漲跌限制百分比", alias="limitPercent")
+    limit_percent: int = Field(..., description="漲跌限制（basis points，1bp=0.01%）", alias="limitPercent")
     
     class Config:
         populate_by_name = True

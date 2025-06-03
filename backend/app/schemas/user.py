@@ -50,7 +50,7 @@ class StockOrderRequest(BaseModel):
     order_type: str = Field(..., description="訂單類型：market 或 limit")
     side: str = Field(..., description="買賣方向：buy 或 sell")
     quantity: int = Field(..., gt=0, description="數量")
-    price: Optional[float] = Field(None, gt=0, description="價格（限價單必填）")
+    price: Optional[int] = Field(None, gt=0, description="價格（元，限價單必填）")
     
     @validator('order_type')
     def validate_order_type(cls, v):
@@ -76,7 +76,7 @@ class StockOrderResponse(BaseModel):
     success: bool = Field(..., description="下單是否成功")
     order_id: Optional[str] = Field(None, description="訂單ID")
     message: str = Field(..., description="回應訊息")
-    executed_price: Optional[float] = Field(None, description="成交價格")
+    executed_price: Optional[int] = Field(None, description="成交價格（元）")
     executed_quantity: Optional[int] = Field(None, description="成交數量")
 
 
@@ -85,9 +85,9 @@ class UserPortfolio(BaseModel):
     username: str = Field(..., description="使用者名稱")
     points: int = Field(..., description="點數餘額")
     stocks: int = Field(..., description="持股數量")
-    stock_value: float = Field(..., description="股票價值", alias="stockValue")
-    total_value: float = Field(..., description="總資產", alias="totalValue")
-    avg_cost: float = Field(..., description="平均成本", alias="avgCost")
+    stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
+    total_value: int = Field(..., description="總資產（元）", alias="totalValue")
+    avg_cost: int = Field(..., description="平均成本（元）", alias="avgCost")
     
     class Config:
         populate_by_name = True
@@ -150,7 +150,7 @@ class UserStockOrder(BaseModel):
     order_type: str = Field(..., description="訂單類型")
     side: str = Field(..., description="買賣方向")
     quantity: int = Field(..., description="數量")
-    price: Optional[float] = Field(None, description="價格")
+    price: Optional[int] = Field(None, description="價格（元）")
     status: str = Field(..., description="狀態")
     created_at: str = Field(..., description="建立時間")
     executed_at: Optional[str] = Field(None, description="成交時間")

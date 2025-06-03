@@ -45,24 +45,24 @@ class PublicService:
             trades = await trades_cursor.to_list(length=None)
             
             if not trades:
-                # 沒有交易記錄，回傳初始值
+                # 沒有交易記錄，回傳初始值（20 元）
                 return PriceSummary(
-                    lastPrice=20.0,
+                    lastPrice=20,
                     change="+0",
                     changePercent="+0.0%",
-                    high=20.0,
-                    low=20.0,
-                    open=20.0,
+                    high=20,
+                    low=20,
+                    open=20,
                     volume=0,
-                    limitPercent=20.0
+                    limitPercent=2000  # 20% = 2000 basis points
                 )
             
-            # 計算統計資料
-            prices = [trade.get("price", 20.0) for trade in trades]
+            # 計算統計資料（價格以元為單位）
+            prices = [trade.get("price", 20) for trade in trades]
             volumes = [abs(trade.get("stock_amount", 0)) for trade in trades]
             
-            last_price = latest_trade.get("price", 20.0) if latest_trade else 20.0
-            open_price = trades[0].get("price", 20.0)
+            last_price = latest_trade.get("price", 20) if latest_trade else 20
+            open_price = trades[0].get("price", 20)
             high_price = max(prices)
             low_price = min(prices)
             total_volume = sum(volumes)
@@ -71,15 +71,15 @@ class PublicService:
             change = last_price - open_price
             change_percent = (change / open_price * 100) if open_price > 0 else 0
             
-            # 取得漲跌限制
+            # 取得漲跌限制（以 basis points 為單位）
             limit_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "trading_limit"}
             )
-            limit_percent = limit_config.get("limitPercent", 20.0) if limit_config else 20.0
+            limit_percent = limit_config.get("limitPercent", 2000) if limit_config else 2000
             
             return PriceSummary(
                 lastPrice=last_price,
-                change=f"{'+' if change >= 0 else ''}{change:.2f}",
+                change=f"{'+' if change >= 0 else ''}{change}",
                 changePercent=f"{'+' if change_percent >= 0 else ''}{change_percent:.1f}%",
                 high=high_price,
                 low=low_price,
@@ -271,8 +271,8 @@ class PublicService:
                 detail="Failed to retrieve market status"
             )
     
-    # 取得目前股票價格
-    async def _get_current_stock_price(self) -> float:
+    # 取得目前股票價格（單位：元）
+    async def _get_current_stock_price(self) -> int:
         try:
             # 從最近的成交記錄取得價格
             latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
@@ -281,7 +281,7 @@ class PublicService:
             )
             
             if latest_trade:
-                return latest_trade.get("price", 20.0)
+                return latest_trade.get("price", 20)
             
             # 如果沒有成交記錄，從市場配置取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
@@ -289,14 +289,14 @@ class PublicService:
             )
             
             if price_config:
-                return price_config.get("price", 20.0)
+                return price_config.get("price", 20)
             
-            # 預設價格
-            return 20.0
+            # 預設價格（20 元）
+            return 20
             
         except Exception as e:
             logger.error(f"Failed to get current stock price: {e}")
-            return 20.0
+            return 20
     
     # 取得歷史價格資料
     async def get_price_history(self, hours: int = 24) -> List[dict]:
@@ -350,8 +350,8 @@ class PublicService:
                     # 趨勢：逐漸向目前價格靠近
                     trend_price = base_price + (current_price - base_price) * progress
                     
-                    # 最終價格
-                    price = max(trend_price + volatility, current_price * 0.5)  # 確保不會過低
+                    # 最終價格（以元為單位）
+                    price = max(int(trend_price + volatility), current_price // 2)  # 確保不會過低
                     
                     # 最後一個點設為目前價格
                     if i == data_points - 1:
@@ -359,24 +359,24 @@ class PublicService:
                     
                     history.append({
                         "timestamp": timestamp.isoformat(),
-                        "price": round(price, 2)
+                        "price": price
                     })
                 
                 return history
                 
         except Exception as e:
             logger.error(f"Failed to get price history: {e}")
-            # 回傳基本的模擬資料
-            current_price = 20.0
+            # 回傳基本的模擬資料（以元為單位）
+            current_price = 20  # 20 元
             end_time = datetime.now(timezone.utc)
             history = []
             
             for i in range(20):
                 timestamp = end_time - timedelta(minutes=i * 30)
-                price = current_price + (random.random() - 0.5) * 2
+                price = current_price + int((random.random() - 0.5) * 4)  # 隨機波動 4 元
                 history.append({
                     "timestamp": timestamp.isoformat(),
-                    "price": round(price, 2)
+                    "price": price
                 })
             
             return list(reversed(history))

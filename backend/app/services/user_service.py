@@ -408,19 +408,19 @@ class UserService:
             logger.error(f"Failed to get user stock orders: {e}")
             return []
     
-    # 取得目前股價
-    async def _get_current_stock_price(self) -> float:
+    # 取得目前股價（單位：元）
+    async def _get_current_stock_price(self) -> int:
         try:
             latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
                 {"status": "completed"},
                 sort=[("executed_at", -1)]
             )
-            return latest_trade.get("price", 20.0) if latest_trade else 20.0
+            return latest_trade.get("price", 20) if latest_trade else 20  # 20 元
         except:
-            return 20.0
+            return 20
     
-    # 計算使用者平均持股成本
-    async def _calculate_user_avg_cost(self, user_id) -> float:
+    # 計算使用者平均持股成本（單位：元）
+    async def _calculate_user_avg_cost(self, user_id) -> int:
         try:
             if isinstance(user_id, str):
                 user_id = ObjectId(user_id)
@@ -433,14 +433,14 @@ class UserService:
             buy_orders = await buy_orders_cursor.to_list(length=None)
             
             if not buy_orders:
-                return 20.0
+                return 20  # 20 元
             
             total_cost = sum(order.get("price", 20) * order.get("quantity", 0) for order in buy_orders)
             total_shares = sum(order.get("quantity", 0) for order in buy_orders)
             
-            return total_cost / total_shares if total_shares > 0 else 20.0
+            return int(total_cost / total_shares) if total_shares > 0 else 20
         except:
-            return 20.0
+            return 20
     
     # 檢查市場是否開放
     async def _is_market_open(self) -> bool:
@@ -468,12 +468,27 @@ class UserService:
             if isinstance(user_id, str):
                 user_id = ObjectId(user_id)
                 
-            current_price = await self._get_current_stock_price()
+            # 市價單邏輯：買單找最低賣價，賣單找最高買價
+            if order_doc["side"] == "buy":
+                # 買單：找最低賣價
+                best_sell = await self.db[Collections.STOCK_ORDERS].find_one(
+                    {"side": "sell", "status": "pending"},
+                    sort=[("price", 1)]  # 價格由低到高
+                )
+                execution_price = best_sell.get("price") if best_sell else await self._get_current_stock_price()
+            else:
+                # 賣單：找最高買價
+                best_buy = await self.db[Collections.STOCK_ORDERS].find_one(
+                    {"side": "buy", "status": "pending"},
+                    sort=[("price", -1)]  # 價格由高到低
+                )
+                execution_price = best_buy.get("price") if best_buy else await self._get_current_stock_price()
+            
             quantity = order_doc["quantity"]
             
             # 更新訂單為已執行
             order_doc.update({
-                "price": current_price,
+                "price": execution_price,
                 "status": "completed",
                 "executed_at": datetime.now(timezone.utc)
             })
@@ -482,10 +497,10 @@ class UserService:
             
             # 更新使用者資產
             if order_doc["side"] == "buy":
-                points_change = -int(current_price * quantity)
+                points_change = -int(execution_price * quantity)
                 stocks_change = quantity
             else:
-                points_change = int(current_price * quantity)
+                points_change = int(execution_price * quantity)
                 stocks_change = -quantity
             
             # 更新點數
@@ -509,14 +524,14 @@ class UserService:
                 user_id,
                 f"stock_{order_doc['side']}",
                 points_change,
-                f"股票{order_doc['side']} {quantity}股 @ {current_price}"
+                f"股票{order_doc['side']} {quantity}股 @ {execution_price}元"
             )
             
             return StockOrderResponse(
                 success=True,
                 order_id=str(result.inserted_id),
                 message="市價單執行成功",
-                executed_price=current_price,
+                executed_price=execution_price,
                 executed_quantity=quantity
             )
             
@@ -534,25 +549,156 @@ class UserService:
             # 取得最高買單和最低賣單
             buy_order = await self.db[Collections.STOCK_ORDERS].find_one(
                 {"side": "buy", "status": "pending"},
-                sort=[("price", -1)]
+                sort=[("price", -1), ("created_at", 1)]  # 價格高先，時間早先
             )
             
             sell_order = await self.db[Collections.STOCK_ORDERS].find_one(
                 {"side": "sell", "status": "pending"},
-                sort=[("price", 1)]
+                sort=[("price", 1), ("created_at", 1)]  # 價格低先，時間早先
             )
             
             # 如果買價 >= 賣價，則成交
             if buy_order and sell_order and buy_order["price"] >= sell_order["price"]:
                 await self._execute_matched_orders(buy_order, sell_order)
+                # 遞归呼叫，繼續撮合下一筆
+                await self._try_match_orders()
         
         except Exception as e:
             logger.error(f"Order matching failed: {e}")
     
     # 執行撮合的訂單
     async def _execute_matched_orders(self, buy_order: dict, sell_order: dict):
-        # 撮合邏輯 (目前先簡化)
-        pass
+        try:
+            # 成交價格：使用賣單價格（價格優先原則）
+            execution_price = sell_order["price"]
+            
+            # 成交數量：取較小的數量
+            buy_quantity = buy_order["quantity"]
+            sell_quantity = abs(sell_order["stock_amount"])  # 賣單是負數
+            execution_quantity = min(buy_quantity, sell_quantity)
+            
+            # 更新買單狀態
+            if buy_quantity == execution_quantity:
+                # 買單完全成交
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": buy_order["_id"]},
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "executed_at": datetime.now(timezone.utc),
+                            "price": execution_price
+                        }
+                    }
+                )
+            else:
+                # 買單部分成交
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": buy_order["_id"]},
+                    {
+                        "$inc": {"quantity": -execution_quantity, "stock_amount": -execution_quantity},
+                        "$set": {"updated_at": datetime.now(timezone.utc)}
+                    }
+                )
+                
+                # 建立成交記錄
+                completed_buy = buy_order.copy()
+                completed_buy.update({
+                    "_id": ObjectId(),
+                    "quantity": execution_quantity,
+                    "stock_amount": execution_quantity,
+                    "status": "completed",
+                    "executed_at": datetime.now(timezone.utc),
+                    "price": execution_price
+                })
+                await self.db[Collections.STOCK_ORDERS].insert_one(completed_buy)
+            
+            # 更新賣單狀態
+            if sell_quantity == execution_quantity:
+                # 賣單完全成交
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": sell_order["_id"]},
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "executed_at": datetime.now(timezone.utc),
+                            "price": execution_price
+                        }
+                    }
+                )
+            else:
+                # 賣單部分成交
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": sell_order["_id"]},
+                    {
+                        "$inc": {"quantity": -execution_quantity, "stock_amount": execution_quantity},  # 賣單是負數
+                        "$set": {"updated_at": datetime.now(timezone.utc)}
+                    }
+                )
+                
+                # 建立成交記錄
+                completed_sell = sell_order.copy()
+                completed_sell.update({
+                    "_id": ObjectId(),
+                    "quantity": execution_quantity,
+                    "stock_amount": -execution_quantity,
+                    "status": "completed",
+                    "executed_at": datetime.now(timezone.utc),
+                    "price": execution_price
+                })
+                await self.db[Collections.STOCK_ORDERS].insert_one(completed_sell)
+            
+            # 更新買方資產
+            buyer_id = buy_order["user_id"]
+            await self.db[Collections.USERS].update_one(
+                {"_id": buyer_id},
+                {"$inc": {"points": -int(execution_price * execution_quantity)}}
+            )
+            await self.db[Collections.STOCKS].update_one(
+                {"user_id": buyer_id},
+                {
+                    "$inc": {"stock_amount": execution_quantity},
+                    "$set": {"updated_at": datetime.now(timezone.utc)}
+                },
+                upsert=True
+            )
+            
+            # 更新賣方資產
+            seller_id = sell_order["user_id"]
+            await self.db[Collections.USERS].update_one(
+                {"_id": seller_id},
+                {"$inc": {"points": int(execution_price * execution_quantity)}}
+            )
+            await self.db[Collections.STOCKS].update_one(
+                {"user_id": seller_id},
+                {
+                    "$inc": {"stock_amount": -execution_quantity},
+                    "$set": {"updated_at": datetime.now(timezone.utc)}
+                },
+                upsert=True
+            )
+            
+            # 記錄交易日誌
+            await self._log_point_change(
+                buyer_id,
+                "stock_buy_matched",
+                -int(execution_price * execution_quantity),
+                f"撮合買入 {execution_quantity}股 @ {execution_price}元"
+            )
+            
+            await self._log_point_change(
+                seller_id,
+                "stock_sell_matched",
+                int(execution_price * execution_quantity),
+                f"撮合賣出 {execution_quantity}股 @ {execution_price}元"
+            )
+            
+            logger.info(
+                f"Order matched: {execution_quantity} shares @ {execution_price} "
+                f"(Buyer: {buyer_id}, Seller: {seller_id})"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to execute matched orders: {e}")
     
     # 記錄點數變化
     async def _log_point_change(self, user_id, change_type: str, amount: int, 

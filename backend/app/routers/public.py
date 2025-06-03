@@ -142,7 +142,7 @@ async def get_current_price(
     except Exception as e:
         logger.error(f"Failed to get current price: {e}")
         return {
-            "price": 20.0,
+            "price": 20,
             "change": "+0",
             "changePercent": "+0.0%"
         }
