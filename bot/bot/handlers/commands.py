@@ -87,9 +87,9 @@ async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
         return
 
-    if (context.args[0] == "buy" or context.args[0] == "sell") and len(context.args) <= 1:
-        is_sell_command = context.args[0] == "sell"
+    is_sell_command = context.args[0] == "sell"
 
+    if (context.args[0] == "buy" or context.args[0] == "sell") and len(context.args) <= 1:
         await update.message.reply_text(
             f"""
             ❓ 你要{is_sell_command and "賣出" or "買入"}多少張三幣指數股？
@@ -97,25 +97,35 @@ async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             """)
         return
 
+    if not (context.args[1]).isdigit():
+        await update.message.reply_text("❓ 可以給我一個正常的數字嗎")
+        return
+
+    quantity = int(context.args[1])
+
+    if quantity <= 0:
+        await update.message.reply_text("❓ 幽默，想要買 0 張股票")
+        return
+    elif quantity > 30:
+        await update.message.reply_text("😿 最多只能買 30 張股票")
+        return
+
+    buttons = [[
+        InlineKeyboardButton(text="❌ 取消", callback_data=f"cb:stock:{is_sell_command and "sell" or "buy"}:cancel:{update.effective_user.id}"),
+        InlineKeyboardButton(text="✅ 確定", callback_data=f"cb:stock:{is_sell_command and "sell" or "buy"}:proceed:{quantity}:{update.effective_user.id}")
+    ]]
+
     match context.args[0]:
         case "buy":
-            buttons = [
-                [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
-            ]
-
             await update.message.reply_text(
                 f"""
-                ✅ 成功買入 {context.args[1]} 張三幣指數股，你現在有 *好多張* 三幣指數股
+                🙀 是否真的要*購買 {context.args[1]} 張*三幣指數股？
                 """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
             return
         case "sell":
-            buttons = [
-                [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
-            ]
-
             await update.message.reply_text(
                 f"""
-                ✅ 成功賣出 {context.args[1]} 張三幣指數股，你現在有 *好少張* 三幣指數股
+                🙀 是否真的要*賣出 {context.args[1]} 張*三幣指數股？
                 """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
             return
         case "list":

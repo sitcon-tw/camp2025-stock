@@ -1,5 +1,5 @@
-from telegram.ext import CommandHandler, ChatMemberHandler, ContextTypes
-from bot.handlers import commands, welcome
+from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, ContextTypes
+from bot.handlers import commands, welcome, buttons
 from bot.instance import bot
 from utils.logger import setup_logger
 
@@ -13,6 +13,7 @@ async def initialize():
     bot.add_handler(CommandHandler("register", commands.register))
     bot.add_handler(CommandHandler("point", commands.point))
     bot.add_handler(CommandHandler("stock", commands.stock))
+    bot.add_handler(CallbackQueryHandler(buttons.callback))
     bot.add_handler(ChatMemberHandler(welcome.welcome_member, ChatMemberHandler.CHAT_MEMBER))
     bot.add_error_handler(error_handler)
 
