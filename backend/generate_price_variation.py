@@ -73,7 +73,7 @@ class PriceVariationGenerator:
         return users
     
     async def create_realistic_trades(self, count: int = 50):
-        """創建具有真實價格變化的交易記錄"""
+        """建立具有真實價格變化的交易記錄"""
         print(f"📈 產生 {count} 筆具有價格變化的交易記錄...")
         
         # 獲取使用者列表
@@ -106,7 +106,7 @@ class PriceVariationGenerator:
             side = random.choice(["buy", "sell"])
             trade_time = time_intervals[i]
             
-            # 創建交易記錄
+            # 建立交易記錄
             trade_record = {
                 "_id": str(uuid.uuid4()),
                 "username": username,
@@ -152,9 +152,9 @@ class PriceVariationGenerator:
                 print(f"✅ [{i+1:2d}] {username}: {action} {quantity}股 @${price:.2f}")
                 
             except Exception as e:
-                print(f"❌ [{i+1:2d}] 創建交易失敗: {e}")
+                print(f"❌ [{i+1:2d}] 建立交易失敗: {e}")
         
-        print(f"\n🎉 成功創建 {trades_created}/{count} 筆價格變化交易")
+        print(f"\n🎉 成功建立 {trades_created}/{count} 筆價格變化交易")
         
         # 顯示價格摘要
         print(f"\n📊 價格變化摘要:")

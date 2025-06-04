@@ -51,7 +51,7 @@ class AdminService:
     #　查詢使用者資產明細
     async def get_user_details(self, username: Optional[str] = None) -> List[UserAssetDetail]:
         try:
-            # 構建查詢條件 - 適配新的 ID-based 系統
+            # 構建查詢條件 -  ID-based 系統
             query = {}
             if username:
                 # 支援用 ID 或姓名查詢
@@ -319,15 +319,17 @@ class AdminService:
             users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1})
             users = await users_cursor.to_list(length=None)
             
-            result = [
-                {
-                    "id": user["id"],
-                    "username": user["name"],  # 為了前端兼容性，保持 username 字段
-                    "name": user["name"],       # 新的 name 字段
+            result = []
+            for user in users:
+                user_id = user.get("id", user.get("username", str(user.get("_id", "unknown"))))
+                user_name = user.get("name", user.get("username", "Unknown"))
+                
+                result.append({
+                    "id": user_id,
+                    "username": user_name,  # 為了前端相容性，保持 username 
+                    "name": user_name,       # 新的 name 字段
                     "team": user.get("team", "Unknown")
-                } 
-                for user in users
-            ]
+                })
             logger.info(f"Retrieved {len(result)} users")
             return result
             
@@ -338,11 +340,28 @@ class AdminService:
     # 列出所有團隊，回傳其名稱和成員數量
     async def list_all_teams(self) -> List[Dict[str, str]]:
         try:
-            teams_cursor = self.db[Collections.GROUPS].find({}, {"name": 1, "member_count": 1})
-            teams = await teams_cursor.to_list(length=None)
+            # 從 USERS 集合中統計實際的團隊資訊
+            pipeline = [
+                # 過濾有團隊資訊的使用者
+                {"$match": {"team": {"$ne": None, "$exists": True}}},
+                # 按團隊分組並計算成員數量
+                {"$group": {"_id": "$team", "member_count": {"$sum": 1}}},
+                # 按成員數量降序排列
+                {"$sort": {"member_count": -1}}
+            ]
             
-            result = [{"name": team["name"], "member_count": team.get("member_count", 0)} for team in teams]
-            logger.info(f"Retrieved {len(result)} groups")
+            team_stats = await self.db[Collections.USERS].aggregate(pipeline).to_list(None)
+            
+            # 轉換為期望的格式
+            result = [
+                {
+                    "name": stat["_id"], 
+                    "member_count": stat["member_count"]
+                } 
+                for stat in team_stats
+            ]
+            
+            logger.info(f"Retrieved {len(result)} teams from user data")
             return result
             
         except Exception as e:

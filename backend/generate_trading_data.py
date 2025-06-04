@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 股票交易資料產生器
-創建100筆交易資料來測試API和填充資料庫
+建立100筆交易資料來測試API和填充資料庫
 """
 
 import requests
@@ -20,8 +20,8 @@ class TradingDataGenerator:
         self.tokens = {}
         
     def create_users(self, count: int = 10) -> bool:
-        """創建測試使用者"""
-        print(f"📝 創建 {count} 個測試使用者...")
+        """建立測試使用者"""
+        print(f"📝 建立 {count} 個測試使用者...")
         
         teams = ["火箭隊", "閃電隊", "雷神隊", "極速隊", "無敵隊"]
         
@@ -55,7 +55,7 @@ class TradingDataGenerator:
                     print(f"❌ 使用者 {username} 註冊請求失敗: {response.status_code}")
                     
             except Exception as e:
-                print(f"❌ 創建使用者 {username} 異常: {e}")
+                print(f"❌ 建立使用者 {username} 異常: {e}")
                 
             # 稍微延遲避免過於頻繁的請求
             time.sleep(0.1)
@@ -113,8 +113,8 @@ class TradingDataGenerator:
         return round(price, 2)
     
     def create_trades(self, count: int = 100) -> int:
-        """創建指定數量的交易"""
-        print(f"📈 開始創建 {count} 筆交易...")
+        """建立指定數量的交易"""
+        print(f"📈 開始建立 {count} 筆交易...")
         
         if not self.tokens:
             print("❌ 沒有可用的使用者token，無法進行交易")
@@ -301,9 +301,9 @@ def main():
     
     generator = TradingDataGenerator()
     
-    # 1. 創建使用者
+    # 1. 建立使用者
     if not generator.create_users(10):
-        print("❌ 創建使用者失敗，退出程序")
+        print("❌ 建立使用者失敗，退出程序")
         return
     
     print("\n" + "=" * 50)
@@ -320,7 +320,7 @@ def main():
     
     print("\n" + "=" * 50)
     print(f"🎉 交易產生完成!")
-    print(f"   ✅ 成功創建: {success_count}/100 筆交易")
+    print(f"   ✅ 成功建立: {success_count}/100 筆交易")
     
     # 4. 顯示市場摘要
     generator.show_market_summary()
