@@ -51,10 +51,16 @@ class AdminService:
     #　查詢使用者資產明細
     async def get_user_details(self, username: Optional[str] = None) -> List[UserAssetDetail]:
         try:
-            # 構建查詢條件
+            # 構建查詢條件 - 適配新的 ID-based 系統
             query = {}
             if username:
-                query["username"] = username
+                # 支援用 ID 或姓名查詢
+                query = {
+                    "$or": [
+                        {"name": username},
+                        {"id": username}
+                    ]
+                }
             
             # 查詢使用者資料
             users_cursor = self.db[Collections.USERS].find(query)
@@ -83,7 +89,7 @@ class AdminService:
                 avg_cost = await self._calculate_avg_cost(user["_id"])
                 
                 user_detail = UserAssetDetail(
-                    username=user.get("username", user.get("name", "Unknown")),
+                    username=user.get("name", "Unknown"),  # 使用新的 name 字段
                     team=user.get("team", "Unknown"),
                     points=user.get("points", 0),
                     stocks=stocks,
@@ -106,10 +112,13 @@ class AdminService:
     async def give_points(self, request: GivePointsRequest) -> GivePointsResponse:
         try:
             if request.type == "user":
-                # 給個人點數
-                user = await self.db[Collections.USERS].find_one(
-                    {"username": request.username}
-                )
+                # 給個人點數 - 適配新的 ID-based 系統
+                user = await self.db[Collections.USERS].find_one({
+                    "$or": [
+                        {"name": request.username},
+                        {"id": request.username}
+                    ]
+                })
                 if not user:
                     raise UserNotFoundException(request.username)
                 
@@ -306,10 +315,19 @@ class AdminService:
     # 列出所有學員，回傳其使用者名稱和所屬隊伍
     async def list_all_users(self) -> List[Dict[str, str]]:
         try:
-            users_cursor = self.db[Collections.USERS].find({}, {"username": 1, "team": 1})
+            # 更新為新的 ID-based 系統字段
+            users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1})
             users = await users_cursor.to_list(length=None)
             
-            result = [{"username": user["username"], "team": user.get("team", "Unknown")} for user in users]
+            result = [
+                {
+                    "id": user["id"],
+                    "username": user["name"],  # 為了前端兼容性，保持 username 字段
+                    "name": user["name"],       # 新的 name 字段
+                    "team": user.get("team", "Unknown")
+                } 
+                for user in users
+            ]
             logger.info(f"Retrieved {len(result)} users")
             return result
             

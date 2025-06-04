@@ -181,7 +181,7 @@ class UserService:
             total_value = user.get("points", 0) + stock_value
             
             return UserPortfolio(
-                username=user["username"],
+                username=user.get("name", user.get("id", "unknown")),
                 points=user.get("points", 0),
                 stocks=stocks,
                 stockValue=stock_value,
@@ -289,9 +289,12 @@ class UserService:
                     message="發送方使用者不存在"
                 )
             
-            # 取得接收方使用者
+            # 取得接收方使用者 - 改為支援name或id查詢
             to_user = await self.db[Collections.USERS].find_one({
-                "username": request.to_username
+                "$or": [
+                    {"name": request.to_username},
+                    {"id": request.to_username}
+                ]
             })
             if not to_user:
                 return TransferResponse(
@@ -330,7 +333,7 @@ class UserService:
                 from_user_oid,
                 "transfer_out",
                 -total_deduct,
-                f"轉帳給 {request.to_username} (含手續費 {fee})",
+                f"轉帳給 {to_user.get('name', to_user.get('id', request.to_username))} (含手續費 {fee})",
                 transaction_id
             )
             
@@ -338,7 +341,7 @@ class UserService:
                 to_user["_id"],
                 "transfer_in",
                 request.amount,
-                f"收到來自 {from_user['username']} 的轉帳",
+                f"收到來自 {from_user.get('name', from_user.get('id', 'unknown'))} 的轉帳",
                 transaction_id
             )
             
@@ -412,8 +415,13 @@ class UserService:
     # ========== BOT 專用方法 - 基於用戶名查詢 ==========
     
     async def _get_user_by_username(self, username: str):
-        """根據用戶名查詢使用者"""
-        user = await self.db[Collections.USERS].find_one({"username": username})
+        """根據用戶名或ID查詢使用者"""
+        user = await self.db[Collections.USERS].find_one({
+            "$or": [
+                {"name": username},
+                {"id": username}
+            ]
+        })
         if not user:
             raise HTTPException(status_code=404, detail=f"使用者 '{username}' 不存在")
         return user
@@ -468,10 +476,9 @@ class UserService:
         try:
             user = await self._get_user_by_username(username)
             return {
-                "username": user.get("username"),
-                "email": user.get("email"),
+                "id": user.get("id"),
+                "name": user.get("name"),
                 "team": user.get("team"),
-                "points": user.get("points", 0),
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
             }
         except Exception as e:
@@ -732,3 +739,127 @@ class UserService:
             
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
+    
+    # ========== 新增學員管理方法 ==========
+    
+    async def create_student(self, student_id: str, username: str) -> bool:
+        """
+        建立新學員
+        
+        Args:
+            student_id: 學員ID（唯一不變的識別碼）
+            username: 學員姓名
+            
+        Returns:
+            bool: 是否建立成功
+        """
+        try:
+            # 檢查是否已存在
+            existing_student = await self.db[Collections.USERS].find_one({
+                "id": student_id
+            })
+            if existing_student:
+                logger.warning(f"Student with id {student_id} already exists")
+                return False
+            
+            # 建立學員記錄
+            student_doc = {
+                "id": student_id,
+                "name": username,
+                "team": None,  # 等待後續更新
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            result = await self.db[Collections.USERS].insert_one(student_doc)
+            
+            if result.inserted_id:
+                logger.info(f"Student created successfully: {student_id} - {username}")
+                return True
+            else:
+                logger.error(f"Failed to create student: {student_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error creating student {student_id}: {e}")
+            return False
+    
+    async def update_students(self, student_data: List[dict]) -> dict:
+        """
+        批量更新學員資料
+        
+        Args:
+            student_data: 學員資料列表，包含 id, name, team
+            
+        Returns:
+            dict: 更新結果和學生列表
+        """
+        try:
+            updated_count = 0
+            errors = []
+            
+            # 批量更新學員資料
+            for student in student_data:
+                try:
+                    result = await self.db[Collections.USERS].update_one(
+                        {"id": student["id"]},
+                        {
+                            "$set": {
+                                "name": student["name"],
+                                "team": student["team"],
+                                "updated_at": datetime.now(timezone.utc)
+                            }
+                        },
+                        upsert=False  # 不建立新記錄，只更新現有記錄
+                    )
+                    
+                    if result.matched_count > 0:
+                        updated_count += 1
+                        logger.info(f"Updated student: {student['id']} - {student['name']} - {student['team']}")
+                    else:
+                        errors.append(f"Student not found: {student['id']}")
+                        logger.warning(f"Student not found for update: {student['id']}")
+                        
+                except Exception as e:
+                    error_msg = f"Error updating student {student['id']}: {e}"
+                    errors.append(error_msg)
+                    logger.error(error_msg)
+            
+            # 獲取更新後的學生列表
+            students_cursor = self.db[Collections.USERS].find({}, {
+                "_id": 0,
+                "id": 1,
+                "name": 1,
+                "team": 1
+            })
+            
+            students = []
+            async for student in students_cursor:
+                students.append({
+                    "id": student["id"],
+                    "name": student["name"],
+                    "team": student.get("team")
+                })
+            
+            # 準備回應訊息
+            message = f"成功更新 {updated_count} 位學員"
+            if errors:
+                message += f"，{len(errors)} 個錯誤"
+            
+            return {
+                "success": True,
+                "message": message,
+                "students": students,
+                "updated_count": updated_count,
+                "errors": errors
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in batch update students: {e}")
+            return {
+                "success": False,
+                "message": f"批量更新失敗: {str(e)}",
+                "students": [],
+                "updated_count": 0,
+                "errors": [str(e)]
+            }
