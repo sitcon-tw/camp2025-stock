@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.user_service import UserService, get_user_service
 from app.schemas.bot import (
-    BotUserRegistrationRequest, BotStockOrderRequest, BotTransferRequest,
+    BotStockOrderRequest, BotTransferRequest,
     BotPortfolioRequest, BotPointHistoryRequest, BotStockOrdersRequest,
     BotProfileRequest, TelegramWebhookRequest, BroadcastRequest, BroadcastAllRequest
 )
@@ -17,42 +17,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
-# ========== BOT 使用者註冊 ==========
-
-@router.post(
-    "/register",
-    response_model=UserRegistrationResponse,
-    summary="BOT 使用者註冊",
-    description="透過 BOT 註冊新使用者帳號"
-)
-async def bot_register_user(
-    request: BotUserRegistrationRequest,
-    token_verified: bool = Depends(verify_bot_token),
-    user_service: UserService = Depends(get_user_service)
-) -> UserRegistrationResponse:
-    """
-    BOT 使用者註冊
-    
-    Args:
-        request: BOT 註冊請求，包含 from_user 和使用者資訊
-        token_verified: token 驗證結果（透過 header 傳入）
-        
-    Returns:
-        註冊結果
-    """
-    # 將 BOT 請求轉換為標準請求，使用 from_user 作為 username
-    from app.schemas.user import UserRegistrationRequest
-    
-    standard_request = UserRegistrationRequest(
-        username=request.from_user,  # 直接使用 from_user 作為 username
-        email=request.email or f"{request.from_user}@temp.local",  # 如果沒有 email，使用臨時 email
-        team=request.team,
-        activation_code=request.activation_code,
-        telegram_id=request.telegram_id
-    )
-    
-    return await user_service.register_user(standard_request)
 
 
 # ========== BOT 使用者資產管理 ==========

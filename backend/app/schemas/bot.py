@@ -8,24 +8,6 @@ from app.schemas.user import (
 
 # ========== BOT 專用請求模型 ==========
 
-class BotUserRegistrationRequest(BaseModel):
-    """BOT 使用者註冊請求 - 包含 from_user"""
-    from_user: str = Field(..., min_length=2, max_length=50, description="要註冊的使用者名稱")
-    email: Optional[str] = Field(None, description="電子郵件")
-    team: str = Field(..., description="隊伍名稱")
-    activation_code: Optional[str] = Field(None, description="啟用代碼")
-    telegram_id: Optional[int] = Field(None, description="Telegram ID")
-    
-    @validator('email')
-    def validate_email(cls, v):
-        if v is None:
-            return v
-        import re
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(pattern, v):
-            raise ValueError('Invalid email format')
-        return v
-
 
 class BotStockOrderRequest(BaseModel):
     """BOT 股票訂單請求 - 包含 from_user"""
