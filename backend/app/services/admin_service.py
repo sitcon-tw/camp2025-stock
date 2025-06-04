@@ -315,8 +315,8 @@ class AdminService:
     # 列出所有學員，回傳其使用者名稱和所屬隊伍
     async def list_all_users(self) -> List[Dict[str, str]]:
         try:
-            # 更新為新的 ID-based 系統字段
-            users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1})
+            # 更新為新的 ID-based 系統字段，包含 enabled 狀態
+            users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1, "enabled": 1})
             users = await users_cursor.to_list(length=None)
             
             result = []
@@ -328,7 +328,8 @@ class AdminService:
                     "id": user_id,
                     "username": user_name,  # 為了前端相容性，保持 username 
                     "name": user_name,       # 新的 name 字段
-                    "team": user.get("team", "Unknown")
+                    "team": user.get("team", "Unknown"),
+                    "enabled": user.get("enabled", False)  # 新增啟用狀態
                 })
             logger.info(f"Retrieved {len(result)} users")
             return result
