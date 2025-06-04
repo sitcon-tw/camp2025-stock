@@ -100,7 +100,7 @@ export default function Home() {
                     <h3 className="text-2xl font-semibold text-[#AFE1F5] mb-4 text-center">關閉交易時間</h3>
                     {loading ? (
                         <div className="text-[#AFE1F5] text-center">載入中...</div>
-                    ) : (<div className="space-y-1 text-[#AFE1F5] text-lg font-bold">
+                    ) : (<div className="space-y-1 text-[#AFE1F5] text-lg font-bold text-center">
                         {getClosedTradingTimes().length > 0 ? (
                             getClosedTradingTimes().map((timeSlot, index) => (
                                 <p key={index}>
