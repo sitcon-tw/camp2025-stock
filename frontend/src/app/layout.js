@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "SITCON Camp 2025 股票系統",
-  description: "一個可以讓學員玩股票的東東",
+  title: "SITCON Camp 2025 點數系統",
+  description: "一個可以讓學員玩股票的點數系統",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Camp2025 股票",
+    title: "SITCON Camp 2025 點數系統",
   },
   icons: {
     icon: [
@@ -36,8 +36,8 @@ export const metadata = {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
-    "apple-mobile-web-app-title": "Camp2025 股票",
-    "application-name": "Camp2025 股票",
+    "apple-mobile-web-app-title": "SITCON Camp 2025 點數系統",
+    "application-name": "SITCON Camp 2025 點數系統",
     "msapplication-TileColor": "#565A70",
     "msapplication-TileImage": "/icons/icon-144x144.png",
     "theme-color": "#565A70",
@@ -53,7 +53,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#0f203e" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Camp2025 股票" />
+        <meta name="apple-mobile-web-app-title" content="SITCON Camp 2025 點數系統" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
