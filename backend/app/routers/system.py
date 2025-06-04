@@ -12,51 +12,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
-class RegistrationResponse(BaseModel):
-    """啟用回應"""
-    ok: bool
-    message: str
-
-
-@router.post(
-    "/users/register",
-    response_model=RegistrationResponse,
-    summary="學員啟用",
-    description="透過驗證碼啟用學員帳號（只需 ID 存在即可）"
-)
-async def register_student(
-    request: StudentActivationRequest,  # 使用正確的啟用模型
-    token_verified: bool = Depends(verify_bot_token),
-    user_service: UserService = Depends(get_user_service)
-) -> RegistrationResponse:
-    """
-    學員啟用（改為只需比對 ID 即可）
-    
-    Args:
-        request: 包含驗證碼(id)和姓名(name)的啟用請求
-        token_verified: token 驗證結果（透過 header 傳入）
-        
-    Returns:
-        啟用結果
-    """
-    try:
-        # 直接啟用學員（不需驗證姓名）
-        result = await user_service.activate_student(request.id)
-        
-        return RegistrationResponse(
-            ok=result["ok"],
-            message=result["message"]
-        )
-                
-    except Exception as e:
-        logger.error(f"學員啟用失敗: {str(e)}")
-        return RegistrationResponse(
-            ok=False,
-            message="啟用失敗，請聯繫管理員"
-        )
-
-
 # ========== 學員管理 API ==========
 
 @router.post(
