@@ -298,7 +298,7 @@ class PublicService:
             logger.error(f"Failed to get current stock price: {e}")
             return 20
     
-    # 取得歷史價格資料（僅使用真實交易資料）
+    # 取得歷史價格資料
     async def get_price_history(self, hours: int = 24) -> List[dict]:
         try:
             from datetime import timedelta
