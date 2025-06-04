@@ -10,7 +10,9 @@ import {
     updateMarketTimes,
     createAnnouncement,
     getStudents,
-    getTeams
+    getTeams,
+    getMarketStatus,
+    getTradingHours
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -24,11 +26,8 @@ export default function AdminPage() {
     const [givePointsForm, setGivePointsForm] = useState({
         type: 'user',
         username: ''
-    });
-    const [tradingLimitPercent, setTradingLimitPercent] = useState(10);
-    const [marketTimes, setMarketTimes] = useState([
-        { start: '7:00', end: '9:00', favorite: false }
-    ]);
+    }); const [tradingLimitPercent, setTradingLimitPercent] = useState(10);
+    const [marketTimes, setMarketTimes] = useState([]);
     const [announcementForm, setAnnouncementForm] = useState({
         title: '',
         message: '',
@@ -38,10 +37,12 @@ export default function AdminPage() {
     const [userSearchTerm, setUserSearchTerm] = useState('');
 
     // 學生和團隊列表
-    const [students, setStudents] = useState([]);
-    const [teams, setTeams] = useState([]);
+    const [students, setStudents] = useState([]); const [teams, setTeams] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+
+    // 市場狀態
+    const [marketStatus, setMarketStatus] = useState(null);
 
     // Add modal state
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
@@ -66,12 +67,13 @@ export default function AdminPage() {
         if (!isAdmin || !token) {
             router.push('/login');
             return;
-        } setAdminToken(token);
-        setIsLoggedIn(true);
+        } setAdminToken(token); setIsLoggedIn(true);
         fetchUserAssets(token);
         fetchSystemStats(token);
         fetchStudents(token);
         fetchTeams(token);
+        fetchMarketStatus();
+        fetchTradingHours();
     }, [router]);
 
     // 管理員登出
@@ -114,15 +116,44 @@ export default function AdminPage() {
         } catch (error) {
             console.error('獲取學生列表失敗:', error);
         }
-    };
-
-    // 獲取團隊列表
+    };    // 獲取團隊列表
     const fetchTeams = async (token) => {
         try {
             const data = await getTeams(token);
             setTeams(data);
         } catch (error) {
             console.error('獲取團隊列表失敗:', error);
+        }
+    };    // 獲取市場狀態
+    const fetchMarketStatus = async () => {
+        try {
+            const data = await getMarketStatus();
+            setMarketStatus(data);
+        } catch (error) {
+            console.error('獲取市場狀態失敗:', error);
+        }
+    };
+
+    // 獲取當前交易時間
+    const fetchTradingHours = async () => {
+        try {
+            const data = await getTradingHours();
+            if (data.tradingHours && data.tradingHours.length > 0) {
+                // 將時間戳轉換為 HH:MM 格式
+                const formattedTimes = data.tradingHours.map(slot => {
+                    const startDate = new Date(slot.start * 1000);
+                    const endDate = new Date(slot.end * 1000);
+                    return {
+                        start: startDate.toTimeString().slice(0, 5), // HH:MM 格式
+                        end: endDate.toTimeString().slice(0, 5),
+                        favorite: false
+                    };
+                });
+                setMarketTimes(formattedTimes);
+            }
+        } catch (error) {
+            console.error('獲取交易時間失敗:', error);
+            // 如果獲取失敗，保持空數組
         }
     };
 
@@ -716,8 +747,7 @@ export default function AdminPage() {
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl col-span-2">
                                     <div className="text-2xl font-bold text-red-400">{systemStats.total_trades}</div>
                                     <div className="text-gray-400 text-sm">總交易數</div>
-                                </div>
-                            </div>
+                                </div>                            </div>
                         </div>
                     )}
                 </div>

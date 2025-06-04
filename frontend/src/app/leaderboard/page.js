@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getLeaderboard } from '@/lib/api';
 
 function RankingItem({ rank, user, isGroup = false }) {
     const getRankIcon = (rank) => {
@@ -55,20 +56,12 @@ export default function Leaderboard() {
     const [groupLeaderboard, setGroupLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [lastUpdated, setLastUpdated] = useState(new Date());
-
-    const fetchLeaderboard = async () => {
+    const [lastUpdated, setLastUpdated] = useState(new Date()); const fetchLeaderboard = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/leaderboard`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await getLeaderboard();
             setLeaderboardData(data);
 
             const groupData = processGroupLeaderboard(data);
@@ -86,7 +79,6 @@ export default function Leaderboard() {
         }
     };
 
-    // 處理團隊排行榜資料
     const processGroupLeaderboard = (individualData) => {
         const teamMap = new Map();
 
@@ -124,7 +116,6 @@ export default function Leaderboard() {
     useEffect(() => {
         fetchLeaderboard();
 
-        // 每30秒自動更新
         const interval = setInterval(() => {
             fetchLeaderboard();
         }, 30000);

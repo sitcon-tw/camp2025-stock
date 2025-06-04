@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { getPriceSummary, getMarketStatus } from '@/lib/api'
 
 export default function HeaderBar() {
   const [priceData, setPriceData] = useState({
@@ -7,18 +8,15 @@ export default function HeaderBar() {
     loading: true
   });
 
-  // 獲取價格摘要資料
+  const [marketStatus, setMarketStatus] = useState({
+    isOpen: false,
+    loading: true
+  });
+
   const fetchPriceData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/price/summary`);
+      const data = await getPriceSummary();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // 解析 changePercent 字串（移除 % 符號並轉換為數字）
       const changePercentNum = parseFloat(data.changePercent?.replace('%', '') || '0');
 
       setPriceData({
@@ -28,7 +26,6 @@ export default function HeaderBar() {
       });
     } catch (error) {
       console.error('獲取價格資料失敗:', error);
-      // API 失敗時使用預設值
       setPriceData({
         currentPrice: 20.0,
         changePercent: 0,
@@ -37,12 +34,30 @@ export default function HeaderBar() {
     }
   };
 
-  // 初始載入和定期更新
+  const fetchMarketStatus = async () => {
+    try {
+      const data = await getMarketStatus();
+      setMarketStatus({
+        isOpen: data.isOpen,
+        loading: false
+      });
+    } catch (error) {
+      console.error('獲取市場狀態失敗:', error);
+      setMarketStatus({
+        isOpen: false,
+        loading: false
+      });
+    }
+  };
+
   useEffect(() => {
     fetchPriceData();
+    fetchMarketStatus();
 
-    // 每 30 秒更新一次
-    const interval = setInterval(fetchPriceData, 30000);
+    const interval = setInterval(() => {
+      fetchPriceData();
+      fetchMarketStatus();
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -81,11 +96,24 @@ export default function HeaderBar() {
                 }`}
             >
               <span className='text-xs'>{isPositive ? "▲ " : isNegative ? "▼ " : ""}</span>
-              {Math.abs(changePercent).toFixed(1)}% (今天)
-            </h1>
+              {Math.abs(changePercent).toFixed(1)}% (今天)            </h1>
           </>
         )}
-        <h1 className="text-[#82bee2] text-md font-bold mt-1">開放交易</h1>
+        {/* 動態市場狀態 */}
+        <div className="flex items-center space-x-2 mt-1">
+          {marketStatus.loading ? (
+            <div className="animate-pulse">
+              <div className="h-4 w-16 bg-[#82bee2]/20 rounded"></div>
+            </div>
+          ) : (
+            <>
+              <div className={`w-2 h-2 rounded-full ${marketStatus.isOpen ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <h1 className={`text-md font-bold ${marketStatus.isOpen ? 'text-green-400' : 'text-red-400'}`}>
+                {marketStatus.isOpen ? '開放交易' : '交易關閉'}
+              </h1>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

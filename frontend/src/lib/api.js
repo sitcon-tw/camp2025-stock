@@ -1,5 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://visit-bar-spouse-tournaments.trycloudflare.com';
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://specs-about-blogging-slovenia.trycloudflare.com';
 
 // API 請求通用函數
 async function apiRequest(endpoint, options = {}) {
@@ -57,7 +57,11 @@ export async function getMarketStatus() {
   return apiRequest('/api/status');
 }
 
-// 管理員登入
+// 取得交易時間列表
+export async function getTradingHours() {
+  return apiRequest('/api/trading-hours');
+}
+
 export async function adminLogin(password) {
   return apiRequest('/api/admin/login', {
     method: 'POST',
@@ -65,7 +69,6 @@ export async function adminLogin(password) {
   });
 }
 
-// 管理員相關 API
 export async function getUserAssets(token, searchUser = null) {
   const url = searchUser ? `/api/admin/user?user=${encodeURIComponent(searchUser)}` : '/api/admin/user';
   return apiRequest(url, {
@@ -129,7 +132,6 @@ export async function createAnnouncement(token, title, message, broadcast) {
   });
 }
 
-// 獲取所有學生列表
 export async function getStudents(token) {
   return apiRequest('/api/admin/students', {
     headers: {
@@ -139,7 +141,6 @@ export async function getStudents(token) {
   });
 }
 
-// 獲取所有團隊列表
 export async function getTeams(token) {
   return apiRequest('/api/admin/teams', {
     headers: {
