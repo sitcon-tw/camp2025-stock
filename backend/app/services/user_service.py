@@ -563,13 +563,30 @@ class UserService:
     async def _is_market_open(self) -> bool:
         """檢查市場是否開放交易"""
         try:
-            # 簡化實作：假設市場總是開放
-            # 實際應用中可以根據時間或配置來判斷
-            return True
+            from datetime import datetime, timezone
+            
+            # 取得市場開放時間配置
+            market_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "market_hours"}
+            )
+            
+            if not market_config or "openTime" not in market_config:
+                # 如果沒有配置，預設市場開放
+                return True
+            
+            current_timestamp = int(datetime.now(timezone.utc).timestamp())
+            
+            # 檢查目前是否在任何一個開放時間段內
+            for slot in market_config["openTime"]:
+                if slot["start"] <= current_timestamp <= slot["end"]:
+                    return True
+            
+            return False
             
         except Exception as e:
             logger.error(f"Failed to check market status: {e}")
-            return False
+            # 出錯時預設開放，避免影響交易
+            return True
     
     # 執行市價單
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
