@@ -23,7 +23,8 @@ SITCON Camp 2025 點數系統
 ```
 .
 ├── frontend/          # Next.js 前端網頁
-├── backend/           # FastAPI 後端 / Telegram bot 資料夾
+├── backend/           # FastAPI 後端
+├── bot/               # Telegram bot 資料夾
 ```
 
 ## 使用教學
