@@ -4,17 +4,6 @@ from typing import List, Optional
 
 # ========== 系統使用者管理相關模型 ==========
 
-class StudentCreateRequest(BaseModel):
-    """建立學員請求"""
-    id: str = Field(..., description="學員ID（不會變更的唯一識別碼）")
-    username: str = Field(..., description="學員姓名")
-
-
-class StudentCreateResponse(BaseModel):
-    """建立學員回應"""
-    ok: bool = Field(..., description="是否成功")
-    name: str = Field(..., description="學員姓名")
-
 
 class StudentUpdateData(BaseModel):
     """學員更新資料"""
@@ -40,3 +29,15 @@ class StudentUpdateResponse(BaseModel):
     ok: bool = Field(..., description="是否成功")
     message: str = Field(..., description="更新狀況")
     students: List[StudentInfo] = Field(..., description="學生列表")
+
+
+class StudentActivationRequest(BaseModel):
+    """學員啟用請求"""
+    id: str = Field(..., description="學員ID（驗證碼）")
+    name: Optional[str] = Field("", description="學員姓名（可選，可為空字串）")
+
+
+class StudentActivationResponse(BaseModel):
+    """學員啟用回應"""
+    ok: bool = Field(..., description="是否成功")
+    message: str = Field(..., description="啟用結果訊息")

@@ -786,7 +786,7 @@ class UserService:
     
     async def update_students(self, student_data: List[dict]) -> dict:
         """
-        批量更新學員資料
+        批量更新學員資料（支援新增學員，enabled 預設 false）
         
         Args:
             student_data: 學員資料列表，包含 id, name, team
@@ -796,6 +796,7 @@ class UserService:
         """
         try:
             updated_count = 0
+            created_count = 0
             errors = []
             
             # 批量更新學員資料
@@ -808,41 +809,60 @@ class UserService:
                                 "name": student["name"],
                                 "team": student["team"],
                                 "updated_at": datetime.now(timezone.utc)
+                            },
+                            "$setOnInsert": {
+                                "enabled": False,  # 新學員預設未啟用
+                                "points": 100,     # 初始點數
+                                "created_at": datetime.now(timezone.utc)
                             }
                         },
-                        upsert=False  # 不建立新記錄，只更新現有記錄
+                        upsert=True  # 允許建立新記錄
                     )
                     
                     if result.matched_count > 0:
                         updated_count += 1
                         logger.info(f"Updated student: {student['id']} - {student['name']} - {student['team']}")
-                    else:
-                        errors.append(f"Student not found: {student['id']}")
-                        logger.warning(f"Student not found for update: {student['id']}")
+                    elif result.upserted_id:
+                        created_count += 1
+                        logger.info(f"Created student: {student['id']} - {student['name']} - {student['team']}")
+                        
+                        # 為新學員初始化股票持有記錄
+                        await self.db[Collections.STOCKS].insert_one({
+                            "user_id": result.upserted_id,
+                            "stock_amount": 0,
+                            "updated_at": datetime.now(timezone.utc)
+                        })
                         
                 except Exception as e:
                     error_msg = f"Error updating student {student['id']}: {e}"
                     errors.append(error_msg)
                     logger.error(error_msg)
             
-            # 獲取更新後的學生列表
-            students_cursor = self.db[Collections.USERS].find({}, {
-                "_id": 0,
-                "id": 1,
-                "name": 1,
-                "team": 1
-            })
+            # 獲取更新後的學生列表（只包含有 id 欄位的學員）
+            students_cursor = self.db[Collections.USERS].find(
+                {"id": {"$exists": True}},  # 只查詢有 id 欄位的文件
+                {
+                    "_id": 0,
+                    "id": 1,
+                    "name": 1,
+                    "team": 1,
+                    "enabled": 1
+                }
+            )
             
             students = []
             async for student in students_cursor:
                 students.append({
-                    "id": student["id"],
-                    "name": student["name"],
-                    "team": student.get("team")
+                    "id": student.get("id", ""),
+                    "name": student.get("name", ""),
+                    "team": student.get("team", ""),
+                    "enabled": student.get("enabled", False)
                 })
             
             # 準備回應訊息
             message = f"成功更新 {updated_count} 位學員"
+            if created_count > 0:
+                message += f"，新增 {created_count} 位學員"
             if errors:
                 message += f"，{len(errors)} 個錯誤"
             
@@ -862,4 +882,63 @@ class UserService:
                 "students": [],
                 "updated_count": 0,
                 "errors": [str(e)]
+            }
+    
+    async def activate_student(self, student_id: str) -> dict:
+        """
+        啟用學員帳號（只需 ID 存在即可）
+        
+        Args:
+            student_id: 學員 ID（驗證碼）
+            
+        Returns:
+            dict: 啟用結果
+        """
+        try:
+            # 查找學員是否存在
+            student = await self.db[Collections.USERS].find_one({
+                "id": student_id
+            })
+            
+            if not student:
+                return {
+                    "ok": False,
+                    "message": f"學員 ID '{student_id}' 不存在"
+                }
+            
+            # 檢查是否已經啟用
+            if student.get("enabled", False):
+                return {
+                    "ok": True,
+                    "message": f"學員 {student.get('name', student_id)} 已經啟用"
+                }
+            
+            # 啟用學員帳號
+            result = await self.db[Collections.USERS].update_one(
+                {"id": student_id},
+                {
+                    "$set": {
+                        "enabled": True,
+                        "activated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"Student activated: {student_id} - {student.get('name', 'Unknown')}")
+                return {
+                    "ok": True,
+                    "message": f"成功啟用學員 {student.get('name', student_id)}"
+                }
+            else:
+                return {
+                    "ok": False,
+                    "message": "啟用失敗，請聯繫管理員"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error activating student {student_id}: {e}")
+            return {
+                "ok": False,
+                "message": f"啟用失敗: {str(e)}"
             }

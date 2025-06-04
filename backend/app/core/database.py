@@ -76,6 +76,7 @@ async def init_database_indexes():
         await database[Collections.USERS].create_index("id", unique=True)  # 永久ID索引
         await database[Collections.USERS].create_index("name")  # 用戶名稱索引（非唯一）
         await database[Collections.USERS].create_index("team")  # 隊伍索引
+        await database[Collections.USERS].create_index("enabled")  # 啟用狀態索引
         
         # point_logs
         await database[Collections.POINT_LOGS].create_index("user_id")

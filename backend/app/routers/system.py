@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.user_service import UserService, get_user_service
 from app.schemas.bot import BotUserRegistrationRequest
 from app.schemas.system import (
-    StudentCreateRequest, StudentCreateResponse,
-    StudentUpdateRequest, StudentUpdateResponse, StudentInfo
+    StudentUpdateRequest, StudentUpdateResponse, StudentInfo,
+    StudentActivationRequest, StudentActivationResponse
 )
 from app.core.security import verify_bot_token
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 class RegistrationResponse(BaseModel):
-    """註冊回應"""
+    """啟用回應"""
     ok: bool
     message: str
 
@@ -23,8 +23,8 @@ class RegistrationResponse(BaseModel):
 @router.post(
     "/users/register",
     response_model=RegistrationResponse,
-    summary="學員註冊",
-    description="透過驗證碼和姓名註冊新學員"
+    summary="學員啟用",
+    description="透過驗證碼啟用學員帳號（只需 ID 存在即可）"
 )
 async def register_student(
     request: BotUserRegistrationRequest,
@@ -32,99 +32,69 @@ async def register_student(
     user_service: UserService = Depends(get_user_service)
 ) -> RegistrationResponse:
     """
-    學員註冊
+    學員啟用（改為只需比對 ID 即可）
     
     Args:
-        request: 包含驗證碼(id)和姓名(name)的註冊請求
+        request: 包含驗證碼(id)和姓名(name)的啟用請求
         token_verified: token 驗證結果（透過 header 傳入）
         
     Returns:
-        註冊結果
+        啟用結果
     """
     try:
-        # 將學員註冊請求轉換為標準請求
-        from app.schemas.user import UserRegistrationRequest
+        # 直接啟用學員（不需驗證姓名）
+        result = await user_service.activate_student(request.id)
         
-        # 使用驗證碼作為 username，姓名作為顯示名稱
-        standard_request = UserRegistrationRequest(
-            username=request.id,  # 使用驗證碼作為 username
-            email=f"{request.id}@student.local",  # 生成臨時 email
-            team=request.name,  # 使用姓名作為 team（可以後續調整）
-            activation_code=request.id,  # 使用驗證碼作為啟用代碼
-            telegram_id=None
+        return RegistrationResponse(
+            ok=result["ok"],
+            message=result["message"]
         )
-        
-        result = await user_service.register_user(standard_request)
-        
-        if result.success:
-            return RegistrationResponse(
-                ok=True,
-                message="成功註冊"
-            )
-        else:
-            # 如果註冊失敗（例如用戶已存在），也返回成功
-            if "已存在" in result.message:
-                return RegistrationResponse(
-                    ok=True,
-                    message="成功註冊"  # 統一返回成功訊息
-                )
-            else:
-                return RegistrationResponse(
-                    ok=False,
-                    message=result.message
-                )
                 
     except Exception as e:
-        logger.error(f"學員註冊失敗: {str(e)}")
+        logger.error(f"學員啟用失敗: {str(e)}")
         return RegistrationResponse(
             ok=False,
-            message="註冊失敗，請聯繫管理員"
+            message="啟用失敗，請聯繫管理員"
         )
 
 
-# ========== 新增學員管理 API ==========
+# ========== 學員管理 API ==========
 
 @router.post(
-    "/users/create",
-    response_model=StudentCreateResponse,
-    summary="新增學員",
-    description="新增學員到系統中"
+    "/users/activate",
+    response_model=StudentActivationResponse,
+    summary="啟用學員帳號",
+    description="透過驗證碼啟用學員帳號（只需 ID 存在即可）"
 )
-async def create_student(
-    request: StudentCreateRequest,
+async def activate_student(
+    request: StudentActivationRequest,
     token_verified: bool = Depends(verify_bot_token),
     user_service: UserService = Depends(get_user_service)
-) -> StudentCreateResponse:
+) -> StudentActivationResponse:
     """
-    新增學員
+    啟用學員帳號
     
     Args:
-        request: 包含學員ID和姓名的建立請求
+        request: 包含學員ID的啟用請求（name 可選）
         token_verified: token 驗證結果（透過 header 傳入）
         
     Returns:
-        建立結果
+        啟用結果
     """
     try:
-        # 建立學員記錄
-        result = await user_service.create_student(request.id, request.username)
+        # 啟用學員帳號（不驗證 name）
+        result = await user_service.activate_student(request.id)
         
-        if result:
-            return StudentCreateResponse(
-                ok=True,
-                name=request.username
-            )
-        else:
-            return StudentCreateResponse(
-                ok=False,
-                name=""
-            )
+        return StudentActivationResponse(
+            ok=result["ok"],
+            message=result["message"]
+        )
                 
     except Exception as e:
-        logger.error(f"學員建立失敗: {str(e)}")
+        logger.error(f"學員啟用失敗: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="建立失敗，請聯繫管理員"
+            detail="啟用失敗，請聯繫管理員"
         )
 
 
