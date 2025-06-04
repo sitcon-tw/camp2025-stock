@@ -35,9 +35,13 @@ async def error_handler(update: Optional[object], context: CallbackContext) -> N
         await context.bot.send_message(f"-{ERROR_CHANNEL}", "🙀 *世界崩塌了，喵喵大人跑出了錯誤！* 但是沒有 traceback 可以看")
 
     if crashed_message:
+        is_group = bool(getattr(crashed_message, "chat", "chat 為空").title)
+        chat_name = escape_markdown(getattr(getattr(crashed_message, "chat", "chat 為空"), "title", "群組無名稱") or
+                                    getattr(getattr(crashed_message, "chat", "chat 為空"), "first_name", "無使用者名稱"), 2)
+
         await context.bot.send_message(f"-{ERROR_CHANNEL}",
                                        f"""
-*觸發群組*: {escape_markdown(getattr(getattr(crashed_message, "chat", "chat 為空"), "title", "群組無名稱"), 2)}
+*觸發{"群組" if is_group else "__私訊__"}*: {chat_name}
 *觸發使用者首名*: {escape_markdown(getattr(getattr(crashed_message, "from_user", "from_user 為空"), "first_name", "使用者無名稱"), 2)}
 *觸發使用者名稱*: {escape_markdown(getattr(getattr(crashed_message, "from_user", "from_user 為空"), "username", "使用者無使用者名稱"), 2)}
 *觸發使用者 ID*: {getattr(getattr(crashed_message, "from_user", "from_user 為空"), "id", "使用者無 ID")}
