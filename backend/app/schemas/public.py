@@ -155,6 +155,17 @@ class MarketLimitResponse(BaseModel):
     ok: bool = Field(True, description="操作結果")
 
 
+# 公開公告資訊
+class PublicAnnouncement(BaseModel):
+    id: str = Field(..., description="公告ID")
+    title: str = Field(..., description="公告標題")
+    message: str = Field(..., description="公告內容")
+    created_at: str = Field(..., description="發布時間", alias="createdAt")
+    
+    class Config:
+        populate_by_name = True
+
+
 # 錯誤回應
 class ErrorResponse(BaseModel):
     detail: str = Field(..., description="錯誤詳情")

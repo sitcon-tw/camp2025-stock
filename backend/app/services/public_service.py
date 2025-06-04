@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException, status
 from app.core.database import get_database, Collections
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
-    MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot
+    MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot, PublicAnnouncement
 )
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
@@ -381,4 +381,43 @@ class PublicService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to retrieve trading hours"
+            )
+    
+    # 取得公開公告列表
+    async def get_public_announcements(self, limit: int = 10) -> List[PublicAnnouncement]:
+        """
+        取得公開公告列表
+        
+        Args:
+            limit: 查詢筆數限制，預設 10 筆
+            
+        Returns:
+            List[PublicAnnouncement]: 公告列表，按時間倒序排列
+        """
+        try:
+            # 查詢公告資料（按時間倒序）
+            announcements_cursor = self.db[Collections.ANNOUNCEMENTS].find().sort(
+                "created_at", -1
+            ).limit(limit)
+            
+            announcements = await announcements_cursor.to_list(length=None)
+            
+            # 轉換為 PublicAnnouncement 格式
+            result = []
+            for announcement in announcements:
+                result.append(PublicAnnouncement(
+                    id=str(announcement["_id"]),
+                    title=announcement.get("title", ""),
+                    message=announcement.get("message", ""),
+                    createdAt=announcement.get("created_at", datetime.now(timezone.utc)).isoformat()
+                ))
+            
+            logger.info(f"Retrieved {len(result)} public announcements")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get public announcements: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve announcements"
             )

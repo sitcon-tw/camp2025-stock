@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from app.services.public_service import PublicService, get_public_service
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
-    MarketStatus, TradingHoursResponse, ErrorResponse
+    MarketStatus, TradingHoursResponse, ErrorResponse, PublicAnnouncement
 )
 from typing import List
 import logging
@@ -232,3 +232,28 @@ async def get_price_history(
         List[dict]: 歷史價格資料列表，包含時間戳和價格
     """
     return await public_service.get_price_history(hours)
+
+
+@router.get(
+    "/announcements",
+    response_model=List[PublicAnnouncement],
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢公告列表",
+    description="查詢所有公開公告，按時間倒序排列"
+)
+async def get_announcements(
+    limit: int = Query(10, ge=1, le=50, description="查詢筆數限制（1-50筆）"),
+    public_service: PublicService = Depends(get_public_service)
+) -> List[PublicAnnouncement]:
+    """
+    查詢公告列表
+    
+    Args:
+        limit: 查詢筆數限制，預設10筆，最多50筆
+        
+    Returns:
+        List[PublicAnnouncement]: 公告列表，按時間倒序排列
+    """
+    return await public_service.get_public_announcements(limit)
