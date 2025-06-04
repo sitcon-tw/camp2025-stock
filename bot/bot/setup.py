@@ -1,12 +1,52 @@
-from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, CallbackContext
+from telegram.constants import ParseMode
+from telegram.helpers import escape_markdown
 from bot.handlers import commands, welcome, buttons
 from bot.instance import bot
 from utils.logger import setup_logger
+from dotenv import load_dotenv
+from os import environ
+from typing import Optional
+from traceback import format_exception
 
 logger = setup_logger(__name__)
+load_dotenv()
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error(f"Exception while handling an update: {context.error}")
+ERROR_CHANNEL = environ.get("ERROR_CHANNEL")
+
+async def error_handler(update: Optional[object], context: CallbackContext) -> None:
+    crashed_message = getattr(update, "message", None)
+
+    if context.error:
+        trace = format_exception(type(context.error), context.error, context.error.__traceback__)
+
+        logger.error(f"An exception occurred: {trace[-1].replace("\n", "")}", exc_info=(type(context.error), context.error, context.error))
+
+        # Bot API uses group ID with a negative sign
+        await context.bot.send_message(f"-{ERROR_CHANNEL}",
+                                       f"""
+                                          🙀 *世界崩塌了，喵喵大人跑出了錯誤！*
+
+```
+{"".join(trace)}
+```
+                                          """, parse_mode=ParseMode.MARKDOWN_V2)
+    else:
+        await context.bot.send_message(f"-{ERROR_CHANNEL}", "🙀 *世界崩塌了，喵喵大人跑出了錯誤！* 但是沒有 traceback 可以看")
+
+    if crashed_message:
+        await context.bot.send_message(f"-{ERROR_CHANNEL}",
+                                       f"""
+*觸發群組*: {escape_markdown(getattr(getattr(crashed_message, "chat", "chat 為空"), "title", "群組無名稱"), 2)}
+*觸發使用者首名*: {escape_markdown(getattr(getattr(crashed_message, "from_user", "from_user 為空"), "first_name", "使用者無名稱"), 2)}
+*觸發使用者名稱*: {escape_markdown(getattr(getattr(crashed_message, "from_user", "from_user 為空"), "username", "使用者無使用者名稱"), 2)}
+*觸發使用者 ID*: {getattr(getattr(crashed_message, "from_user", "from_user 為空"), "id", "使用者無 ID")}
+
+*觸發指令*: {escape_markdown(getattr(crashed_message, "text", "未知指令"), 2)}
+                                          """, parse_mode=ParseMode.MARKDOWN_V2)
+    else:
+        await context.bot.send_message(ERROR_CHANNEL, f"無可回報之 message object")
+
 
 async def initialize():
     bot.add_handler(CommandHandler("start", commands.start))
