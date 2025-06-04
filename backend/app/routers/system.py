@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.user_service import UserService, get_user_service
-from app.schemas.bot import BotUserRegistrationRequest
 from app.schemas.system import (
     StudentUpdateRequest, StudentUpdateResponse, StudentInfo,
     StudentActivationRequest, StudentActivationResponse
@@ -27,7 +26,7 @@ class RegistrationResponse(BaseModel):
     description="透過驗證碼啟用學員帳號（只需 ID 存在即可）"
 )
 async def register_student(
-    request: BotUserRegistrationRequest,
+    request: StudentActivationRequest,  # 使用正確的啟用模型
     token_verified: bool = Depends(verify_bot_token),
     user_service: UserService = Depends(get_user_service)
 ) -> RegistrationResponse:
@@ -132,7 +131,8 @@ async def update_students(
                 StudentInfo(
                     id=student["id"],
                     name=student["name"], 
-                    team=student.get("team")
+                    team=student.get("team"),
+                    enabled=student.get("enabled", False)
                 )
                 for student in result["students"]
             ]

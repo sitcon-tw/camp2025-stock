@@ -22,6 +22,7 @@ class StudentInfo(BaseModel):
     id: str = Field(..., description="學員ID")
     name: str = Field(..., description="學員姓名")
     team: Optional[str] = Field(None, description="學員組別")
+    enabled: bool = Field(False, description="是否已啟用")
 
 
 class StudentUpdateResponse(BaseModel):
