@@ -116,9 +116,9 @@ class PriceVariationGenerator:
                 "price": price,
                 "stock_amount": quantity if side == "buy" else -quantity,
                 "points_amount": -price * quantity if side == "buy" else price * quantity,
-                "status": "completed",
+                "status": "filled",
                 "created_at": trade_time,
-                "completed_at": trade_time
+                "filled_at": trade_time
             }
             
             try:
