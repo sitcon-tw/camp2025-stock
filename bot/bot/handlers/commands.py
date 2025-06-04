@@ -149,3 +149,14 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"""
         來財
         """, parse_mode=ParseMode.MARKDOWN_V2)
+
+async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.args:
+        await update.message.reply_text(
+            f"""
+            🐱 你得標一個人來 PVP！
+            """
+        )
+        return
+
+    target_username = context.args[0]
