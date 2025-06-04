@@ -515,7 +515,7 @@ class UserService:
         try:
             # 從最近的成交記錄取得價格
             latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
-                {"status": "completed"},
+                {"status": "filled"},
                 sort=[("created_at", -1)]
             )
             

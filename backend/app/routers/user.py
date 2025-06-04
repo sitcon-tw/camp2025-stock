@@ -292,21 +292,21 @@ async def get_user_stats(
         # 統計交易次數
         total_trades = await db[Collections.STOCK_ORDERS].count_documents({
             "user_id": user_id,
-            "status": "completed"
+            "status": "filled"
         })
         
         # 統計買入次數
         buy_trades = await db[Collections.STOCK_ORDERS].count_documents({
             "user_id": user_id,
             "side": "buy",
-            "status": "completed"
+            "status": "filled"
         })
         
         # 統計賣出次數
         sell_trades = await db[Collections.STOCK_ORDERS].count_documents({
             "user_id": user_id,
             "side": "sell",
-            "status": "completed"
+            "status": "filled"
         })
         
         # 統計轉帳次數

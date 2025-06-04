@@ -246,7 +246,7 @@ async def get_system_stats(
         total_groups = await db[Collections.GROUPS].count_documents({})
         
         # 統計交易次數
-        total_trades = await db[Collections.STOCK_ORDERS].count_documents({"status": "completed"})
+        total_trades = await db[Collections.STOCK_ORDERS].count_documents({"status": "filled"})
         
         return {
             "total_users": total_users,

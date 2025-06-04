@@ -30,7 +30,7 @@ class PublicService:
         try:
             # 取得最新成交價格
             latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
-                {"status": "completed"},
+                {"status": "filled"},
                 sort=[("created_at", -1)]
             )
             
@@ -38,7 +38,7 @@ class PublicService:
             today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             
             trades_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "status": "completed",
+                "status": "filled",
                 "created_at": {"$gte": today_start}
             }).sort("created_at", 1)
             
@@ -58,13 +58,13 @@ class PublicService:
                 )
             
             # 計算統計資料（價格以元為單位）
-            prices = [trade.get("price", 20) for trade in trades]
+            prices = [trade.get("price", 20) for trade in trades if trade.get("price") is not None]
             volumes = [abs(trade.get("stock_amount", 0)) for trade in trades]
             
-            last_price = latest_trade.get("price", 20) if latest_trade else 20
-            open_price = trades[0].get("price", 20)
-            high_price = max(prices)
-            low_price = min(prices)
+            last_price = latest_trade.get("price", 20) if latest_trade and latest_trade.get("price") is not None else 20
+            open_price = next((trade.get("price", 20) for trade in trades if trade.get("price") is not None), 20)
+            high_price = max(prices) if prices else 20
+            low_price = min(prices) if prices else 20
             total_volume = sum(volumes)
             
             # 計算漲跌
@@ -153,15 +153,20 @@ class PublicService:
     async def get_recent_trades(self, limit: int = 20) -> List[TradeRecord]:
         try:
             trades_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "status": "completed"
+                "status": "filled"
             }).sort("created_at", -1).limit(limit)
             
             trades = await trades_cursor.to_list(length=limit)
             
             trade_records = []
             for trade in trades:
+                # Skip trades with invalid or missing price data
+                price = trade.get("price")
+                if price is None:
+                    continue
+                    
                 trade_records.append(TradeRecord(
-                    price=trade.get("price", 0),
+                    price=int(price),
                     quantity=abs(trade.get("stock_amount", 0)),
                     timestamp=trade.get("created_at", datetime.now(timezone.utc)).isoformat()
                 ))
@@ -276,7 +281,7 @@ class PublicService:
         try:
             # 從最近的成交記錄取得價格
             latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
-                {"status": "completed"},
+                {"status": "filled"},
                 sort=[("created_at", -1)]
             )
             
@@ -309,7 +314,7 @@ class PublicService:
             
             # 從真實交易記錄獲取資料
             trades_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "status": "completed",
+                "status": "filled",
                 "created_at": {"$gte": start_time, "$lte": end_time}
             }).sort("created_at", 1)
             
@@ -318,10 +323,12 @@ class PublicService:
             # 轉換為回應格式
             history = []
             for trade in real_trades:
-                history.append({
-                    "timestamp": trade.get("created_at", end_time).isoformat(),
-                    "price": trade.get("price", 20)
-                })
+                price = trade.get("price")
+                if price is not None:  # Skip trades with None price
+                    history.append({
+                        "timestamp": trade.get("created_at", end_time).isoformat(),
+                        "price": int(price)
+                    })
             
             return history
                 

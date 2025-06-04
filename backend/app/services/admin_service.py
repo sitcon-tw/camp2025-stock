@@ -269,7 +269,7 @@ class AdminService:
             buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
                 "user_id": user_id,
                 "stock_amount": {"$gt": 0},  # 買入訂單
-                "status": "completed"
+                "status": "filled"
             })
             buy_orders = await buy_orders_cursor.to_list(length=None)
             

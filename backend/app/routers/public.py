@@ -184,7 +184,7 @@ async def get_system_stats(
         
         # 統計基本資訊
         total_users = await db[Collections.USERS].count_documents({})
-        total_trades = await db[Collections.STOCK_ORDERS].count_documents({"status": "completed"})
+        total_trades = await db[Collections.STOCK_ORDERS].count_documents({"status": "filled"})
         pending_orders = await db[Collections.STOCK_ORDERS].count_documents({"status": "pending"})
         
         # 取得市場狀態
