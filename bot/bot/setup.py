@@ -48,9 +48,10 @@ async def error_handler(update: Optional[object], context: CallbackContext) -> N
 
 *觸發指令*: {escape_markdown(getattr(crashed_message, "text", "未知指令"), 2)}
                                           """, parse_mode=ParseMode.MARKDOWN_V2)
+
+        await context.bot.send_message(crashed_message.chat.id, "😿 你的指令爆炸了，問題已經自動回報給資訊組，請等待支援！" ,reply_to_message_id=crashed_message.message_id)
     else:
         await context.bot.send_message(ERROR_CHANNEL, f"無可回報之 message object")
-
 
 async def initialize():
     bot.add_handler(CommandHandler("start", commands.start))
