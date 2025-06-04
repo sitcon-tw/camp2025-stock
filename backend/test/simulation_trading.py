@@ -115,6 +115,13 @@ class TradingSimulator:
                         data = await resp.json()
                         if data.get("success"):
                             self.user_tokens[player["username"]] = data["token"]
+                            # 確保 user_stats 有資料（處理已存在用戶的情況）
+                            if player["username"] not in self.user_stats:
+                                self.user_stats[player["username"]] = {
+                                    "team": player["team"],
+                                    "trades": 0,
+                                    "initial_points": INITIAL_POINTS
+                                }
                             await self.log(f"✅ {player['username']} 登入成功")
                         else:
                             await self.log(f"❌ {player['username']} 登入失敗: {data.get('message')}")
@@ -175,7 +182,8 @@ class TradingSimulator:
                 if resp.status == 200:
                     data = await resp.json()
                     if data.get("success"):
-                        self.user_stats[username]["trades"] += 1
+                        if username in self.user_stats:
+                            self.user_stats[username]["trades"] += 1
                         
                         # 記錄交易
                         order_desc = f"{side.upper()} {quantity}股"
@@ -230,7 +238,7 @@ class TradingSimulator:
             points = portfolio.get("points", 0)
             stocks = portfolio.get("stocks", 0)
             total_value = portfolio.get("totalValue", 0)
-            team = self.user_stats[username]["team"]
+            team = self.user_stats.get(username, {}).get("team", "未知")
             
             await self.log(f"👤 {username} ({team}): {points}點 + {stocks}股 = 總資產{total_value}元")
     
@@ -367,8 +375,8 @@ class TradingSimulator:
                 stocks = portfolio.get("stocks", 0)
                 stock_value = portfolio.get("stockValue", 0)
                 total_value = portfolio.get("totalValue", 0)
-                trades = self.user_stats[username]["trades"]
-                team = self.user_stats[username]["team"]
+                trades = self.user_stats.get(username, {}).get("trades", 0)
+                team = self.user_stats.get(username, {}).get("team", "未知")
                 
                 await self.log(
                     f"   {username:6} ({team}): "
