@@ -187,7 +187,7 @@ async def bot_get_user_profile(
     Returns:
         使用者基本資訊
     """
-    return await user_service.get_user_profile_by_username(request.from_user)
+    return await user_service.get_user_profile_by_id(request.from_user)
 
 
 # ========== BOT 健康檢查 ==========

@@ -391,7 +391,7 @@ class UserService:
             logger.error(f"Failed to get user stock orders by username: {e}")
             raise
     
-    async def get_user_profile_by_username(self, username: str) -> dict:
+    async def get_user_profile_by_id(self, username: str) -> dict:
         """根據用戶名查詢使用者基本資料"""
         try:
             user = await self._get_user_by_username(username)
@@ -399,6 +399,7 @@ class UserService:
                 "id": user.get("id"),
                 "name": user.get("name"),
                 "team": user.get("team"),
+                "telegram_id": user.get("telegram_id"),
                 "enabled": user.get("enabled", False),
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
             }
