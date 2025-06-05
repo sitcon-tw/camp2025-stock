@@ -16,29 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ========== 使用者註冊和認證 ==========
-
-@router.post(
-    "/register",
-    response_model=UserRegistrationResponse,
-    summary="使用者註冊",
-    description="使用者註冊新帳號，需要提供使用者名、email 和隊伍名稱"
-)
-async def register_user(
-    request: UserRegistrationRequest,
-    user_service: UserService = Depends(get_user_service)
-) -> UserRegistrationResponse:
-    """
-    使用者註冊
-    
-    Args:
-        request: 註冊請求，包含使用者名、email、隊伍等資訊
-        
-    Returns:
-        註冊結果
-    """
-    return await user_service.register_user(request)
-
+# ========== 使用者認證 ==========
 
 @router.post(
     "/login",
@@ -292,21 +270,21 @@ async def get_user_stats(
         # 統計交易次數
         total_trades = await db[Collections.STOCK_ORDERS].count_documents({
             "user_id": user_id,
-            "status": "filled"
+            "status": "completed"
         })
         
         # 統計買入次數
         buy_trades = await db[Collections.STOCK_ORDERS].count_documents({
             "user_id": user_id,
             "side": "buy",
-            "status": "filled"
+            "status": "completed"
         })
         
         # 統計賣出次數
         sell_trades = await db[Collections.STOCK_ORDERS].count_documents({
             "user_id": user_id,
             "side": "sell",
-            "status": "filled"
+            "status": "completed"
         })
         
         # 統計轉帳次數
