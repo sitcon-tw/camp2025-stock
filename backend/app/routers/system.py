@@ -37,7 +37,7 @@ async def activate_student(
     """
     try:
         # 啟用學員帳號（不驗證 name）
-        result = await user_service.activate_student(request.id)
+        result = await user_service.activate_student(request.id, request.telegram_id)
         
         return StudentActivationResponse(
             ok=result["ok"],

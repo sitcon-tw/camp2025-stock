@@ -805,7 +805,7 @@ class UserService:
                 "errors": [str(e)]
             }
     
-    async def activate_student(self, student_id: str) -> dict:
+    async def activate_student(self, student_id: str, telegram_id: str) -> dict:
         """
         啟用學員帳號（只需 ID 存在即可）
         
@@ -840,6 +840,7 @@ class UserService:
                 {
                     "$set": {
                         "enabled": True,
+                        "telegram_id": telegram_id,
                         "activated_at": datetime.now(timezone.utc)
                     }
                 }
