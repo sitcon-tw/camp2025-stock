@@ -42,7 +42,7 @@ class TradeRecord(BaseModel):
 
 # 排行榜條目
 class LeaderboardEntry(BaseModel):
-    username: str = Field(..., description="使用者名稱")
+    username: str = Field(..., description="使用者id")
     team: str = Field(..., description="隊伍名稱")
     points: int = Field(..., description="點數")
     stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
@@ -91,7 +91,7 @@ class AdminLoginResponse(BaseModel):
 
 # 使用者資產明細
 class UserAssetDetail(BaseModel):
-    username: str = Field(..., description="使用者名稱")
+    username: str = Field(..., description="使用者id")
     team: str = Field(..., description="所屬隊伍")
     points: int = Field(..., description="點數餘額")
     stocks: int = Field(..., description="持股數量")
@@ -105,7 +105,7 @@ class UserAssetDetail(BaseModel):
 
 # 給點數請求
 class GivePointsRequest(BaseModel):
-    username: str = Field(..., description="目標使用者名稱")
+    username: str = Field(..., description="目標使用者id")
     type: str = Field(..., description="操作類型：group 或 user")
     amount: int = Field(..., description="點數數量")
 

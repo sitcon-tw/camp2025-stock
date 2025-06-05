@@ -52,7 +52,7 @@ async def get_users(
     """查詢使用者資產明細
     
     Args:
-        user: 可選，指定使用者名稱。如果不提供則回傳所有使用者
+        user: 可選，指定使用者id。如果不提供則回傳所有使用者
         current_admin: 目前管理員（自動注入）
         admin_service: 管理員服務（自動注入）
     
@@ -268,7 +268,7 @@ async def get_system_stats(
 @router.get(
     "/students",
     summary="取得所有學員資料",
-    description="取得所有學員的基本資料，包括使用者名稱、所屬隊伍等"
+    description="取得所有學員的基本資料，包括使用者id、所屬隊伍等"
 )
 async def get_students(
     current_admin=Depends(get_current_admin),

@@ -11,7 +11,7 @@ from app.schemas.user import (
 
 class BotStockOrderRequest(BaseModel):
     """BOT 股票訂單請求 - 包含 from_user"""
-    from_user: str = Field(..., description="使用者名稱")
+    from_user: str = Field(..., description="使用者id")
     order_type: str = Field(..., description="訂單類型：market 或 limit")
     side: str = Field(..., description="買賣方向：buy 或 sell")
     quantity: int = Field(..., gt=0, description="數量")
@@ -48,24 +48,24 @@ class BotTransferRequest(BaseModel):
 
 class BotPortfolioRequest(BaseModel):
     """BOT 查詢投資組合請求"""
-    from_user: str = Field(..., description="使用者名稱")
+    from_user: str = Field(..., description="使用者id")
 
 
 class BotPointHistoryRequest(BaseModel):
     """BOT 查詢點數記錄請求"""
-    from_user: str = Field(..., description="使用者名稱")
+    from_user: str = Field(..., description="使用者id")
     limit: int = Field(default=50, gt=0, le=100, description="查詢筆數限制")
 
 
 class BotStockOrdersRequest(BaseModel):
     """BOT 查詢股票訂單請求"""
-    from_user: str = Field(..., description="使用者名稱")
+    from_user: str = Field(..., description="使用者id")
     limit: int = Field(default=50, gt=0, le=100, description="查詢筆數限制")
 
 
 class BotProfileRequest(BaseModel):
     """BOT 查詢使用者資料請求"""
-    from_user: str = Field(..., description="使用者名稱")
+    from_user: str = Field(..., description="使用者id")
 
 
 # ========== Telegram Webhook 和 Broadcast 模型 ==========

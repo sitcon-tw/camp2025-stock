@@ -7,7 +7,7 @@ from datetime import datetime
 
 #　使用者註冊請求
 class UserRegistrationRequest(BaseModel):
-    username: str = Field(..., min_length=2, max_length=50, description="使用者名稱")
+    username: str = Field(..., min_length=2, max_length=50, description="使用者id")
     email: str = Field(..., description="電子郵件")
     team: str = Field(..., description="隊伍名稱")
     activation_code: Optional[str] = Field(None, description="啟用代碼")
@@ -31,7 +31,7 @@ class UserRegistrationResponse(BaseModel):
 
 #　使用者登入請求
 class UserLoginRequest(BaseModel):
-    username: str = Field(..., description="使用者名稱")
+    username: str = Field(..., description="使用者id")
     password: Optional[str] = Field(None, description="密碼（如果需要）")
     telegram_id: Optional[int] = Field(None, description="Telegram ID")
 
@@ -82,7 +82,7 @@ class StockOrderResponse(BaseModel):
 
 # 使用者投資組合
 class UserPortfolio(BaseModel):
-    username: str = Field(..., description="使用者名稱")
+    username: str = Field(..., description="使用者id")
     points: int = Field(..., description="點數餘額")
     stocks: int = Field(..., description="持股數量")
     stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")

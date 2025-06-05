@@ -326,7 +326,7 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to log point change: {e}")
 
-    # 列出所有學員，回傳其使用者名稱和所屬隊伍
+    # 列出所有學員，回傳其使用者id和所屬隊伍
     async def list_all_users(self) -> List[Dict[str, str]]:
         try:
             # 更新為新的 ID-based 系統字段，包含 enabled 狀態

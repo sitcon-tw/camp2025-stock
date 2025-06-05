@@ -220,7 +220,7 @@ async def bot_health_check():
     "/students",
     response_model=List[Dict[str, Any]],
     summary="BOT 取得所有學員資料",
-    description="透過 BOT 取得所有學員的基本資料，包括使用者名稱、所屬隊伍等"
+    description="透過 BOT 取得所有學員的基本資料，包括使用者id、所屬隊伍等"
 )
 async def bot_get_students(
     token_verified: bool = Depends(verify_bot_token),
