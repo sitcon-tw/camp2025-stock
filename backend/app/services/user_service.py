@@ -334,12 +334,14 @@ class UserService:
     
     # ========== BOT 專用方法 - 基於用戶名查詢 ==========
     
-    async def _get_user_by_username(self, username: str):
+    async def _get_user_(self, username: str):
         """根據用戶名或ID查詢使用者"""
         user = await self.db[Collections.USERS].find_one({
             "$or": [
                 {"name": username},
-                {"id": username}
+                {"id": username},
+                {"telegram_id": username},
+                {"telegram_nickname": username}
             ]
         })
         if not user:
@@ -349,7 +351,7 @@ class UserService:
     async def get_user_portfolio_by_username(self, username: str) -> UserPortfolio:
         """根據用戶名查詢使用者投資組合"""
         try:
-            user = await self._get_user_by_username(username)
+            user = await self._get_user_(username)
             return await self.get_user_portfolio(str(user["_id"]))
         except Exception as e:
             logger.error(f"Failed to get user portfolio by username: {e}")
@@ -358,7 +360,7 @@ class UserService:
     async def place_stock_order_by_username(self, username: str, request: StockOrderRequest) -> StockOrderResponse:
         """根據用戶名下股票訂單"""
         try:
-            user = await self._get_user_by_username(username)
+            user = await self._get_user_(username)
             return await self.place_stock_order(str(user["_id"]), request)
         except Exception as e:
             logger.error(f"Failed to place stock order by username: {e}")
@@ -367,7 +369,7 @@ class UserService:
     async def transfer_points_by_username(self, from_username: str, request: TransferRequest) -> TransferResponse:
         """根據用戶名轉帳點數"""
         try:
-            user = await self._get_user_by_username(from_username)
+            user = await self._get_user_(from_username)
             return await self.transfer_points(str(user["_id"]), request)
         except Exception as e:
             logger.error(f"Failed to transfer points by username: {e}")
@@ -376,7 +378,7 @@ class UserService:
     async def get_user_point_logs_by_username(self, username: str, limit: int = 50) -> List[UserPointLog]:
         """根據用戶名查詢使用者點數記錄"""
         try:
-            user = await self._get_user_by_username(username)
+            user = await self._get_user_(username)
             return await self.get_user_point_logs(str(user["_id"]), limit)
         except Exception as e:
             logger.error(f"Failed to get user point logs by username: {e}")
@@ -385,7 +387,7 @@ class UserService:
     async def get_user_stock_orders_by_username(self, username: str, limit: int = 50) -> List[UserStockOrder]:
         """根據用戶名查詢使用者股票訂單記錄"""
         try:
-            user = await self._get_user_by_username(username)
+            user = await self._get_user_(username)
             return await self.get_user_stock_orders(str(user["_id"]), limit)
         except Exception as e:
             logger.error(f"Failed to get user stock orders by username: {e}")
@@ -394,7 +396,7 @@ class UserService:
     async def get_user_profile_by_id(self, username: str) -> dict:
         """根據用戶名查詢使用者基本資料"""
         try:
-            user = await self._get_user_by_username(username)
+            user = await self._get_user_(username)
             return {
                 "id": user.get("id"),
                 "name": user.get("name"),
