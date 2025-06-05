@@ -54,6 +54,7 @@ class Collections:
     POINT_LOGS = "point_logs"
     STOCKS = "stocks"
     STOCK_ORDERS = "stock_orders"
+    TRADES = "trades"
     ANNOUNCEMENTS = "announcements"
     MARKET_CONFIG = "market_config"
     
@@ -62,8 +63,8 @@ class Collections:
         # 取得所有集合名稱
         return [
             cls.USERS, cls.GROUPS, cls.POINT_LOGS,
-            cls.STOCKS, cls.STOCK_ORDERS, cls.ANNOUNCEMENTS,
-            cls.MARKET_CONFIG
+            cls.STOCKS, cls.STOCK_ORDERS, cls.TRADES,
+            cls.ANNOUNCEMENTS, cls.MARKET_CONFIG
         ]
 
 
@@ -89,6 +90,12 @@ async def init_database_indexes():
         await database[Collections.STOCK_ORDERS].create_index("user_id")
         await database[Collections.STOCK_ORDERS].create_index("created_at")
         await database[Collections.STOCK_ORDERS].create_index("status")
+        
+        # trades
+        await database[Collections.TRADES].create_index("buy_user_id")
+        await database[Collections.TRADES].create_index("sell_user_id")
+        await database[Collections.TRADES].create_index("created_at")
+        await database[Collections.TRADES].create_index("price")
         
         # announcements
         await database[Collections.ANNOUNCEMENTS].create_index("created_at")
