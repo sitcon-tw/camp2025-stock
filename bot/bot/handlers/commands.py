@@ -1,9 +1,16 @@
+import httpx
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 from utils.logger import setup_logger
+from os import environ
+from dotenv import load_dotenv
 
 logger = setup_logger(__name__)
+load_dotenv()
+
+BACKEND_URL = environ.get("BACKEND_URL")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     username = update.effective_user.username
@@ -38,21 +45,30 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     key = context.args[0]
     logger.info(f"/register triggered by {update.effective_chat.username}, key: {key}")
 
-    # TODO: Fetch user's information here
+    response = httpx.get(f"{BACKEND_URL}/api/system/users/activate").json()
 
-    buttons = [
-        [InlineKeyboardButton(text="📈 開啟喵喵喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
-    ]
-
-    await update.message.reply_text(
-        f"""
-        😸 喵嗚，{update.effective_chat.username}，原來你就是 *王小明* 啊！
+    if response.ok:
+        name = response.get("message").split(":")[1]
+        await update.message.reply_text(
+            f"""
+            😸 喵嗚，{escape_markdown(update.effective_chat.full_name)}，原來你就是 *{name}* 啊！
 
 很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友 😺
 我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！
+        """, parse_mode=ParseMode.MARKDOWN_V2)
+    else:
+        message = response.get("message")
 
-*想現在就試試看嗎？*點一下底下的按鈕，開啟_*喵券機股票交易頁面吧！*_
-        """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
+        match message:
+            case "noexist":
+                await update.message.reply_text(f"🙀 你輸入的註冊碼好像不存在")
+            case "already_activated":
+                await update.message.reply_text(f"🙀 你已經註冊過了")
+            case "error":
+                await update.message.reply_text(f"🤯 後端爆炸了，請敲工作人員！")
+            case _:
+                await update.message.reply_text(f"🙀 好像有什麼東西炸掉了")
+                logger.error(f"Executing register got {message}")
 
 async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # TODO: Data fetching
