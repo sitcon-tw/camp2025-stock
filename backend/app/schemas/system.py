@@ -37,6 +37,7 @@ class StudentActivationRequest(BaseModel):
     id: str = Field(..., description="學員ID（驗證碼）")
     name: Optional[str] = Field("", description="學員姓名（可選，可為空字串）")
     telegram_id: str = Field(None, description="Telegram ID")
+    telegram_nickname: str = Field(None, description="Telegram 暱稱")
 
 
 class StudentActivationResponse(BaseModel):

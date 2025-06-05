@@ -400,6 +400,7 @@ class UserService:
                 "name": user.get("name"),
                 "team": user.get("team"),
                 "telegram_id": user.get("telegram_id"),
+                "telegram_nickname": user.get("telegram_nickname"),
                 "enabled": user.get("enabled", False),
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
             }
@@ -806,7 +807,7 @@ class UserService:
                 "errors": [str(e)]
             }
     
-    async def activate_student(self, student_id: str, telegram_id: str) -> dict:
+    async def activate_student(self, student_id: str, telegram_id: str, telegram_nickname: str) -> dict:
         """
         啟用學員帳號（只需 ID 存在即可）
         
@@ -842,6 +843,7 @@ class UserService:
                     "$set": {
                         "enabled": True,
                         "telegram_id": telegram_id,
+                        "telegram_nickname": telegram_nickname,
                         "activated_at": datetime.now(timezone.utc)
                     }
                 }
