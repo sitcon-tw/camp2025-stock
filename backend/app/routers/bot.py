@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.user_service import UserService, get_user_service
+from app.services.admin_service import AdminService, get_admin_service
 from app.schemas.bot import (
     BotStockOrderRequest, BotTransferRequest,
     BotPortfolioRequest, BotPointHistoryRequest, BotStockOrdersRequest,
@@ -10,7 +11,7 @@ from app.schemas.user import (
     TransferResponse, UserPointLog, UserStockOrder
 )
 from app.core.security import verify_bot_token
-from typing import List
+from typing import List, Dict, Union, Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -367,3 +368,37 @@ async def broadcast_to_all_groups(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to broadcast to all: {str(e)}"
         )
+
+
+# ========== BOT 學員管理 ==========
+
+@router.get(
+    "/students",
+    response_model=List[Dict[str, Any]],
+    summary="BOT 取得所有學員資料",
+    description="透過 BOT 取得所有學員的基本資料，包括使用者名稱、所屬隊伍等"
+)
+async def bot_get_students(
+    token_verified: bool = Depends(verify_bot_token),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> List[Dict[str, Any]]:
+    """
+    BOT 取得所有學員資料
+    
+    Args:
+        token_verified: token 驗證結果（透過 header 傳入）
+        admin_service: 管理員服務（自動注入）
+        
+    Returns:
+        所有學員的基本資料列表
+    """
+    try:
+        return await admin_service.list_all_users()
+        
+    except Exception as e:
+        logger.error(f"BOT failed to get students: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve student data"
+        )
+
