@@ -24,6 +24,9 @@ class Settings:
     
     # Telegram Bot 設定
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+
+    # Telegram Bot API URL
+    TELEGRAM_BOT_API_URL: str = os.getenv("TELEGRAM_BOT_API_URL", "https://api.telegram.org/bot")
     
     # 環境設定
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
