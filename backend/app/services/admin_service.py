@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 import logging
 import os
 import requests
-from app.config import Settings
+from app.config import settings
 
 
 logger = logging.getLogger(__name__)
@@ -205,7 +205,7 @@ class AdminService:
             
             # 如果需要廣播，這裡可以加入 Telegram Bot 推送邏輯
             if request.broadcast:
-                telegram_bot_api_url = Settings.TELEGRAM_BOT_API_URL
+                telegram_bot_api_url = settings.TELEGRAM_BOT_API_URL
                 if not telegram_bot_api_url:
                     raise AdminException("Telegram Bot API URL not configured")
                 # 使用 requests 傳送 POST 請求到 Telegram Bot API
