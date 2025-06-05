@@ -1,11 +1,13 @@
-import httpx
+from os import environ
+
+from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
+
+from utils import api_helper
 from utils.logger import setup_logger
-from os import environ
-from dotenv import load_dotenv
 
 logger = setup_logger(__name__)
 load_dotenv()
@@ -43,17 +45,20 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     key = context.args[0]
-    logger.info(f"/register triggered by {update.effective_chat.username}, key: {key}")
+    logger.info(f"/register triggered by {update.effective_user.full_name}, key: {key}")
 
-    response = httpx.get(f"{BACKEND_URL}/api/system/users/activate").json()
+    response = api_helper.post("/api/system/users/activate", protected_route=True, json={
+        "id": key,
+        "name": update.effective_user.full_name
+    })
 
-    if response.ok:
+    if response.get("ok"):
         name = response.get("message").split(":")[1]
         await update.message.reply_text(
             f"""
-            😸 喵嗚，{escape_markdown(update.effective_chat.full_name)}，原來你就是 *{name}* 啊！
+            😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，原來你就是 *{name}* 啊！
 
-很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友 😺
+很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友
 我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！
         """, parse_mode=ParseMode.MARKDOWN_V2)
     else:
@@ -61,9 +66,9 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         match message:
             case "noexist":
-                await update.message.reply_text(f"🙀 你輸入的註冊碼好像不存在")
+                await update.message.reply_text(f"🙀 你輸入的註冊碼 `{escape_markdown(key, 2)}` 好像不存在", parse_mode=ParseMode.MARKDOWN_V2)
             case "already_activated":
-                await update.message.reply_text(f"🙀 你已經註冊過了")
+                await update.message.reply_text(f"🙀 註冊碼 `{escape_markdown(key, 2)}` 已經被註冊過了", parse_mode=ParseMode.MARKDOWN_V2)
             case "error":
                 await update.message.reply_text(f"🤯 後端爆炸了，請敲工作人員！")
             case _:
