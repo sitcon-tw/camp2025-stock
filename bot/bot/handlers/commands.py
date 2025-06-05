@@ -49,7 +49,8 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     response = api_helper.post("/api/system/users/activate", protected_route=True, json={
         "id": key,
-        "name": update.effective_user.full_name
+        "telegram_id": str(update.effective_user.id),
+        "telegram_nickname": update.effective_user.full_name
     })
 
     if response.get("ok"):
