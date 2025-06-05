@@ -16,6 +16,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
 from typing import Dict, List, Optional
 import logging
+import os
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +114,7 @@ class AdminService:
     async def give_points(self, request: GivePointsRequest) -> GivePointsResponse:
         try:
             if request.type == "user":
-                # 給個人點數 - 適配新的 ID-based 系統
+                # 給個人點數 - 新的 ID-based 系統
                 user = await self.db[Collections.USERS].find_one({
                     "$or": [
                         {"name": request.username},
@@ -201,7 +203,17 @@ class AdminService:
             
             # 如果需要廣播，這裡可以加入 Telegram Bot 推送邏輯
             if request.broadcast:
-                # TODO: 實作 Telegram Bot 廣播功能
+                telegram_bot_api_url = os.getenv("TELEGRAM_BOT_API_URL")
+                if not telegram_bot_api_url:
+                    raise AdminException("Telegram Bot API URL not configured")
+                # 使用 requests 傳送 POST 請求到 Telegram Bot API
+                payload = {
+                    # "title": request.title,
+                    "message": request.message
+                }
+                response = requests.post(telegram_bot_api_url, json=payload)
+                if response.status_code != 200:
+                    raise AdminException(f"Failed to broadcast announcement: {response.text}")
                 logger.info(f"Announcement should be broadcasted: {request.title}")
             
             logger.info(f"Announcement created with ID: {result.inserted_id}")
