@@ -824,14 +824,14 @@ class UserService:
             if not student:
                 return {
                     "ok": False,
-                    "message": f"學員 ID '{student_id}' 不存在"
+                    "message": "noexist"
                 }
             
             # 檢查是否已經啟用
             if student.get("enabled", False):
                 return {
-                    "ok": True,
-                    "message": f"學員 {student.get('name', student_id)} 已經啟用"
+                    "ok": False,
+                    "message": f"already_activated"
                 }
             
             # 啟用學員帳號
@@ -849,12 +849,12 @@ class UserService:
                 logger.info(f"Student activated: {student_id} - {student.get('name', 'Unknown')}")
                 return {
                     "ok": True,
-                    "message": f"成功啟用學員 {student.get('name', student_id)}"
+                    "message": f"success:{student.get('name', student_id)}"
                 }
             else:
                 return {
                     "ok": False,
-                    "message": "啟用失敗，請聯繫管理員"
+                    "message": "error"
                 }
                 
         except Exception as e:
