@@ -1,13 +1,15 @@
-from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, CallbackContext
+from os import environ
+from traceback import format_exception
+from typing import Optional
+
+from dotenv import load_dotenv
 from telegram.constants import ParseMode
+from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, CallbackContext
 from telegram.helpers import escape_markdown
+
 from bot.handlers import commands, welcome, buttons
 from bot.instance import bot
 from utils.logger import setup_logger
-from dotenv import load_dotenv
-from os import environ
-from typing import Optional
-from traceback import format_exception
 
 logger = setup_logger(__name__)
 load_dotenv()

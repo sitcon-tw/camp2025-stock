@@ -1,7 +1,9 @@
-import httpx
-from dotenv import load_dotenv
 from os import environ
 from typing import Dict
+
+import httpx
+from dotenv import load_dotenv
+
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)

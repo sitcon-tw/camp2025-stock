@@ -1,7 +1,9 @@
+from os import environ
+
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
-from os import environ
 from telegram import Update
+
 from bot.instance import bot
 from utils.logger import setup_logger
 

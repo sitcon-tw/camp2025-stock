@@ -1,6 +1,8 @@
-import uvicorn
 from os import environ
+
+import uvicorn
 from dotenv import load_dotenv
+
 from utils.logger import setup_logger
 from utils.uvicorn_logger import uvicorn_logger
 

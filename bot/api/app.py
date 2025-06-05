@@ -1,10 +1,12 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from os import environ
+
 from dotenv import load_dotenv
+from fastapi import FastAPI
+
+from api.routes import webhook, broadcast, health
 from bot.setup import initialize
 from utils.logger import setup_logger
-from api.routes import webhook, broadcast, health
 
 load_dotenv()
 

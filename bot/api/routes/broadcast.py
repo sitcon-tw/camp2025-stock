@@ -1,8 +1,10 @@
+from os import environ
+from typing import List
+
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List
-from os import environ
 from telegram.constants import ParseMode
+
 from bot.instance import bot
 from utils.logger import setup_logger
 

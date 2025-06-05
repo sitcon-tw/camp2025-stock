@@ -1,7 +1,8 @@
 import os
 
-from utils.logger import loggingFormatter
 from dotenv import load_dotenv
+
+from utils.logger import loggingFormatter
 
 load_dotenv()
 DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
