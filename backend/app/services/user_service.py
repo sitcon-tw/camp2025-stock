@@ -34,86 +34,6 @@ class UserService:
         else:
             self.db = db
     
-    # 使用者註冊
-    async def register_user(self, request: UserRegistrationRequest) -> UserRegistrationResponse:
-        try:
-            # 檢查使用者名是否已存在
-            existing_user = await self.db[Collections.USERS].find_one({
-                "username": request.username
-            })
-            if existing_user:
-                return UserRegistrationResponse(
-                    success=False,
-                    message="使用者名已存在"
-                )
-            
-            # 檢查 email 是否已存在（跳過臨時 email）
-            if not request.email.endswith("@temp.local"):
-                existing_email = await self.db[Collections.USERS].find_one({
-                    "email": request.email
-                })
-                if existing_email:
-                    return UserRegistrationResponse(
-                        success=False,
-                        message="Email 已被使用"
-                    )
-            
-            # 查找或建立群組
-            group = await self.db[Collections.GROUPS].find_one({"name": request.team})
-            if not group:
-                group_result = await self.db[Collections.GROUPS].insert_one({
-                    "name": request.team,
-                    "created_at": datetime.now(timezone.utc)
-                })
-                group_id = group_result.inserted_id
-            else:
-                group_id = group["_id"]
-            
-            # 建立使用者
-            user_doc = {
-                "username": request.username,
-                "email": request.email,
-                "team": request.team,
-                "group_id": group_id,
-                "points": 100,  # 初始點數
-                "telegram_id": request.telegram_id,
-                "activation_code": request.activation_code,
-                "is_active": True,
-                "created_at": datetime.now(timezone.utc)
-            }
-            
-            result = await self.db[Collections.USERS].insert_one(user_doc)
-            
-            # 初始化股票持有記錄
-            await self.db[Collections.STOCKS].insert_one({
-                "user_id": result.inserted_id,
-                "stock_amount": 0,
-                "updated_at": datetime.now(timezone.utc)
-            })
-            
-            # 記錄初始點數
-            await self._log_point_change(
-                result.inserted_id,
-                "initial",
-                100,
-                "使用者註冊初始點數"
-            )
-            
-            logger.info(f"User registered successfully: {request.username}")
-            
-            return UserRegistrationResponse(
-                success=True,
-                message="註冊成功",
-                user_id=str(result.inserted_id)
-            )
-            
-        except Exception as e:
-            logger.error(f"User registration failed: {e}")
-            return UserRegistrationResponse(
-                success=False,
-                message="註冊失敗，請稍後再試"
-            )
-    
     # 使用者登入
     async def login_user(self, request: UserLoginRequest) -> UserLoginResponse:
         try:
@@ -479,6 +399,7 @@ class UserService:
                 "id": user.get("id"),
                 "name": user.get("name"),
                 "team": user.get("team"),
+                "enabled": user.get("enabled", False),
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
             }
         except Exception as e:
@@ -942,3 +863,79 @@ class UserService:
                 "ok": False,
                 "message": f"啟用失敗: {str(e)}"
             }
+    
+    async def get_student_status(self, student_id: str) -> dict:
+        """
+        查詢學員狀態
+        
+        Args:
+            student_id: 學員 ID
+            
+        Returns:
+            dict: 學員狀態資訊
+        """
+        try:
+            # 查找學員
+            student = await self.db[Collections.USERS].find_one({
+                "id": student_id
+            })
+            
+            if not student:
+                return {
+                    "ok": False,
+                    "message": f"學員 ID '{student_id}' 不存在"
+                }
+            
+            return {
+                "ok": True,
+                "message": "查詢成功",
+                "id": student.get("id"),
+                "name": student.get("name"),
+                "enabled": student.get("enabled", False),
+                "team": student.get("team")
+            }
+                
+        except Exception as e:
+            logger.error(f"Error getting student status {student_id}: {e}")
+            return {
+                "ok": False,
+                "message": f"查詢失敗: {str(e)}"
+            }
+    
+    async def get_student_info(self, student_id: str) -> dict:
+        """
+        查詢學員詳細資訊
+        
+        Args:
+            student_id: 學員 ID
+            
+        Returns:
+            dict: 學員詳細資訊
+        """
+        try:
+            # 查找學員
+            student = await self.db[Collections.USERS].find_one({
+                "id": student_id
+            })
+            
+            if not student:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"學員 ID '{student_id}' 不存在"
+                )
+            
+            return {
+                "id": student.get("id"),
+                "name": student.get("name"),
+                "team": student.get("team"),
+                "enabled": student.get("enabled", False)
+            }
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting student info {student_id}: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"查詢學員資訊失敗: {str(e)}"
+            )
