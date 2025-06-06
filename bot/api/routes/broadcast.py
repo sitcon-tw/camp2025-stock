@@ -1,7 +1,8 @@
 from os import environ
-from typing import List
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status, Header
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from telegram.constants import ParseMode
 
@@ -11,16 +12,26 @@ from utils.logger import setup_logger
 router = APIRouter()
 logger = setup_logger(__name__)
 BROADCAST_CHANNELS = environ.get("BROADCAST_CHANNELS").split(",")
+BACKEND_TOKEN = environ.get("BACKEND_TOKEN")
 
 class Broadcast(BaseModel):
     title: str
     message: str
 
-class BroadcastSelective(Broadcast):
-    channel: List[int]
-
 @router.post("/bot/broadcast/")
-async def broadcast(request: BroadcastSelective):
+async def broadcast(request: Broadcast, token: Annotated[str | None, Header()] = None):
+    if not token:
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={
+            "ok": False,
+            "message": "token is not provided"
+        })
+
+    if not token == BACKEND_TOKEN:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={
+            "ok": False,
+            "message": "token is incorrect :D"
+        })
+
     logger.info("[FastAPI] Selective broadcast endpoint hit.")
     for channel in BROADCAST_CHANNELS:
         try:
