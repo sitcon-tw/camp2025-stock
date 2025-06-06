@@ -6,6 +6,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
 
+from bot.helper.existing_user import verify_existing_user
 from utils import api_helper
 from utils.logger import setup_logger
 
@@ -15,8 +16,14 @@ load_dotenv()
 BACKEND_URL = environ.get("BACKEND_URL")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    username = update.effective_user.username
-    logger.info(f"/start triggered by {username}")
+    logger.info(f"/start triggered by {update.effective_user.full_name}")
+
+    response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
+        "from_user": str(update.effective_user.id)
+    })
+
+    if await verify_existing_user(response, update):
+        return
 
     buttons = [
         [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
@@ -24,10 +31,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         f"""
-        😺 *早安 {username}*
+        😺 *早安 {response.get("username")}*
 
-🤑┃目前餘額 *0 元*，你窮死了
-🏛️┃目前持有股票張數 *0 張*，要不要來點新鮮的股票？
+🤑┃目前點數 *{response.get("points")}*
+🏛️┃目前持有股票張數 *{response.get("stocks")}*，要不要來點新鮮的股票？
+
+💵┃總資產共 {response.get("totalValue")}
 """,
         parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
 
