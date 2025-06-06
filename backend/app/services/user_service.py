@@ -216,7 +216,7 @@ class UserService:
                     to_user = await self.db[Collections.USERS].find_one({
                         "$or": [
                             {"name": request.to_username},
-                            {"id": request.to_username}
+                            {"telegram_id": request.to_username}
                         ]
                     }, session=session)
                     if not to_user:
@@ -233,7 +233,7 @@ class UserService:
                         )
                     
                     # 計算手續費 (10% 或至少 1 點)
-                    fee = max(1, int(request.amount * 0.1))
+                    fee = round(max(1, int(request.amount * 0.1)))
                     total_deduct = request.amount + fee
                     
                     # 檢查餘額
