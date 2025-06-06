@@ -7,4 +7,4 @@ RUN uv sync --locked
 ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["uv", "run", "main.py"]
+ENTRYPOINT ["uv", "run", "uvicorn", "--host", "0.0.0.0", "--port", "8080", "api.app:server"]
