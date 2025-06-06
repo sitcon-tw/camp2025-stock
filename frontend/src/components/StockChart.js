@@ -54,6 +54,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     const lastMouseX = useRef(0);
 
     const [modalOpen, setModalOpen] = useState(false);
+    const [isModalClosing, setIsModalClosing] = useState(false);
 
     const fetchingRef = useRef(false);
     const lastFetchTimeRef = useRef(0);
@@ -372,6 +373,22 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         );
     }
 
+    const handleCloseModal = () => {
+        setIsModalClosing(true);
+        setTimeout(() => {
+            setModalOpen(false);
+            setIsModalClosing(false);
+        }, 200); // Match animation duration
+    };
+
+    const handleModeSelect = (mode) => {
+        setDisplayMode(mode);
+        if (mode === 'candlestick') {
+            resetZoomPan();
+        }
+        handleCloseModal();
+    };
+
     return (
         <div className="relative w-full bg-[#0f203e] rounded-lg">
             <div className="flex justify-end mb-2 w-full">
@@ -455,48 +472,35 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
             {modalOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 animate-in fade-in duration-200"
-                    onClick={() => setModalOpen(false)}
+                    className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 ${isModalClosing ? 'animate-modal-close-bg' : 'animate-modal-open-bg'}`}
+                    onClick={handleCloseModal}
                 >
                     <div
-                        className="bg-[#1A325F] rounded-lg w-72 p-4 relative animate-in zoom-in-95 duration-200"
+                        className={`bg-[#1A325F] rounded-lg w-72 p-4 relative ${isModalClosing ? 'animate-modal-close' : 'animate-modal-open'}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <h3 className="text-xl font-semibold text-[#82bee2] mb-3">選擇圖表模式</h3>
                         <ul className="space-y-2">
                             <li>
                                 <button
-                                    onClick={() => {
-                                        setDisplayMode('real');
-                                        setModalOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'real' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'
-                                        }`}
+                                    onClick={() => handleModeSelect('real')}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'real' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'}`}
                                 >
                                     真實價
                                 </button>
                             </li>
                             <li>
                                 <button
-                                    onClick={() => {
-                                        setDisplayMode('average');
-                                        setModalOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'average' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'
-                                        }`}
+                                    onClick={() => handleModeSelect('average')}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'average' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'}`}
                                 >
                                     平均價
                                 </button>
                             </li>
                             <li>
                                 <button
-                                    onClick={() => {
-                                        setDisplayMode('candlestick');
-                                        resetZoomPan();
-                                        setModalOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'candlestick' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'
-                                        }`}
+                                    onClick={() => handleModeSelect('candlestick')}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'candlestick' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'}`}
                                 >
                                     K 線
                                 </button>
@@ -505,6 +509,64 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     </div>
                 </div>
             )}
+
+            <style jsx global>{`
+                @keyframes modal-open {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                
+                @keyframes modal-close {
+                    from {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                    to {
+                        opacity: 0;
+                        transform: scale(0.95);
+                    }
+                }
+                
+                @keyframes modal-open-bg {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+                
+                @keyframes modal-close-bg {
+                    from {
+                        opacity: 1;
+                    }
+                    to {
+                        opacity: 0;
+                    }
+                }
+                
+                .animate-modal-open {
+                    animation: modal-open 0.2s ease-out;
+                }
+                
+                .animate-modal-close {
+                    animation: modal-close 0.2s ease-in;
+                }
+                
+                .animate-modal-open-bg {
+                    animation: modal-open-bg 0.2s ease-out;
+                }
+                
+                .animate-modal-close-bg {
+                    animation: modal-close-bg 0.2s ease-in;
+                }
+            `}</style>
         </div>
     );
 };

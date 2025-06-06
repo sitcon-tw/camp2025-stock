@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chose-shakespeare-count-count.trycloudflare.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://camp.sitcon.party';
 
 // API 請求通用函數
 async function apiRequest(endpoint, options = {}) {
@@ -16,6 +16,12 @@ async function apiRequest(endpoint, options = {}) {
         const response = await fetch(url, config);
 
         if (!response.ok) {
+            // 如果是 401 錯誤，拋出特殊錯誤
+            if (response.status === 401) {
+                const error = new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
+                error.status = 401;
+                throw error;
+            }
             throw new Error(`API 請求失敗: ${response.status} ${response.statusText}`);
         }
 
@@ -150,6 +156,11 @@ export async function getTeams(token) {
             'Content-Type': 'application/json',
         },
     });
+}
+
+// 取得公告列表
+export async function getAnnouncements(limit = 10, options = {}) {
+    return apiRequest(`/api/announcements?limit=${limit}`, options);
 }
 
 export { API_BASE_URL };

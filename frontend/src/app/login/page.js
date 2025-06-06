@@ -8,15 +8,41 @@ export default function Login() {
     const [adminCode, setAdminCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const router = useRouter();
+    const router = useRouter(); useEffect(() => {
+        const checkAdminStatus = async () => {
+            const isAdmin = localStorage.getItem('isAdmin');
+            const token = localStorage.getItem('adminToken');
 
-    useEffect(() => {
-        const isAdmin = localStorage.getItem('isAdmin');
+            if (isAdmin === 'true' && token) {
+                // 看 token 有沒有效
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://camp.sitcon.party'}/api/admin/stats`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
 
-        if (isAdmin === 'true') {
-            router.push('/admin');
-        }
-    });
+                    if (response.ok) {
+                        router.push('/admin');
+                    } else if (response.status === 401) {
+                        // 清除 localStorage
+                        localStorage.removeItem('isAdmin');
+                        localStorage.removeItem('adminToken');
+                        localStorage.removeItem('adminCode');
+                    }
+                } catch (error) {
+                    console.error('驗證 token 失敗:', error);
+                    // 網路錯誤時也清除 token
+                    localStorage.removeItem('isAdmin');
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminCode');
+                }
+            }
+        };
+
+        checkAdminStatus();
+    }, [router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

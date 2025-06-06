@@ -52,9 +52,7 @@ export default function AdminPage() {
     const [newTimeForm, setNewTimeForm] = useState({
         start: '7:00',
         end: '9:00'
-    });
-
-    // 通知彈窗
+    });    // 通知彈窗
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -62,56 +60,89 @@ export default function AdminPage() {
         }, 3000);
     };
 
-    // 檢查登入狀態
+    // 處理 401 錯誤的統一函數
+    const handle401Error = () => {
+        localStorage.removeItem('isAdmin');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminCode');
+        setIsLoggedIn(false);
+        setAdminToken(null);
+        router.push('/login');
+    };
+
+    // 統一的錯誤處理函數
+    const handleApiError = (error, context = '') => {
+        console.error(`${context}錯誤:`, error);
+        if (error.status === 401) {
+            handle401Error();
+            showNotification('登入已過期，請重新登入', 'error');
+        } else {
+            showNotification(`${context}失敗: ${error.message}`, 'error');
+        }
+    };    // 檢查登入狀態
     useEffect(() => {
         let isMounted = true;
 
-        const isAdmin = localStorage.getItem('isAdmin');
-        const token = localStorage.getItem('adminToken');
+        const checkAuthAndInitialize = async () => {
+            const isAdmin = localStorage.getItem('isAdmin');
+            const token = localStorage.getItem('adminToken');
 
-        if (!isAdmin || !token) {
-            router.push('/login');
-            return;
-        }
+            if (!isAdmin || !token) {
+                router.push('/login');
+                return;
+            }
 
-        if (!isMounted) return;
+            if (!isMounted) return;
 
-        setAdminToken(token);
-        setIsLoggedIn(true);
+            try {
+                // 先測試 token 是否有效
+                await getSystemStats(token);
 
-        if (isMounted) {
-            fetchUserAssets(token);
-            fetchSystemStats(token);
-            fetchStudents(token);
-            fetchTeams(token);
-            fetchMarketStatus();
-            fetchTradingHours();
-        }
+                // Token 有效，設置狀態並初始化數據
+                setAdminToken(token);
+                setIsLoggedIn(true);
+
+                if (isMounted) {
+                    fetchUserAssets(token);
+                    fetchSystemStats(token);
+                    fetchStudents(token);
+                    fetchTeams(token);
+                    fetchMarketStatus();
+                    fetchTradingHours();
+                }
+            } catch (error) {
+                if (error.status === 401) {
+                    handle401Error();
+                } else {
+                    console.error('初始化失敗:', error);
+                    router.push('/login');
+                }
+            }
+        };
+
+        checkAuthAndInitialize();
 
         return () => {
             isMounted = false;
         };
-    }, []);
-
-    // 管理員登出
+    }, [router]);    // 管理員登出
     const handleLogout = () => {
         setIsLoggedIn(false);
         setAdminToken(null);
+        localStorage.removeItem('isAdmin');
         localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminCode');
         setUserAssets([]);
         setSystemStats(null);
-        router.push('/');
-    };
-
-    // 撈學員的資料
+        router.push('/login');
+    };    // 撈學員的資料
     const fetchUserAssets = async (token, searchUser = null) => {
         try {
             setLoading(true);
             const data = await getUserAssets(token, searchUser);
             setUserAssets(data);
         } catch (error) {
-            console.error('獲取使用者資產失敗:', error);
-            console.warn('無法獲取使用者資產，可能是權限問題');
+            handleApiError(error, '獲取使用者資產');
         } finally {
             setLoading(false);
         }
@@ -123,8 +154,7 @@ export default function AdminPage() {
             const data = await getSystemStats(token);
             setSystemStats(data);
         } catch (error) {
-            console.error('獲取系統統計失敗:', error);
-            console.warn('無法獲取系統統計，可能是權限問題');
+            handleApiError(error, '獲取系統統計');
         }
     };
 
@@ -134,7 +164,7 @@ export default function AdminPage() {
             const data = await getStudents(token);
             setStudents(data);
         } catch (error) {
-            console.error('獲取學生列表失敗:', error);
+            handleApiError(error, '獲取學生列表');
         }
     };
 
@@ -144,7 +174,7 @@ export default function AdminPage() {
             const data = await getTeams(token);
             setTeams(data);
         } catch (error) {
-            console.error('獲取團隊列表失敗:', error);
+            handleApiError(error, '獲取團隊列表');
         }
     };
 
@@ -230,9 +260,7 @@ export default function AdminPage() {
         });
         setShowSuggestions(false);
         setSuggestions([]);
-    };
-
-    const handleGivePoints = async () => {
+    }; const handleGivePoints = async () => {
         setLoading(true);
         try {
             await givePoints(
@@ -240,7 +268,8 @@ export default function AdminPage() {
                 givePointsForm.username,
                 givePointsForm.type,
                 parseInt(givePointsForm.amount)
-            ); showNotification('點數發放成功！', 'success');
+            );
+            showNotification('點數發放成功！', 'success');
             await fetchUserAssets(adminToken);
             await fetchSystemStats(adminToken);
             setGivePointsForm({
@@ -251,8 +280,7 @@ export default function AdminPage() {
             setSuggestions([]);
             setShowSuggestions(false);
         } catch (error) {
-            console.error('發放點數錯誤:', error);
-            showNotification(`發放失敗: ${error.message}`, 'error');
+            handleApiError(error, '發放點數');
         }
         setLoading(false);
     };
@@ -263,8 +291,7 @@ export default function AdminPage() {
             await setTradingLimit(adminToken, parseFloat(tradingLimitPercent));
             showNotification('交易限制設定成功！', 'success');
         } catch (error) {
-            console.error('設定交易限制錯誤:', error);
-            showNotification('設定失敗', 'error');
+            handleApiError(error, '設定交易限制');
         }
         setLoading(false);
     };
@@ -288,9 +315,7 @@ export default function AdminPage() {
     const removeMarketTime = (index) => {
         const newTimes = marketTimes.filter((_, i) => i !== index);
         setMarketTimes(newTimes);
-    };
-
-    const saveMarketTimes = async () => {
+    }; const saveMarketTimes = async () => {
         setLoading(true);
         try {
             const openTime = marketTimes.map(time => {
@@ -307,8 +332,7 @@ export default function AdminPage() {
             await updateMarketTimes(adminToken, openTime);
             showNotification('市場時間設定成功！', 'success');
         } catch (error) {
-            console.error('設定市場時間錯誤:', error);
-            showNotification('設定失敗', 'error');
+            handleApiError(error, '設定市場時間');
         }
         setLoading(false);
     };
@@ -318,9 +342,7 @@ export default function AdminPage() {
         if (adminToken) {
             fetchUserAssets(adminToken, userSearchTerm.trim() || null);
         }
-    };
-
-    // 發布公告
+    };    // 發布公告
     const handleCreateAnnouncement = async () => {
         if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
             showNotification('請填寫公告標題和內容', 'error');
@@ -343,8 +365,7 @@ export default function AdminPage() {
                 broadcast: true
             });
         } catch (error) {
-            console.error('發布公告錯誤:', error);
-            showNotification(`發布失敗: ${error.message}`, 'error');
+            handleApiError(error, '發布公告');
         }
         setLoading(false);
     };
@@ -471,21 +492,6 @@ export default function AdminPage() {
                                     onChange={(e) => setGivePointsForm({
                                         ...givePointsForm,
                                         amount: e.target.value
-                                    })}
-                                    className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
-                                    理由
-                                </label>
-                                <input
-                                    type="text"
-                                    value={givePointsForm.reason}
-                                    onChange={(e) => setGivePointsForm({
-                                        ...givePointsForm,
-                                        reason: e.target.value
                                     })}
                                     className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />

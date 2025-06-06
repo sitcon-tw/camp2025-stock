@@ -60,61 +60,64 @@ const TradingTabs = ({ currentPrice = 20.0 }) => {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, []); const OrderBookTab = () => {
+        // 計算待買賣總數量
+        const totalBuyQuantity = orderbookData.buys.reduce((sum, order) => sum + (order?.quantity || 0), 0);
+        const totalSellQuantity = orderbookData.sells.reduce((sum, order) => sum + (order?.quantity || 0), 0);
 
-    const OrderBookTab = () => (
-        <div className="space-y-4">
-            {loading && (
-                <div className="text-center text-[#82bee2] py-8">載入中...</div>
-            )}
+        return (
+            <div className="space-y-4">
+                {loading && (
+                    <div className="text-center text-[#82bee2] py-8">載入中...</div>
+                )}
 
-            {error && (
-                <div className="text-center text-red-400 text-sm py-2">{error}</div>
-            )}
+                {error && (
+                    <div className="text-center text-red-400 text-sm py-2">{error}</div>
+                )}
 
-            {!loading && (
-                <>
-                    {/* 表頭 */}
-                    <div className="grid grid-cols-4 text-md text-white pb-2 border-b border-[#469FD2] mb-2">
-                        <div className="text-center">(20)</div>
-                        <div className="text-center">買價</div>
-                        <div className="text-center">賣價</div>
-                        <div className="text-center">(15)</div>
-                    </div>
+                {!loading && (
+                    <>
+                        {/* 表頭 */}
+                        <div className="grid grid-cols-4 text-md text-white pb-2 border-b border-[#469FD2] mb-2">
+                            <div className="text-center">({totalBuyQuantity.toString().padStart(2, '0')})</div>
+                            <div className="text-center">買價</div>
+                            <div className="text-center">賣價</div>
+                            <div className="text-center">({totalSellQuantity.toString().padStart(2, '0')})</div>
+                        </div>
 
-                    {/* 五檔資料 */}
-                    <div className="space-y-0">
-                        {Array.from({ length: 5 }, (_, index) => {
-                            const buyOrder = orderbookData.buys[index];
-                            const sellOrder = orderbookData.sells[4 - index];
+                        {/* 五檔資料 */}
+                        <div className="space-y-0">
+                            {Array.from({ length: 5 }, (_, index) => {
+                                const buyOrder = orderbookData.buys[index];
+                                const sellOrder = orderbookData.sells[4 - index];
 
-                            return (
-                                <div key={index} className="border-b border-[#469FD2]/30 last:border-b-0">
-                                    <div className="grid grid-cols-4 gap-2 text-md hover:bg-[#1a325f]/50 p-1">
-                                        <div className="text-white text-center font-mono">
-                                            {buyOrder ? buyOrder.quantity.toLocaleString() : '-'}
-                                        </div>
+                                return (
+                                    <div key={index} className="border-b border-[#469FD2]/30 last:border-b-0">
+                                        <div className="grid grid-cols-4 gap-2 text-md hover:bg-[#1a325f]/50 p-1">
+                                            <div className="text-white text-center font-mono">
+                                                {buyOrder ? buyOrder.quantity.toLocaleString() : '-'}
+                                            </div>
 
-                                        <div className="text-white text-center font-mono">
-                                            {buyOrder ? Math.round(buyOrder.price) : '-'}
-                                        </div>
+                                            <div className="text-white text-center font-mono">
+                                                {buyOrder ? Math.round(buyOrder.price) : '-'}
+                                            </div>
 
-                                        <div className="text-white text-center font-mono">
-                                            {sellOrder ? Math.round(sellOrder.price) : '-'}
-                                        </div>
+                                            <div className="text-white text-center font-mono">                            {sellOrder ? Math.round(sellOrder.price) : '-'}
+                                            </div>
 
-                                        <div className="text-white text-center font-mono">
-                                            {sellOrder ? sellOrder.quantity.toLocaleString() : '-'}
+                                            <div className="text-white text-center font-mono">
+                                                {sellOrder ? sellOrder.quantity.toLocaleString() : '-'}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </>
-            )}
-        </div>
-    );
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    };
 
     const TradeHistoryTab = () => {
         // 時間格式化
