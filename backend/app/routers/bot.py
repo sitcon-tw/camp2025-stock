@@ -246,3 +246,35 @@ async def bot_get_students(
             detail="Failed to retrieve student data"
         )
 
+
+# 取得所有組別，包含名稱，成員數量和總點數
+@router.get(
+    "/teams",
+    response_model=List[Dict[str, Any]],
+    summary="BOT 取得所有隊伍資料",
+    description="透過 BOT 取得所有隊伍的基本資料，包括隊伍名稱、成員數量等"
+)
+async def bot_get_teams(
+    token_verified: bool = Depends(verify_bot_token),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> List[Dict[str, Any]]:
+    """
+    BOT 取得所有隊伍資料
+    
+    Args:
+        token_verified: token 驗證結果（透過 header 傳入）
+        admin_service: 管理員服務（自動注入）
+        
+    Returns:
+        所有隊伍的基本資料列表
+    """
+    try:
+        return await admin_service.list_all_teams()
+        
+    except Exception as e:
+        logger.error(f"BOT failed to get teams: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve team data"
+        )
+    
