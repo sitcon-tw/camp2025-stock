@@ -7,7 +7,7 @@ from app.schemas.public import (
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
     MarketLimitRequest, MarketLimitResponse
 )
-from app.core.security import verify_admin_password, create_access_token
+from app.core.security import verify_CAMP_ADMIN_PASSWORD, create_access_token
 from app.core.exceptions import (
     AuthenticationException, UserNotFoundException, 
     GroupNotFoundException, AdminException
@@ -39,7 +39,7 @@ class AdminService:
     # 管理員登入
     async def login(self, request: AdminLoginRequest) -> AdminLoginResponse:
         try:
-            if not verify_admin_password(request.password):
+            if not verify_CAMP_ADMIN_PASSWORD(request.password):
                 raise AuthenticationException("Invalid admin password")
             
             # 建立 JWT Token
@@ -205,15 +205,15 @@ class AdminService:
             
             # 如果需要廣播，這裡可以加入 Telegram Bot 推送邏輯
             if request.broadcast:
-                telegram_bot_api_url = settings.TELEGRAM_BOT_API_URL
-                if not telegram_bot_api_url:
+                CAMP_TELEGRAM_BOT_API_URL = settings.CAMP_TELEGRAM_BOT_API_URL
+                if not CAMP_TELEGRAM_BOT_API_URL:
                     raise AdminException("Telegram Bot API URL not configured")
                 # 使用 requests 傳送 POST 請求到 Telegram Bot API
                 payload = {
                     # "title": request.title,
                     "message": request.message
                 }
-                response = requests.post(telegram_bot_api_url, json=payload)
+                response = requests.post(CAMP_TELEGRAM_BOT_API_URL, json=payload)
                 if response.status_code != 200:
                     raise AdminException(f"Failed to broadcast announcement: {response.text}")
                 logger.info(f"Announcement should be broadcasted: {request.title}")

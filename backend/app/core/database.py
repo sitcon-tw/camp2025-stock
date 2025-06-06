@@ -13,13 +13,13 @@ db = Database()
 # 連線到 MongoDB
 async def connect_to_mongo():
     try:
-        logger.info(f"Trying Connecting to MongoDB at: {settings.MONGO_URI}")
-        db.client = AsyncIOMotorClient(settings.MONGO_URI)
-        db.database = db.client[settings.DATABASE_NAME]
+        logger.info(f"Trying Connecting to MongoDB at: {settings.CAMP_MONGO_URI}")
+        db.client = AsyncIOMotorClient(settings.CAMP_MONGO_URI)
+        db.database = db.client[settings.CAMP_DATABASE_NAME]
         
         # 測試連線
         await db.client.admin.command('ismaster')
-        logger.info(f"Successfully connected to MongoDB database: {settings.DATABASE_NAME}")
+        logger.info(f"Successfully connected to MongoDB database: {settings.CAMP_DATABASE_NAME}")
         
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
@@ -43,8 +43,8 @@ def get_database() -> AsyncIOMotorDatabase:
 
 
 # 取得資料庫名稱
-def get_database_name() -> str:
-    return settings.DATABASE_NAME
+def get_CAMP_DATABASE_NAME() -> str:
+    return settings.CAMP_DATABASE_NAME
 
 
 # 集合名稱常數

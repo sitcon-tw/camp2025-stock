@@ -5,7 +5,7 @@
 from app.main import app
 from os import environ
 
-ENVIRONMENT = environ.get("ENVIRONMENT", "development")
+CAMP_ENVIRONMENT = environ.get("CAMP_ENVIRONMENT", "development")
 
 if __name__ == "__main__":
     import uvicorn
@@ -13,6 +13,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=ENVIRONMENT == "development",
+        reload=CAMP_ENVIRONMENT == "development",
         log_level="info"
     )

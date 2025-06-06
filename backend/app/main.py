@@ -18,13 +18,13 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    debug=settings.DEBUG
+    CAMP_DEBUG=settings.CAMP_DEBUG
 )
 
 # CORS 設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_HOSTS,
+    allow_origins=settings.CAMP_ALLOWED_HOSTS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,8 +66,8 @@ app.include_router(
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting SITCON Camp 2025 點數系統...")
-    logger.info(f"Environment: {settings.ENVIRONMENT}")
-    logger.info(f"Debug mode: {settings.DEBUG}")
+    logger.info(f"CAMP_ENVIRONMENT: {settings.CAMP_ENVIRONMENT}")
+    logger.info(f"CAMP_DEBUG mode: {settings.CAMP_DEBUG}")
     
     # 連線資料庫
     await connect_to_mongo()
@@ -90,8 +90,8 @@ async def root():
     return {
         "message": "SITCON Camp 2025 點數系統 API",
         "version": "1.0.0",
-        "environment": settings.ENVIRONMENT,
-        "database": settings.DATABASE_NAME,
+        "CAMP_ENVIRONMENT": settings.CAMP_ENVIRONMENT,
+        "database": settings.CAMP_DATABASE_NAME,
         "docs": "/docs",
         "endpoints": {
             "public_apis": "/api",
@@ -107,15 +107,15 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "SITCON Camp 2025 Backend",
-        "database": settings.DATABASE_NAME,
-        "environment": settings.ENVIRONMENT
+        "database": settings.CAMP_DATABASE_NAME,
+        "CAMP_ENVIRONMENT": settings.CAMP_ENVIRONMENT
     }
 
 # 全域錯誤處理
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     logger.error(f"Unhandled exception: {exc}")
-    if settings.DEBUG:
+    if settings.CAMP_DEBUG:
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
     

@@ -20,10 +20,10 @@ def check_env_config():
     
     # 必要的環境變數
     required_vars = [
-        'MONGO_URI',
-        'DATABASE_NAME', 
-        'JWT_SECRET',
-        'ADMIN_PASSWORD'
+        'CAMP_MONGO_URI',
+        'CAMP_DATABASE_NAME', 
+        'CAMP_JWT_SECRET',
+        'CAMP_ADMIN_PASSWORD'
     ]
     
     all_good = True
@@ -35,7 +35,7 @@ def check_env_config():
             all_good = False
         else:
             # 隱藏敏感資訊
-            if var in ['JWT_SECRET', 'ADMIN_PASSWORD']:
+            if var in ['CAMP_JWT_SECRET', 'CAMP_ADMIN_PASSWORD']:
                 display = f"{'*' * (len(value) - 4)}{value[-4:]}" if len(value) > 4 else "****"
             else:
                 display = value
@@ -52,35 +52,35 @@ def check_env_config():
 def generate_sample_env():
     """產生範例 .env 文件"""
     content = """# MongoDB 連線 URI
-MONGO_URI=mongodb://localhost:27017
+CAMP_MONGO_URI=mongodb://localhost:27017
 
 # MongoDB 資料庫名稱
-DATABASE_NAME=sitcon_camp_2025
+CAMP_DATABASE_NAME=sitcon_camp_2025
 
 # Telegram 機器人 Token
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+CAMP_TELEGRAM_BOT_TOKEN=your_CAMP_TELEGRAM_BOT_TOKEN_here
 
 # Telegram Webhook Secret
 WEBHOOK_SECRET=your_webhook_secret_here
 
 # JWT Secret Key
-JWT_SECRET=your_super_secret_jwt_key_here
+CAMP_JWT_SECRET=your_super_secret_jwt_key_here
 
 # JWT Token 過期時間（分鐘）
-JWT_EXPIRE_MINUTES=1440
+CAMP_JWT_EXPIRE_MINUTES=1440
 
 # 管理員密碼
-ADMIN_PASSWORD=your_admin_password_here
+CAMP_ADMIN_PASSWORD=your_CAMP_ADMIN_PASSWORD_here
 
 # 內部使用 API Key
-INTERNAL_API_KEY=your_internal_api_key_here
+CAMP_INTERNAL_API_KEY=your_CAMP_INTERNAL_API_KEY_here
 
 # CORS 允許來源
-ALLOWED_HOSTS=*
+CAMP_ALLOWED_HOSTS=*
 
 # 環境設定
-ENVIRONMENT=development
-DEBUG=True
+CAMP_ENVIRONMENT=development
+CAMP_DEBUG=True
 """
     
     sample_path = Path(__file__).parent / '.env.example'

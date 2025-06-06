@@ -28,17 +28,17 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(minutes=settings.CAMP_JWT_EXPIRE_MINUTES)
     
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.CAMP_JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
 
 def verify_token(token: str) -> dict:
     """驗證 JWT Token"""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.CAMP_JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         return payload
     except JWTError:
         raise HTTPException(
@@ -48,10 +48,10 @@ def verify_token(token: str) -> dict:
         )
 
 
-def verify_admin_password(password: str) -> bool:
+def verify_CAMP_ADMIN_PASSWORD(password: str) -> bool:
     """驗證管理員密碼（簡單版本，實際應該用雜湊）"""
     #TODO: 實際應該用雜湊
-    return password == settings.ADMIN_PASSWORD
+    return password == settings.CAMP_ADMIN_PASSWORD
 
 
 async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -99,12 +99,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 def verify_bot_api_key(api_key: str) -> bool:
     """驗證內部 API 金鑰"""
-    return api_key == settings.INTERNAL_API_KEY
+    return api_key == settings.CAMP_INTERNAL_API_KEY
 
 
 def verify_bot_token(token: str = Header(..., alias="token")) -> bool:
     """BOT API 驗證機制 - 驗證 token"""
-    if token != settings.INTERNAL_API_KEY:
+    if token != settings.CAMP_INTERNAL_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"

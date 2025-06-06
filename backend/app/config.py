@@ -5,40 +5,40 @@ load_dotenv()
 
 class Settings:
     # MongoDB 設定
-    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    DATABASE_NAME: str = os.getenv("DATABASE_NAME", "sitcon_camp_2025")
+    CAMP_MONGO_URI: str = os.getenv("CAMP_MONGO_URI", "mongodb://localhost:27017")
+    CAMP_DATABASE_NAME: str = os.getenv("CAMP_DATABASE_NAME", "sitcon_camp_2025")
     
     # JWT 設定
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "your-secret-key")
+    CAMP_JWT_SECRET: str = os.getenv("CAMP_JWT_SECRET", "your-secret-key")
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24 小時
+    CAMP_JWT_EXPIRE_MINUTES: int = int(os.getenv("CAMP_JWT_EXPIRE_MINUTES", "1440"))  # 24 小時
     
     # 管理員設定
-    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
+    CAMP_ADMIN_PASSWORD: str = os.getenv("CAMP_ADMIN_PASSWORD", "admin123")
     
     # API 設定
-    INTERNAL_API_KEY: str = os.getenv("INTERNAL_API_KEY", "internal-secret")
+    CAMP_INTERNAL_API_KEY: str = os.getenv("CAMP_INTERNAL_API_KEY", "internal-secret")
     
     # CORS 設定
-    ALLOWED_HOSTS: list = os.getenv("ALLOWED_HOSTS", "*").split(",")
+    CAMP_ALLOWED_HOSTS: list = os.getenv("CAMP_ALLOWED_HOSTS", "*").split(",")
     
     # Telegram Bot 設定
-    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    CAMP_TELEGRAM_BOT_TOKEN: str = os.getenv("CAMP_TELEGRAM_BOT_TOKEN", "")
 
     # Telegram Bot API URL
-    TELEGRAM_BOT_API_URL: str = os.getenv("TELEGRAM_BOT_API_URL", "https://api.telegram.org/bot")
+    CAMP_TELEGRAM_BOT_API_URL: str = os.getenv("CAMP_TELEGRAM_BOT_API_URL", "https://api.telegram.org/bot")
     
     # 環境設定
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    CAMP_ENVIRONMENT: str = os.getenv("CAMP_ENVIRONMENT", "development")
+    CAMP_DEBUG: bool = os.getenv("CAMP_DEBUG", "True").lower() == "true"
     
     @property
     def is_development(self) -> bool:
-        return self.ENVIRONMENT == "development"
+        return self.CAMP_ENVIRONMENT == "development"
     
     @property
     def is_production(self) -> bool:
-        return self.ENVIRONMENT == "production"
+        return self.CAMP_ENVIRONMENT == "production"
 
 
 settings = Settings()
