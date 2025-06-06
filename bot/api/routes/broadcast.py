@@ -24,7 +24,7 @@ async def broadcast(request: BroadcastSelective):
     logger.info("[FastAPI] Selective broadcast endpoint hit.")
     for channel in BROADCAST_CHANNELS:
         try:
-            await bot.bot.send_message(channel, f"""
+            await bot.bot.send_message(f"-{channel}", f"""
 📢 *{request.title}*
 
 {request.message}
