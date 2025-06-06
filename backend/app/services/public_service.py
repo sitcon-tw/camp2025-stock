@@ -206,12 +206,7 @@ class PublicService:
                 stock_value = stocks * current_price
                 
                 # 取得使用者所屬隊伍
-                team_name = "Unknown"
-                if user.get("group_id"):
-                    group = await self.db[Collections.GROUPS].find_one(
-                        {"_id": user["group_id"]}
-                    )
-                    team_name = group.get("name", "Unknown") if group else "Unknown"
+                team_name = user.get("team", "Unknown") or "Unknown"
                 
                 leaderboard.append(LeaderboardEntry(
                     username=user.get("username", user.get("name", "Unknown")),

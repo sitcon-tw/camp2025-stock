@@ -143,21 +143,17 @@ class AdminService:
                 message = f"Successfully gave {request.amount} points to user {request.username}"
                 
             elif request.type == "group":
-                # 給群組所有成員點數
-                group = await self.db[Collections.GROUPS].find_one(
-                    {"name": request.username}  # 這裡 username 實際是 group name
-                )
-                if not group:
-                    raise GroupNotFoundException(request.username)
+                # 給群組所有成員點數 - 直接使用 team 字段
+                team_name = request.username  # 這裡 username 實際是 team name
                 
-                # 找到群組所有成員
+                # 找到該團隊的所有成員
                 users_cursor = self.db[Collections.USERS].find(
-                    {"group_id": group["_id"]}
+                    {"team": team_name}
                 )
                 users = await users_cursor.to_list(length=None)
                 
                 if not users:
-                    raise AdminException(f"No users found in group {request.username}")
+                    raise GroupNotFoundException(team_name)
                 
                 # 批量更新點數
                 user_ids = [user["_id"] for user in users]
@@ -172,10 +168,10 @@ class AdminService:
                         user["_id"],
                         "admin_give_group",
                         request.amount,
-                        note=f"管理員給予群組 {request.username} 點數"
+                        note=f"管理員給予群組 {team_name} 點數"
                     )
                 
-                message = f"Successfully gave {request.amount} points to {len(users)} users in group {request.username}"
+                message = f"Successfully gave {request.amount} points to {len(users)} users in group {team_name}"
             
             else:
                 raise AdminException("Invalid type, must be 'user' or 'group'")
