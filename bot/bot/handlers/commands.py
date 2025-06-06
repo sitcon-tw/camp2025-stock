@@ -43,6 +43,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
+        buttons = [
+            [InlineKeyboardButton(text="複製註冊指令", copy_text=CopyTextButton("/register "))],
+        ]
+
         await update.message.reply_text(
             """
             😿 *你沒有給本喵專屬於你的註冊碼*
@@ -50,7 +54,8 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 >你可以在你的 email 裡面找到那個註冊碼，然後把註冊碼加在 `/register` 後面
 >例如說，你的註冊碼是 `12345678`，你應該要輸入 `/register 12345678`
             """,
-            parse_mode=ParseMode.MARKDOWN_V2
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=InlineKeyboardMarkup(buttons),
         )
         return
     key = context.args[0]
