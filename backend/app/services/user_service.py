@@ -83,7 +83,7 @@ class UserService:
             user_oid = ObjectId(user_id)
             user = await self.db[Collections.USERS].find_one({"_id": user_oid})
             if not user:
-                raise HTTPException(status_code=404, detail="noexist")
+                raise HTTPException(status_code=404, detail="使用者不存在")
             
             # 取得股票持有
             stock_holding = await self.db[Collections.STOCKS].find_one(
@@ -200,7 +200,6 @@ class UserService:
     # 轉帳功能
     async def transfer_points(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
         async with await self.db.client.start_session() as session:
-            committed = False  # Initialize flag
             try:
                 async with session.start_transaction():
                     # 取得發送方使用者
@@ -216,7 +215,7 @@ class UserService:
                     to_user = await self.db[Collections.USERS].find_one({
                         "$or": [
                             {"name": request.to_username},
-                            {"telegram_id": request.to_username}
+                            {"id": request.to_username}
                         ]
                     }, session=session)
                     if not to_user:
@@ -233,7 +232,7 @@ class UserService:
                         )
                     
                     # 計算手續費 (10% 或至少 1 點)
-                    fee = round(max(1, int(request.amount * 0.1)))
+                    fee = max(1, int(request.amount * 0.1))
                     total_deduct = request.amount + fee
                     
                     # 檢查餘額
@@ -281,7 +280,6 @@ class UserService:
                     
                     # 提交事務
                     await session.commit_transaction()
-                    committed = True # Set flag after successful commit
                     
                     return TransferResponse(
                         success=True,
@@ -291,8 +289,7 @@ class UserService:
                     )
                     
             except Exception as e:
-                if not committed: # Check flag before aborting
-                    await session.abort_transaction()
+                
                 logger.error(f"Transfer failed: {e}")
                 return TransferResponse(
                     success=False,
@@ -365,7 +362,7 @@ class UserService:
             ]
         })
         if not user:
-            raise HTTPException(status_code=404, detail="noexist")
+            raise HTTPException(status_code=404, detail=f"使用者 '{username}' 不存在")
         return user
     
     async def get_user_portfolio_by_username(self, username: str) -> UserPortfolio:
@@ -544,7 +541,6 @@ class UserService:
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
         """執行市價單交易"""
         async with await self.db.client.start_session() as session:
-            committed = False  # Initialize flag
             try:
                 async with session.start_transaction():
                     current_price = await self._get_current_stock_price()
@@ -594,7 +590,6 @@ class UserService:
                     
                     # 提交事務
                     await session.commit_transaction()
-                    committed = True # Set flag after successful commit
                     
                     return StockOrderResponse(
                         success=True,
@@ -603,8 +598,7 @@ class UserService:
                     )
                     
             except Exception as e:
-                if not committed: # Check flag before aborting
-                    await session.abort_transaction()
+                
                 logger.error(f"Failed to execute market order: {e}")
                 return StockOrderResponse(
                     success=False,
@@ -634,13 +628,8 @@ class UserService:
                     if (buy_order["price"] >= sell_order["price"] and 
                         buy_order["quantity"] > 0 and sell_order["quantity"] > 0):
                         
-                        try:
-                            # 使用事務進行撮合
-                            await self._match_orders_with_transaction(buy_order, sell_order)
-                        except Exception as match_error:
-                            # 記錄撮合失敗，但繼續嘗試其他訂單
-                            logger.warning(f"Failed to match orders {buy_order['_id']} and {sell_order['_id']}: {match_error}")
-                            continue
+                        # 使用事務進行撮合
+                        await self._match_orders_with_transaction(buy_order, sell_order)
                         
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
@@ -648,7 +637,6 @@ class UserService:
     async def _match_orders_with_transaction(self, buy_order: dict, sell_order: dict):
         """使用事務執行訂單撮合"""
         async with await self.db.client.start_session() as session:
-            committed = False  # Initialize flag
             try:
                 async with session.start_transaction():
                     # 計算成交數量和價格
@@ -736,15 +724,12 @@ class UserService:
                     
                     # 提交事務
                     await session.commit_transaction()
-                    committed = True # Set flag after successful commit
                     
                     logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
                     
             except Exception as e:
-                if not committed: # Check flag before aborting
-                    await session.abort_transaction()
+                
                 logger.error(f"Failed to match orders with transaction: {e}")
-                # Don't raise the exception to avoid double abort_transaction calls
     
     # ========== 新增學員管理方法 ==========
     
