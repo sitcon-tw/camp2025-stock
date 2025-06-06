@@ -634,8 +634,13 @@ class UserService:
                     if (buy_order["price"] >= sell_order["price"] and 
                         buy_order["quantity"] > 0 and sell_order["quantity"] > 0):
                         
-                        # 使用事務進行撮合
-                        await self._match_orders_with_transaction(buy_order, sell_order)
+                        try:
+                            # 使用事務進行撮合
+                            await self._match_orders_with_transaction(buy_order, sell_order)
+                        except Exception as match_error:
+                            # 記錄撮合失敗，但繼續嘗試其他訂單
+                            logger.warning(f"Failed to match orders {buy_order['_id']} and {sell_order['_id']}: {match_error}")
+                            continue
                         
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
@@ -739,7 +744,7 @@ class UserService:
                 if not committed: # Check flag before aborting
                     await session.abort_transaction()
                 logger.error(f"Failed to match orders with transaction: {e}")
-                raise
+                # Don't raise the exception to avoid double abort_transaction calls
     
     # ========== 新增學員管理方法 ==========
     

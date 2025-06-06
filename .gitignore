@@ -5,11 +5,11 @@
 # Logs
 logs
 *.log
-npm-debug.log*
-yarn-debug.log*
+npm-CAMP_DEBUG.log*
+yarn-CAMP_DEBUG.log*
 yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
+lerna-CAMP_DEBUG.log*
+.pnpm-CAMP_DEBUG.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -76,7 +76,7 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
+# dotenv CAMP_ENVIRONMENT variable files
 .env
 .env.development.local
 .env.test.local
@@ -226,7 +226,7 @@ ipython_config.py
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
+#   intended to run in multiple CAMP_ENVIRONMENTs; otherwise, check them in:
 # .python-version
 
 # pipenv
@@ -261,7 +261,7 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# CAMP_ENVIRONMENTs
 .venv
 env/
 venv/
@@ -290,8 +290,8 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
-# Cython debug symbols
-cython_debug/
+# Cython CAMP_DEBUG symbols
+cython_CAMP_DEBUG/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
