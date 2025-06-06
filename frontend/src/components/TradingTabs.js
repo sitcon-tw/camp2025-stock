@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getPriceDepth, getRecentTrades } from '@/lib/api';
+import { apiService } from '@/services/apiService';
 
 const TradingTabs = ({ currentPrice = 20.0 }) => {
     const [activeTab, setActiveTab] = useState('orderbook');
@@ -11,49 +11,56 @@ const TradingTabs = ({ currentPrice = 20.0 }) => {
     });
     const [tradeHistory, setTradeHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(null);    // 添加請求控制
+    const [lastFetchTime, setLastFetchTime] = useState(0);
+    const MIN_FETCH_INTERVAL = 5000; // 5秒最小間隔
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
+    const fetchData = async () => {
+        try {
+            setLoading(true);
 
-                // 同時抓五檔和交易記錄
-                const [depthData, tradesData] = await Promise.all([
-                    getPriceDepth(),
-                    getRecentTrades(20)
-                ]);
+            // 同時抓五檔和交易記錄
+            const [depthData, tradesData] = await Promise.all([
+                apiService.getOrderBookData(),
+                apiService.getTradeHistory(20)
+            ]);
 
-                setOrderbookData({
-                    sells: depthData.sell || [],
-                    buys: depthData.buy || []
-                });
+            setOrderbookData({
+                sells: depthData.sell || [],
+                buys: depthData.buy || []
+            });
 
-                setTradeHistory(tradesData || []);
+            setTradeHistory(tradesData || []);
 
-                setError(null);
-            } catch (err) {
-                console.error('獲取交易資料失敗:', err);
-                setError('無法獲取交易資料');
+            setError(null);
+        } catch (err) {
+            console.error('獲取交易資料失敗:', err);
+            setError('無法獲取交易資料');
 
-                setOrderbookData({
-                    sells: [],
-                    buys: []
-                });
+            setOrderbookData({
+                sells: [],
+                buys: []
+            });
 
-                setTradeHistory([]);
-            } finally {
-                setLoading(false);
+            setTradeHistory([]);
+        } finally {
+            setLoading(false);
+        }
+    }; useEffect(() => {
+        let isMounted = true;
+
+        const fetchInitialData = async () => {
+            if (isMounted) {
+                await fetchData();
             }
         };
 
-        fetchData();
+        fetchInitialData();
 
-        // 每30秒更新
-        const interval = setInterval(fetchData, 30000);
-
-        return () => clearInterval(interval);
-    }, [currentPrice]);
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const OrderBookTab = () => (
         <div className="space-y-4">

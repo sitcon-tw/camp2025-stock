@@ -26,17 +26,20 @@ export default function AdminPage() {
     const [givePointsForm, setGivePointsForm] = useState({
         type: 'user',
         username: ''
-    }); const [tradingLimitPercent, setTradingLimitPercent] = useState(10);
+    });
+
+    const [tradingLimitPercent, setTradingLimitPercent] = useState(10);
     const [marketTimes, setMarketTimes] = useState([]);
+    const [userAssets, setUserAssets] = useState([]);
+    const [systemStats, setSystemStats] = useState(null);
+    const [userSearchTerm, setUserSearchTerm] = useState('');
     const [announcementForm, setAnnouncementForm] = useState({
         title: '',
         message: '',
         broadcast: true
-    }); const [userAssets, setUserAssets] = useState([]);
-    const [systemStats, setSystemStats] = useState(null);
-    const [userSearchTerm, setUserSearchTerm] = useState('');
+    });
 
-    // 學生和團隊列表
+    // 學員跟小隊列表
     const [students, setStudents] = useState([]); const [teams, setTeams] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -44,7 +47,7 @@ export default function AdminPage() {
     // 市場狀態
     const [marketStatus, setMarketStatus] = useState(null);
 
-    // Add modal state
+    // 新增時間 Modal
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
     const [newTimeForm, setNewTimeForm] = useState({
         start: '7:00',
@@ -61,20 +64,34 @@ export default function AdminPage() {
 
     // 檢查登入狀態
     useEffect(() => {
+        let isMounted = true;
+
         const isAdmin = localStorage.getItem('isAdmin');
         const token = localStorage.getItem('adminToken');
 
         if (!isAdmin || !token) {
             router.push('/login');
             return;
-        } setAdminToken(token); setIsLoggedIn(true);
-        fetchUserAssets(token);
-        fetchSystemStats(token);
-        fetchStudents(token);
-        fetchTeams(token);
-        fetchMarketStatus();
-        fetchTradingHours();
-    }, [router]);
+        }
+
+        if (!isMounted) return;
+
+        setAdminToken(token);
+        setIsLoggedIn(true);
+
+        if (isMounted) {
+            fetchUserAssets(token);
+            fetchSystemStats(token);
+            fetchStudents(token);
+            fetchTeams(token);
+            fetchMarketStatus();
+            fetchTradingHours();
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     // 管理員登出
     const handleLogout = () => {
@@ -86,18 +103,21 @@ export default function AdminPage() {
         router.push('/');
     };
 
-    // 取得使用者資產資料
+    // 撈學員的資料
     const fetchUserAssets = async (token, searchUser = null) => {
         try {
+            setLoading(true);
             const data = await getUserAssets(token, searchUser);
             setUserAssets(data);
         } catch (error) {
             console.error('獲取使用者資產失敗:', error);
             console.warn('無法獲取使用者資產，可能是權限問題');
+        } finally {
+            setLoading(false);
         }
     };
 
-    // 取得系統統計資料
+    // 確定後端狀態
     const fetchSystemStats = async (token) => {
         try {
             const data = await getSystemStats(token);
@@ -108,7 +128,7 @@ export default function AdminPage() {
         }
     };
 
-    // 獲取學生列表
+    // 撈學員列表
     const fetchStudents = async (token) => {
         try {
             const data = await getStudents(token);
@@ -116,7 +136,9 @@ export default function AdminPage() {
         } catch (error) {
             console.error('獲取學生列表失敗:', error);
         }
-    };    // 獲取團隊列表
+    };
+
+    // 撈小隊列表
     const fetchTeams = async (token) => {
         try {
             const data = await getTeams(token);
@@ -124,7 +146,9 @@ export default function AdminPage() {
         } catch (error) {
             console.error('獲取團隊列表失敗:', error);
         }
-    };    // 獲取市場狀態
+    };
+
+    // 撈市場狀態
     const fetchMarketStatus = async () => {
         try {
             const data = await getMarketStatus();
@@ -134,17 +158,16 @@ export default function AdminPage() {
         }
     };
 
-    // 獲取當前交易時間
+    // 撈交易時間
     const fetchTradingHours = async () => {
         try {
             const data = await getTradingHours();
             if (data.tradingHours && data.tradingHours.length > 0) {
-                // 將時間戳轉換為 HH:MM 格式
                 const formattedTimes = data.tradingHours.map(slot => {
                     const startDate = new Date(slot.start * 1000);
                     const endDate = new Date(slot.end * 1000);
                     return {
-                        start: startDate.toTimeString().slice(0, 5), // HH:MM 格式
+                        start: startDate.toTimeString().slice(0, 5), // 轉 HH:MM Format
                         end: endDate.toTimeString().slice(0, 5),
                         favorite: false
                     };
@@ -153,7 +176,6 @@ export default function AdminPage() {
             }
         } catch (error) {
             console.error('獲取交易時間失敗:', error);
-            // 如果獲取失敗，保持空數組
         }
     };
 
@@ -170,11 +192,11 @@ export default function AdminPage() {
             return;
         }
 
-        // 根據選擇的類型篩選建議
         let filteredSuggestions = [];
 
         if (givePointsForm.type === 'user') {
-            // 搜尋學生
+
+            // 查學員
             filteredSuggestions = students
                 .filter(student =>
                     student.username.toLowerCase().includes(value.toLowerCase())
@@ -185,7 +207,7 @@ export default function AdminPage() {
                     type: 'user'
                 }));
         } else {
-            // 搜尋團隊
+            // 查小隊
             filteredSuggestions = teams
                 .filter(team =>
                     team.name.toLowerCase().includes(value.toLowerCase())
@@ -197,7 +219,7 @@ export default function AdminPage() {
                 }));
         }
 
-        setSuggestions(filteredSuggestions.slice(0, 5)); // 最多顯示5個建議
+        setSuggestions(filteredSuggestions.slice(0, 5));
         setShowSuggestions(filteredSuggestions.length > 0);
     };
 
@@ -226,7 +248,6 @@ export default function AdminPage() {
                 username: ''
             });
 
-            // 清空建議
             setSuggestions([]);
             setShowSuggestions(false);
         } catch (error) {
@@ -264,24 +285,8 @@ export default function AdminPage() {
         closeAddTimeModal();
     };
 
-    const addMarketTime = () => {
-        setMarketTimes([...marketTimes, { start: '7:00', end: '9:00', favorite: false }]);
-    };
-
     const removeMarketTime = (index) => {
         const newTimes = marketTimes.filter((_, i) => i !== index);
-        setMarketTimes(newTimes);
-    };
-
-    const toggleFavorite = (index) => {
-        const newTimes = [...marketTimes];
-        newTimes[index].favorite = !newTimes[index].favorite;
-        setMarketTimes(newTimes);
-    };
-
-    const updateMarketTime = (index, field, value) => {
-        const newTimes = [...marketTimes];
-        newTimes[index][field] = value;
         setMarketTimes(newTimes);
     };
 
@@ -307,14 +312,15 @@ export default function AdminPage() {
         }
         setLoading(false);
     };
-    // 使用者搜尋功能
+
+    // 查學員
     const handleUserSearch = () => {
         if (adminToken) {
             fetchUserAssets(adminToken, userSearchTerm.trim() || null);
         }
     };
 
-    // 發布公告功能
+    // 發布公告
     const handleCreateAnnouncement = async () => {
         if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
             showNotification('請填寫公告標題和內容', 'error');
@@ -389,10 +395,10 @@ export default function AdminPage() {
                 </div>
 
                 <div className="space-y-6">
-                    {/* 發放點數 */}
+                    {/* 發點數 */}
                     <div className="bg-[#1A325F] rounded-xl p-6">
                         <div className="space-y-4">
-                            {/* 個人/群組切換 */}
+                            {/* 學員 / 小隊切換 */}
                             <div className="flex space-x-4">
                                 <span className="text-[#7BC2E6]">個人</span>
                                 <label className="relative inline-flex items-center cursor-pointer">                                    <input
@@ -403,9 +409,9 @@ export default function AdminPage() {
                                         setGivePointsForm({
                                             ...givePointsForm,
                                             type: newType,
-                                            username: '' // 清空輸入框
+                                            username: ''
                                         });
-                                        // 隱藏建議並清空
+
                                         setShowSuggestions(false);
                                         setSuggestions([]);
                                     }}
@@ -428,7 +434,6 @@ export default function AdminPage() {
                                         }
                                     }}
                                     onBlur={() => {
-                                        // 延遲隱藏建議，讓用戶有時間點擊
                                         setTimeout(() => setShowSuggestions(false), 150);
                                     }}
                                     className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -726,28 +731,29 @@ export default function AdminPage() {
                     {/* 系統統計 */}
                     {systemStats && (
                         <div className="bg-[#1A325F] rounded-xl p-6">
-                            <h2 className="text-xl font-bold text-white mb-4">系統統計</h2>
+                            <h2 className="text-xl font-bold text-white mb-4">統計</h2>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
-                                    <div className="text-2xl font-bold text-blue-400">{systemStats.total_users}</div>
-                                    <div className="text-gray-400 text-sm">總使用者數</div>
+                                    <div className="text-2xl font-bold">{systemStats.total_users}</div>
+                                    <div className="text-gray-400 text-sm mt-1">個使用者</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
-                                    <div className="text-2xl font-bold text-green-400">{systemStats.total_groups}</div>
-                                    <div className="text-gray-400 text-sm">總群組數</div>
+                                    <div className="text-2xl font-bold">{systemStats.total_groups}</div>
+                                    <div className="text-gray-400 text-sm mt-1">個隊伍</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
-                                    <div className="text-2xl font-bold text-yellow-400">{systemStats.total_points.toLocaleString()}</div>
-                                    <div className="text-gray-400 text-sm">總點數</div>
+                                    <div className="text-2xl font-bold">{systemStats.total_points.toLocaleString()}</div>
+                                    <div className="text-gray-400 text-sm mt-1">總點數</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
-                                    <div className="text-2xl font-bold text-purple-400">{systemStats.total_stocks.toLocaleString()}</div>
-                                    <div className="text-gray-400 text-sm">總股票數</div>
+                                    <div className="text-2xl font-bold">{systemStats.total_stocks.toLocaleString()}</div>
+                                    <div className="text-gray-400 text-sm mt-1">總股票數</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl col-span-2">
-                                    <div className="text-2xl font-bold text-red-400">{systemStats.total_trades}</div>
-                                    <div className="text-gray-400 text-sm">總交易數</div>
-                                </div>                            </div>
+                                    <div className="text-2xl font-bold">{systemStats.total_trades}</div>
+                                    <div className="text-gray-400 text-sm mt-1">總交易數</div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

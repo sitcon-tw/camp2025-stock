@@ -1,7 +1,28 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getLeaderboard } from '@/lib/api';
+import { apiService } from '@/services/apiService';
+
+function RankingItemSkeleton() {
+    return (
+        <div className="bg-[#1A325F] flex w-11/12 h-14 rounded-2xl py-1 px-2 items-center transition-all duration-300 animate-pulse"></div>
+    );
+}
+
+function RankingListSkeleton({ title }) {
+    return (
+        <div className="mb-8">
+            <h2 className="text-2xl font-bold text-[#82bee2] mb-4 ml-5">
+                {title}
+            </h2>
+            <div className="flex gap-4 flex-col items-center">
+                {[...Array(5)].map((_, index) => (
+                    <RankingItemSkeleton key={index} />
+                ))}
+            </div>
+        </div>
+    );
+}
 
 function RankingItem({ rank, user, isGroup = false }) {
     const getRankIcon = (rank) => {
@@ -42,8 +63,7 @@ function RankingList({ title, items, isGroup = false }) {
                         />
                     ))) : (
                     <div className="text-center text-gray-400 py-8">
-                        <div className="text-4xl mb-4">統計</div>
-                        <div>目前還沒有{isGroup ? '組別' : '個人'}資料</div>
+                        <div>無法取得{isGroup ? '組別' : '個人'}資料</div>
                     </div>
                 )}
             </div>
@@ -56,18 +76,17 @@ export default function Leaderboard() {
     const [groupLeaderboard, setGroupLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [lastUpdated, setLastUpdated] = useState(new Date()); const fetchLeaderboard = async () => {
+
+    const fetchLeaderboard = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const data = await getLeaderboard();
+            const data = await apiService.getLeaderboardData();
             setLeaderboardData(data);
 
             const groupData = processGroupLeaderboard(data);
             setGroupLeaderboard(groupData);
-
-            setLastUpdated(new Date());
         } catch (error) {
             console.error('獲取排行榜失敗:', error);
             setError(error.message);
@@ -111,16 +130,20 @@ export default function Leaderboard() {
 
     const refreshData = () => {
         fetchLeaderboard();
-    };
+    }; useEffect(() => {
+        let isMounted = true;
 
-    useEffect(() => {
-        fetchLeaderboard();
+        const fetchInitialData = async () => {
+            if (isMounted) {
+                await fetchLeaderboard();
+            }
+        };
 
-        const interval = setInterval(() => {
-            fetchLeaderboard();
-        }, 30000);
+        fetchInitialData();
 
-        return () => clearInterval(interval);
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     return (
@@ -139,20 +162,27 @@ export default function Leaderboard() {
                     </div>
                 )}
 
-                {!loading && (
-                    <div className="max-w-6xl mx-auto">
-                        <RankingList
-                            title="組排行"
-                            items={groupLeaderboard}
-                            isGroup={true}
-                        />
+                <div className="max-w-6xl mx-auto">
+                    {loading ? (
+                        <>
+                            <RankingListSkeleton title="組排行" />
+                            <RankingListSkeleton title="個人排行" />
+                        </>
+                    ) : (
+                        <>
+                            <RankingList
+                                title="組排行"
+                                items={groupLeaderboard}
+                                isGroup={true}
+                            />
 
-                        <RankingList
-                            title="個人排行"
-                            items={leaderboardData}
-                        />
-                    </div>
-                )}
+                            <RankingList
+                                title="個人排行"
+                                items={leaderboardData}
+                            />
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

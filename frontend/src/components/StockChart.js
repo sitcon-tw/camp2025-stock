@@ -13,8 +13,7 @@ import {
     Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { getHistoricalPrices } from '@/lib/api';
-import { getPercentageBasedColor } from '@/lib/utils';
+import { apiService } from '@/services/apiService';
 import CandlestickChart from './CandlestickChart';
 
 ChartJS.register(
@@ -56,19 +55,32 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
     const [modalOpen, setModalOpen] = useState(false);
 
+    const fetchingRef = useRef(false);
+    const lastFetchTimeRef = useRef(0);
+
     useEffect(() => {
         if (displayMode === 'candlestick') {
             setZoomLevel(1);
         } else {
             setZoomLevel(3);
         }
-    }, [displayMode]);
+    }, [displayMode]); useEffect(() => {
+        let isMounted = true;
 
-    useEffect(() => {
         const fetchHistoricalData = async () => {
-            try {
+            const now = Date.now();
+
+            // 避免重複 fetch
+            if (fetchingRef.current) {
+                return;
+            }
+
+            if (!isMounted) return; try {
+                fetchingRef.current = true;
                 setLoading(true);
-                const historicalData = await getHistoricalPrices(24);
+                const historicalData = await apiService.getHistoricalData(168);
+
+                if (!isMounted) return;
 
                 if (historicalData && historicalData.length > 0) {
                     const realPriceData = historicalData.map(item => item.price);
@@ -79,9 +91,11 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             minute: '2-digit'
                         });
                     });
+
                     setChartData({ data: realPriceData, labels });
 
-                    const candlesticks = []; for (let i = 0; i < historicalData.length; i += 4) {
+                    const candlesticks = [];
+                    for (let i = 0; i < historicalData.length; i += 4) {
                         const chunk = historicalData.slice(i, i + 4);
                         if (chunk.length > 0) {
                             const open = chunk[0].price;
@@ -116,6 +130,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         data: movingAverages,
                         labels: labels.slice(period - 1)
                     });
+
                     if (candlesticks.length > 0) {
                         const chartWidth = 1200;
                         const scaledWidth = chartWidth * 1;
@@ -133,26 +148,36 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     setAverageData({ data: [], labels: [] });
                 }
                 setError(null);
+                lastFetchTimeRef.current = now;
             } catch (err) {
                 console.error('獲取歷史資料失敗:', err);
-                setError('無法獲取歷史資料');
-                setChartData({ data: [], labels: [] });
-                setCandlestickData([]);
-                setAverageData({ data: [], labels: [] });
+                if (isMounted) {
+                    setError('無法獲取歷史資料');
+                    setChartData({ data: [], labels: [] });
+                    setCandlestickData([]);
+                    setAverageData({ data: [], labels: [] });
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
+                fetchingRef.current = false;
             }
         };
 
         fetchHistoricalData();
-        const interval = setInterval(fetchHistoricalData, 60000);
-        return () => clearInterval(interval);
-    }, [currentPrice]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const handleMouseDown = (e) => {
         e.preventDefault();
         isDragging.current = true;
         lastMouseX.current = e.clientX || (e.touches && e.touches[0].clientX);
     };
+
     const handleMouseMove = (e) => {
         if (!isDragging.current) return;
         e.preventDefault();
@@ -161,20 +186,24 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         setPanOffset(prev => prev + deltaX * 0.5);
         lastMouseX.current = clientX;
     };
+
     const handleMouseUp = () => {
         isDragging.current = false;
     };
+
     const handleWheel = (e) => {
         e.preventDefault();
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
         setZoomLevel(prev => Math.max(0.5, Math.min(10, prev * zoomFactor)));
     };
+
     const handleTouchStart = (e) => {
         if (e.touches.length === 1) {
             isDragging.current = true;
             lastMouseX.current = e.touches[0].clientX;
         }
     };
+
     const handleTouchMove = (e) => {
         e.preventDefault();
         if (e.touches.length === 1 && isDragging.current) {
@@ -183,9 +212,12 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
             lastMouseX.current = e.touches[0].clientX;
         }
     };
+
     const handleTouchEnd = () => {
         isDragging.current = false;
-    }; const resetZoomPan = () => {
+    };
+
+    const resetZoomPan = () => {
         const defaultZoom = displayMode === 'candlestick' ? 1 : 3;
         setZoomLevel(defaultZoom);
 
@@ -216,16 +248,14 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 return chartData;
         }
     };
-    const currentData = getCurrentData();
-    const lineColor = currentData.data.length > 0
-        ? getPercentageBasedColor(currentPrice, currentData.data, 30)
-        : '#82bee2';
 
-    const gradientColor = lineColor === '#ef4444'
+    // 這邊會根據當天的漲或跌來決定圖表的顏色
+    // 上漲紅色 下跌或沒變化綠色
+    const lineColor = changePercent > 0 ? '#ef4444' : '#22c55e';
+    const gradientColor = changePercent > 0
         ? 'rgba(239, 68, 68, 0.2)'
-        : lineColor === '#22c55e'
-            ? 'rgba(34, 197, 94, 0.2)'
-            : 'rgba(130, 190, 226, 0.2)';
+        : 'rgba(34, 197, 94, 0.2)';
+
     const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -308,11 +338,32 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
     if (loading) {
         return (
-            <div className="w-full h-48 md:h-56 flex items-center justify-center bg-[#0f203e] rounded-lg">
-                <div className="text-[#82bee2]">載入圖表中...</div>
+            <div className="relative w-full bg-[#0f203e] rounded-lg">
+                <div className="flex justify-end mb-2 w-full">
+                    <div className="px-3 py-1 bg-[#1A325F]/50 rounded-2xl text-xs">
+                        <div className="w-8 h-3 bg-[#82bee2]/20 rounded animate-pulse"></div>
+                    </div>
+                </div>
+                <div className="w-full h-full flex flex-col justify-center items-center rounded-lg overflow-hidden">
+                    <div className="h-48 md:h-52 mb-2 w-full flex items-center justify-center bg-[#0f203e] rounded-lg">
+                        <div className="flex flex-col items-center space-y-3">
+                            <div className="text-[#82bee2] text-sm">載入圖表中...</div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col space-y-2 pb-2">
+                        <div className="flex justify-center items-center space-x-2">
+                            <div className="w-16 h-6 bg-[#1A325F]/50 rounded animate-pulse"></div>
+                            <div className="w-6 h-6 bg-[#1A325F]/50 rounded-full animate-pulse"></div>
+                            <div className="w-10 h-6 bg-[#1A325F]/50 rounded animate-pulse"></div>
+                            <div className="w-6 h-6 bg-[#1A325F]/50 rounded-full animate-pulse"></div>
+                            <div className="w-12 h-6 bg-[#1A325F]/50 rounded animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
+
     if (error) {
         return (
             <div className="w-full h-48 md:h-56 flex items-center justify-center bg-[#0f203e] rounded-lg">
@@ -351,6 +402,8 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                                 height={200}
                                 zoomLevel={zoomLevel}
                                 panOffset={panOffset}
+                                changePercent={changePercent}
+                                loading={loading}
                             />
                         </div>) : (
                         <div
@@ -410,18 +463,19 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <h3 className="text-xl font-semibold text-[#82bee2] mb-3">選擇圖表模式</h3>
-                        <ul className="space-y-2">                            <li>
-                            <button
-                                onClick={() => {
-                                    setDisplayMode('real');
-                                    setModalOpen(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'real' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'
-                                    }`}
-                            >
-                                真實價
-                            </button>
-                        </li>
+                        <ul className="space-y-2">
+                            <li>
+                                <button
+                                    onClick={() => {
+                                        setDisplayMode('real');
+                                        setModalOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'real' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'
+                                        }`}
+                                >
+                                    真實價
+                                </button>
+                            </li>
                             <li>
                                 <button
                                     onClick={() => {

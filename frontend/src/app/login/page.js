@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/lib/api';
 
@@ -9,6 +9,14 @@ export default function Login() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const router = useRouter();
+
+    useEffect(() => {
+        const isAdmin = localStorage.getItem('isAdmin');
+
+        if (isAdmin === 'true') {
+            router.push('/admin');
+        }
+    });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,12 +30,11 @@ export default function Login() {
         } try {
             const data = await adminLogin(adminCode);
 
-            // 儲存認證資訊
+            // 存認證資訊
             localStorage.setItem('isAdmin', 'true');
             localStorage.setItem('adminToken', data.token);
             localStorage.setItem('adminCode', adminCode);
 
-            // 跳轉到管理頁面
             router.push('/admin');
         } catch (error) {
             console.error('登入錯誤:', error);

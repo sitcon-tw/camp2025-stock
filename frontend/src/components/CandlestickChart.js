@@ -12,7 +12,10 @@ const CandlestickChart = ({ data, width = 1000, height = 200, zoomLevel = 1, pan
                 <div className="text-[#82bee2] text-sm">無資料可顯示</div>
             </div>
         );
-    } const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    }
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
     const margin = isMobile
         ? { top: 10, right: 45, bottom: 30, left: 20 }
         : { top: 15, right: 60, bottom: 40, left: 25 };
@@ -33,6 +36,7 @@ const CandlestickChart = ({ data, width = 1000, height = 200, zoomLevel = 1, pan
     const priceRange = maxPrice - minPrice;
     const scaledWidth = chartWidth * zoomLevel;
     const candleSpacing = scaledWidth / Math.max(1, data.length - 1);
+
     const candleWidth = isMobile
         ? Math.max(2, Math.min(8, candleSpacing * 0.6))
         : Math.max(4, Math.min(16, candleSpacing * 0.7));
@@ -41,6 +45,7 @@ const CandlestickChart = ({ data, width = 1000, height = 200, zoomLevel = 1, pan
         const baseX = (index * candleSpacing) + panOffset;
         return baseX;
     };
+
     const yScale = (price) => {
         const normalizedPrice = parseFloat(price) || 0;
         return chartHeight - ((normalizedPrice - minPrice) / priceRange) * chartHeight;

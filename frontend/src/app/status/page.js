@@ -4,39 +4,45 @@ import { useState, useEffect } from 'react';
 import HeaderBar from "@/components/HeaderBar";
 import StockChart from "@/components/StockChart";
 import TradingTabs from "@/components/TradingTabs";
-import { getPriceSummary } from "@/lib/api";
+import { apiService } from "@/services/apiService";
 
 export default function Status() {
 	const [stockData, setStockData] = useState({
-		lastPrice: 70,
+		lastPrice: 0,
 		change: 0,
 		changePercent: 0,
-		high: 75,
-		low: 65,
-		open: 70,
+		high: 0,
+		low: 0,
+		open: 0,
 		volume: 0
 	});
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null); useEffect(() => {
-		const fetchData = async () => {
-			try {
-				setLoading(true);
-				const data = await getPriceSummary();
-				setStockData(data);
-				setError(null);
-			} catch (err) {
-				console.error('獲取股票資料失敗:', err);
-				setError('無法獲取股票資料');
-			} finally {
-				setLoading(false);
+
+	const [error, setError] = useState(null);
+
+	const fetchData = async () => {
+		try {
+			const data = await apiService.getPriceData();
+			setStockData(data);
+			setError(null);
+		} catch (err) {
+			console.error('獲取股票資料失敗:', err);
+			setError('無法獲取股票資料');
+		}
+	};
+	useEffect(() => {
+		let isMounted = true;
+
+		const fetchInitialData = async () => {
+			if (isMounted) {
+				await fetchData();
 			}
 		};
 
-		fetchData();
+		fetchInitialData();
 
-		const interval = setInterval(fetchData, 30000);
-
-		return () => clearInterval(interval);
+		return () => {
+			isMounted = false;
+		};
 	}, []);
 
 	const currentPrice = stockData.lastPrice;

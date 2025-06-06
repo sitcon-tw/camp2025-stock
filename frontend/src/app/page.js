@@ -1,29 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getMarketStatus } from '@/lib/api';
+import { apiService } from '@/services/apiService';
 
 export default function Home() {
     const [marketStatus, setMarketStatus] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
+    const [loading, setLoading] = useState(true); useEffect(() => {
+        let isMounted = true;
         const fetchMarketStatus = async () => {
+            if (!isMounted) return;
+
             try {
-                const data = await getMarketStatus();
-                setMarketStatus(data);
+                const data = await apiService.getMarketData();
+                if (isMounted) {
+                    setMarketStatus(data);
+                }
             } catch (error) {
                 console.error('獲取市場狀態失敗:', error);
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchMarketStatus();
 
-        const interval = setInterval(fetchMarketStatus, 60000);
-
-        return () => clearInterval(interval);
+        return () => {
+            isMounted = false;
+        };
     }, []);
     const getClosedTradingTimes = () => {
         if (!marketStatus?.openTime || marketStatus.openTime.length === 0) {
