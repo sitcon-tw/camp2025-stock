@@ -18,6 +18,7 @@ from bson import ObjectId
 import logging
 import random
 import uuid
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,53 @@ class UserService:
         else:
             self.db = db
     
+    async def _get_or_initialize_ipo_config(self, session=None) -> dict:
+        """
+        從資料庫獲取 IPO 設定，如果不存在則從環境變數初始化。
+        環境變數: IPO_INITIAL_SHARES, IPO_INITIAL_PRICE
+        """
+        # 首先嘗試直接獲取
+        ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
+            {"type": "ipo_status"}, 
+            session=session
+        )
+        if ipo_config:
+            return ipo_config
+            
+        # 如果不存在，則從環境變數讀取設定並以原子操作寫入
+        try:
+            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+            initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+        except (ValueError, TypeError):
+            logger.error("無效的 IPO 環境變數，使用預設值。")
+            initial_shares = 1000
+            initial_price = 20
+        
+        ipo_doc_on_insert = {
+            "type": "ipo_status",
+            "initial_shares": initial_shares,
+            "shares_remaining": initial_shares,
+            "initial_price": initial_price,
+            "updated_at": datetime.now(timezone.utc)
+        }
+
+        # 使用 upsert + $setOnInsert 原子性地創建文件，避免競爭條件
+        await self.db[Collections.MARKET_CONFIG].update_one(
+            {"type": "ipo_status"},
+            {"$setOnInsert": ipo_doc_on_insert},
+            upsert=True,
+            session=session
+        )
+
+        # 現在，文件保證存在，再次獲取它
+        ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
+            {"type": "ipo_status"}, 
+            session=session
+        )
+        
+        logger.info(f"從環境變數初始化 IPO 狀態: {initial_shares} 股，每股 {initial_price} 點。")
+        return ipo_config
+
     # 使用者登入
     async def login_user(self, request: UserLoginRequest) -> UserLoginResponse:
         try:
@@ -605,17 +653,43 @@ class UserService:
     async def _execute_market_order_logic(self, user_oid: ObjectId, order_doc: dict, session=None) -> StockOrderResponse:
         """市價單交易邏輯"""
         try:
-            current_price = await self._get_current_stock_price()
-            # 防護性檢查：確保價格不為 None
-            if current_price is None:
-                logger.warning("Current stock price is None, using default price 20")
-                current_price = 20
             side = order_doc["side"]
             quantity = order_doc["quantity"]
+            
+            # 決定價格和來源
+            price = None
+            is_ipo_purchase = False
+            message = ""
+            
+            if side == "buy":
+                ipo_config = await self._get_or_initialize_ipo_config(session=session)
+                if ipo_config and ipo_config.get("shares_remaining", 0) >= quantity:
+                    user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
+                    ipo_price = ipo_config["initial_price"]
+                    if user.get("points", 0) >= quantity * ipo_price:
+                        price = ipo_price
+                        is_ipo_purchase = True
+                        message = f"市價單已向系統申購成交，價格: {price}"
+
+            if price is None:
+                price = await self._get_current_stock_price()
+                # 防護性檢查：確保價格不為 None
+                if price is None:
+                    logger.warning("Current stock price is None, using default price 20")
+                    price = 20
+                message = f"市價單已成交，價格: {price}"
+
+            current_price = price
             
             # 計算交易金額
             trade_amount = quantity * current_price
             
+            # 買入前再次確認點數
+            if side == "buy":
+                user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
+                if user.get("points", 0) < trade_amount:
+                    return StockOrderResponse(success=False, message=f"點數不足，需要 {trade_amount} 點")
+
             # 更新訂單狀態
             order_doc.update({
                 "status": "filled",
@@ -626,6 +700,14 @@ class UserService:
             
             # 插入已完成的訂單
             result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
+            
+            # 更新 IPO 剩餘數量
+            if is_ipo_purchase:
+                await self.db[Collections.MARKET_CONFIG].update_one(
+                    {"type": "ipo_status"},
+                    {"$inc": {"shares_remaining": -quantity}},
+                    session=session
+                )
             
             # 更新使用者資產
             if side == "buy":
@@ -654,18 +736,17 @@ class UserService:
                     session=session
                 )
             
-            # 如果有事務則提交
-            if session:
-                await session.commit_transaction()
-            
             return StockOrderResponse(
                 success=True,
                 order_id=str(result.inserted_id),
-                message=f"市價單已成交，價格: {current_price}"
+                message=message
             )
             
         except Exception as e:
             logger.error(f"Failed to execute market order logic: {e}")
+            # 如果在事務中，則中止
+            if session and session.in_transaction:
+                await session.abort_transaction()
             return StockOrderResponse(
                 success=False,
                 message="市價單執行失敗"
@@ -675,28 +756,54 @@ class UserService:
     async def _try_match_orders(self):
         """嘗試撮合買賣訂單"""
         try:
-            # 簡化實作：查找待成交的買賣單並嘗試撮合
-            buy_orders = await self.db[Collections.STOCK_ORDERS].find({
-                "side": "buy",
-                "status": "pending",
-                "order_type": "limit"
-            }).sort("price", -1).to_list(None)  # 買單按價格降序
+            # 查找待成交的買賣單
+            buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
+                "side": "buy", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"
+            }).sort("price", -1)  # 買單按價格降序
             
-            sell_orders = await self.db[Collections.STOCK_ORDERS].find({
-                "side": "sell",
-                "status": "pending",
-                "order_type": "limit"
-            }).sort("price", 1).to_list(None)  # 賣單按價格升序
-            
+            sell_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
+                "side": "sell", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"
+            }).sort("price", 1)  # 賣單按價格升序
+
+            buy_orders = await buy_orders_cursor.to_list(None)
+            sell_orders = await sell_orders_cursor.to_list(None)
+
+            # 將系統 IPO 作為一個虛擬賣單加入
+            ipo_config = await self._get_or_initialize_ipo_config()
+            if ipo_config and ipo_config.get("shares_remaining", 0) > 0:
+                system_sell_order = {
+                    "_id": "SYSTEM_IPO",
+                    "user_id": "SYSTEM",
+                    "side": "sell",
+                    "quantity": ipo_config["shares_remaining"],
+                    "price": ipo_config["initial_price"],
+                    "status": "pending",
+                    "order_type": "limit",
+                    "is_system_order": True
+                }
+                sell_orders.append(system_sell_order)
+                sell_orders.sort(key=lambda x: x.get('price', float('inf')))
+
+            # 進行撮合
             for buy_order in buy_orders:
+                # 確保 buy_order 的 quantity > 0 才進行撮合
+                if buy_order.get("quantity", 0) <= 0:
+                    continue
+
                 for sell_order in sell_orders:
+                    # 確保 sell_order 的 quantity > 0
+                    if sell_order.get("quantity", 0) <= 0:
+                        continue
+
                     # 檢查是否可以撮合
-                    if (buy_order["price"] >= sell_order["price"] and 
-                        buy_order["quantity"] > 0 and sell_order["quantity"] > 0):
-                        
+                    if buy_order["price"] >= sell_order["price"]:
                         # 使用事務進行撮合
                         await self._match_orders(buy_order, sell_order)
                         
+                        # 如果買單已完全成交，跳出內層循環
+                        if buy_order.get("quantity", 0) <= 0:
+                            break
+                    
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
     
@@ -730,48 +837,50 @@ class UserService:
         try:
             # 計算成交數量和價格
             trade_quantity = min(buy_order["quantity"], sell_order["quantity"])
-            trade_price = sell_order["price"]  # 以賣單價格成交
+            trade_price = buy_order["price"]  # 以買方出價成交
             trade_amount = trade_quantity * trade_price
             now = datetime.now(timezone.utc)
             
-            # 更新訂單狀態
+            is_system_sale = sell_order.get("is_system_order", False)
+
+            # 更新訂單狀態和剩餘數量
             buy_order["quantity"] -= trade_quantity
-            sell_order["quantity"] -= trade_quantity
+            if not is_system_sale:
+                sell_order["quantity"] -= trade_quantity
             
-            if buy_order["quantity"] == 0:
-                buy_order["status"] = "filled"
-            else:
-                buy_order["status"] = "partial"
-                
-            if sell_order["quantity"] == 0:
-                sell_order["status"] = "filled"
-            else:
-                sell_order["status"] = "partial"
+            buy_order["status"] = "filled" if buy_order["quantity"] == 0 else "partial"
+            if not is_system_sale:
+                sell_order["status"] = "filled" if sell_order["quantity"] == 0 else "partial"
             
-            # 更新資料庫中的訂單
+            # 更新買方訂單
             await self.db[Collections.STOCK_ORDERS].update_one(
                 {"_id": buy_order["_id"]},
-                {"$set": {
-                    "quantity": buy_order["quantity"],
-                    "status": buy_order["status"],
-                    "filled_price": trade_price,
-                    "filled_quantity": trade_quantity,
-                    "filled_at": now
-                }},
+                {
+                    "$set": {"quantity": buy_order["quantity"], "status": buy_order["status"], "filled_at": now},
+                    "$inc": {"filled_quantity": trade_quantity},
+                    "$max": {"filled_price": trade_price} # 記錄最高的成交價
+                },
                 session=session
             )
             
-            await self.db[Collections.STOCK_ORDERS].update_one(
-                {"_id": sell_order["_id"]},
-                {"$set": {
-                    "quantity": sell_order["quantity"],
-                    "status": sell_order["status"],
-                    "filled_price": trade_price,
-                    "filled_quantity": trade_quantity,
-                    "filled_at": now
-                }},
-                session=session
-            )
+            # 更新賣方訂單或系統庫存
+            if not is_system_sale:
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": sell_order["_id"]},
+                    {
+                        "$set": {"quantity": sell_order["quantity"], "status": sell_order["status"], "filled_at": now},
+                        "$inc": {"filled_quantity": trade_quantity},
+                        "$max": {"filled_price": trade_price} # 記錄最高的成交價
+                    },
+                    session=session
+                )
+            else:
+                # 更新系統 IPO 庫存
+                await self.db[Collections.MARKET_CONFIG].update_one(
+                    {"type": "ipo_status"},
+                    {"$inc": {"shares_remaining": -trade_quantity}},
+                    session=session
+                )
             
             # 更新使用者資產
             # 買方：扣除點數，增加股票
@@ -788,37 +897,36 @@ class UserService:
             )
             
             # 賣方：增加點數，減少股票
-            await self.db[Collections.USERS].update_one(
-                {"_id": sell_order["user_id"]},
-                {"$inc": {"points": trade_amount}},
-                session=session
-            )
-            await self.db[Collections.STOCKS].update_one(
-                {"user_id": sell_order["user_id"]},
-                {"$inc": {"stock_amount": -trade_quantity}},
-                session=session
-            )
+            if not is_system_sale:
+                await self.db[Collections.USERS].update_one(
+                    {"_id": sell_order["user_id"]},
+                    {"$inc": {"points": trade_amount}},
+                    session=session
+                )
+                await self.db[Collections.STOCKS].update_one(
+                    {"user_id": sell_order["user_id"]},
+                    {"$inc": {"stock_amount": -trade_quantity}},
+                    session=session
+                )
             
             # 記錄交易記錄
             await self.db[Collections.TRADES].insert_one({
                 "buy_order_id": buy_order["_id"],
-                "sell_order_id": sell_order["_id"],
+                "sell_order_id": None if is_system_sale else sell_order["_id"],
                 "buy_user_id": buy_order["user_id"],
-                "sell_user_id": sell_order["user_id"],
+                "sell_user_id": "SYSTEM" if is_system_sale else sell_order["user_id"],
                 "price": trade_price,
                 "quantity": trade_quantity,
                 "amount": trade_amount,
                 "created_at": now
             }, session=session)
             
-            # 如果有事務則提交
-            if session:
-                await session.commit_transaction()
-            
             logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
             
         except Exception as e:
             logger.error(f"Failed to match orders logic: {e}")
+            if session and session.in_transaction:
+                await session.abort_transaction()
             raise
 
     async def _match_orders_with_transaction_legacy(self, buy_order: dict, sell_order: dict):
