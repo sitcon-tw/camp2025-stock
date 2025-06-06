@@ -102,7 +102,7 @@ async def root():
     }
 
 # 健康檢查 endpoint
-@app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
 async def health_check():
     return {
         "status": "healthy",
