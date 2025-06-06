@@ -352,15 +352,19 @@ class AdminService:
             logger.error(f"Failed to list all users: {e}")
             raise AdminException("Failed to retrieve user list")
 
-    # 列出所有團隊，回傳其名稱和成員數量
+    # 列出所有團隊，回傳其名稱、成員數量和點數總和
     async def list_all_teams(self) -> List[Dict[str, str]]:
         try:
             # 從 USERS 集合中統計實際的團隊資訊
             pipeline = [
                 # 過濾有團隊資訊的使用者
                 {"$match": {"team": {"$ne": None, "$exists": True}}},
-                # 按團隊分組並計算成員數量
-                {"$group": {"_id": "$team", "member_count": {"$sum": 1}}},
+                # 按團隊分組並計算成員數量和點數總和
+                {"$group": {
+                    "_id": "$team", 
+                    "member_count": {"$sum": 1},
+                    "total_points": {"$sum": {"$ifNull": ["$points", 0]}}
+                }},
                 # 按成員數量降序排列
                 {"$sort": {"member_count": -1}}
             ]
@@ -371,7 +375,8 @@ class AdminService:
             result = [
                 {
                     "name": stat["_id"], 
-                    "member_count": stat["member_count"]
+                    "member_count": stat["member_count"],
+                    "total_points": stat["total_points"]
                 } 
                 for stat in team_stats
             ]
