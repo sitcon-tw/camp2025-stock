@@ -200,6 +200,7 @@ class UserService:
     # 轉帳功能
     async def transfer_points(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
         async with await self.db.client.start_session() as session:
+            committed = False  # Initialize flag
             try:
                 async with session.start_transaction():
                     # 取得發送方使用者
@@ -280,6 +281,7 @@ class UserService:
                     
                     # 提交事務
                     await session.commit_transaction()
+                    committed = True # Set flag after successful commit
                     
                     return TransferResponse(
                         success=True,
@@ -289,7 +291,8 @@ class UserService:
                     )
                     
             except Exception as e:
-                await session.abort_transaction()
+                if not committed: # Check flag before aborting
+                    await session.abort_transaction()
                 logger.error(f"Transfer failed: {e}")
                 return TransferResponse(
                     success=False,
@@ -541,6 +544,7 @@ class UserService:
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
         """執行市價單交易"""
         async with await self.db.client.start_session() as session:
+            committed = False  # Initialize flag
             try:
                 async with session.start_transaction():
                     current_price = await self._get_current_stock_price()
@@ -590,6 +594,7 @@ class UserService:
                     
                     # 提交事務
                     await session.commit_transaction()
+                    committed = True # Set flag after successful commit
                     
                     return StockOrderResponse(
                         success=True,
@@ -598,7 +603,8 @@ class UserService:
                     )
                     
             except Exception as e:
-                await session.abort_transaction()
+                if not committed: # Check flag before aborting
+                    await session.abort_transaction()
                 logger.error(f"Failed to execute market order: {e}")
                 return StockOrderResponse(
                     success=False,
@@ -637,6 +643,7 @@ class UserService:
     async def _match_orders_with_transaction(self, buy_order: dict, sell_order: dict):
         """使用事務執行訂單撮合"""
         async with await self.db.client.start_session() as session:
+            committed = False  # Initialize flag
             try:
                 async with session.start_transaction():
                     # 計算成交數量和價格
@@ -724,13 +731,15 @@ class UserService:
                     
                     # 提交事務
                     await session.commit_transaction()
+                    committed = True # Set flag after successful commit
                     
                     logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
                     
             except Exception as e:
-                await session.abort_transaction()
+                if not committed: # Check flag before aborting
+                    await session.abort_transaction()
                 logger.error(f"Failed to match orders with transaction: {e}")
-                # 不重新拋出異常，避免外層重複調用 abort_transaction
+                raise
     
     # ========== 新增學員管理方法 ==========
     
