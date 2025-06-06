@@ -1,7 +1,7 @@
 {
-  "name": "SITCON Camp 2025 股票系統",
-  "short_name": "Camp2025 股票",
-  "description": "一個可以讓學員玩股票的東東",
+  "name": "SITCON Camp 2025 點數系統",
+  "short_name": "點數系統 Camp2025",
+  "description": "這裡可以查看排行榜、股票資訊、排行榜等公開資料",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -57,7 +57,11 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["finance", "education", "games"],
+  "categories": [
+    "finance",
+    "education",
+    "games"
+  ],
   "lang": "zh-TW",
   "scope": "/",
   "prefer_related_applications": false
