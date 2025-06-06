@@ -1,4 +1,5 @@
 from os import environ
+from datetime import datetime
 
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
@@ -31,7 +32,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         f"""
-        😺 *早安 {response.get("username")}*
+        😺 *早安 {update.effective_user.full_name}*
 
 🤑┃目前點數 *{response.get("points")}*
 🏛️┃目前持有股票張數 *{response.get("stocks")}*，要不要來點新鮮的股票？
@@ -178,9 +179,30 @@ async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             return
 
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"/start triggered by {update.effective_user.id}")
+
+    response = api_helper.post("/api/bot/points/history", protected_route=True, json={
+        "from_user": str(update.effective_user.id),
+        "limit": 10
+    })
+
+    if await verify_existing_user(response, update):
+        return
+
+    lines = []
+    for item in response:
+        time = datetime.fromisoformat(item['created_at']).strftime("%Y-%m-%d %H:%M")
+
+        line = f"`{escape_markdown(time, 2)}`： *{escape_markdown(item['note'], 2)}* {item['amount']} 點，餘額 *{item['balance_after']}* 點".strip()
+        lines.append(line)
+
+    print(lines)
+
     await update.message.reply_text(
         f"""
-        來財
+        😺 *{escape_markdown(update.effective_user.full_name)} 的點數紀錄*
+        
+{"\n".join(lines)}
         """, parse_mode=ParseMode.MARKDOWN_V2)
 
 async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

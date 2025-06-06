@@ -2,7 +2,10 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.helpers import escape_markdown
 
-async def verify_existing_user(response: dict, update: Update) -> bool:
+async def verify_existing_user(response, update: Update) -> bool:
+    if not type(response) == dict:
+        return False
+
     if response.get("detail") == "noexist":
         await update.message.reply_text(f"""😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*
 
