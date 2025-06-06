@@ -16,7 +16,7 @@ load_dotenv()
 BACKEND_URL = environ.get("BACKEND_URL")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.info(f"/start triggered by {update.effective_user.full_name}")
+    logger.info(f"/start triggered by {update.effective_user.id}")
 
     response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
         "from_user": str(update.effective_user.id)
@@ -43,6 +43,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
+        logger.info(f"/register triggered by {update.effective_user.id} without key")
         buttons = [
             [InlineKeyboardButton(text="複製註冊指令", copy_text=CopyTextButton("/register "))],
         ]
@@ -59,7 +60,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     key = context.args[0]
-    logger.info(f"/register triggered by {update.effective_user.full_name}, key: {key}")
+    logger.info(f"/register triggered by {update.effective_user.id}, key: {key}")
 
     response = api_helper.post("/api/system/users/activate", protected_route=True, json={
         "id": key,
