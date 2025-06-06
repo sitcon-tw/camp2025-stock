@@ -7,6 +7,4 @@ RUN uv sync --locked
 ENV PORT=8080
 EXPOSE 8080
 
-WORKDIR /app/app
-
 ENTRYPOINT ["uv", "run", "main.py"]
