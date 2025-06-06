@@ -6,6 +6,7 @@ from app.main import app
 from os import environ
 
 PORT = environ.get("PORT", 8000)
+ENVIRONMENT = environ.get("ENVIRONMENT", "development")
 
 if __name__ == "__main__":
     import uvicorn
@@ -13,6 +14,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=int(PORT),
-        reload=True,
+        reload=ENVIRONMENT == "development",
         log_level="info"
     )
