@@ -167,7 +167,7 @@ async def bot_transfer_points(
 
 # ========== BOT 使用者資訊 ==========
 
-@router.get(
+@router.post(
     "/profile",
     summary="BOT 查詢使用者資料",
     description="透過 BOT 查詢使用者的基本資料"
@@ -187,7 +187,7 @@ async def bot_get_user_profile(
     Returns:
         使用者基本資訊
     """
-    return await user_service.get_user_profile(request)
+    return await user_service.get_user_profile_by_id(request.from_user)
 
 
 # ========== BOT 健康檢查 ==========
