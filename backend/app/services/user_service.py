@@ -83,7 +83,7 @@ class UserService:
             user_oid = ObjectId(user_id)
             user = await self.db[Collections.USERS].find_one({"_id": user_oid})
             if not user:
-                raise HTTPException(status_code=404, detail="使用者不存在")
+                raise HTTPException(status_code=404, detail="noexist")
             
             # 取得股票持有
             stock_holding = await self.db[Collections.STOCKS].find_one(
@@ -365,7 +365,7 @@ class UserService:
             ]
         })
         if not user:
-            raise HTTPException(status_code=404, detail=f"使用者 '{username}' 不存在")
+            raise HTTPException(status_code=404, detail="noexist")
         return user
     
     async def get_user_portfolio_by_username(self, username: str) -> UserPortfolio:
