@@ -3,13 +3,16 @@
 
 
 from app.main import app
+from os import environ
+
+PORT = environ.get("PORT", 8000)
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=PORT,
         reload=True,
         log_level="info"
     )
