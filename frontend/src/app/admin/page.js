@@ -270,11 +270,11 @@ export default function AdminPage() {
                 parseInt(givePointsForm.amount)
             );
             showNotification('點數發放成功！', 'success');
-            await fetchUserAssets(adminToken);
             await fetchSystemStats(adminToken);
             setGivePointsForm({
-                type: 'user',
-                username: ''
+                type: givePointsForm.type,
+                username: '',
+                amount: ''
             });
 
             setSuggestions([]);
