@@ -6,13 +6,14 @@ from app.main import app
 from os import environ
 
 CAMP_ENVIRONMENT = environ.get("CAMP_ENVIRONMENT", "development")
+PORT = environ.get("PORT", 8000)
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=int(PORT),
         reload=CAMP_ENVIRONMENT == "development",
         log_level="info"
     )
