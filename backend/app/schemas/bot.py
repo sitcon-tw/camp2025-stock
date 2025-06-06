@@ -68,6 +68,8 @@ class BotProfileRequest(BaseModel):
     from_user: str = Field(..., description="使用者id")
 
 
+
+
 # ========== Telegram Webhook 和 Broadcast 模型 ==========
 
 class TelegramWebhookRequest(BaseModel):

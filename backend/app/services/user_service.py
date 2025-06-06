@@ -730,7 +730,7 @@ class UserService:
             except Exception as e:
                 await session.abort_transaction()
                 logger.error(f"Failed to match orders with transaction: {e}")
-                raise
+                # 不重新拋出異常，避免外層重複調用 abort_transaction
     
     # ========== 新增學員管理方法 ==========
     

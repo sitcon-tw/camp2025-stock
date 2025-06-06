@@ -22,8 +22,6 @@ class Settings:
     # CORS 設定
     CAMP_ALLOWED_HOSTS: list = os.getenv("CAMP_ALLOWED_HOSTS", "*").split(",")
     
-    # Telegram Bot 設定
-    CAMP_TELEGRAM_BOT_TOKEN: str = os.getenv("CAMP_TELEGRAM_BOT_TOKEN", "")
 
     # Telegram Bot API URL
     CAMP_TELEGRAM_BOT_API_URL: str = os.getenv("CAMP_TELEGRAM_BOT_API_URL", "https://api.telegram.org/bot")
