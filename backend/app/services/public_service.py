@@ -190,6 +190,11 @@ class PublicService:
             # 取得目前股票價格
             current_price = await self._get_current_stock_price()
             
+            # 防護性檢查：確保價格不為 None
+            if current_price is None:
+                logger.warning("Current stock price is None, using default price 20")
+                current_price = 20
+            
             leaderboard = []
             for user in users:
                 # 取得使用者持股
@@ -286,7 +291,14 @@ class PublicService:
             )
             
             if latest_trade:
-                return latest_trade.get("price", 20)
+                price = latest_trade.get("price")
+                # 檢查價格是否有效（不為 None 且大於 0）
+                if price is not None and price > 0:
+                    return price
+                # 如果 price 欄位為 None，嘗試使用 filled_price
+                filled_price = latest_trade.get("filled_price")
+                if filled_price is not None and filled_price > 0:
+                    return filled_price
             
             # 如果沒有成交記錄，從市場配置取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
@@ -294,7 +306,9 @@ class PublicService:
             )
             
             if price_config:
-                return price_config.get("price", 20)
+                config_price = price_config.get("price")
+                if config_price is not None and config_price > 0:
+                    return config_price
             
             # 預設價格（20 元）
             return 20

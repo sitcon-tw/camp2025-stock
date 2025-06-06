@@ -210,10 +210,15 @@ class AdminService:
                     raise AdminException("Telegram Bot API URL not configured")
                 # 使用 requests 傳送 POST 請求到 Telegram Bot API
                 payload = {
-                    # "title": request.title,
+                    "title": request.title,
                     "message": request.message
                 }
-                response = requests.post(CAMP_TELEGRAM_BOT_API_URL, json=payload)
+                headers = {
+                    "Content-Type": "application/json",
+                    "token": settings.CAMP_INTERNAL_API_KEY
+                }
+                logger.info(f"Broadcasting announcement: {request.title} - {request.message} to Telegram Bot API {CAMP_TELEGRAM_BOT_API_URL}")
+                response = requests.post(CAMP_TELEGRAM_BOT_API_URL, json=payload, headers=headers)
                 if response.status_code != 200:
                     raise AdminException(f"Failed to broadcast announcement: {response.text}")
                 logger.info(f"Announcement should be broadcasted: {request.title}")

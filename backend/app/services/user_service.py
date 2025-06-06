@@ -93,6 +93,11 @@ class UserService:
             # 取得目前股價
             current_price = await self._get_current_stock_price()
             
+            # 防護性檢查：確保價格不為 None
+            if current_price is None:
+                logger.warning("Current stock price is None, using default price 20")
+                current_price = 20
+            
             # 計算平均成本
             avg_cost = await self._calculate_user_avg_cost(user_oid)
             
@@ -139,6 +144,10 @@ class UserService:
             if request.side == "buy":
                 if request.order_type == "market":
                     current_price = await self._get_current_stock_price()
+                    # 防護性檢查：確保價格不為 None
+                    if current_price is None:
+                        logger.warning("Current stock price is None, using default price 20")
+                        current_price = 20
                     required_points = int(current_price * request.quantity)
                 else:
                     required_points = int(request.price * request.quantity)
@@ -199,102 +208,120 @@ class UserService:
     
     # 轉帳功能
     async def transfer_points(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
-        async with await self.db.client.start_session() as session:
-            try:
-                async with session.start_transaction():
-                    # 取得發送方使用者
-                    from_user_oid = ObjectId(from_user_id)
-                    from_user = await self.db[Collections.USERS].find_one({"_id": from_user_oid}, session=session)
-                    if not from_user:
-                        return TransferResponse(
-                            success=False,
-                            message="發送方使用者不存在"
-                        )
-                    
-                    # 取得接收方使用者 - 改為支援name或id查詢
-                    to_user = await self.db[Collections.USERS].find_one({
-                        "$or": [
-                            {"name": request.to_username},
-                            {"id": request.to_username}
-                        ]
-                    }, session=session)
-                    if not to_user:
-                        return TransferResponse(
-                            success=False,
-                            message="接收方使用者不存在"
-                        )
-                    
-                    # 檢查是否為同一人
-                    if str(from_user["_id"]) == str(to_user["_id"]):
-                        return TransferResponse(
-                            success=False,
-                            message="無法轉帳給自己"
-                        )
-                    
-                    # 計算手續費 (10% 或至少 1 點)
-                    fee = max(1, int(request.amount * 0.1))
-                    total_deduct = request.amount + fee
-                    
-                    # 檢查餘額
-                    if from_user.get("points", 0) < total_deduct:
-                        return TransferResponse(
-                            success=False,
-                            message=f"點數不足（需要 {total_deduct} 點，含手續費 {fee}）"
-                        )
-                    
-                    # 執行轉帳
-                    transaction_id = str(uuid.uuid4())
-                    
-                    # 扣除發送方點數
-                    await self.db[Collections.USERS].update_one(
-                        {"_id": from_user_oid},
-                        {"$inc": {"points": -total_deduct}},
-                        session=session
-                    )
-                    
-                    # 增加接收方點數
-                    await self.db[Collections.USERS].update_one(
-                        {"_id": to_user["_id"]},
-                        {"$inc": {"points": request.amount}},
-                        session=session
-                    )
-                    
-                    # 記錄轉帳日誌
-                    await self._log_point_change(
-                        from_user_oid,
-                        "transfer_out",
-                        -total_deduct,
-                        f"轉帳給 {to_user.get('name', to_user.get('id', request.to_username))} (含手續費 {fee})",
-                        transaction_id,
-                        session=session
-                    )
-                    
-                    await self._log_point_change(
-                        to_user["_id"],
-                        "transfer_in",
-                        request.amount,
-                        f"收到來自 {from_user.get('name', from_user.get('id', 'unknown'))} 的轉帳",
-                        transaction_id,
-                        session=session
-                    )
-                    
-                    # 提交事務
-                    await session.commit_transaction()
-                    
-                    return TransferResponse(
-                        success=True,
-                        message="轉帳成功",
-                        transaction_id=transaction_id,
-                        fee=fee
-                    )
-                    
-            except Exception as e:
-                
+        # 嘗試使用事務，如果失敗則使用非事務模式
+        try:
+            return await self._transfer_points_with_transaction(from_user_id, request)
+        except Exception as e:
+            error_str = str(e)
+            # 檢查是否為事務不支援的錯誤
+            if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
+                logger.warning("MongoDB transactions not supported, falling back to non-transactional mode")
+                return await self._transfer_points_without_transaction(from_user_id, request)
+            else:
                 logger.error(f"Transfer failed: {e}")
                 return TransferResponse(
                     success=False,
                     message="轉帳失敗"
                 )
+
+    async def _transfer_points_with_transaction(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
+        """使用事務進行轉帳（適用於 replica set 或 sharded cluster）"""
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                return await self._execute_transfer(from_user_id, request, session)
+
+    async def _transfer_points_without_transaction(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
+        """不使用事務進行轉帳（適用於 standalone MongoDB）"""
+        return await self._execute_transfer(from_user_id, request, None)
+
+    async def _execute_transfer(self, from_user_id: str, request: TransferRequest, session=None) -> TransferResponse:
+        """執行轉帳邏輯"""
+        # 取得發送方使用者
+        from_user_oid = ObjectId(from_user_id)
+        from_user = await self.db[Collections.USERS].find_one({"_id": from_user_oid}, session=session)
+        if not from_user:
+            return TransferResponse(
+                success=False,
+                message="發送方使用者不存在"
+            )
+        
+        # 取得接收方使用者 - 改為支援name或id查詢
+        to_user = await self.db[Collections.USERS].find_one({
+            "$or": [
+                {"name": request.to_username},
+                {"id": request.to_username}
+            ]
+        }, session=session)
+        if not to_user:
+            return TransferResponse(
+                success=False,
+                message="接收方使用者不存在"
+            )
+        
+        # 檢查是否為同一人
+        if str(from_user["_id"]) == str(to_user["_id"]):
+            return TransferResponse(
+                success=False,
+                message="無法轉帳給自己"
+            )
+        
+        # 計算手續費 (10% 或至少 1 點)
+        fee = max(1, int(request.amount * 0.1))
+        total_deduct = request.amount + fee
+        
+        # 檢查餘額
+        if from_user.get("points", 0) < total_deduct:
+            return TransferResponse(
+                success=False,
+                message=f"點數不足（需要 {total_deduct} 點，含手續費 {fee}）"
+            )
+        
+        # 執行轉帳
+        transaction_id = str(uuid.uuid4())
+        
+        # 扣除發送方點數
+        await self.db[Collections.USERS].update_one(
+            {"_id": from_user_oid},
+            {"$inc": {"points": -total_deduct}},
+            session=session
+        )
+        
+        # 增加接收方點數
+        await self.db[Collections.USERS].update_one(
+            {"_id": to_user["_id"]},
+            {"$inc": {"points": request.amount}},
+            session=session
+        )
+        
+        # 記錄轉帳日誌
+        await self._log_point_change(
+            from_user_oid,
+            "transfer_out",
+            -total_deduct,
+            f"轉帳給 {to_user.get('name', to_user.get('id', request.to_username))} (含手續費 {fee})",
+            transaction_id,
+            session=session
+        )
+        
+        await self._log_point_change(
+            to_user["_id"],
+            "transfer_in",
+            request.amount,
+            f"收到來自 {from_user.get('name', from_user.get('id', 'unknown'))} 的轉帳",
+            transaction_id,
+            session=session
+        )
+        
+        # 如果有事務則提交
+        if session:
+            await session.commit_transaction()
+        
+        return TransferResponse(
+            success=True,
+            message="轉帳成功",
+            transaction_id=transaction_id,
+            fee=fee
+        )
     
     # 取得使用者點數記錄
     async def get_user_point_logs(self, user_id: str, limit: int = 50) -> List[UserPointLog]:
@@ -462,7 +489,14 @@ class UserService:
             )
             
             if latest_trade:
-                return latest_trade.get("price", 20)
+                price = latest_trade.get("price")
+                # 檢查價格是否有效（不為 None 且大於 0）
+                if price is not None and price > 0:
+                    return price
+                # 如果 price 欄位為 None，嘗試使用 filled_price
+                filled_price = latest_trade.get("filled_price")
+                if filled_price is not None and filled_price > 0:
+                    return filled_price
             
             # 如果沒有成交記錄，從市場配置取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
@@ -470,7 +504,9 @@ class UserService:
             )
             
             if price_config:
-                return price_config.get("price", 20)
+                config_price = price_config.get("price")
+                if config_price is not None and config_price > 0:
+                    return config_price
             
             # 預設價格（20 元）
             return 20
@@ -540,70 +576,100 @@ class UserService:
     # 執行市價單
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
         """執行市價單交易"""
-        async with await self.db.client.start_session() as session:
-            try:
-                async with session.start_transaction():
-                    current_price = await self._get_current_stock_price()
-                    side = order_doc["side"]
-                    quantity = order_doc["quantity"]
-                    
-                    # 計算交易金額
-                    trade_amount = quantity * current_price
-                    
-                    # 更新訂單狀態
-                    order_doc.update({
-                        "status": "filled",
-                        "filled_price": current_price,
-                        "filled_quantity": quantity,
-                        "filled_at": datetime.now(timezone.utc)
-                    })
-                    
-                    # 插入已完成的訂單
-                    result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
-                    
-                    # 更新使用者資產
-                    if side == "buy":
-                        # 買入：扣除點數，增加股票
-                        await self.db[Collections.USERS].update_one(
-                            {"_id": user_oid},
-                            {"$inc": {"points": -trade_amount}},
-                            session=session
-                        )
-                        await self.db[Collections.STOCKS].update_one(
-                            {"user_id": user_oid},
-                            {"$inc": {"stock_amount": quantity}},
-                            upsert=True,
-                            session=session
-                        )
-                    else:
-                        # 賣出：增加點數，減少股票
-                        await self.db[Collections.USERS].update_one(
-                            {"_id": user_oid},
-                            {"$inc": {"points": trade_amount}},
-                            session=session
-                        )
-                        await self.db[Collections.STOCKS].update_one(
-                            {"user_id": user_oid},
-                            {"$inc": {"stock_amount": -quantity}},
-                            session=session
-                        )
-                    
-                    # 提交事務
-                    await session.commit_transaction()
-                    
-                    return StockOrderResponse(
-                        success=True,
-                        order_id=str(result.inserted_id),
-                        message=f"市價單已成交，價格: {current_price}"
-                    )
-                    
-            except Exception as e:
-                
-                logger.error(f"Failed to execute market order: {e}")
+        # 嘗試使用事務，如果失敗則使用非事務模式
+        try:
+            return await self._execute_market_order_with_transaction(user_oid, order_doc)
+        except Exception as e:
+            error_str = str(e)
+            # 檢查是否為事務不支援的錯誤
+            if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
+                logger.warning("MongoDB transactions not supported, falling back to non-transactional mode for market order")
+                return await self._execute_market_order_without_transaction(user_oid, order_doc)
+            else:
+                logger.error(f"Market order execution failed: {e}")
                 return StockOrderResponse(
                     success=False,
                     message="市價單執行失敗"
                 )
+
+    async def _execute_market_order_with_transaction(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
+        """使用事務執行市價單交易（適用於 replica set 或 sharded cluster）"""
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                return await self._execute_market_order_logic(user_oid, order_doc, session)
+
+    async def _execute_market_order_without_transaction(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
+        """不使用事務執行市價單交易（適用於 standalone MongoDB）"""
+        return await self._execute_market_order_logic(user_oid, order_doc, None)
+
+    async def _execute_market_order_logic(self, user_oid: ObjectId, order_doc: dict, session=None) -> StockOrderResponse:
+        """市價單交易邏輯"""
+        try:
+            current_price = await self._get_current_stock_price()
+            # 防護性檢查：確保價格不為 None
+            if current_price is None:
+                logger.warning("Current stock price is None, using default price 20")
+                current_price = 20
+            side = order_doc["side"]
+            quantity = order_doc["quantity"]
+            
+            # 計算交易金額
+            trade_amount = quantity * current_price
+            
+            # 更新訂單狀態
+            order_doc.update({
+                "status": "filled",
+                "filled_price": current_price,
+                "filled_quantity": quantity,
+                "filled_at": datetime.now(timezone.utc)
+            })
+            
+            # 插入已完成的訂單
+            result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
+            
+            # 更新使用者資產
+            if side == "buy":
+                # 買入：扣除點數，增加股票
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_oid},
+                    {"$inc": {"points": -trade_amount}},
+                    session=session
+                )
+                await self.db[Collections.STOCKS].update_one(
+                    {"user_id": user_oid},
+                    {"$inc": {"stock_amount": quantity}},
+                    upsert=True,
+                    session=session
+                )
+            else:
+                # 賣出：增加點數，減少股票
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_oid},
+                    {"$inc": {"points": trade_amount}},
+                    session=session
+                )
+                await self.db[Collections.STOCKS].update_one(
+                    {"user_id": user_oid},
+                    {"$inc": {"stock_amount": -quantity}},
+                    session=session
+                )
+            
+            # 如果有事務則提交
+            if session:
+                await session.commit_transaction()
+            
+            return StockOrderResponse(
+                success=True,
+                order_id=str(result.inserted_id),
+                message=f"市價單已成交，價格: {current_price}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to execute market order logic: {e}")
+            return StockOrderResponse(
+                success=False,
+                message="市價單執行失敗"
+            )
     
     # 嘗試撮合訂單
     async def _try_match_orders(self):
@@ -629,13 +695,134 @@ class UserService:
                         buy_order["quantity"] > 0 and sell_order["quantity"] > 0):
                         
                         # 使用事務進行撮合
-                        await self._match_orders_with_transaction(buy_order, sell_order)
+                        await self._match_orders(buy_order, sell_order)
                         
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
     
+    async def _match_orders(self, buy_order: dict, sell_order: dict):
+        """撮合訂單 - 自動選擇事務或非事務模式"""
+        # 嘗試使用事務，如果失敗則使用非事務模式
+        try:
+            await self._match_orders_with_transaction(buy_order, sell_order)
+        except Exception as e:
+            error_str = str(e)
+            # 檢查是否為事務不支援的錯誤
+            if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
+                logger.warning("MongoDB transactions not supported, falling back to non-transactional mode for order matching")
+                await self._match_orders_without_transaction(buy_order, sell_order)
+            else:
+                logger.error(f"Order matching failed: {e}")
+                raise
+
     async def _match_orders_with_transaction(self, buy_order: dict, sell_order: dict):
-        """使用事務執行訂單撮合"""
+        """使用事務執行訂單撮合（適用於 replica set 或 sharded cluster）"""
+        async with await self.db.client.start_session() as session:
+            async with session.start_transaction():
+                await self._match_orders_logic(buy_order, sell_order, session)
+
+    async def _match_orders_without_transaction(self, buy_order: dict, sell_order: dict):
+        """不使用事務執行訂單撮合（適用於 standalone MongoDB）"""
+        await self._match_orders_logic(buy_order, sell_order, None)
+
+    async def _match_orders_logic(self, buy_order: dict, sell_order: dict, session=None):
+        """訂單撮合邏輯"""
+        try:
+            # 計算成交數量和價格
+            trade_quantity = min(buy_order["quantity"], sell_order["quantity"])
+            trade_price = sell_order["price"]  # 以賣單價格成交
+            trade_amount = trade_quantity * trade_price
+            now = datetime.now(timezone.utc)
+            
+            # 更新訂單狀態
+            buy_order["quantity"] -= trade_quantity
+            sell_order["quantity"] -= trade_quantity
+            
+            if buy_order["quantity"] == 0:
+                buy_order["status"] = "filled"
+            else:
+                buy_order["status"] = "partial"
+                
+            if sell_order["quantity"] == 0:
+                sell_order["status"] = "filled"
+            else:
+                sell_order["status"] = "partial"
+            
+            # 更新資料庫中的訂單
+            await self.db[Collections.STOCK_ORDERS].update_one(
+                {"_id": buy_order["_id"]},
+                {"$set": {
+                    "quantity": buy_order["quantity"],
+                    "status": buy_order["status"],
+                    "filled_price": trade_price,
+                    "filled_quantity": trade_quantity,
+                    "filled_at": now
+                }},
+                session=session
+            )
+            
+            await self.db[Collections.STOCK_ORDERS].update_one(
+                {"_id": sell_order["_id"]},
+                {"$set": {
+                    "quantity": sell_order["quantity"],
+                    "status": sell_order["status"],
+                    "filled_price": trade_price,
+                    "filled_quantity": trade_quantity,
+                    "filled_at": now
+                }},
+                session=session
+            )
+            
+            # 更新使用者資產
+            # 買方：扣除點數，增加股票
+            await self.db[Collections.USERS].update_one(
+                {"_id": buy_order["user_id"]},
+                {"$inc": {"points": -trade_amount}},
+                session=session
+            )
+            await self.db[Collections.STOCKS].update_one(
+                {"user_id": buy_order["user_id"]},
+                {"$inc": {"stock_amount": trade_quantity}},
+                upsert=True,
+                session=session
+            )
+            
+            # 賣方：增加點數，減少股票
+            await self.db[Collections.USERS].update_one(
+                {"_id": sell_order["user_id"]},
+                {"$inc": {"points": trade_amount}},
+                session=session
+            )
+            await self.db[Collections.STOCKS].update_one(
+                {"user_id": sell_order["user_id"]},
+                {"$inc": {"stock_amount": -trade_quantity}},
+                session=session
+            )
+            
+            # 記錄交易記錄
+            await self.db[Collections.TRADES].insert_one({
+                "buy_order_id": buy_order["_id"],
+                "sell_order_id": sell_order["_id"],
+                "buy_user_id": buy_order["user_id"],
+                "sell_user_id": sell_order["user_id"],
+                "price": trade_price,
+                "quantity": trade_quantity,
+                "amount": trade_amount,
+                "created_at": now
+            }, session=session)
+            
+            # 如果有事務則提交
+            if session:
+                await session.commit_transaction()
+            
+            logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
+            
+        except Exception as e:
+            logger.error(f"Failed to match orders logic: {e}")
+            raise
+
+    async def _match_orders_with_transaction_legacy(self, buy_order: dict, sell_order: dict):
+        """使用事務執行訂單撮合 - 已棄用，保留用於參考"""
         async with await self.db.client.start_session() as session:
             try:
                 async with session.start_transaction():
