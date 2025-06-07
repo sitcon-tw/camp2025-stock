@@ -386,22 +386,22 @@ class AdminService:
     async def list_all_users(self) -> List[Dict[str, str]]:
         try:
             # 更新為新的 ID-based 系統字段，包含 enabled 狀態
-            users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1, "enabled": 1})
+            users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1, "telegram_id": 1, "telegram_nickname": 1, "enabled": 1, "points": 1, "stock_amount": 1, "created_at": 1})
             users = await users_cursor.to_list(length=None)
             
             result = []
             for user in users:
-                user_id = user.get("id", user.get("username", str(user.get("_id", "unknown"))))
-                user_name = user.get("name", user.get("username", "Unknown"))
                 
                 result.append({
-                    "id": user_id,
-                    "username": user_name,  # 為了前端相容性，保持 username 
-                    "name": user_name,       # 新的 name 字段
-                    "telegram_id": user.get("telegram_id", "Unknown"),
-                    "telegram_nickname": user.get("telegram_nickname", "Unknown"),
-                    "team": user.get("team", "Unknown"),
-                    "enabled": user.get("enabled", False)  # 新增啟用狀態
+                    "id": user.get("id"),
+                    "name": user.get("name"),
+                    "team": user.get("team"),
+                    "telegram_id": user.get("telegram_id"),
+                    "telegram_nickname": user.get("telegram_nickname"),
+                    "enabled": user.get("enabled", False),
+                    "points": user.get("points", 0),
+                    "stock_amount": user.get("stock_amount", 0),
+                    "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
                 })
             logger.info(f"Retrieved {len(result)} users")
             return result

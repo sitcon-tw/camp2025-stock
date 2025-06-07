@@ -12,7 +12,7 @@ from app.schemas.user import (
 )
 from app.core.security import create_access_token
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from bson import ObjectId
 import logging
@@ -171,40 +171,23 @@ class UserService:
     
     # 檢查價格是否在漲跌限制內
     async def _check_price_limit(self, order_price: float) -> bool:
-        """檢查訂單價格是否在漲跌限制內"""
+        """檢查訂單價格是否在漲跌限制內（基於前日收盤價）"""
         try:
-            # 取得今日開盤價格
-            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            # 取得前日收盤價作為基準價格（更符合現實股市）
+            reference_price = await self._get_reference_price_for_limit()
             
-            # 查找今日第一筆成交記錄作為開盤價
-            first_trade = await self.db[Collections.STOCK_ORDERS].find_one({
-                "status": "filled",
-                "created_at": {"$gte": today_start}
-            }, sort=[("created_at", 1)])
+            if reference_price is None:
+                logger.warning("Unable to determine reference price for price limit check")
+                return True  # 無法確定基準價格時允許交易
             
-            if not first_trade:
-                # 如果今日還沒有交易，使用昨日收盤價或預設價格
-                open_price = 20.0  # 預設開盤價
-            else:
-                open_price = float(first_trade.get("price", 20))
-            
-            # 取得漲跌限制設定
-            limit_config = await self.db[Collections.MARKET_CONFIG].find_one(
-                {"type": "trading_limit"}
-            )
-            
-            if not limit_config:
-                # 如果沒有設定漲跌限制，預設為20%
-                limit_percent = 20.0
-            else:
-                # limitPercent 以 basis points 為單位 (2000 = 20%)
-                limit_percent = float(limit_config.get("limitPercent", 2000)) / 100.0
+            # 取得動態漲跌限制（依股價級距）
+            limit_percent = await self._get_dynamic_price_limit(reference_price)
             
             # 計算漲跌停價格
-            max_price = open_price * (1 + limit_percent / 100.0)
-            min_price = open_price * (1 - limit_percent / 100.0)
+            max_price = reference_price * (1 + limit_percent / 100.0)
+            min_price = reference_price * (1 - limit_percent / 100.0)
             
-            logger.info(f"Price limit check: order_price={order_price}, open_price={open_price}, limit={limit_percent}%, range=[{min_price:.2f}, {max_price:.2f}]")
+            logger.info(f"Price limit check: order_price={order_price}, reference_price={reference_price}, limit={limit_percent}%, range=[{min_price:.2f}, {max_price:.2f}]")
             
             # 檢查訂單價格是否在限制範圍內
             return min_price <= order_price <= max_price
@@ -213,6 +196,84 @@ class UserService:
             logger.error(f"Failed to check price limit: {e}")
             # 發生錯誤時，預設允許交易
             return True
+
+    async def _get_reference_price_for_limit(self) -> float:
+        """取得漲跌限制的基準價格（前日收盤價）"""
+        try:
+            # 取得今日開始時間
+            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            yesterday_end = today_start - timedelta(seconds=1)
+            
+            # 查找昨日最後一筆成交記錄作為前日收盤價
+            yesterday_last_trade = await self.db[Collections.STOCK_ORDERS].find_one({
+                "status": "filled",
+                "created_at": {"$lt": today_start}
+            }, sort=[("created_at", -1)])
+            
+            if yesterday_last_trade:
+                price = yesterday_last_trade.get("price") or yesterday_last_trade.get("filled_price")
+                if price and price > 0:
+                    logger.info(f"Using yesterday's closing price as reference: {price}")
+                    return float(price)
+            
+            # 如果沒有昨日交易記錄，查找今日第一筆交易作為開盤價
+            today_first_trade = await self.db[Collections.STOCK_ORDERS].find_one({
+                "status": "filled",
+                "created_at": {"$gte": today_start}
+            }, sort=[("created_at", 1)])
+            
+            if today_first_trade:
+                price = today_first_trade.get("price") or today_first_trade.get("filled_price")
+                if price and price > 0:
+                    logger.info(f"Using today's opening price as reference: {price}")
+                    return float(price)
+            
+            # 最後回到市場配置或預設價格
+            price_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "current_price"}
+            )
+            
+            if price_config and price_config.get("price", 0) > 0:
+                logger.info(f"Using market config price as reference: {price_config['price']}")
+                return float(price_config["price"])
+            
+            logger.info("Using default reference price: 20")
+            return 20.0
+            
+        except Exception as e:
+            logger.error(f"Failed to get reference price: {e}")
+            return 20.0
+
+    async def _get_dynamic_price_limit(self, stock_price: float) -> float:
+        """取得動態漲跌限制百分比（依股價級距調整）"""
+        try:
+            # 先檢查是否有管理員設定的固定限制
+            limit_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "trading_limit"}
+            )
+            
+            if limit_config and limit_config.get("limitPercent"):
+                # 如果管理員有設定固定限制，使用該設定
+                fixed_limit = float(limit_config.get("limitPercent", 2000)) / 100.0
+                logger.debug(f"Using admin configured limit: {fixed_limit}%")
+                return fixed_limit
+            
+            # 否則使用動態限制（模仿現實股市的級距制度）
+            if stock_price < 10:
+                limit_percent = 20.0  # 低價股給予較大波動空間
+            elif stock_price < 50:
+                limit_percent = 15.0  # 中價股
+            elif stock_price < 100:
+                limit_percent = 10.0  # 高價股
+            else:
+                limit_percent = 8.0   # 極高價股限制更嚴格
+            
+            logger.debug(f"Using dynamic limit for price {stock_price}: {limit_percent}%")
+            return limit_percent
+            
+        except Exception as e:
+            logger.error(f"Failed to get dynamic price limit: {e}")
+            return 10.0  # 預設 10%
 
     # 下股票訂單
     async def place_stock_order(self, user_id: str, request: StockOrderRequest) -> StockOrderResponse:
@@ -234,12 +295,14 @@ class UserService:
                 )
             
             # 檢查限價單的價格是否在漲跌限制內
+            order_status = "pending"
+            limit_exceeded = False
             if request.order_type == "limit":
                 if not await self._check_price_limit(request.price):
-                    return StockOrderResponse(
-                        success=False,
-                        message=f"訂單價格 {request.price} 元超出當日漲跌幅限制"
-                    )
+                    # 允許掛單但標記為等待漲跌限制解除狀態
+                    order_status = "pending_limit"
+                    limit_exceeded = True
+                    logger.info(f"Order price {request.price} exceeds daily limit, order will be queued")
             
             # 檢查使用者資金和持股
             if request.side == "buy":
@@ -278,10 +341,15 @@ class UserService:
                 "side": request.side,
                 "quantity": request.quantity,
                 "price": request.price,
-                "status": "pending",
+                "status": order_status,  # 使用計算出的狀態
                 "created_at": datetime.now(timezone.utc),
                 "stock_amount": request.quantity if request.side == "buy" else -request.quantity
             }
+            
+            # 如果超出漲跌限制，記錄額外資訊
+            if limit_exceeded:
+                order_doc["limit_exceeded"] = True
+                order_doc["limit_note"] = f"Order price {request.price} exceeds daily trading limit"
             
             # 如果是市價單，立即執行
             if request.order_type == "market":
@@ -292,9 +360,17 @@ class UserService:
                 result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc)
                 order_id = str(result.inserted_id)
                 
-                logger.info(f"Limit order placed: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
+                if limit_exceeded:
+                    logger.info(f"Limit order queued due to price limit: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
+                    return StockOrderResponse(
+                        success=True,
+                        order_id=order_id,
+                        message=f"限價單已提交但因超出漲跌限制而暫時等待 ({request.side} {request.quantity} 股 @ {request.price} 元)"
+                    )
+                else:
+                    logger.info(f"Limit order placed: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
                 
-                # 立即嘗試撮合
+                # 只有未超出限制的訂單才進行撮合
                 await self._try_match_orders()
                 
                 # 檢查訂單是否已被撮合
@@ -1089,7 +1165,7 @@ class UserService:
     async def _try_match_orders(self):
         """嘗試撮合買賣訂單"""
         try:
-            # 查找待成交的買賣單，並按價格-時間優先級排序
+            # 查找待成交的買賣單，排除超出漲跌限制的訂單
             buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
                 {"side": "buy", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"}
             ).sort([("price", -1), ("created_at", 1)])
@@ -1182,9 +1258,303 @@ class UserService:
             
             if matches_found > 0:
                 logger.info(f"Order matching completed: {matches_found} matches executed")
+            
+            # 撮合完成後，檢查是否有超出限制的訂單可以重新啟用
+            await self._reactivate_limit_orders()
                     
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
+
+    async def _reactivate_limit_orders(self):
+        """檢查並重新啟用超出漲跌限制但現在可以交易的訂單"""
+        try:
+            # 查找所有因價格限制而等待的訂單
+            pending_limit_orders = await self.db[Collections.STOCK_ORDERS].find(
+                {"status": "pending_limit", "order_type": "limit"}
+            ).to_list(None)
+            
+            reactivated_count = 0
+            for order in pending_limit_orders:
+                order_price = order.get("price", 0)
+                
+                # 檢查該訂單的價格現在是否在允許範圍內
+                if await self._check_price_limit(order_price):
+                    # 價格現在在範圍內，重新啟用訂單
+                    await self.db[Collections.STOCK_ORDERS].update_one(
+                        {"_id": order["_id"]},
+                        {
+                            "$set": {
+                                "status": "pending",
+                                "reactivated_at": datetime.now(timezone.utc)
+                            },
+                            "$unset": {"limit_exceeded": "", "limit_note": ""}
+                        }
+                    )
+                    reactivated_count += 1
+                    logger.info(f"Reactivated order {order['_id']} at price {order_price}")
+            
+            if reactivated_count > 0:
+                logger.info(f"Reactivated {reactivated_count} orders due to price limit changes")
+                # 重新啟用訂單後，再次嘗試撮合
+                await self._try_match_orders()
+                    
+        except Exception as e:
+            logger.error(f"Failed to reactivate limit orders: {e}")
+
+    async def call_auction_matching(self) -> dict:
+        """集合競價撮合機制（類似開盤前的集中撮合）"""
+        try:
+            # 查找所有待成交的限價單（包括pending和pending_limit狀態）
+            buy_orders = await self.db[Collections.STOCK_ORDERS].find(
+                {"side": "buy", "status": {"$in": ["pending", "pending_limit"]}, "order_type": "limit"}
+            ).sort([("price", -1), ("created_at", 1)]).to_list(None)
+            
+            sell_orders = await self.db[Collections.STOCK_ORDERS].find(
+                {"side": "sell", "status": {"$in": ["pending", "pending_limit"]}, "order_type": "limit"}
+            ).sort([("price", 1), ("created_at", 1)]).to_list(None)
+            
+            # 統計訂單情況
+            pending_buy = len([o for o in buy_orders if o.get("status") == "pending"])
+            pending_sell = len([o for o in sell_orders if o.get("status") == "pending"])
+            limit_buy = len([o for o in buy_orders if o.get("status") == "pending_limit"])
+            limit_sell = len([o for o in sell_orders if o.get("status") == "pending_limit"])
+            
+            if not buy_orders and not sell_orders:
+                return {
+                    "success": False, 
+                    "message": "no orders available for call auction",
+                    "order_stats": {
+                        "pending_buy": 0, "pending_sell": 0,
+                        "limit_buy": 0, "limit_sell": 0
+                    }
+                }
+            elif not buy_orders:
+                return {
+                    "success": False, 
+                    "message": f"no buy orders available (有 {pending_sell + limit_sell} 張賣單等待撮合)",
+                    "order_stats": {
+                        "pending_buy": pending_buy, "pending_sell": pending_sell,
+                        "limit_buy": limit_buy, "limit_sell": limit_sell
+                    }
+                }
+            elif not sell_orders:
+                return {
+                    "success": False, 
+                    "message": f"no sell orders available (有 {pending_buy + limit_buy} 張買單等待撮合)",
+                    "order_stats": {
+                        "pending_buy": pending_buy, "pending_sell": pending_sell,
+                        "limit_buy": limit_buy, "limit_sell": limit_sell
+                    }
+                }
+            
+            # 找出最佳撮合價格（最大成交量的價格）
+            best_price, max_volume = await self._find_best_auction_price(buy_orders, sell_orders)
+            
+            if best_price is None:
+                return {"success": False, "message": "no matching price found"}
+            
+            # 在最佳價格進行批量撮合
+            matched_volume = await self._execute_call_auction(buy_orders, sell_orders, best_price)
+            
+            logger.info(f"Call auction completed: {matched_volume} shares matched at price {best_price}")
+            
+            # 發送集合競價公告到 Telegram Bot
+            try:
+                from app.services.admin_service import AdminService
+                admin_service = AdminService(self.db)
+                
+                # 構建詳細的公告訊息
+                announcement_message = f"管理員執行集合競價撮合完成！\n"
+                announcement_message += f"📊 撮合結果：{matched_volume} 股於 {best_price} 元成交\n"
+                announcement_message += f"📈 處理訂單：{len(buy_orders)} 張買單、{len(sell_orders)} 張賣單\n"
+                announcement_message += f"⚖️ 訂單狀態：{pending_buy} 張待撮合買單、{pending_sell} 張待撮合賣單"
+                
+                if limit_buy > 0 or limit_sell > 0:
+                    announcement_message += f"、{limit_buy + limit_sell} 張限制等待訂單"
+                
+                await admin_service._send_system_announcement(
+                    title="📈 集合競價撮合完成",
+                    message=announcement_message
+                )
+            except Exception as e:
+                logger.error(f"Failed to send call auction announcement: {e}")
+            
+            return {
+                "success": True,
+                "auction_price": best_price,
+                "matched_volume": matched_volume,
+                "message": f"集合競價完成：{matched_volume} 股於 {best_price} 元成交",
+                "order_stats": {
+                    "pending_buy": pending_buy, "pending_sell": pending_sell,
+                    "limit_buy": limit_buy, "limit_sell": limit_sell,
+                    "total_buy_orders": len(buy_orders),
+                    "total_sell_orders": len(sell_orders)
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to execute call auction: {e}")
+            return {"success": False, "message": f"call auction failed: {str(e)}"}
+
+    async def _find_best_auction_price(self, buy_orders: list, sell_orders: list) -> tuple:
+        """找出集合競價的最佳成交價格"""
+        try:
+            # 取得所有可能的價格點
+            all_prices = set()
+            for order in buy_orders + sell_orders:
+                all_prices.add(order.get("price", 0))
+            
+            best_price = None
+            max_volume = 0
+            
+            # 對每個價格計算可能的成交量
+            for price in sorted(all_prices):
+                # 計算在此價格下的買賣量
+                buy_volume = sum(order.get("quantity", 0) for order in buy_orders 
+                               if order.get("price", 0) >= price)
+                sell_volume = sum(order.get("quantity", 0) for order in sell_orders 
+                                if order.get("price", 0) <= price)
+                
+                # 可成交量是買賣量的較小值
+                possible_volume = min(buy_volume, sell_volume)
+                
+                # 找出最大成交量的價格
+                if possible_volume > max_volume:
+                    max_volume = possible_volume
+                    best_price = price
+            
+            return best_price, max_volume
+            
+        except Exception as e:
+            logger.error(f"Failed to find best auction price: {e}")
+            return None, 0
+
+    async def _execute_call_auction(self, buy_orders: list, sell_orders: list, auction_price: float) -> int:
+        """在集合競價價格執行批量撮合"""
+        try:
+            # 篩選出可在此價格成交的訂單
+            eligible_buy_orders = [order for order in buy_orders 
+                                 if order.get("price", 0) >= auction_price]
+            eligible_sell_orders = [order for order in sell_orders 
+                                  if order.get("price", 0) <= auction_price]
+            
+            # 按時間優先級排序
+            eligible_buy_orders.sort(key=lambda x: x.get("created_at"))
+            eligible_sell_orders.sort(key=lambda x: x.get("created_at"))
+            
+            total_matched = 0
+            buy_idx = sell_idx = 0
+            
+            # 進行撮合
+            while (buy_idx < len(eligible_buy_orders) and 
+                   sell_idx < len(eligible_sell_orders)):
+                
+                buy_order = eligible_buy_orders[buy_idx]
+                sell_order = eligible_sell_orders[sell_idx]
+                
+                # 計算成交量
+                trade_volume = min(
+                    buy_order.get("quantity", 0),
+                    sell_order.get("quantity", 0)
+                )
+                
+                if trade_volume > 0:
+                    # 執行撮合（使用集合競價價格）
+                    await self._execute_auction_trade(buy_order, sell_order, auction_price, trade_volume)
+                    total_matched += trade_volume
+                    
+                    # 更新訂單數量
+                    buy_order["quantity"] -= trade_volume
+                    sell_order["quantity"] -= trade_volume
+                
+                # 移到下一個訂單
+                if buy_order.get("quantity", 0) == 0:
+                    buy_idx += 1
+                if sell_order.get("quantity", 0) == 0:
+                    sell_idx += 1
+            
+            return total_matched
+            
+        except Exception as e:
+            logger.error(f"Failed to execute call auction trades: {e}")
+            return 0
+
+    async def _execute_auction_trade(self, buy_order: dict, sell_order: dict, 
+                                   auction_price: float, trade_volume: int):
+        """執行集合競價的單筆交易"""
+        try:
+            now = datetime.now(timezone.utc)
+            trade_amount = trade_volume * auction_price
+            
+            # 更新買方訂單
+            new_buy_quantity = buy_order["quantity"] - trade_volume
+            buy_status = "filled" if new_buy_quantity == 0 else "partial"
+            
+            await self.db[Collections.STOCK_ORDERS].update_one(
+                {"_id": buy_order["_id"]},
+                {
+                    "$set": {
+                        "quantity": new_buy_quantity,
+                        "status": buy_status,
+                        "filled_at": now,
+                        "auction_price": auction_price
+                    },
+                    "$inc": {"filled_quantity": trade_volume}
+                }
+            )
+            
+            # 更新賣方訂單
+            new_sell_quantity = sell_order["quantity"] - trade_volume
+            sell_status = "filled" if new_sell_quantity == 0 else "partial"
+            
+            await self.db[Collections.STOCK_ORDERS].update_one(
+                {"_id": sell_order["_id"]},
+                {
+                    "$set": {
+                        "quantity": new_sell_quantity,
+                        "status": sell_status,
+                        "filled_at": now,
+                        "auction_price": auction_price
+                    },
+                    "$inc": {"filled_quantity": trade_volume}
+                }
+            )
+            
+            # 更新用戶資產
+            await self.db[Collections.USERS].update_one(
+                {"_id": buy_order["user_id"]},
+                {"$inc": {"points": -trade_amount}}
+            )
+            await self.db[Collections.STOCKS].update_one(
+                {"user_id": buy_order["user_id"]},
+                {"$inc": {"stock_amount": trade_volume}},
+                upsert=True
+            )
+            
+            await self.db[Collections.USERS].update_one(
+                {"_id": sell_order["user_id"]},
+                {"$inc": {"points": trade_amount}}
+            )
+            await self.db[Collections.STOCKS].update_one(
+                {"user_id": sell_order["user_id"]},
+                {"$inc": {"stock_amount": -trade_volume}}
+            )
+            
+            # 記錄交易
+            await self.db[Collections.TRADES].insert_one({
+                "buy_order_id": buy_order["_id"],
+                "sell_order_id": sell_order["_id"],
+                "buy_user_id": buy_order["user_id"],
+                "sell_user_id": sell_order["user_id"],
+                "price": auction_price,
+                "quantity": trade_volume,
+                "amount": trade_amount,
+                "trade_type": "call_auction",
+                "created_at": now
+            })
+            
+        except Exception as e:
+            logger.error(f"Failed to execute auction trade: {e}")
     
     async def _match_orders(self, buy_order: dict, sell_order: dict):
         """撮合訂單 - 自動選擇事務或非事務模式，帶重試機制"""

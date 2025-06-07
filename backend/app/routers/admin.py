@@ -411,15 +411,15 @@ async def get_ipo_status(
     description="重置IPO狀態，恢復到初始股數"
 )
 async def reset_ipo(
-    initial_shares: int = 1000,
-    initial_price: int = 20,
+    initial_shares: int = None,
+    initial_price: int = None,
     current_admin=Depends(get_current_admin)
 ):
     """重置IPO狀態
     
     Args:
-        initial_shares: 初始股數
-        initial_price: 初始價格
+        initial_shares: 初始股數（如果不提供則使用預設配置）
+        initial_price: 初始價格（如果不提供則使用預設配置）
         current_admin: 目前管理員（自動注入）
 
     Returns:
@@ -428,8 +428,35 @@ async def reset_ipo(
     try:
         from app.core.database import get_database, Collections
         from datetime import datetime, timezone
+        import os
         
         db = get_database()
+        
+        # 如果沒有提供參數，從資料庫預設配置或環境變數獲取
+        if initial_shares is None or initial_price is None:
+            # 查詢資料庫中的預設配置
+            defaults_config = await db[Collections.MARKET_CONFIG].find_one(
+                {"type": "ipo_defaults"}
+            )
+            
+            if defaults_config:
+                if initial_shares is None:
+                    initial_shares = defaults_config.get("default_initial_shares", 1000)
+                if initial_price is None:
+                    initial_price = defaults_config.get("default_initial_price", 20)
+            else:
+                # 回退到環境變數或硬編碼預設值
+                if initial_shares is None:
+                    try:
+                        initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                    except (ValueError, TypeError):
+                        initial_shares = 1000
+                        
+                if initial_price is None:
+                    try:
+                        initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+                    except (ValueError, TypeError):
+                        initial_price = 20
         
         # 重置或創建IPO狀態
         await db[Collections.MARKET_CONFIG].update_one(
@@ -754,4 +781,198 @@ async def test_announcement(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"發送測試公告失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/market/call-auction",
+    responses={
+        200: {"description": "集合競價完成"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="執行集合競價",
+    description="執行集合競價撮合，將所有待成交的限價單以最佳價格批量撮合"
+)
+async def execute_call_auction(
+    current_admin=Depends(get_current_admin)
+):
+    """執行集合競價撮合"""
+    try:
+        from app.services.user_service import UserService
+        user_service = UserService()
+        
+        result = await user_service.call_auction_matching()
+        
+        if result["success"]:
+            logger.info(f"Call auction executed successfully: {result['message']}")
+            return {
+                "ok": True,
+                "message": result["message"],
+                "auctionPrice": result.get("auction_price"),
+                "matchedVolume": result.get("matched_volume")
+            }
+        else:
+            return {
+                "ok": False,
+                "message": result["message"]
+            }
+        
+    except Exception as e:
+        logger.error(f"Failed to execute call auction: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"執行集合競價失敗: {str(e)}"
+        )
+
+
+@router.get(
+    "/ipo/defaults",
+    responses={
+        200: {"description": "IPO預設配置查詢成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="查詢IPO預設配置",
+    description="查詢IPO的預設初始股數和價格配置"
+)
+async def get_ipo_defaults(
+    current_admin=Depends(get_current_admin)
+):
+    """查詢IPO預設配置"""
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        
+        # 查詢IPO預設配置
+        defaults_config = await db[Collections.MARKET_CONFIG].find_one(
+            {"type": "ipo_defaults"}
+        )
+        
+        if defaults_config:
+            return {
+                "ok": True,
+                "defaultInitialShares": defaults_config.get("default_initial_shares", 1000),
+                "defaultInitialPrice": defaults_config.get("default_initial_price", 20),
+                "updatedAt": defaults_config.get("updated_at").isoformat() if defaults_config.get("updated_at") else None
+            }
+        else:
+            # 如果沒有配置，回傳環境變數或預設值
+            import os
+            try:
+                default_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                default_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+            except (ValueError, TypeError):
+                default_shares = 1000
+                default_price = 20
+            
+            return {
+                "ok": True,
+                "defaultInitialShares": default_shares,
+                "defaultInitialPrice": default_price,
+                "updatedAt": None,
+                "note": "使用預設配置（未在資料庫中設定）"
+            }
+        
+    except Exception as e:
+        logger.error(f"Failed to get IPO defaults: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="查詢IPO預設配置失敗"
+        )
+
+
+@router.post(
+    "/ipo/defaults",
+    responses={
+        200: {"description": "IPO預設配置更新成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="更新IPO預設配置",
+    description="更新IPO的預設初始股數和價格配置"
+)
+async def update_ipo_defaults(
+    default_initial_shares: int = None,
+    default_initial_price: int = None,
+    current_admin=Depends(get_current_admin)
+):
+    """更新IPO預設配置"""
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        
+        db = get_database()
+        
+        # 構建更新字段
+        update_fields = {"updated_at": datetime.now(timezone.utc)}
+        
+        if default_initial_shares is not None:
+            update_fields["default_initial_shares"] = max(1, default_initial_shares)
+        
+        if default_initial_price is not None:
+            update_fields["default_initial_price"] = max(1, default_initial_price)
+        
+        if len(update_fields) == 1:  # 只有 updated_at 字段
+            return {
+                "ok": False,
+                "message": "沒有提供任何要更新的參數"
+            }
+        
+        # 更新IPO預設配置
+        result = await db[Collections.MARKET_CONFIG].update_one(
+            {"type": "ipo_defaults"},
+            {"$set": update_fields},
+            upsert=True
+        )
+        
+        # 取得更新後的配置
+        updated_config = await db[Collections.MARKET_CONFIG].find_one(
+            {"type": "ipo_defaults"}
+        )
+        
+        message_parts = []
+        if default_initial_shares is not None:
+            message_parts.append(f"預設股數: {default_initial_shares}")
+        if default_initial_price is not None:
+            message_parts.append(f"預設價格: {default_initial_price} 點")
+        
+        message = f"IPO預設配置已更新：{', '.join(message_parts)}" if message_parts else "IPO預設配置已更新"
+        
+        logger.info(f"IPO defaults updated: {message}")
+        
+        # 發送系統公告到 Telegram Bot
+        try:
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            
+            # 構建詳細的公告訊息
+            announcement_parts = []
+            if default_initial_shares is not None:
+                announcement_parts.append(f"預設初始股數已調整為 {default_initial_shares:,} 股")
+            if default_initial_price is not None:
+                announcement_parts.append(f"預設IPO價格已調整為 {default_initial_price} 點/股")
+            
+            detailed_message = f"管理員已更新IPO預設配置：{', '.join(announcement_parts)}。這將影響未來的IPO重置操作。"
+            
+            await admin_service._send_system_announcement(
+                title="⚙️ IPO預設配置更新",
+                message=detailed_message
+            )
+        except Exception as e:
+            logger.error(f"Failed to send IPO defaults update announcement: {e}")
+        
+        return {
+            "ok": True,
+            "message": message,
+            "defaultInitialShares": updated_config.get("default_initial_shares", 1000),
+            "defaultInitialPrice": updated_config.get("default_initial_price", 20)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to update IPO defaults: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新IPO預設配置失敗"
         )
