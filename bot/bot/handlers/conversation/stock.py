@@ -27,21 +27,24 @@ async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     if context.user_data.get("in_stock_convo"):
-        await update.message.reply_text("😿 你已經有一個進行中的操作了！請先完成那個或是執行 /cancel 來取消")
-        return ConversationHandler.END
+        await update.message.reply_text("😿 你已經有一個正在執行的 /stock 指令了！請先完成那個動作或是按取消按鈕來取消")
+        return None
+
+    if context.user_data.get("in_transfer_convo"):
+        await update.message.reply_text("😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
+        return None
 
     context.user_data["in_stock_convo"] = True
 
-    keyboard = [
-        [
-            InlineKeyboardButton("💸 買", callback_data="stock:buy"),
-            InlineKeyboardButton("🤑 賣", callback_data="stock:sell")
+    buttons = [
+        [InlineKeyboardButton("💸 買", callback_data="stock:buy"),
+         InlineKeyboardButton("🤑 賣", callback_data="stock:sell")
         ],
-        [InlineKeyboardButton("❌ 取消操作", callback_data="cancel")]
+        [InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]
     ]
     await update.message.reply_text(
         "😺 你想要*買*還是*賣*股票？",
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN_V2
     )
     return CHOOSE_ACTION
@@ -52,7 +55,13 @@ async def choose_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     action = query.data.split(":")[1]
     context.user_data["action"] = action
-    await query.edit_message_text(f"🎫 請輸入你要{"買" if action == "buy" else "賣"}的數量（1 ~ 30）：")
+
+    buttons = [[InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]]
+
+    await query.edit_message_text(
+        f"🎫 請輸入你要{"買" if action == "buy" else "賣"}的數量（1 ~ 30）：",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
     return INPUT_AMOUNT
 
 async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -71,7 +80,8 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
         [InlineKeyboardButton("🏦 市價單", callback_data="order:market"),
-         InlineKeyboardButton("🖊️ 限價單", callback_data="order:limit")]
+         InlineKeyboardButton("🖊️ 限價單", callback_data="order:limit")],
+        [InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]
     ]
     await update.message.reply_text(
         "🧾 請選擇下單方式",
@@ -86,8 +96,10 @@ async def choose_order_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     order_type = query.data.split(":")[1]
     context.user_data["order_type"] = order_type
 
+    buttons = [[InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]]
+
     if order_type == "limit":
-        await query.edit_message_text("💰 請輸入限價價格（1~1000）：")
+        await query.edit_message_text("💰 請輸入限價價格（1~1000）：", reply_markup=InlineKeyboardMarkup(buttons))
         return INPUT_LIMIT_PRICE
     else:
         await confirm_order(update, context)
@@ -117,9 +129,9 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     order_type = "市價單" if data["order_type"] == "market" else "限價單"
     price = data.get("price")
 
-    keyboard = [[
-        InlineKeyboardButton("✅ 確認送出", callback_data="confirm:yes"),
-        InlineKeyboardButton("❌ 取消", callback_data="confirm:no")
+    buttons = [[
+        InlineKeyboardButton("✅ 確認送出", callback_data="stock:confirm"),
+        InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")
     ]]
 
     msg = (f"😺 請確認以下訂單\n"
@@ -130,13 +142,13 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if price:
         msg += f"，{action}{direction}價格為 `{price}` 點"
     else:
-        msg += "\n>⚠️ 下單種類為市價單，將會立即使用目前市價下單"
-        keyboard.append([InlineKeyboardButton("查看目前的股價", url="https://camp.sitcon.party/")])
+        msg += "\n>⚠️ 你下的是市價單，將會立即使用目前市價下單"
+        buttons.append([InlineKeyboardButton("看看現在的股價", url="https://camp.sitcon.party/")])
 
     if isinstance(update, Update) and update.callback_query:
-        await update.callback_query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.MARKDOWN_V2)
+        await update.callback_query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
     else:
-        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.MARKDOWN_V2)
+        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
 
     return CONFIRM_ORDER
 
@@ -146,48 +158,37 @@ async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     data = context.user_data
 
-    if query.data == "confirm:yes":
-        request_body = {
-            "from_user": str(update.effective_user.id),
-            "order_type": data["order_type"],
-            "side": data["action"],
-            "quantity": int(data["amount"]),
-        }
+    request_body = {
+        "from_user": str(update.effective_user.id),
+        "order_type": data["order_type"],
+        "side": data["action"],
+        "quantity": int(data["amount"]),
+    }
 
-        if data.get("price"):
-            request_body["price"] = int(data.get("price"))
+    if data.get("price"):
+        request_body["price"] = int(data.get("price"))
 
-        print(request_body)
+    print(request_body)
 
-        response = api_helper.post("/api/bot/stock/order", protected_route=True, json=request_body)
+    response = api_helper.post("/api/bot/stock/order", protected_route=True, json=request_body)
 
-        if response.get("success"):
-            await query.edit_message_text(
-                f"✅ 單號 `{response.get("order_id")}`：{escape_markdown(response.get("message"), 2)}", parse_mode=ParseMode.MARKDOWN_V2
-            )
-        else:
-            print(response)
-            await query.edit_message_text(
-                f"❌ {response.get("message")}"
-            )
-
-        context.user_data["in_stock_convo"] = False
+    if response.get("success"):
+        await query.edit_message_text(
+            f"✅ 單號 `{response.get("order_id")}`：{escape_markdown(response.get("message"), 2)}", parse_mode=ParseMode.MARKDOWN_V2
+        )
     else:
-        await query.edit_message_text("訂單已取消。喵～ 👋")
-        context.user_data["in_stock_convo"] = False
-
-    return ConversationHandler.END
-
-async def cancel_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text("操作已取消。喵～ 👋")
+        print(response)
+        await query.edit_message_text(
+            f"❌ {response.get("message")}"
+        )
 
     context.user_data["in_stock_convo"] = False
     return ConversationHandler.END
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("操作已取消。喵～ 👋")
+async def cancel_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text("訂單取消ㄌ 👋")
 
     context.user_data["in_stock_convo"] = False
     return ConversationHandler.END
@@ -199,25 +200,25 @@ stock_conversation = ConversationHandler(
     states={
         CHOOSE_ACTION: [
             CallbackQueryHandler(choose_action, pattern="^stock:(buy|sell)$"),
-            CallbackQueryHandler(cancel_button_handler, pattern="^cancel$")
+            CallbackQueryHandler(cancel_order, pattern="^stock:cancel$")
         ],
         INPUT_AMOUNT: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, input_amount),
-            CallbackQueryHandler(cancel_button_handler, pattern="^cancel$")
+            CallbackQueryHandler(cancel_order, pattern="^stock:cancel$")
         ],
         CHOOSE_ORDER_TYPE: [
             CallbackQueryHandler(choose_order_type, pattern="^order:(market|limit)$"),
-            CallbackQueryHandler(cancel_button_handler, pattern="^cancel$")
+            CallbackQueryHandler(cancel_order, pattern="^stock:cancel$")
         ],
         INPUT_LIMIT_PRICE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, input_limit_price),
-            CallbackQueryHandler(cancel_button_handler, pattern="^cancel$")
+            CallbackQueryHandler(cancel_order, pattern="^stock:cancel$")
         ],
         CONFIRM_ORDER: [
-            CallbackQueryHandler(final_confirmation, pattern="^confirm:(yes|no)$"),
-            CallbackQueryHandler(cancel_button_handler, pattern="^cancel$")
+            CallbackQueryHandler(final_confirmation, pattern="^stock:confirm$"),
+            CallbackQueryHandler(cancel_order, pattern="^stock:cancel$")
         ],
     },
-    fallbacks=[CommandHandler("cancel", cancel)],
+    fallbacks=[CallbackQueryHandler(cancel_order, pattern="^stock:cancel")],
     allow_reentry=True
 )

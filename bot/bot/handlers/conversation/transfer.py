@@ -17,8 +17,17 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await verify_existing_user(response, update):
         return ConversationHandler.END
 
+    if context.user_data.get("in_transfer_convo"):
+        await update.message.reply_text("😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
+        return None
+
+    if context.user_data.get("in_stock_convo"):
+        await update.message.reply_text("😿 你已經有一個正在執行的 /stock 指令了！請先完成那個動作或是按取消按鈕來取消")
+        return None
+
+    context.user_data["in_transfer_convo"] = True
     buttons = [[
-        InlineKeyboardButton("❌ 取消轉帳", callback_data="transfer:cancel")
+        InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")
     ]]
 
     await update.message.reply_text("😺 請輸入你要轉帳的點數️", reply_markup=InlineKeyboardMarkup(buttons))
@@ -50,7 +59,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     teams = ["第一組測試更新", "第一組", "第二組", "第三組"]
     buttons = [[InlineKeyboardButton(text=team, callback_data=f"transfer:team:{team}")] for team in teams]
-    buttons.append([InlineKeyboardButton("❌ 取消轉帳", callback_data="transfer:cancel")])
+    buttons.append([InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")])
 
     await update.message.reply_text("😺 請選擇隊伍：", reply_markup=InlineKeyboardMarkup(buttons))
     return CHOOSE_TEAM
@@ -76,7 +85,7 @@ async def choose_team(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 callback_data=f"transfer:person:{telegram_id}"
             )
         ])
-    buttons.append([InlineKeyboardButton("❌ 取消轉帳", callback_data="transfer:cancel")])
+    buttons.append([InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")])
 
     await query.edit_message_text(
         f"😺 請選擇要轉到*{team}*裡面的哪個人：",
@@ -106,11 +115,11 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     buttons = [[
         InlineKeyboardButton("✅ 確認送出", callback_data="transfer:confirm"),
-        InlineKeyboardButton("❌ 取消轉帳", callback_data="transfer:cancel")
+        InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")
     ]]
 
     await query.edit_message_text(
-        f"😺 確認轉帳 {amount} 點給 {nickname} 嗎",
+        f"😺 確認轉帳 {amount} 點給 {nickname} 嗎？",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
@@ -128,19 +137,23 @@ async def confirm_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if result.get("success"):
         await query.edit_message_text(
-            f"✅ 單號 `{result.get('transaction_id')}`：{result.get('message')}，共轉帳 {context.user_data["amount"]} 點，手續費 {result.get('fee')} 點",
+            f"✅ 單號 `{result.get('transaction_id')}`：{result.get('message')}，轉了 {context.user_data["amount"]} 點，手續費 {result.get('fee')} 點",
             parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
         await query.edit_message_text(f"❌ {result.get('message')}")
+
+    context.user_data["in_transfer_convo"] = False
     return ConversationHandler.END
 
 async def cancel_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.callback_query:
         await update.callback_query.answer()
-        await update.callback_query.edit_message_text("❌ 已取消轉帳")
+        await update.callback_query.edit_message_text("轉帳取消ㄌ 👋")
     else:
-        await update.message.reply_text("❌ 已取消轉帳")
+        await update.message.reply_text("轉帳取消ㄌ 👋")
+
+    context.user_data["in_transfer_convo"] = False
     return ConversationHandler.END
 
 transfer_conversation = ConversationHandler(
@@ -151,5 +164,6 @@ transfer_conversation = ConversationHandler(
         CHOOSE_PERSON: [CallbackQueryHandler(choose_person, pattern="^transfer:person:.*")],
         CONFIRM_TRANSFER: [CallbackQueryHandler(confirm_transfer, pattern="^transfer:confirm")],
     },
-    fallbacks=[CallbackQueryHandler(cancel_transfer, pattern="^transfer:cancel")]
+    fallbacks=[CallbackQueryHandler(cancel_transfer, pattern="^transfer:cancel")],
+    allow_reentry=True
 )

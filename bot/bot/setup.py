@@ -58,7 +58,6 @@ async def initialize():
     bot.add_handler(CommandHandler("register", commands.register))
     bot.add_handler(CommandHandler("point", commands.point))
     bot.add_handler(CommandHandler("log", commands.log))
-    bot.add_handler(CommandHandler("cancel", commands.cancel))
     bot.add_handler(CallbackQueryHandler(buttons.handle_zombie_clicks))
     bot.add_handler(ChatMemberHandler(welcome.welcome_member, ChatMemberHandler.CHAT_MEMBER))
     bot.add_error_handler(error_handler)
@@ -70,6 +69,5 @@ async def initialize():
         ("point", "查看小隊們與自己的點數"),
         ("stock", "買賣點數"),
         ("log", "查看自己的點數交易紀錄"),
-        ("transfer", "轉帳給別人，小心 1% 手續費！"),
-        ("cancel", "取消購買操作")
+        ("transfer", "轉帳給別人，小心 1% 手續費！")
     ])

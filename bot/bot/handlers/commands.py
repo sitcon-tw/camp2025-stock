@@ -103,13 +103,6 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 await update.message.reply_text(f"🙀 好像有什麼東西炸掉了")
                 logger.error(f"Executing register got {message}")
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if context.user_data.get("active_stock_convo"):
-        await update.message.reply_text("❌ 指令似乎出錯了，已解鎖 /stock 指令")
-        context.user_data["active_stock_convo"] = False
-    else:
-        await update.message.reply_text("❌ 沒有正在操作的指令")
-
 async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # TODO: Team to chat ID mapping
     response = api_helper.get("/api/bot/teams", protected_route=True)
