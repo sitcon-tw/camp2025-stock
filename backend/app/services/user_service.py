@@ -658,22 +658,40 @@ class UserService:
     
     # 執行市價單
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
-        """執行市價單交易"""
-        # 嘗試使用事務，如果失敗則使用非事務模式
-        try:
-            return await self._execute_market_order_with_transaction(user_oid, order_doc)
-        except Exception as e:
-            error_str = str(e)
-            # 檢查是否為事務不支援的錯誤
-            if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
-                logger.warning("MongoDB transactions not supported, falling back to non-transactional mode for market order")
-                return await self._execute_market_order_without_transaction(user_oid, order_doc)
-            else:
-                logger.error(f"Market order execution failed: {e}")
-                return StockOrderResponse(
-                    success=False,
-                    message="市價單執行失敗"
-                )
+        """執行市價單交易，帶重試機制"""
+        max_retries = 3
+        retry_delay = 0.01  # 10ms
+        
+        for attempt in range(max_retries):
+            try:
+                return await self._execute_market_order_with_transaction(user_oid, order_doc)
+                
+            except Exception as e:
+                error_str = str(e)
+                
+                # 檢查是否為事務不支援的錯誤
+                if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
+                    logger.warning("MongoDB transactions not supported, falling back to non-transactional mode for market order")
+                    return await self._execute_market_order_without_transaction(user_oid, order_doc)
+                
+                # 檢查是否為寫入衝突錯誤（可重試）
+                elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
+                    if attempt < max_retries - 1:
+                        logger.debug(f"Market order write conflict on attempt {attempt + 1}, retrying in {retry_delay}s...")
+                        import asyncio
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2  # 指數退避
+                        continue
+                    else:
+                        logger.warning(f"Market order write conflict after {max_retries} attempts, falling back to non-transactional mode")
+                        return await self._execute_market_order_without_transaction(user_oid, order_doc)
+                
+                else:
+                    logger.error(f"Failed to execute market order logic: {e}")
+                    return StockOrderResponse(
+                        success=False,
+                        message="市價單執行失敗"
+                    )
 
     async def _execute_market_order_with_transaction(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
         """使用事務執行市價單交易（適用於 replica set 或 sharded cluster）"""
@@ -888,19 +906,40 @@ class UserService:
             logger.error(f"Failed to match orders: {e}")
     
     async def _match_orders(self, buy_order: dict, sell_order: dict):
-        """撮合訂單 - 自動選擇事務或非事務模式"""
-        # 嘗試使用事務，如果失敗則使用非事務模式
-        try:
-            await self._match_orders_with_transaction(buy_order, sell_order)
-        except Exception as e:
-            error_str = str(e)
-            # 檢查是否為事務不支援的錯誤
-            if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
-                logger.warning("MongoDB transactions not supported, falling back to non-transactional mode for order matching")
-                await self._match_orders_without_transaction(buy_order, sell_order)
-            else:
-                logger.error(f"Order matching failed: {e}")
-                raise
+        """撮合訂單 - 自動選擇事務或非事務模式，帶重試機制"""
+        max_retries = 3
+        retry_delay = 0.01  # 10ms
+        
+        for attempt in range(max_retries):
+            try:
+                await self._match_orders_with_transaction(buy_order, sell_order)
+                return  # 成功則退出
+                
+            except Exception as e:
+                error_str = str(e)
+                
+                # 檢查是否為事務不支援的錯誤
+                if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
+                    logger.warning("MongoDB transactions not supported, falling back to non-transactional mode for order matching")
+                    await self._match_orders_without_transaction(buy_order, sell_order)
+                    return
+                
+                # 檢查是否為寫入衝突錯誤（可重試）
+                elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
+                    if attempt < max_retries - 1:
+                        logger.debug(f"Write conflict on attempt {attempt + 1}, retrying in {retry_delay}s...")
+                        import asyncio
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2  # 指數退避
+                        continue
+                    else:
+                        logger.warning(f"Write conflict after {max_retries} attempts, falling back to non-transactional mode")
+                        await self._match_orders_without_transaction(buy_order, sell_order)
+                        return
+                
+                else:
+                    logger.error(f"Order matching failed: {e}")
+                    raise
 
     async def _match_orders_with_transaction(self, buy_order: dict, sell_order: dict):
         """使用事務執行訂單撮合（適用於 replica set 或 sharded cluster）"""
