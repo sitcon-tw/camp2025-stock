@@ -68,6 +68,7 @@ export default function AdminPage() {
     const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
     const [showResetResultModal, setShowResetResultModal] = useState(false);
     const [resetResult, setResetResult] = useState(null);
+    const [showSettlementConfirmModal, setShowSettlementConfirmModal] = useState(false);
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -405,6 +406,14 @@ export default function AdminPage() {
         setResetResult(null);
     };
 
+    const openSettlementConfirmModal = () => {
+        setShowSettlementConfirmModal(true);
+    };
+
+    const closeSettlementConfirmModal = () => {
+        setShowSettlementConfirmModal(false);
+    };
+
     const handleResetAllData = async () => {
         setResetLoading(true);
         setShowResetConfirmModal(false);
@@ -422,6 +431,7 @@ export default function AdminPage() {
 
     const handleForceSettlement = async () => {
         setForceSettlementLoading(true);
+        setShowSettlementConfirmModal(false);
         
         try {
             const result = await forceSettlement(adminToken);
@@ -885,9 +895,9 @@ export default function AdminPage() {
                                 <p className="text-gray-400 text-sm">將所有使用者的持股以固定價格轉換為點數，並清除其股票</p>
                             </div>
                             <button
-                                onClick={handleForceSettlement}
+                                onClick={openSettlementConfirmModal}
                                 disabled={forceSettlementLoading}
-                                className="bg-orange-600 hover:bg-orange-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] px-4 py-2 rounded-xl font-medium transition-colors w-full"
+                                className="bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] px-4 py-2 rounded-xl font-medium transition-colors w-full"
                             >
                                 {forceSettlementLoading ? '結算中...' : '強制結算'}
                             </button>
@@ -1007,6 +1017,50 @@ export default function AdminPage() {
                                     className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] py-2 px-4 rounded-xl transition-colors font-medium"
                                 >
                                     {resetLoading ? '重置中...' : '確認重置'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 強制結算確認 Modal */}
+            {showSettlementConfirmModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md border-2 border-red-500">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-red-500">強制結算確認</h3>
+                            <button
+                                onClick={closeSettlementConfirmModal}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="bg-orange-900 border border-orange-600 rounded-lg p-4">
+                                <p className="text-white font-medium mb-2">您即將執行強制結算！</p>
+                                <p className="text-orange-200 text-sm">
+                                    這個操作將會把所有使用者的持股以固定價格轉換為點數，並清除其股票。此操作無法復原！
+                                </p>
+                            </div>
+
+                            <div className="flex space-x-3 mt-6">
+                                <button
+                                    onClick={closeSettlementConfirmModal}
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleForceSettlement}
+                                    disabled={forceSettlementLoading}
+                                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] py-2 px-4 rounded-xl transition-colors font-medium"
+                                >
+                                    {forceSettlementLoading ? '結算中...' : '確認結算'}
                                 </button>
                             </div>
                         </div>
