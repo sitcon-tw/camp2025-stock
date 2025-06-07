@@ -1343,17 +1343,18 @@ def main():
     print("2. 進行點數轉帳模擬")
     print("3. 進行股票交易模擬 (含初始發行)")
     print("4. 進行混合交易模擬 (轉帳 + 股票)")
-    print("5. 啟用學員 + 股票發行 + 混合交易 (完整流程)")
-    print("6. 查看系統統計和市場狀態")
-    print("7. 快速市場測試")
-    print("8. 深度調試 - 檢查成交和撮合機制")
-    print("9. 重置IPO狀態")
-    print("10. 重置所有資料")
-    print("11. 退出")
+    print("5. 🚀 多執行緒混合交易模擬 (模擬多用戶同時交易)")
+    print("6. 啟用學員 + 股票發行 + 混合交易 (完整流程)")
+    print("7. 查看系統統計和市場狀態")
+    print("8. 快速市場測試")
+    print("9. 深度調試 - 檢查成交和撮合機制")
+    print("10. 重置IPO狀態")
+    print("11. 重置所有資料")
+    print("12. 退出")
     
     while True:
         try:
-            choice = input("\n請輸入選項 (1-11): ").strip()
+            choice = input("\n請輸入選項 (1-12): ").strip()
             
             if choice == "1":
                 initial_points = input("請輸入初始點數 (預設 1000): ").strip()
@@ -1407,6 +1408,40 @@ def main():
                 break
                 
             elif choice == "5":
+                # 多執行緒混合交易模擬
+                num_transactions = input("請輸入總交易次數 (預設 100): ").strip()
+                num_transactions = int(num_transactions) if num_transactions.isdigit() else 100
+                
+                num_threads = input("請輸入執行緒數量 (預設 5): ").strip()
+                num_threads = int(num_threads) if num_threads.isdigit() and int(num_threads) > 0 else 5
+                num_threads = min(num_threads, 20)  # 限制最多20個執行緒
+                
+                stock_ratio = input("請輸入股票交易比例 0-100% (預設 40): ").strip()
+                if stock_ratio.isdigit():
+                    stock_ratio = min(100, max(0, int(stock_ratio))) / 100
+                else:
+                    stock_ratio = 0.4
+                
+                delay_range_input = input("請輸入交易延遲範圍 (秒, 格式: min,max, 預設 0.5,2.0): ").strip()
+                try:
+                    if delay_range_input and ',' in delay_range_input:
+                        min_delay, max_delay = map(float, delay_range_input.split(','))
+                        delay_range = (min_delay, max_delay)
+                    else:
+                        delay_range = (0.5, 2.0)
+                except:
+                    delay_range = (0.5, 2.0)
+                
+                print(f"\n🚀 啟動多執行緒交易模擬...")
+                print(f"   總交易次數: {num_transactions}")
+                print(f"   執行緒數量: {num_threads} (模擬 {num_threads} 個同時在線用戶)")
+                print(f"   股票交易比例: {stock_ratio:.1%}")
+                print(f"   交易延遲: {delay_range[0]}-{delay_range[1]} 秒")
+                
+                simulator.simulate_concurrent_trading(num_transactions, num_threads, stock_ratio, delay_range)
+                break
+                
+            elif choice == "6":
                 # 完整流程
                 initial_points = input("請輸入初始點數 (預設 1000): ").strip()
                 initial_points = int(initial_points) if initial_points.isdigit() else 1000
@@ -1444,15 +1479,15 @@ def main():
                         simulator.simulate_mixed_trading(num_transactions, stock_ratio)
                 break
                 
-            elif choice == "6":
+            elif choice == "7":
                 simulator.get_system_stats()
                 break
                 
-            elif choice == "7":
+            elif choice == "8":
                 simulator.quick_market_test()
                 break
                 
-            elif choice == "8":
+            elif choice == "9":
                 print("\n🔍 深度調試模式")
                 print("正在檢查系統狀態...")
                 
@@ -1472,7 +1507,7 @@ def main():
                 
                 break
                 
-            elif choice == "9":
+            elif choice == "10":
                 # 重置IPO狀態
                 initial_shares = input("請輸入IPO初始股數 (預設 1000): ").strip()
                 initial_shares = int(initial_shares) if initial_shares.isdigit() else 1000
@@ -1487,7 +1522,7 @@ def main():
                     print("❌ IPO重置失敗")
                 break
                 
-            elif choice == "10":
+            elif choice == "11":
                 # 重置所有資料
                 confirm = input("⚠️ 這將刪除所有資料，確定要繼續嗎？ (y/N): ").strip().lower()
                 if confirm == 'y':
@@ -1500,7 +1535,7 @@ def main():
                     print("❌ 操作已取消")
                 break
                 
-            elif choice == "11":
+            elif choice == "12":
                 print("👋 程式結束")
                 sys.exit(0)
                 
