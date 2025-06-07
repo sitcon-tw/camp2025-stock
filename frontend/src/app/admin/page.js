@@ -12,7 +12,8 @@ import {
     getStudents,
     getTeams,
     getMarketStatus,
-    getTradingHours
+    getTradingHours,
+    resetAllData
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -52,7 +53,12 @@ export default function AdminPage() {
     const [newTimeForm, setNewTimeForm] = useState({
         start: '7:00',
         end: '9:00'
-    });    // 通知彈窗
+    });
+
+    // Danger Zone 相關狀態
+    const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
+    const [showResetResultModal, setShowResetResultModal] = useState(false);
+    const [resetResult, setResetResult] = useState(null);    // 通知彈窗
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -366,6 +372,35 @@ export default function AdminPage() {
             });
         } catch (error) {
             handleApiError(error, '發布公告');
+        }
+        setLoading(false);
+    };
+
+    // Danger Zone 相關函數
+    const openResetConfirmModal = () => {
+        setShowResetConfirmModal(true);
+    };
+
+    const closeResetConfirmModal = () => {
+        setShowResetConfirmModal(false);
+    };
+
+    const closeResetResultModal = () => {
+        setShowResetResultModal(false);
+        setResetResult(null);
+    };
+
+    const handleResetAllData = async () => {
+        setLoading(true);
+        setShowResetConfirmModal(false);
+        
+        try {
+            const result = await resetAllData(adminToken);
+            setResetResult(result);
+            setShowResetResultModal(true);
+            showNotification('資料重置完成', 'success');
+        } catch (error) {
+            handleApiError(error, '重置資料');
         }
         setLoading(false);
     };
@@ -765,6 +800,33 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            {/* Danger Zone */}
+            <div className="max-w-4xl mx-auto px-4 mt-8">
+                <div className="bg-[#1A325F] rounded-xl p-6 border-2 border-red-500">
+                    <div className="flex items-center mb-4">
+                        <svg className="w-6 h-6 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <h2 className="text-xl font-bold text-red-500">Danger Zone</h2>
+                    </div>
+                    <div className="pt-2">
+                        <div className="flex flex-col gap-5 w-full justify-between">
+                            <div>
+                                <h3 className="text-white font-medium">重置所有資料 (Dev)</h3>
+                                <p className="text-gray-400 text-sm">永久刪除所有使用者資料、交易記錄和系統設定</p>
+                            </div>
+                            <button
+                                onClick={openResetConfirmModal}
+                                disabled={loading}
+                                className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white px-4 py-2 rounded-xl font-medium transition-colors w-full"
+                            >
+                                {loading ? '處理中...' : '重置所有資料'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* 新增時間 Modal */}
             {showAddTimeModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -818,6 +880,87 @@ export default function AdminPage() {
                                     className="flex-1 bg-[#7BC2E6] text-black py-2 px-4 rounded-xl transition-colors"
                                 >
                                     新增
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 重置確認 Modal */}
+            {showResetConfirmModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md border-2 border-red-500">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-red-500">危險操作確認</h3>
+                            <button
+                                onClick={closeResetConfirmModal}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="bg-red-900 border border-red-600 rounded-lg p-4">
+                                <p className="text-white font-medium mb-2">您即將重置所有系統資料！</p>
+                                <p className="text-red-200 text-sm">
+                                    這個操作將會把系統資料全部刪光，你要確定欸？
+                                </p>
+                            </div>
+
+                            <div className="flex space-x-3 mt-6">
+                                <button
+                                    onClick={closeResetConfirmModal}
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleResetAllData}
+                                    disabled={loading}
+                                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white py-2 px-4 rounded-xl transition-colors font-medium"
+                                >
+                                    {loading ? '重置中...' : '確認重置'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 重置結果 Modal */}
+            {showResetResultModal && resetResult && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-green-500">重置完成</h3>
+                            <button
+                                onClick={closeResetResultModal}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-4">
+                                <h4 className="text-[#7BC2E6] font-medium mb-3">後端回應：</h4>
+                                <div className="bg-gray-900 rounded p-3 font-mono text-sm text-gray-300 whitespace-pre-wrap overflow-auto max-h-96">
+                                    {JSON.stringify(resetResult, null, 2)}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={closeResetResultModal}
+                                    className="bg-[#7BC2E6] hover:bg-[#6bb0d4] text-black py-2 px-6 rounded-xl transition-colors font-medium"
+                                >
+                                    關閉
                                 </button>
                             </div>
                         </div>

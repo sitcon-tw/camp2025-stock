@@ -163,4 +163,15 @@ export async function getAnnouncements(limit = 10, options = {}) {
     return apiRequest(`/api/announcements?limit=${limit}`, options);
 }
 
+// 重置所有資料 (Danger Zone)
+export async function resetAllData(token) {
+    return apiRequest('/api/admin/reset/alldata', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
 export { API_BASE_URL };
