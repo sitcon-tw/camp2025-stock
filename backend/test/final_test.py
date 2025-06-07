@@ -27,9 +27,13 @@ import requests
 import json
 import random
 import time
+import threading
+import concurrent.futures
 from typing import List, Dict, Optional, Tuple
 import sys
 from datetime import datetime
+from collections import defaultdict
+import queue
 
 # API 配置
 BASE_URL = "http://localhost:8000"  # 請根據實際情況修改
@@ -132,18 +136,37 @@ class CampTradingSimulator:
             'Content-Type': 'application/json'
         })
         
-        # 交易統計
+        # 執行緒安全的交易統計
+        self.stats_lock = threading.Lock()
         self.stats = {
             'point_transfers': {'success': 0, 'failed': 0},
             'stock_trades': {'success': 0, 'failed': 0},
             'total_points_transferred': 0,
             'total_stocks_traded': 0
         }
+        
+        # 多執行緒相關
+        self.active_threads = 0
+        self.thread_results = queue.Queue()
+        self.thread_lock = threading.Lock()
     
     def log(self, message: str, level: str = "INFO"):
         """記錄日誌"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] [{level}] {message}")
+        thread_id = threading.current_thread().name
+        print(f"[{timestamp}] [{level}] [{thread_id}] {message}")
+    
+    def update_stats(self, stat_type: str, operation: str, amount: int = 0):
+        """執行緒安全的統計更新"""
+        with self.stats_lock:
+            if stat_type == 'point_transfer':
+                self.stats['point_transfers'][operation] += 1
+                if operation == 'success':
+                    self.stats['total_points_transferred'] += amount
+            elif stat_type == 'stock_trade':
+                self.stats['stock_trades'][operation] += 1
+                if operation == 'success':
+                    self.stats['total_stocks_traded'] += amount
     
     def admin_login(self) -> bool:
         """管理員登入"""
@@ -439,7 +462,7 @@ class CampTradingSimulator:
                         self.log(f"✗ 啟用失敗: {student['name']} - {response.text}", "WARNING")
                     
                     # 避免過於頻繁的請求
-                    time.sleep(0.1)
+                    # time.sleep(0.1)
                     
                 except Exception as e:
                     failed_count += 1
@@ -636,23 +659,22 @@ class CampTradingSimulator:
                 data = response.json()
                 if data.get("success", False):
                     fee = data.get("fee", 0)
-                    self.stats['point_transfers']['success'] += 1
-                    self.stats['total_points_transferred'] += amount
+                    self.update_stats('point_transfer', 'success', amount)
                     self.log(f"💰 轉帳成功: {sender['name']} → {receiver['name']} "
                            f"{amount} 點 (手續費: {fee}) 備註: {note}")
                     return True
                 else:
-                    self.stats['point_transfers']['failed'] += 1
+                    self.update_stats('point_transfer', 'failed')
                     self.log(f"💸 轉帳失敗: {sender['name']} → {receiver['name']} "
                            f"{amount} 點 - {data.get('message', '未知錯誤')}", "WARNING")
                     return False
             else:
-                self.stats['point_transfers']['failed'] += 1
+                self.update_stats('point_transfer', 'failed')
                 self.log(f"💸 轉帳請求失敗: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.stats['point_transfers']['failed'] += 1
+            self.update_stats('point_transfer', 'failed')
             self.log(f"轉帳模擬異常: {e}", "ERROR")
             return False
     
@@ -705,8 +727,8 @@ class CampTradingSimulator:
                 self.log(f"⏭️ {trader['name']} 點數不足購買股票 ({points} < {current_price})，跳過交易", "INFO")
                 return False
             
-            # 隨機決定訂單類型（70%市價單，30%限價單）
-            order_type = "market" if random.random() < 0.7 else "limit"
+            # 調整訂單類型比例，更多限價單創造價格變動（40%市價單，60%限價單）
+            order_type = "market" if random.random() < 0.4 else "limit"
             
             # 根據買賣方向和持股情況決定交易數量
             if side == "buy":
@@ -731,9 +753,25 @@ class CampTradingSimulator:
                 "quantity": quantity
             }
             
-            # 如果是限價單，設定價格（當前價格±10%）
+            # 如果是限價單，設定價格 - 增大價格變動幅度（當前價格±20-40%）
             if order_type == "limit":
-                price_variation = random.uniform(-0.1, 0.1)  # ±10%
+                # 更大的價格變動範圍：±20-40%
+                price_variation = random.uniform(-0.4, 0.4)
+                
+                # 買單傾向於出更高價，賣單傾向於要更高價，增加成交機會但也增加價格波動
+                if side == "buy":
+                    # 買單：80%機率出高價搶購，20%機率出低價等待
+                    if random.random() < 0.8:
+                        price_variation = abs(price_variation) * 0.8  # 出高價但不要太誇張
+                    else:
+                        price_variation = -abs(price_variation)  # 出低價等待
+                else:
+                    # 賣單：70%機率要高價，30%機率割肉賣出
+                    if random.random() < 0.7:
+                        price_variation = abs(price_variation)  # 要高價
+                    else:
+                        price_variation = -abs(price_variation) * 0.5  # 割肉但不要太過分
+                
                 limit_price = max(1, int(current_price * (1 + price_variation)))
                 order_data["price"] = limit_price
                 price_text = f" @ {limit_price}元"
@@ -750,8 +788,7 @@ class CampTradingSimulator:
             if response.status_code == 200:
                 data = response.json()
                 if data.get("success", False):
-                    self.stats['stock_trades']['success'] += 1
-                    self.stats['total_stocks_traded'] += quantity
+                    self.update_stats('stock_trade', 'success', quantity)
                     
                     action = "買入" if side == "buy" else "賣出"
                     order_id = data.get("order_id", "N/A")
@@ -765,16 +802,16 @@ class CampTradingSimulator:
                                f"(訂單ID: {order_id[:8]}...)")
                     return True
                 else:
-                    self.stats['stock_trades']['failed'] += 1
+                    self.update_stats('stock_trade', 'failed')
                     self.log(f"📉 股票交易失敗: {trader['name']} - {data.get('message', '未知錯誤')}", "WARNING")
                     return False
             else:
-                self.stats['stock_trades']['failed'] += 1
+                self.update_stats('stock_trade', 'failed')
                 self.log(f"📉 股票交易請求失敗: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.stats['stock_trades']['failed'] += 1
+            self.update_stats('stock_trade', 'failed')
             self.log(f"股票交易模擬異常: {e}", "ERROR")
             return False
 
@@ -877,7 +914,7 @@ class CampTradingSimulator:
                 if sell_data.get("success"):
                     self.log(f"📋 {seller['name']} 掛賣單: 1股 @ {current_price}元")
                     
-                    time.sleep(1)  # 等待1秒
+                    # time.sleep(1)  # 等待1秒
                     
                     # 再讓買方下買單（價格稍高以確保成交）
                     buy_response = self.session.post(
@@ -897,7 +934,7 @@ class CampTradingSimulator:
                         if buy_data.get("success"):
                             self.log(f"📋 {buyer['name']} 掛買單: 1股 @ {current_price}元")
                             
-                            time.sleep(2)  # 等待撮合
+                            # time.sleep(2)  # 等待撮合
                             self.check_recent_trades(5)
                         else:
                             self.log(f"買單失敗: {buy_data.get('message')}", "WARNING")
@@ -955,6 +992,183 @@ class CampTradingSimulator:
         
         return None
     
+    # ========== 多執行緒交易模擬 ==========
+    
+    def worker_thread(self, thread_id: int, transactions_per_thread: int, 
+                     stock_ratio: float, delay_range: tuple) -> Dict:
+        """單一工作執行緒的交易邏輯"""
+        thread_stats = {
+            'point_transfers': {'success': 0, 'failed': 0},
+            'stock_trades': {'success': 0, 'failed': 0},
+            'total_points_transferred': 0,
+            'total_stocks_traded': 0,
+            'thread_id': thread_id
+        }
+        
+        try:
+            # 每個執行緒需要自己的 session 來避免衝突
+            thread_session = requests.Session()
+            thread_session.headers.update({
+                'Content-Type': 'application/json'
+            })
+            original_session = self.session
+            self.session = thread_session
+            
+            for i in range(transactions_per_thread):
+                try:
+                    # 隨機決定交易類型
+                    is_stock_trade = random.random() < stock_ratio
+                    
+                    if is_stock_trade:
+                        success = self.simulate_smart_stock_trade()
+                        if success:
+                            thread_stats['stock_trades']['success'] += 1
+                        else:
+                            thread_stats['stock_trades']['failed'] += 1
+                    else:
+                        success = self.simulate_random_transfer()
+                        if success:
+                            thread_stats['point_transfers']['success'] += 1
+                        else:
+                            thread_stats['point_transfers']['failed'] += 1
+                    
+                    # 隨機延遲
+                    if i < transactions_per_thread - 1:
+                        delay = random.uniform(delay_range[0], delay_range[1])
+                        time.sleep(delay)
+                        
+                except Exception as e:
+                    self.log(f"執行緒 {thread_id} 交易 {i+1} 異常: {e}", "ERROR")
+            
+            # 恢復原來的 session
+            self.session = original_session
+            
+        except Exception as e:
+            self.log(f"執行緒 {thread_id} 異常: {e}", "ERROR")
+            # 恢復原來的 session
+            self.session = original_session
+        
+        return thread_stats
+    
+    def simulate_concurrent_trading(self, total_transactions: int = 100, 
+                                  num_threads: int = 5,
+                                  stock_ratio: float = 0.4, 
+                                  delay_range: tuple = (0.5, 2.0)) -> None:
+        """
+        多執行緒混合交易模擬（模擬多用戶同時交易）
+        
+        Args:
+            total_transactions: 總交易次數
+            num_threads: 執行緒數量（模擬同時在線用戶數）
+            stock_ratio: 股票交易比例 (0.0-1.0)
+            delay_range: 每次交易間的延遲時間範圍（秒）
+        """
+        try:
+            self.log(f"🚀 開始多執行緒交易模擬...")
+            self.log(f"總交易次數: {total_transactions} 筆")
+            self.log(f"執行緒數量: {num_threads} 個 (模擬 {num_threads} 個同時在線用戶)")
+            self.log(f"股票交易比例: {stock_ratio:.1%}，點數轉帳比例: {1-stock_ratio:.1%}")
+            
+            # 顯示市場資訊
+            self.show_market_info()
+            
+            # 計算每個執行緒的交易數量
+            transactions_per_thread = total_transactions // num_threads
+            remaining_transactions = total_transactions % num_threads
+            
+            self.log(f"每個執行緒處理: {transactions_per_thread} 筆交易")
+            if remaining_transactions > 0:
+                self.log(f"額外分配: {remaining_transactions} 筆交易給前 {remaining_transactions} 個執行緒")
+            
+            # 重置統計
+            with self.stats_lock:
+                self.stats = {
+                    'point_transfers': {'success': 0, 'failed': 0},
+                    'stock_trades': {'success': 0, 'failed': 0},
+                    'total_points_transferred': 0,
+                    'total_stocks_traded': 0
+                }
+            
+            start_time = time.time()
+            
+            # 使用 ThreadPoolExecutor 管理執行緒
+            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+                # 提交所有工作
+                futures = []
+                for i in range(num_threads):
+                    # 前面的執行緒處理額外的交易
+                    thread_transactions = transactions_per_thread + (1 if i < remaining_transactions else 0)
+                    future = executor.submit(
+                        self.worker_thread, 
+                        i + 1, 
+                        thread_transactions, 
+                        stock_ratio, 
+                        delay_range
+                    )
+                    futures.append(future)
+                
+                # 等待所有執行緒完成並收集結果
+                thread_results = []
+                for i, future in enumerate(concurrent.futures.as_completed(futures)):
+                    try:
+                        result = future.result()
+                        thread_results.append(result)
+                        self.log(f"✅ 執行緒 {result['thread_id']} 完成")
+                    except Exception as e:
+                        self.log(f"❌ 執行緒異常: {e}", "ERROR")
+            
+            end_time = time.time()
+            duration = end_time - start_time
+            
+            self.log(f"🎉 多執行緒交易模擬完成！執行時間: {duration:.2f} 秒")
+            
+            # 顯示詳細統計
+            self.show_concurrent_trading_summary(thread_results, duration)
+            
+        except KeyboardInterrupt:
+            self.log("多執行緒交易模擬被使用者中斷", "WARNING")
+        except Exception as e:
+            self.log(f"多執行緒交易模擬異常: {e}", "ERROR")
+    
+    def show_concurrent_trading_summary(self, thread_results: List[Dict], duration: float):
+        """顯示多執行緒交易統計摘要"""
+        self.log("📊 多執行緒交易統計摘要:")
+        
+        # 匯總所有執行緒的結果
+        total_point_success = sum(r['point_transfers']['success'] for r in thread_results)
+        total_point_failed = sum(r['point_transfers']['failed'] for r in thread_results)
+        total_stock_success = sum(r['stock_trades']['success'] for r in thread_results)
+        total_stock_failed = sum(r['stock_trades']['failed'] for r in thread_results)
+        
+        self.log(f"   執行緒數量: {len(thread_results)} 個")
+        self.log(f"   總執行時間: {duration:.2f} 秒")
+        self.log(f"   平均TPS: {(total_point_success + total_point_failed + total_stock_success + total_stock_failed) / duration:.2f} 筆/秒")
+        
+        self.log(f"   點數轉帳: 成功 {total_point_success} 筆，失敗 {total_point_failed} 筆")
+        self.log(f"   股票交易: 成功 {total_stock_success} 筆，失敗 {total_stock_failed} 筆")
+        
+        total_success = total_point_success + total_stock_success
+        total_failed = total_point_failed + total_stock_failed
+        total_transactions = total_success + total_failed
+        
+        if total_transactions > 0:
+            success_rate = (total_success / total_transactions) * 100
+            self.log(f"   總成功率: {success_rate:.1f}% ({total_success}/{total_transactions})")
+        
+        # 顯示各執行緒詳細統計
+        self.log("   各執行緒統計:")
+        for result in sorted(thread_results, key=lambda x: x['thread_id']):
+            tid = result['thread_id']
+            pt_s = result['point_transfers']['success']
+            pt_f = result['point_transfers']['failed']
+            st_s = result['stock_trades']['success']
+            st_f = result['stock_trades']['failed']
+            self.log(f"     執行緒{tid}: 轉帳({pt_s}✓/{pt_f}✗) 股票({st_s}✓/{st_f}✗)")
+        
+        # 顯示當前市場狀態
+        self.log("📈 交易後市場狀態:")
+        self.show_market_info()
+    
     # ========== 混合交易模擬 ==========
     
     def simulate_mixed_trading(self, total_transactions: int = 100, 
@@ -998,7 +1212,7 @@ class CampTradingSimulator:
                 # 隨機延遲
                 if i < total_transactions:
                     delay = random.uniform(delay_range[0], delay_range[1])
-                    time.sleep(delay)
+                    # time.sleep(delay)
             
             self.show_trading_summary()
             
@@ -1155,7 +1369,7 @@ def main():
                 for i in range(num_transactions):
                     print(f"進行第 {i+1}/{num_transactions} 筆轉帳")
                     simulator.simulate_random_transfer()
-                    time.sleep(random.uniform(1, 3))
+                    # time.sleep(random.uniform(1, 3))
                 simulator.show_trading_summary()
                 break
                 
@@ -1175,7 +1389,7 @@ def main():
                 for i in range(num_transactions):
                     print(f"進行第 {i+1}/{num_transactions} 筆股票交易")
                     simulator.simulate_smart_stock_trade()
-                    time.sleep(random.uniform(1, 3))
+                    # time.sleep(random.uniform(1, 3))
                 simulator.show_trading_summary()
                 break
                 

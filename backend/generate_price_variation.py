@@ -32,34 +32,34 @@ class PriceVariationGenerator:
             self.client.close()
     
     async def generate_realistic_price_series(self, base_price: float = 20.0, count: int = 50) -> list:
-        """產生真實的價格序列"""
+        """產生真實的價格序列 - 增強版，更明顯的漲跌"""
         prices = [base_price]
         current_price = base_price
         
         for i in range(count - 1):
-            # 隨機漂移：70% 小幅波動，20% 中幅波動，10% 大幅波動
+            # 更大的價格波動：50% 中幅波動，30% 大幅波動，20% 極大幅波動
             rand = random.random()
-            if rand < 0.7:
-                # 小幅波動 ±1%
-                change_percent = random.uniform(-0.01, 0.01)
-            elif rand < 0.9:
-                # 中幅波動 ±3%
-                change_percent = random.uniform(-0.03, 0.03)
+            if rand < 0.5:
+                # 中幅波動 ±3-8%
+                change_percent = random.uniform(-0.08, 0.08)
+            elif rand < 0.8:
+                # 大幅波動 ±8-15%
+                change_percent = random.uniform(-0.15, 0.15)
             else:
-                # 大幅波動 ±5%
-                change_percent = random.uniform(-0.05, 0.05)
+                # 極大幅波動 ±15-25%
+                change_percent = random.uniform(-0.25, 0.25)
             
-            # 增加趨勢性：讓價格有一定的連續性
+            # 增加趨勢性：讓價格有一定的連續性，但幅度更大
             if i > 0:
                 previous_change = (prices[-1] - prices[-2]) / prices[-2] if len(prices) >= 2 else 0
-                # 60% 機率延續前一次的趨勢方向
-                if random.random() < 0.6 and abs(previous_change) > 0.001:
-                    change_percent = abs(change_percent) * (1 if previous_change > 0 else -1) * 0.5
+                # 70% 機率延續前一次的趨勢方向，但幅度放大
+                if random.random() < 0.7 and abs(previous_change) > 0.005:
+                    change_percent = abs(change_percent) * (1 if previous_change > 0 else -1) * 1.2
             
             current_price = current_price * (1 + change_percent)
-            # 確保價格不會低於 10 或高於 30
-            current_price = max(10.0, min(30.0, current_price))
-            current_price = round(current_price, 2)
+            # 放寬價格範圍，讓漲跌更明顯：5-50元
+            current_price = max(5.0, min(50.0, current_price))
+            current_price = round(current_price)  # 改為整數，更容易觀察
             prices.append(current_price)
         
         return prices

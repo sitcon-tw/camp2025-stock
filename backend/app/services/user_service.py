@@ -801,6 +801,26 @@ class UserService:
 
             buy_book = await buy_orders_cursor.to_list(None)
             sell_book = await sell_orders_cursor.to_list(None)
+            
+            # 安全排序函數，確保日期時間比較正常工作
+            def safe_sort_key(order, reverse_price=False):
+                price = order.get('price', 0 if not reverse_price else float('inf'))
+                created_at = order.get('created_at')
+                
+                # 確保 created_at 是 timezone-aware
+                if created_at is None:
+                    created_at = datetime.now(timezone.utc)
+                elif isinstance(created_at, datetime) and created_at.tzinfo is None:
+                    # 如果是 timezone-naive，假設為 UTC
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                elif not isinstance(created_at, datetime):
+                    created_at = datetime.now(timezone.utc)
+                
+                return (price, created_at)
+            
+            # 重新排序買單和賣單以確保日期時間比較安全
+            buy_book.sort(key=lambda x: safe_sort_key(x, reverse_price=True), reverse=True)
+            sell_book.sort(key=lambda x: safe_sort_key(x, reverse_price=False))
 
             # 將系統 IPO 作為一個虛擬賣單加入
             ipo_config = await self._get_or_initialize_ipo_config()
@@ -819,8 +839,8 @@ class UserService:
                 sell_book.append(system_sell_order)
                 logger.info(f"Added system IPO to sell book: {ipo_config['shares_remaining']} shares @ {ipo_config['initial_price']}")
                 
-                # 重新排序賣單：價格優先，時間優先（系統訂單時間最早）
-                sell_book.sort(key=lambda x: (x.get('price', float('inf')), x.get('created_at', datetime.now(timezone.utc))))
+                # 重新排序賣單包含系統IPO訂單
+                sell_book.sort(key=lambda x: safe_sort_key(x, reverse_price=False))
 
             # 優化的撮合邏輯
             buy_idx, sell_idx = 0, 0
