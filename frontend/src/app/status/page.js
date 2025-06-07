@@ -17,16 +17,26 @@ export default function Status() {
 		volume: 0
 	});
 
+	const [tradingStats, setTradingStats] = useState({
+		total_trades: 0,
+		total_volume: 0,
+		total_amount: 0
+	});
+
 	const [error, setError] = useState(null);
 
 	const fetchData = async () => {
 		try {
-			const data = await apiService.getPriceData();
-			setStockData(data);
+			const [priceData, statsData] = await Promise.all([
+				apiService.getPriceData(),
+				apiService.getTradingStatsData()
+			]);
+			setStockData(priceData);
+			setTradingStats(statsData);
 			setError(null);
 		} catch (err) {
-			console.error('獲取股票資料失敗:', err);
-			setError('無法獲取股票資料');
+			console.error('獲取資料失敗:', err);
+			setError('無法獲取資料');
 		}
 	};
 	useEffect(() => {
@@ -81,6 +91,21 @@ export default function Status() {
 					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
 						<h5 className="text-sm text-white">今日最高</h5>
 						<p className="text-2xl font-bold">{Math.round(stockData.high)}</p>
+					</div>
+					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+						<h5 className="text-sm text-white">今日成交量</h5>
+						<p className="text-2xl font-bold">{tradingStats.total_volume.toLocaleString()}</p>
+						<p className="text-sm text-white">股</p>
+					</div>
+					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+						<h5 className="text-sm text-white">成交額</h5>
+						<p className="text-2xl font-bold">{tradingStats.total_amount.toLocaleString()}</p>
+						<p className="text-sm text-white">點</p>
+					</div>
+					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+						<h5 className="text-sm text-white">成交筆數</h5>
+						<p className="text-2xl font-bold">{tradingStats.total_trades.toLocaleString()}</p>
+						<p className="text-sm text-white">筆</p>
 					</div>
 				</div>
 			</div>

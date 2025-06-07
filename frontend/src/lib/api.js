@@ -163,6 +163,11 @@ export async function getAnnouncements(limit = 10, options = {}) {
     return apiRequest(`/api/announcements?limit=${limit}`, options);
 }
 
+// 取得交易統計
+export async function getTradingStats(options = {}) {
+    return apiRequest('/api/trading/stats', options);
+}
+
 // 重置所有資料 (Danger Zone)
 export async function resetAllData(token) {
     return apiRequest('/api/admin/reset/alldata', {

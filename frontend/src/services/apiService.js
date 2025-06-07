@@ -6,7 +6,8 @@ import {
     getPriceDepth,
     getRecentTrades,
     getHistoricalPrices,
-    getLeaderboard
+    getLeaderboard,
+    getTradingStats
 } from '@/lib/api';
 
 class ApiService {
@@ -83,6 +84,10 @@ class ApiService {
 
     async getLeaderboardData() {
         return this.request('leaderboard', getLeaderboard, 15000);
+    }
+
+    async getTradingStatsData() {
+        return this.request('trading-stats', getTradingStats, 10000);
     }
 }
 
