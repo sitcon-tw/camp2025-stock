@@ -659,12 +659,15 @@ class UserService:
     # 執行市價單
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
         """執行市價單交易，帶重試機制"""
-        max_retries = 3
-        retry_delay = 0.01  # 10ms
+        max_retries = 5  # 增加重試次數
+        retry_delay = 0.005  # 5ms 初始延遲
         
         for attempt in range(max_retries):
             try:
-                return await self._execute_market_order_with_transaction(user_oid, order_doc)
+                result = await self._execute_market_order_with_transaction(user_oid, order_doc)
+                if attempt > 0:
+                    logger.info(f"Market order succeeded on attempt {attempt + 1}")
+                return result
                 
             except Exception as e:
                 error_str = str(e)
@@ -677,17 +680,17 @@ class UserService:
                 # 檢查是否為寫入衝突錯誤（可重試）
                 elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
                     if attempt < max_retries - 1:
-                        logger.debug(f"Market order write conflict on attempt {attempt + 1}, retrying in {retry_delay}s...")
+                        logger.info(f"Market order WriteConflict detected on attempt {attempt + 1}/{max_retries}, retrying in {retry_delay:.3f}s...")
                         import asyncio
                         await asyncio.sleep(retry_delay)
-                        retry_delay *= 2  # 指數退避
+                        retry_delay *= 1.5  # 較溫和的指數退避
                         continue
                     else:
-                        logger.warning(f"Market order write conflict after {max_retries} attempts, falling back to non-transactional mode")
+                        logger.warning(f"Market order WriteConflict persisted after {max_retries} attempts, falling back to non-transactional mode")
                         return await self._execute_market_order_without_transaction(user_oid, order_doc)
                 
                 else:
-                    logger.error(f"Failed to execute market order logic: {e}")
+                    logger.error(f"Failed to execute market order with non-retryable error: {e}")
                     return StockOrderResponse(
                         success=False,
                         message="市價單執行失敗"
@@ -795,7 +798,13 @@ class UserService:
             )
             
         except Exception as e:
-            logger.error(f"Failed to execute market order logic: {e}")
+            # 對於 WriteConflict 使用 DEBUG 級別，因為這會被上層重試機制處理
+            error_str = str(e)
+            if "WriteConflict" in error_str or "TransientTransactionError" in error_str:
+                logger.debug(f"Transaction conflict in market order logic (will be retried): {e}")
+            else:
+                logger.error(f"Failed to execute market order logic: {e}")
+            
             # 如果在事務中，則中止
             if session and session.in_transaction:
                 await session.abort_transaction()
@@ -907,12 +916,14 @@ class UserService:
     
     async def _match_orders(self, buy_order: dict, sell_order: dict):
         """撮合訂單 - 自動選擇事務或非事務模式，帶重試機制"""
-        max_retries = 3
-        retry_delay = 0.01  # 10ms
+        max_retries = 5  # 增加重試次數
+        retry_delay = 0.005  # 5ms 初始延遲
         
         for attempt in range(max_retries):
             try:
                 await self._match_orders_with_transaction(buy_order, sell_order)
+                if attempt > 0:
+                    logger.info(f"Order matching succeeded on attempt {attempt + 1}")
                 return  # 成功則退出
                 
             except Exception as e:
@@ -927,18 +938,18 @@ class UserService:
                 # 檢查是否為寫入衝突錯誤（可重試）
                 elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
                     if attempt < max_retries - 1:
-                        logger.debug(f"Write conflict on attempt {attempt + 1}, retrying in {retry_delay}s...")
+                        logger.info(f"WriteConflict detected on attempt {attempt + 1}/{max_retries}, retrying in {retry_delay:.3f}s...")
                         import asyncio
                         await asyncio.sleep(retry_delay)
-                        retry_delay *= 2  # 指數退避
+                        retry_delay *= 1.5  # 較溫和的指數退避
                         continue
                     else:
-                        logger.warning(f"Write conflict after {max_retries} attempts, falling back to non-transactional mode")
+                        logger.warning(f"WriteConflict persisted after {max_retries} attempts, falling back to non-transactional mode")
                         await self._match_orders_without_transaction(buy_order, sell_order)
                         return
                 
                 else:
-                    logger.error(f"Order matching failed: {e}")
+                    logger.error(f"Order matching failed with non-retryable error: {e}")
                     raise
 
     async def _match_orders_with_transaction(self, buy_order: dict, sell_order: dict):
@@ -1045,7 +1056,13 @@ class UserService:
             logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
             
         except Exception as e:
-            logger.error(f"Failed to match orders logic: {e}")
+            # 對於 WriteConflict 使用 DEBUG 級別，因為這會被上層重試機制處理
+            error_str = str(e)
+            if "WriteConflict" in error_str or "TransientTransactionError" in error_str:
+                logger.debug(f"Transaction conflict in match orders logic (will be retried): {e}")
+            else:
+                logger.error(f"Failed to match orders logic: {e}")
+            
             if session and session.in_transaction:
                 await session.abort_transaction()
             raise
