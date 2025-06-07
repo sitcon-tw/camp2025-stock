@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""環境變數配置檢查工具"""
+"""環境變數設定檢查工具"""
 
 import os
 import sys
@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 
 
 def check_env_config():
-    """檢查環境變數配置"""
-    print("檢查環境變數配置...")
+    """檢查環境變數設定"""
+    print("檢查環境變數設定...")
     
     env_path = Path(__file__).parent / '.env'
     if not env_path.exists():
@@ -42,7 +42,7 @@ def check_env_config():
             print(f"成功: {var} = {display}")
     
     if all_good:
-        print("環境變數配置完成")
+        print("環境變數設定完成")
         return True
     else:
         print("請修正上述問題")
@@ -87,7 +87,7 @@ CAMP_DEBUG=True
     with open(sample_path, 'w', encoding='utf-8') as f:
         f.write(content)
     
-    print(f"範例配置文件已產生: {sample_path}")
+    print(f"範例設定文件已產生: {sample_path}")
     print("請複製範例為 .env 並填入實際值")
 
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     else:
         success = check_env_config()
         if not success:
-            print("提示: 執行 'python env_config.py --generate' 產生範例配置文件")
+            print("提示: 執行 'python env_config.py --generate' 產生範例設定文件")
             sys.exit(1)
         else:
             print("準備就緒，執行 'python main.py' 啟動服務")

@@ -237,7 +237,7 @@ class PublicService:
     # 取得市場狀態
     async def get_market_status(self) -> MarketStatus:
         try:
-            # 取得市場開放時間配置
+            # 取得市場開放時間設定
             market_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "market_hours"}
             )
@@ -245,7 +245,7 @@ class PublicService:
             current_time = datetime.now(timezone.utc)
             current_timestamp = int(current_time.timestamp())
             
-            # 預設開放時間（如果沒有配置）
+            # 預設開放時間（如果沒有設定）
             default_open_times = [
                 MarketTimeSlot(
                     start=int(current_time.replace(hour=9, minute=0, second=0).timestamp()),
@@ -299,7 +299,7 @@ class PublicService:
                 if filled_price is not None and filled_price > 0:
                     return filled_price
             
-            # 如果沒有成交記錄，從市場配置取得
+            # 如果沒有成交記錄，從市場設定取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "current_price"}
             )
@@ -353,7 +353,7 @@ class PublicService:
     # 取得交易時間列表
     async def get_trading_hours(self) -> TradingHoursResponse:
         try:
-            # 取得市場開放時間配置
+            # 取得市場開放時間設定
             market_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "market_hours"}
             )
@@ -361,7 +361,7 @@ class PublicService:
             current_time = datetime.now(timezone.utc)
             current_timestamp = int(current_time.timestamp())
             
-            # 預設開放時間（如果沒有配置）
+            # 預設開放時間（如果沒有設定）
             default_open_times = [
                 MarketTimeSlot(
                     start=int(current_time.replace(hour=9, minute=0, second=0).timestamp()),
@@ -506,7 +506,7 @@ class PublicService:
             dict: IPO狀態資訊
         """
         try:
-            # 查詢IPO配置
+            # 查詢IPO設定
             ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "ipo_status"}
             )

@@ -77,7 +77,7 @@ export default function AdminPage() {
     const [showCallAuctionModal, setShowCallAuctionModal] = useState(false);
     const [callAuctionResult, setCallAuctionResult] = useState(null);
 
-    // IPO 預設配置狀態
+    // IPO 預設設定狀態
     const [ipoDefaults, setIpoDefaults] = useState(null);
     const [showIpoDefaultsModal, setShowIpoDefaultsModal] = useState(false);
     const [ipoDefaultsForm, setIpoDefaultsForm] = useState({
@@ -277,14 +277,14 @@ export default function AdminPage() {
         }
     };
 
-    // 撈IPO預設配置
+    // 撈IPO預設設定
     const fetchIpoDefaults = async (token) => {
         try {
             setIpoDefaultsLoading(true);
             const data = await getIpoDefaults(token);
             setIpoDefaults(data);
         } catch (error) {
-            handleApiError(error, '獲取IPO預設配置');
+            handleApiError(error, '獲取IPO預設設定');
         } finally {
             setIpoDefaultsLoading(false);
         }
@@ -327,7 +327,7 @@ export default function AdminPage() {
         }
     };
 
-    // 更新IPO預設配置
+    // 更新IPO預設設定
     const handleIpoDefaultsUpdate = async () => {
         try {
             setIpoDefaultsLoading(true);
@@ -341,10 +341,10 @@ export default function AdminPage() {
             setShowIpoDefaultsModal(false);
             setIpoDefaultsForm({ defaultInitialShares: '', defaultInitialPrice: '' });
             
-            // 重新取得IPO預設配置
+            // 重新取得IPO預設設定
             await fetchIpoDefaults(adminToken);
         } catch (error) {
-            handleApiError(error, 'IPO預設配置更新');
+            handleApiError(error, 'IPO預設設定更新');
         } finally {
             setIpoDefaultsLoading(false);
         }
@@ -1583,12 +1583,12 @@ export default function AdminPage() {
                 </div>
             )}
 
-            {/* IPO 預設配置 Modal */}
+            {/* IPO 預設設定 Modal */}
             {showIpoDefaultsModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-[#7BC2E6]">IPO 預設配置管理</h3>
+                            <h3 className="text-lg font-bold text-[#7BC2E6]">IPO 預設設定管理</h3>
                             <button
                                 onClick={() => setShowIpoDefaultsModal(false)}
                                 className="text-gray-400 hover:text-white transition-colors"
@@ -1634,7 +1634,7 @@ export default function AdminPage() {
 
                             <div className="bg-green-900 border border-green-600 rounded-lg p-3">
                                 <p className="text-green-200 text-sm">
-                                    ⚙️ 這些設定將用於未來的IPO重置操作，不會影響當前的IPO狀態
+                                    ⚙️ 這些設定將用於未來的IPO重置操作，不會影響目前的IPO狀態
                                 </p>
                             </div>
 
@@ -1650,7 +1650,7 @@ export default function AdminPage() {
                                     disabled={ipoDefaultsLoading}
                                     className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
                                 >
-                                    {ipoDefaultsLoading ? '更新中...' : '更新配置'}
+                                    {ipoDefaultsLoading ? '更新中...' : '更新設定'}
                                 </button>
                             </div>
                         </div>

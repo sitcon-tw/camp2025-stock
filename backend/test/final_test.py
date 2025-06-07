@@ -35,7 +35,7 @@ from datetime import datetime
 from collections import defaultdict
 import queue
 
-# API 配置
+# API 設定
 BASE_URL = "http://localhost:8000"  # 請根據實際情況修改
 ADMIN_PASSWORD = "admin123"
 BOT_TOKEN = "neverGonnaGiveYouUp"
@@ -240,7 +240,7 @@ class CampTradingSimulator:
                 if data.get("ok"):
                     self.log(f"✅ 資料重置成功: {data.get('message')}")
                     self.log(f"📊 刪除記錄數: {data.get('deletedDocuments', 0)}")
-                    self.log(f"🔧 重新初始化配置: IPO {data.get('initializedConfigs', {}).get('ipo', {})}")
+                    self.log(f"🔧 重新初始化設定: IPO {data.get('initializedConfigs', {}).get('ipo', {})}")
                     return True
                 else:
                     self.log(f"❌ 資料重置失敗: {data.get('message', '未知錯誤')}", "ERROR")

@@ -13,7 +13,7 @@ import time
 from typing import List, Dict, Any
 from datetime import datetime
 
-# 配置
+# 設定
 BASE_URL = "http://localhost:8000"
 ADMIN_PASSWORD = "admin123"  # 替換為實際的管理員密碼
 INITIAL_POINTS = 100  # 每人初始點數

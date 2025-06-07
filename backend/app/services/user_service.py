@@ -228,7 +228,7 @@ class UserService:
                     logger.info(f"Using today's opening price as reference: {price}")
                     return float(price)
             
-            # 最後回到市場配置或預設價格
+            # 最後回到市場設定或預設價格
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "current_price"}
             )
@@ -816,7 +816,7 @@ class UserService:
                 if filled_price is not None and filled_price > 0:
                     return filled_price
             
-            # 如果沒有成交記錄，從市場配置取得
+            # 如果沒有成交記錄，從市場設定取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "current_price"}
             )
@@ -876,13 +876,13 @@ class UserService:
         try:
             from datetime import datetime, timezone
             
-            # 取得市場開放時間配置
+            # 取得市場開放時間設定
             market_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "market_hours"}
             )
             
             if not market_config or "openTime" not in market_config:
-                # 如果沒有配置，預設市場開放
+                # 如果沒有設定，預設市場開放
                 return True
             
             current_timestamp = int(datetime.now(timezone.utc).timestamp())

@@ -9,7 +9,7 @@ import requests
 import json
 import os
 
-# API 配置
+# API 設定
 BASE_URL = "http://localhost:8000"
 SYSTEM_API_URL = f"{BASE_URL}/api/system"
 
@@ -187,7 +187,7 @@ class SystemAPITester:
         if len(failed_tests) == 0:
             print("🎉 所有測試都通過了！學員註冊 API 運作正常。")
         else:
-            print("⚠️  有部分測試失敗，請檢查 API 伺服器狀態和配置。")
+            print("⚠️  有部分測試失敗，請檢查 API 伺服器狀態和設定。")
 
 
 if __name__ == "__main__":

@@ -80,7 +80,7 @@ class AdminService:
                     {"user_id": user["_id"]}
                 ) or {"stock_amount": 0}
                 
-                # 取得目前股票價格（假設從市場配置取得，單位：元）
+                # 取得目前股票價格（假設從市場設定取得，單位：元）
                 market_config = await self.db[Collections.MARKET_CONFIG].find_one(
                     {"type": "current_price"}
                 ) or {"price": 20}  # 預設價格 20 元
@@ -292,7 +292,7 @@ class AdminService:
                 "updated_by": "admin"
             }
             
-            # 更新或插入市場配置
+            # 更新或插入市場設定
             await self.db[Collections.MARKET_CONFIG].update_one(
                 {"type": "market_hours"},
                 {"$set": market_config},
@@ -316,7 +316,7 @@ class AdminService:
                 "updated_by": "admin"
             }
             
-            # 更新或插入漲跌限制配置
+            # 更新或插入漲跌限制設定
             await self.db[Collections.MARKET_CONFIG].update_one(
                 {"type": "trading_limit"},
                 {"$set": limit_config},

@@ -63,12 +63,12 @@ class TradingSystemStarter:
             return False
     
     def setup_initial_market_config(self):
-        """設定初始市場配置"""
+        """設定初始市場設定"""
         if not self.admin_token:
             print("❌ 需要管理員權限")
             return False
         
-        print("\n⚙️ 設定初始市場配置...")
+        print("\n⚙️ 設定初始市場設定...")
         
         headers = {"Authorization": f"Bearer {self.admin_token}"}
         
@@ -317,7 +317,7 @@ class TradingSystemStarter:
             print("\n❌ 管理員登入失敗，無法繼續設定")
             return False
         
-        # 3. 設定市場配置
+        # 3. 設定市場設定
         self.setup_initial_market_config()
         
         # 4. 建立範例使用者
