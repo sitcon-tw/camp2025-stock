@@ -448,6 +448,17 @@ async def reset_ipo(
         
         logger.info(f"IPO reset: {initial_shares} shares @ {initial_price} points each")
         
+        # 發送系統公告到 Telegram Bot
+        try:
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            await admin_service._send_system_announcement(
+                title="🔄 IPO狀態重置",
+                message=f"管理員已重置IPO狀態。新的IPO發行：{initial_shares:,} 股，每股 {initial_price} 點。系統將重新開始IPO申購流程。"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send IPO reset announcement: {e}")
+        
         return {
             "ok": True,
             "message": f"IPO已重置：{initial_shares} 股，每股 {initial_price} 點",
@@ -533,6 +544,31 @@ async def update_ipo(
         message = f"IPO已更新：{', '.join(message_parts)}" if message_parts else "IPO狀態已更新"
         
         logger.info(f"IPO updated: {message}")
+        
+        # 發送系統公告到 Telegram Bot
+        try:
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            
+            # 構建詳細的公告訊息
+            announcement_parts = []
+            if shares_remaining is not None:
+                announcement_parts.append(f"剩餘股數已調整為 {shares_remaining:,} 股")
+            if initial_price is not None:
+                announcement_parts.append(f"IPO價格已調整為 {initial_price} 點/股")
+            
+            detailed_message = f"管理員已更新IPO參數：{', '.join(announcement_parts)}。"
+            
+            # 如果剩餘股數設為0，加入特別說明
+            if shares_remaining is not None and shares_remaining == 0:
+                detailed_message += " 由於IPO股數已售罄，市價單將改由限價單撮合，股價將依市場供需變動。"
+            
+            await admin_service._send_system_announcement(
+                title="📊 IPO參數更新",
+                message=detailed_message
+            )
+        except Exception as e:
+            logger.error(f"Failed to send IPO update announcement: {e}")
         
         return {
             "ok": True,
