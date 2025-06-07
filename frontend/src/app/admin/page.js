@@ -13,7 +13,8 @@ import {
     getTeams,
     getMarketStatus,
     getTradingHours,
-    resetAllData
+    resetAllData,
+    forceSettlement
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -30,6 +31,7 @@ export default function AdminPage() {
     const [announcementLoading, setAnnouncementLoading] = useState(false);
     const [resetLoading, setResetLoading] = useState(false);
     const [userAssetsLoading, setUserAssetsLoading] = useState(false);
+    const [forceSettlementLoading, setForceSettlementLoading] = useState(false);
 
     const [givePointsForm, setGivePointsForm] = useState({
         type: 'user',
@@ -416,6 +418,22 @@ export default function AdminPage() {
             handleApiError(error, '重置資料');
         }
         setResetLoading(false);
+    };
+
+    const handleForceSettlement = async () => {
+        setForceSettlementLoading(true);
+        
+        try {
+            const result = await forceSettlement(adminToken);
+            showNotification('強制結算完成！', 'success');
+            
+            // 重新獲取統計數據
+            await fetchSystemStats(adminToken);
+            await fetchUserAssets(adminToken);
+        } catch (error) {
+            handleApiError(error, '強制結算');
+        }
+        setForceSettlementLoading(false);
     };
 
     // 未登入時顯示載入畫面
@@ -862,6 +880,20 @@ export default function AdminPage() {
                     </div>
                     <div className="pt-2">
                         <div className="flex flex-col gap-5 w-full justify-between">
+                            <div>
+                                <h3 className="text-white font-medium">強制結算</h3>
+                                <p className="text-gray-400 text-sm">將所有使用者的持股以固定價格轉換為點數，並清除其股票</p>
+                            </div>
+                            <button
+                                onClick={handleForceSettlement}
+                                disabled={forceSettlementLoading}
+                                className="bg-orange-600 hover:bg-orange-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] px-4 py-2 rounded-xl font-medium transition-colors w-full"
+                            >
+                                {forceSettlementLoading ? '結算中...' : '強制結算'}
+                            </button>
+                        </div>
+                        
+                        <div className="flex flex-col gap-5 w-full justify-between mt-6 pt-6 border-t border-red-500">
                             <div>
                                 <h3 className="text-white font-medium">重置所有資料 (Dev)</h3>
                                 <p className="text-gray-400 text-sm">永久刪除所有使用者資料、交易記錄和系統設定</p>

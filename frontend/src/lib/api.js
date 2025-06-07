@@ -179,4 +179,15 @@ export async function resetAllData(token) {
     });
 }
 
+// 強制結算 (Force Settlement)
+export async function forceSettlement(token) {
+    return apiRequest('/api/admin/final-settlement', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
 export { API_BASE_URL };
