@@ -203,7 +203,7 @@ class UserService:
                 if user.get("points", 0) < required_points:
                     return StockOrderResponse(
                         success=False,
-                        message="點數不足"
+                        message=f"點數不足，需要 {required_points} 點，目前你的點數: {user.get('points', 0)}"
                     )
             
             elif request.side == "sell":
