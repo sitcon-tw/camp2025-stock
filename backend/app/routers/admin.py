@@ -332,3 +332,66 @@ async def final_settlement(
         操作結果
     """
     return await admin_service.final_settlement()
+
+
+@router.post(
+    "/ipo/reset",
+    responses={
+        200: {"description": "重置成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="重置IPO狀態",
+    description="重置IPO狀態，恢復到初始股數"
+)
+async def reset_ipo(
+    initial_shares: int = 1000,
+    initial_price: int = 20,
+    current_admin=Depends(get_current_admin)
+):
+    """重置IPO狀態
+    
+    Args:
+        initial_shares: 初始股數
+        initial_price: 初始價格
+        current_admin: 目前管理員（自動注入）
+
+    Returns:
+        操作結果
+    """
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        
+        db = get_database()
+        
+        # 重置或創建IPO狀態
+        await db[Collections.MARKET_CONFIG].update_one(
+            {"type": "ipo_status"},
+            {
+                "$set": {
+                    "type": "ipo_status",
+                    "initial_shares": initial_shares,
+                    "shares_remaining": initial_shares,
+                    "initial_price": initial_price,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"IPO reset: {initial_shares} shares @ {initial_price} points each")
+        
+        return {
+            "ok": True,
+            "message": f"IPO已重置：{initial_shares} 股，每股 {initial_price} 點",
+            "initialShares": initial_shares,
+            "initialPrice": initial_price
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to reset IPO: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="重置IPO失敗"
+        )
