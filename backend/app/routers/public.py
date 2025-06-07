@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from app.services.public_service import PublicService, get_public_service
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
-    MarketStatus, TradingHoursResponse, ErrorResponse, PublicAnnouncement
+    MarketStatus, TradingHoursResponse, ErrorResponse, PublicAnnouncement,
+    MarketPriceInfo
 )
 from typing import List
 import logging
@@ -297,3 +298,30 @@ async def get_trading_stats(
         dict: 交易統計資訊，包含成交筆數、成交額、成交股數
     """
     return await public_service.get_daily_trading_stats()
+
+
+@router.get(
+    "/market/price-info",
+    response_model=MarketPriceInfo,
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢市場價格資訊",
+    description="查詢目前股價、收盤價、下次開盤初始價等市場價格資訊"
+)
+async def get_market_price_info(
+    public_service: PublicService = Depends(get_public_service)
+) -> MarketPriceInfo:
+    """
+    查詢市場價格資訊
+    
+    Returns:
+        MarketPriceInfo: 市場價格資訊，包含：
+        - currentPrice: 目前股價
+        - closingPrice: 上次收盤價
+        - openingPrice: 下次開盤初始價 (等於上次收盤價)
+        - lastCloseTime: 上次收盤時間
+        - marketIsOpen: 市場是否開盤
+        - lastTradeTime: 最後成交時間
+    """
+    return await public_service.get_market_price_info()

@@ -496,3 +496,133 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed during final settlement: {e}")
             raise AdminException("Failed during final settlement")
+
+    # 手動開盤（包含集合競價）
+    async def open_market(self) -> Dict[str, any]:
+        try:
+            # 首先執行集合競價
+            from app.services.user_service import UserService
+            user_service = UserService()
+            
+            call_auction_result = await user_service.call_auction_matching()
+            
+            # 更新市場狀態為開盤
+            await self.db[Collections.MARKET_CONFIG].update_one(
+                {"type": "manual_control"},
+                {
+                    "$set": {
+                        "is_open": True,
+                        "last_updated": datetime.utcnow(),
+                        "last_action": "open",
+                        "open_time": datetime.utcnow()
+                    }
+                },
+                upsert=True
+            )
+            
+            # 發送開盤公告
+            if call_auction_result.get("success"):
+                announcement_message = f"🔔 市場開盤公告\n\n"
+                announcement_message += f"📈 集合競價結果：{call_auction_result.get('matched_volume', 0)} 股於 {call_auction_result.get('auction_price', 0)} 元成交\n"
+                announcement_message += f"🎯 市場現已開放交易！"
+            else:
+                announcement_message = f"🔔 市場開盤公告\n\n"
+                announcement_message += f"📊 集合競價：{call_auction_result.get('message', '無成交')}\n"
+                announcement_message += f"🎯 市場現已開放交易！"
+            
+            await self._send_system_announcement(
+                title="🔔 市場開盤",
+                message=announcement_message
+            )
+            
+            logger.info("Market opened successfully with call auction")
+            return {
+                "success": True,
+                "message": "市場開盤成功",
+                "call_auction_result": call_auction_result
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to open market: {e}")
+            raise AdminException(f"開盤失敗: {str(e)}")
+
+    # 手動收盤
+    async def close_market(self) -> Dict[str, any]:
+        try:
+            # 取得目前股價作為收盤價
+            from app.services.public_service import PublicService
+            public_service = PublicService(self.db)
+            current_price = await public_service._get_current_stock_price()
+            
+            # 取得最後成交時間
+            latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
+                {"status": "filled"},
+                sort=[("created_at", -1)]
+            )
+            last_trade_time = latest_trade.get("created_at") if latest_trade else None
+            
+            # 更新市場狀態為收盤，並儲存收盤價
+            await self.db[Collections.MARKET_CONFIG].update_one(
+                {"type": "manual_control"},
+                {
+                    "$set": {
+                        "is_open": False,
+                        "last_updated": datetime.utcnow(),
+                        "last_action": "close",
+                        "close_time": datetime.utcnow(),
+                        "closing_price": current_price,
+                        "last_trade_time": last_trade_time
+                    }
+                },
+                upsert=True
+            )
+            
+            # 發送收盤公告
+            announcement_message = f"🔔 市場收盤公告\n\n"
+            announcement_message += f"⏰ 市場已停止交易\n"
+            announcement_message += f"💰 收盤價：{current_price} 元\n"
+            announcement_message += f"📊 所有新訂單將暫停處理"
+            
+            await self._send_system_announcement(
+                title="🔔 市場收盤",
+                message=announcement_message
+            )
+            
+            logger.info("Market closed successfully")
+            return {
+                "success": True,
+                "message": "市場收盤成功"
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to close market: {e}")
+            raise AdminException(f"收盤失敗: {str(e)}")
+
+    # 取得手動市場狀態
+    async def get_manual_market_status(self) -> Dict[str, any]:
+        try:
+            manual_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "manual_control"}
+            )
+            
+            if manual_config:
+                return {
+                    "is_open": manual_config.get("is_open", False),
+                    "last_updated": manual_config.get("last_updated"),
+                    "last_action": manual_config.get("last_action"),
+                    "open_time": manual_config.get("open_time"),
+                    "close_time": manual_config.get("close_time")
+                }
+            else:
+                # 如果沒有手動控制設定，預設為關閉
+                return {
+                    "is_open": False,
+                    "last_updated": None,
+                    "last_action": None,
+                    "open_time": None,
+                    "close_time": None
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to get manual market status: {e}")
+            raise AdminException("無法取得市場狀態")

@@ -3,7 +3,8 @@ from fastapi import Depends, HTTPException, status
 from app.core.database import get_database, Collections
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
-    MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot, PublicAnnouncement
+    MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot, PublicAnnouncement,
+    MarketPriceInfo
 )
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
@@ -543,4 +544,55 @@ class PublicService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to retrieve IPO status"
+            )
+    
+    # 取得市場價格資訊
+    async def get_market_price_info(self) -> MarketPriceInfo:
+        try:
+            # 取得目前股價
+            current_price = await self._get_current_stock_price()
+            
+            # 取得市場狀態和收盤價資訊
+            market_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "manual_control"}
+            )
+            
+            # 取得最後成交時間
+            latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
+                {"status": "filled"},
+                sort=[("created_at", -1)]
+            )
+            
+            last_trade_time = None
+            if latest_trade and latest_trade.get("created_at"):
+                last_trade_time = latest_trade["created_at"].isoformat()
+            
+            # 市場狀態
+            market_is_open = market_config.get("is_open", False) if market_config else False
+            
+            # 收盤價和收盤時間
+            closing_price = None
+            last_close_time = None
+            if market_config:
+                closing_price = market_config.get("closing_price")
+                if market_config.get("close_time"):
+                    last_close_time = market_config["close_time"].isoformat()
+            
+            # 下次開盤初始價 = 上次收盤價 (如果有收盤價的話)
+            opening_price = closing_price if closing_price else current_price
+            
+            return MarketPriceInfo(
+                currentPrice=current_price,
+                closingPrice=closing_price,
+                openingPrice=opening_price,
+                lastCloseTime=last_close_time,
+                marketIsOpen=market_is_open,
+                lastTradeTime=last_trade_time
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to get market price info: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve market price information"
             )

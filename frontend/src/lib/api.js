@@ -266,4 +266,45 @@ export async function updateIpoDefaults(token, defaultInitialShares = null, defa
     });
 }
 
+// 市場開關控制
+// 手動開盤（包含集合競價）
+export async function openMarket(token) {
+    return apiRequest('/api/admin/market/open', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 手動收盤
+export async function closeMarket(token) {
+    return apiRequest('/api/admin/market/close', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 查詢市場狀態
+export async function getAdminMarketStatus(token) {
+    return apiRequest('/api/admin/market/status', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 查詢市場價格資訊 (公開API)
+export async function getMarketPriceInfo() {
+    return apiRequest('/api/market/price-info', {
+        method: 'GET',
+    });
+}
+
 export { API_BASE_URL };

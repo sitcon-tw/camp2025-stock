@@ -20,7 +20,10 @@ import {
     updateIpo,
     executeCallAuction,
     getIpoDefaults,
-    updateIpoDefaults
+    updateIpoDefaults,
+    openMarket,
+    closeMarket,
+    getAdminMarketStatus
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -85,6 +88,9 @@ export default function AdminPage() {
         defaultInitialPrice: ''
     });
     const [ipoDefaultsLoading, setIpoDefaultsLoading] = useState(false);
+
+    // 市場開關控制狀態
+    const [marketControlLoading, setMarketControlLoading] = useState(false);
 
     // 新增時間 Modal
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
@@ -156,7 +162,7 @@ export default function AdminPage() {
                     fetchSystemStats(token);
                     fetchStudents(token);
                     fetchTeams(token);
-                    fetchMarketStatus();
+                    fetchMarketStatus(); // This calls our new market control status function
                     fetchTradingHours();
                     fetchIpoStatus(token);
                     fetchIpoDefaults(token);
@@ -234,12 +240,12 @@ export default function AdminPage() {
     };
 
     // 撈市場狀態
-    const fetchMarketStatus = async () => {
+    const fetchPublicMarketStatus = async () => {
         try {
             const data = await getMarketStatus();
-            setMarketStatus(data);
+            // This is for public market hours display
         } catch (error) {
-            console.error('獲取市場狀態失敗:', error);
+            console.error('獲取公開市場狀態失敗:', error);
         }
     };
 
@@ -391,6 +397,59 @@ export default function AdminPage() {
             handleApiError(error, '集合競價執行');
         } finally {
             setCallAuctionLoading(false);
+        }
+    };
+
+    // 市場開關控制
+    const fetchMarketStatus = async () => {
+        try {
+            const status = await getAdminMarketStatus(adminToken);
+            setMarketStatus(status);
+        } catch (error) {
+            console.error('取得市場狀態失敗:', error);
+        }
+    };
+
+    const handleOpenMarket = async () => {
+        try {
+            setMarketControlLoading(true);
+            const result = await openMarket(adminToken);
+            
+            if (result.success) {
+                showNotification(result.message, 'success');
+                await fetchMarketStatus(); // 更新市場狀態
+                
+                // 如果有集合競價結果，顯示詳細信息
+                if (result.call_auction_result && result.call_auction_result.success) {
+                    const auctionResult = result.call_auction_result;
+                    const auctionMessage = `集合競價完成：${auctionResult.matched_volume} 股於 ${auctionResult.auction_price} 元成交`;
+                    setTimeout(() => showNotification(auctionMessage, 'info'), 3000);
+                }
+            } else {
+                showNotification(result.message || '開盤失敗', 'error');
+            }
+        } catch (error) {
+            handleApiError(error, '市場開盤');
+        } finally {
+            setMarketControlLoading(false);
+        }
+    };
+
+    const handleCloseMarket = async () => {
+        try {
+            setMarketControlLoading(true);
+            const result = await closeMarket(adminToken);
+            
+            if (result.success) {
+                showNotification(result.message, 'success');
+                await fetchMarketStatus(); // 更新市場狀態
+            } else {
+                showNotification(result.message || '收盤失敗', 'error');
+            }
+        } catch (error) {
+            handleApiError(error, '市場收盤');
+        } finally {
+            setMarketControlLoading(false);
         }
     };
 
@@ -1120,6 +1179,64 @@ export default function AdminPage() {
                             {ipoLoading ? '載入IPO狀態中...' : '無法載入IPO狀態'}
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* 市場開關控制 */}
+            <div className="max-w-4xl mx-auto px-4 mt-8">
+                <div className="bg-[#1A325F] rounded-xl p-6">
+                    <h2 className="text-xl font-bold text-white mb-4">市場開關控制</h2>
+                    
+                    {/* 市場狀態顯示 */}
+                    {marketStatus && (
+                        <div className="mb-6 p-4 bg-[#0f203e] rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-gray-300">市場狀態:</span>
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                    marketStatus.is_open 
+                                        ? 'bg-green-600 text-green-100' 
+                                        : 'bg-red-600 text-red-100'
+                                }`}>
+                                    {marketStatus.is_open ? '🟢 開盤中' : '🔴 已收盤'}
+                                </span>
+                            </div>
+                            {marketStatus.last_updated && (
+                                <div className="text-sm text-gray-400">
+                                    最後更新: {new Date(marketStatus.last_updated).toLocaleString('zh-TW')}
+                                </div>
+                            )}
+                            {marketStatus.last_action && (
+                                <div className="text-sm text-gray-400">
+                                    上次操作: {marketStatus.last_action === 'open' ? '開盤' : '收盤'}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* 控制按鈕 */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={handleOpenMarket}
+                            disabled={marketControlLoading || (marketStatus && marketStatus.is_open)}
+                            className="bg-green-600 hover:bg-green-700 disabled:bg-[#2d3748] disabled:text-gray-500 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                        >
+                            {marketControlLoading ? '處理中...' : '🔔 開盤 (含集合競價)'}
+                        </button>
+                        <button
+                            onClick={handleCloseMarket}
+                            disabled={marketControlLoading || (marketStatus && !marketStatus.is_open)}
+                            className="bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:text-gray-500 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                        >
+                            {marketControlLoading ? '處理中...' : '🔒 收盤'}
+                        </button>
+                    </div>
+                    
+                    <div className="mt-4 p-3 bg-[#0f203e] rounded-lg">
+                        <div className="text-sm text-gray-300">
+                            <p className="mb-1">💡 <strong>開盤</strong>：會自動執行集合競價，然後開放市場交易</p>
+                            <p>💡 <strong>收盤</strong>：停止接受新的交易訂單</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

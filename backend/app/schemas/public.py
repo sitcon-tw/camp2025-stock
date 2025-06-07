@@ -77,6 +77,19 @@ class TradingHoursResponse(BaseModel):
         populate_by_name = True
 
 
+# 市場價格資訊
+class MarketPriceInfo(BaseModel):
+    current_price: int = Field(..., description="目前股價（元）", alias="currentPrice")
+    closing_price: Optional[int] = Field(None, description="上次收盤價（元）", alias="closingPrice")
+    opening_price: Optional[int] = Field(None, description="下次開盤初始價（元）", alias="openingPrice")
+    last_close_time: Optional[str] = Field(None, description="上次收盤時間", alias="lastCloseTime")
+    market_is_open: bool = Field(..., description="市場是否開盤", alias="marketIsOpen")
+    last_trade_time: Optional[str] = Field(None, description="最後成交時間", alias="lastTradeTime")
+    
+    class Config:
+        populate_by_name = True
+
+
 # ========== 管理員 API 相關模型 ==========
 
 # 管理員登入請求
