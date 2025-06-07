@@ -116,17 +116,20 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     order_type = "市價單" if data["order_type"] == "market" else "限價單"
     price = data.get("price")
 
-    msg = (f"😺 請確認以下訂單\n"
-           f"\n"
-           f"你想要**{action}** `{amount}` 張 SITC\n"
-           f"訂單是{order_type}")
-    if price:
-        msg += f"，{action}入價格為 `{price}` 點"
-
     keyboard = [[
         InlineKeyboardButton("✅ 確認送出", callback_data="confirm:yes"),
         InlineKeyboardButton("❌ 取消", callback_data="confirm:no")
     ]]
+
+    msg = (f"😺 請確認以下訂單\n"
+           f"\n"
+           f"你想要*{action}* `{amount}` 張 SITC\n"
+           f"訂單是*{order_type}*")
+    if price:
+        msg += f"，{action}入價格為 `{price}` 點"
+    else:
+        msg += "\n\m>下單種類為市價單，將會立即使用目前市價下單"
+        keyboard.append([InlineKeyboardButton("查看目前的股價", url="https://camp.sitcon.party/")])
 
     if isinstance(update, Update) and update.callback_query:
         await update.callback_query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.MARKDOWN_V2)
