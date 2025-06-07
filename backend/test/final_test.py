@@ -258,7 +258,7 @@ class CampTradingSimulator:
         try:
             self.log("🔍 檢查市場開放狀態...")
             
-            # 檢查當前市場狀態
+            # 檢查目前市場狀態
             market_response = self.session.get(f"{self.base_url}/api/status")
             if market_response.status_code != 200:
                 self.log(f"❌ 無法查詢市場狀態: {market_response.status_code}", "ERROR")
@@ -273,7 +273,7 @@ class CampTradingSimulator:
                 return True
             
             self.log("⚠️ 市場目前關閉")
-            self.log(f"   當前時間: {current_time}")
+            self.log(f"   目前時間: {current_time}")
             
             # 詢問是否要開放市場
             open_market = input("是否要開放市場進行測試？ (Y/n): ").strip().lower()
@@ -353,10 +353,10 @@ class CampTradingSimulator:
     
     def get_market_status(self) -> Tuple[bool, int]:
         """
-        取得市場狀態和當前股價
+        取得市場狀態和目前股價
         
         Returns:
-            Tuple[bool, int]: (是否開放交易, 當前股價)
+            Tuple[bool, int]: (是否開放交易, 目前股價)
         """
         try:
             # 檢查市場狀態
@@ -366,7 +366,7 @@ class CampTradingSimulator:
                 market_data = market_response.json()
                 is_open = market_data.get("isOpen", True)
             
-            # 取得當前股價
+            # 取得目前股價
             price_response = self.session.get(f"{self.base_url}/api/price/current")
             current_price = 20  # 預設價格
             if price_response.status_code == 200:
@@ -388,7 +388,7 @@ class CampTradingSimulator:
             is_open, current_price = self.get_market_status()
             status_text = "🟢 開放中" if is_open else "🔴 已關閉"
             self.log(f"   市場狀態: {status_text}")
-            self.log(f"   當前股價: {current_price} 元")
+            self.log(f"   目前股價: {current_price} 元")
             
             # IPO狀態
             ipo_response = self.session.get(f"{self.base_url}/api/ipo/status")
@@ -753,7 +753,7 @@ class CampTradingSimulator:
                 "quantity": quantity
             }
             
-            # 如果是限價單，設定價格 - 增大價格變動幅度（當前價格±20-40%）
+            # 如果是限價單，設定價格 - 增大價格變動幅度（目前價格±20-40%）
             if order_type == "limit":
                 # 更大的價格變動範圍：±20-40%
                 price_variation = random.uniform(-0.4, 0.4)
@@ -1165,7 +1165,7 @@ class CampTradingSimulator:
             st_f = result['stock_trades']['failed']
             self.log(f"     執行緒{tid}: 轉帳({pt_s}✓/{pt_f}✗) 股票({st_s}✓/{st_f}✗)")
         
-        # 顯示當前市場狀態
+        # 顯示目前市場狀態
         self.log("📈 交易後市場狀態:")
         self.show_market_info()
     
@@ -1281,7 +1281,7 @@ class CampTradingSimulator:
         """快速市場測試 - 少量交易來測試系統"""
         self.log("🚀 開始快速市場測試...")
         
-        # 顯示當前市場狀態
+        # 顯示目前市場狀態
         self.show_market_info()
         
         # 進行5筆隨機交易

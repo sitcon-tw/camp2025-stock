@@ -52,7 +52,7 @@ class SystemTester:
             async with self.session.get(f"{BASE_URL}/api/trading-hours") as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    self.log(f"交易時間 API: 當前開放={data.get('isCurrentlyOpen')}", "PASS")
+                    self.log(f"交易時間 API: 目前開放={data.get('isCurrentlyOpen')}", "PASS")
                 else:
                     self.log("交易時間 API 失敗", "FAIL")
         except Exception as e:

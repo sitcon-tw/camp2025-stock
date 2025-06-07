@@ -1301,7 +1301,7 @@ export default function AdminPage() {
                                     className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <p className="text-gray-400 text-xs mt-1">
-                                    當前: {ipoStatus?.sharesRemaining?.toLocaleString()} 股
+                                    目前: {ipoStatus?.sharesRemaining?.toLocaleString()} 股
                                 </p>
                             </div>
 
@@ -1317,7 +1317,7 @@ export default function AdminPage() {
                                     className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <p className="text-gray-400 text-xs mt-1">
-                                    當前: {ipoStatus?.initialPrice} 點/股
+                                    目前: {ipoStatus?.initialPrice} 點/股
                                 </p>
                             </div>
 
