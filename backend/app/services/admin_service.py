@@ -13,7 +13,7 @@ from app.core.exceptions import (
     GroupNotFoundException, AdminException
 )
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 import logging
 import os
@@ -706,3 +706,70 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to check/fix negative balances: {e}")
             raise AdminException(f"檢查負點數失敗: {str(e)}")
+
+    # 手動觸發全面點數完整性檢查
+    async def trigger_system_wide_balance_check(self) -> Dict[str, any]:
+        """
+        對所有使用者進行全面的點數完整性檢查
+        
+        Returns:
+            dict: 檢查結果統計
+        """
+        try:
+            # 取得所有使用者
+            all_users = await self.db[Collections.USERS].find({}).to_list(None)
+            
+            negative_users = []
+            total_checked = 0
+            
+            for user in all_users:
+                total_checked += 1
+                user_id = user["_id"]
+                current_balance = user.get("points", 0)
+                
+                if current_balance < 0:
+                    username = user.get("username", user.get("name", "未知"))
+                    team = user.get("team", "無")
+                    
+                    negative_users.append({
+                        "user_id": str(user_id),
+                        "username": username,
+                        "team": team,
+                        "points": current_balance
+                    })
+                    
+                    # 發送即時警報
+                    logger.error(f"SYSTEM-WIDE CHECK: Negative balance detected - User: {username}, Balance: {current_balance}")
+            
+            # 如果發現負點數，發送彙總報告
+            if negative_users:
+                summary_message = f"🚨 系統全面檢查結果\n\n"
+                summary_message += f"📊 檢查總數：{total_checked} 位使用者\n"
+                summary_message += f"⚠️ 發現負點數：{len(negative_users)} 位\n\n"
+                summary_message += "負點數使用者列表：\n"
+                
+                for i, user in enumerate(negative_users[:5], 1):  # 最多顯示5位
+                    summary_message += f"{i}. {user['username']} ({user['team']})：{user['points']} 點\n"
+                
+                if len(negative_users) > 5:
+                    summary_message += f"...還有 {len(negative_users) - 5} 位使用者\n"
+                
+                summary_message += f"\n⏰ 檢查時間：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                
+                await self._send_system_announcement(
+                    title="🚨 系統全面檢查警報",
+                    message=summary_message
+                )
+            
+            return {
+                "success": True,
+                "message": f"系統全面檢查完成",
+                "total_checked": total_checked,
+                "negative_count": len(negative_users),
+                "negative_users": negative_users,
+                "check_time": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to trigger system-wide balance check: {e}")
+            raise AdminException(f"系統全面檢查失敗: {str(e)}")

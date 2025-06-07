@@ -591,6 +591,12 @@ class UserService:
         if session:
             await session.commit_transaction()
         
+        # 轉帳完成後檢查點數完整性
+        await self._validate_transaction_integrity(
+            user_ids=[from_user_oid, to_user["_id"]],
+            operation_name=f"轉帳 - {request.amount} 點 (含手續費 {fee} 點)"
+        )
+        
         return TransferResponse(
             success=True,
             message="轉帳成功",
@@ -937,6 +943,76 @@ class UserService:
                 'balance_before': 0,
                 'balance_after': 0
             }
+    
+    # 實時檢查負點數並發送警報
+    async def _check_and_alert_negative_balance(self, user_id: ObjectId, operation_context: str = "") -> bool:
+        """
+        檢查指定使用者是否有負點數，如有則發送警報
+        
+        Args:
+            user_id: 使用者ID
+            operation_context: 操作情境描述
+            
+        Returns:
+            bool: True if balance is negative, False otherwise
+        """
+        try:
+            user = await self.db[Collections.USERS].find_one({"_id": user_id})
+            if not user:
+                return False
+            
+            current_balance = user.get("points", 0)
+            if current_balance < 0:
+                username = user.get("username", user.get("name", "未知"))
+                team = user.get("team", "無")
+                
+                # 記錄警報日誌
+                logger.error(f"NEGATIVE BALANCE DETECTED: User {username} (ID: {user_id}) has {current_balance} points after {operation_context}")
+                
+                # 發送即時警報到 Telegram Bot
+                try:
+                    from app.services.admin_service import AdminService
+                    admin_service = AdminService(self.db)
+                    await admin_service._send_system_announcement(
+                        title="🚨 負點數警報",
+                        message=f"檢測到負點數！\n👤 使用者：{username}\n🏷️ 隊伍：{team}\n💰 目前點數：{current_balance}\n📍 操作情境：{operation_context}\n⏰ 時間：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send negative balance alert: {e}")
+                
+                return True
+            
+            return False
+        except Exception as e:
+            logger.error(f"Failed to check negative balance: {e}")
+            return False
+    
+    # 交易驗證包裝器
+    async def _validate_transaction_integrity(self, user_ids: list, operation_name: str):
+        """
+        交易完成後驗證所有涉及使用者的點數完整性
+        
+        Args:
+            user_ids: 涉及的使用者ID列表
+            operation_name: 操作名稱
+        """
+        try:
+            negative_detected = False
+            for user_id in user_ids:
+                if isinstance(user_id, str):
+                    user_id = ObjectId(user_id)
+                
+                is_negative = await self._check_and_alert_negative_balance(
+                    user_id=user_id,
+                    operation_context=operation_name
+                )
+                if is_negative:
+                    negative_detected = True
+            
+            if negative_detected:
+                logger.warning(f"Transaction integrity check failed for operation: {operation_name}")
+        except Exception as e:
+            logger.error(f"Failed to validate transaction integrity: {e}")
     
     # 取得目前股票價格（單位：元）
     async def _get_current_stock_price(self) -> int:
@@ -1286,6 +1362,12 @@ class UserService:
                     session=session
                 )
             
+            # 交易完成後檢查點數完整性
+            await self._validate_transaction_integrity(
+                user_ids=[user_oid],
+                operation_name=f"市價單執行 - {quantity} 股 @ {current_price} 元"
+            )
+            
             return StockOrderResponse(
                 success=True,
                 order_id=str(result.inserted_id),
@@ -1580,6 +1662,18 @@ class UserService:
                 )
             except Exception as e:
                 logger.error(f"Failed to send call auction announcement: {e}")
+            
+            # 集合競價完成後，檢查所有參與使用者的點數完整性
+            all_user_ids = set()
+            for order in buy_orders + sell_orders:
+                if order.get("user_id"):
+                    all_user_ids.add(order["user_id"])
+            
+            if all_user_ids:
+                await self._validate_transaction_integrity(
+                    user_ids=list(all_user_ids),
+                    operation_name=f"集合競價撮合 - {matched_volume} 股 @ {best_price} 元"
+                )
             
             return {
                 "success": True,
@@ -1924,6 +2018,16 @@ class UserService:
             }, session=session)
             
             logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
+            
+            # 交易完成後檢查涉及使用者的點數完整性
+            user_ids_to_check = [buy_order["user_id"]]
+            if not is_system_sale:
+                user_ids_to_check.append(sell_order["user_id"])
+            
+            await self._validate_transaction_integrity(
+                user_ids=user_ids_to_check,
+                operation_name=f"訂單撮合 - {trade_quantity} 股 @ {trade_price} 元"
+            )
             
         except Exception as e:
             # 對於 WriteConflict 使用 DEBUG 級別，因為這會被上層重試機制處理
