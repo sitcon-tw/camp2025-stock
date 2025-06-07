@@ -169,6 +169,51 @@ class UserService:
                 detail="取得投資組合失敗"
             )
     
+    # 檢查價格是否在漲跌限制內
+    async def _check_price_limit(self, order_price: float) -> bool:
+        """檢查訂單價格是否在漲跌限制內"""
+        try:
+            # 取得今日開盤價格
+            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # 查找今日第一筆成交記錄作為開盤價
+            first_trade = await self.db[Collections.STOCK_ORDERS].find_one({
+                "status": "filled",
+                "created_at": {"$gte": today_start}
+            }, sort=[("created_at", 1)])
+            
+            if not first_trade:
+                # 如果今日還沒有交易，使用昨日收盤價或預設價格
+                open_price = 20.0  # 預設開盤價
+            else:
+                open_price = float(first_trade.get("price", 20))
+            
+            # 取得漲跌限制設定
+            limit_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "trading_limit"}
+            )
+            
+            if not limit_config:
+                # 如果沒有設定漲跌限制，預設為20%
+                limit_percent = 20.0
+            else:
+                # limitPercent 以 basis points 為單位 (2000 = 20%)
+                limit_percent = float(limit_config.get("limitPercent", 2000)) / 100.0
+            
+            # 計算漲跌停價格
+            max_price = open_price * (1 + limit_percent / 100.0)
+            min_price = open_price * (1 - limit_percent / 100.0)
+            
+            logger.info(f"Price limit check: order_price={order_price}, open_price={open_price}, limit={limit_percent}%, range=[{min_price:.2f}, {max_price:.2f}]")
+            
+            # 檢查訂單價格是否在限制範圍內
+            return min_price <= order_price <= max_price
+            
+        except Exception as e:
+            logger.error(f"Failed to check price limit: {e}")
+            # 發生錯誤時，預設允許交易
+            return True
+
     # 下股票訂單
     async def place_stock_order(self, user_id: str, request: StockOrderRequest) -> StockOrderResponse:
         try:
@@ -187,6 +232,14 @@ class UserService:
                     success=False,
                     message="使用者不存在"
                 )
+            
+            # 檢查限價單的價格是否在漲跌限制內
+            if request.order_type == "limit":
+                if not await self._check_price_limit(request.price):
+                    return StockOrderResponse(
+                        success=False,
+                        message=f"訂單價格 {request.price} 元超出當日漲跌幅限制"
+                    )
             
             # 檢查使用者資金和持股
             if request.side == "buy":
