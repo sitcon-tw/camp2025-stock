@@ -18,6 +18,7 @@ from utils import api_helper
     CONFIRM_ORDER,
 ) = range(5)
 
+
 async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
         "from_user": str(update.effective_user.id)
@@ -31,7 +32,8 @@ async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return None
 
     if context.user_data.get("in_transfer_convo"):
-        await update.message.reply_text("😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
+        await update.message.reply_text(
+            "😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
         return None
 
     context.user_data["in_stock_convo"] = True
@@ -39,7 +41,7 @@ async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons = [
         [InlineKeyboardButton("💸 買", callback_data="stock:buy"),
          InlineKeyboardButton("🤑 賣", callback_data="stock:sell")
-        ],
+         ],
         [InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]
     ]
     await update.message.reply_text(
@@ -48,6 +50,7 @@ async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN_V2
     )
     return CHOOSE_ACTION
+
 
 async def choose_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -63,6 +66,7 @@ async def choose_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(buttons)
     )
     return INPUT_AMOUNT
+
 
 async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
@@ -89,6 +93,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return CHOOSE_ORDER_TYPE
 
+
 async def choose_order_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -105,6 +110,7 @@ async def choose_order_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await confirm_order(update, context)
         return CONFIRM_ORDER
 
+
 async def input_limit_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
@@ -120,6 +126,7 @@ async def input_limit_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["price"] = price
     await confirm_order(update, context)
     return CONFIRM_ORDER
+
 
 async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = context.user_data
@@ -146,11 +153,14 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
         buttons.append([InlineKeyboardButton("看看現在的股價", url="https://camp.sitcon.party/")])
 
     if isinstance(update, Update) and update.callback_query:
-        await update.callback_query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
+        await update.callback_query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(buttons),
+                                                      parse_mode=ParseMode.MARKDOWN_V2)
     else:
-        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(buttons), parse_mode=ParseMode.MARKDOWN_V2)
+        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(buttons),
+                                        parse_mode=ParseMode.MARKDOWN_V2)
 
     return CONFIRM_ORDER
+
 
 async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -174,7 +184,8 @@ async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     if response.get("success"):
         await query.edit_message_text(
-            f"✅ 單號 `{response.get("order_id")}`：{escape_markdown(response.get("message"), 2)}", parse_mode=ParseMode.MARKDOWN_V2
+            f"✅ 單號 `{response.get("order_id")}`：{escape_markdown(response.get("message"), 2)}",
+            parse_mode=ParseMode.MARKDOWN_V2
         )
     else:
         print(response)
@@ -185,6 +196,7 @@ async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data["in_stock_convo"] = False
     return ConversationHandler.END
 
+
 async def cancel_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -192,6 +204,7 @@ async def cancel_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["in_stock_convo"] = False
     return ConversationHandler.END
+
 
 filterwarnings(action="ignore", message=r".*CallbackQueryHandler", category=PTBUserWarning)
 

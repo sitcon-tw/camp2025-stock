@@ -8,14 +8,15 @@ from dotenv import load_dotenv
 load_dotenv()
 DEBUG = bool(os.environ.get("DEBUG", False))
 
+
 class loggingFormatter(logging.Formatter):
     COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[41m",  # Red background
-        "TIME": "\033[34m",      # Blue
+        "TIME": "\033[34m",  # Blue
         "RESET": "\033[0m",
     }
 
@@ -33,6 +34,7 @@ class loggingFormatter(logging.Formatter):
         now = datetime.now().strftime("%m:%d %H:%M:%S")
 
         return f"{level} {self.COLORS["TIME"]}{now}{self.COLORS["RESET"]} [{record.name}] {record.getMessage()}"
+
 
 def setup_logger(name: str = None):
     logger = logging.getLogger(name)

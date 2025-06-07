@@ -1,8 +1,8 @@
-from os import environ
 from datetime import datetime
+from os import environ
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton, MessageEntity
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
@@ -15,6 +15,7 @@ logger = setup_logger(__name__)
 load_dotenv()
 
 BACKEND_URL = environ.get("BACKEND_URL")
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"/start triggered by {update.effective_user.id}")
@@ -31,14 +32,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     ]
 
     await update.message.reply_text(
-        f"""
-        😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*
-
-🤑┃目前點數 *{response.get("points")}*
-🏛️┃目前持有股票張數 *{response.get("stocks")}*，要不要來點新鮮的股票？
-
-💵┃總資產共 {response.get("totalValue")}
-""",
+        f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n\n"
+        f"🤑┃目前點數 *{response.get("points")}*\n"
+        f"🏛️┃目前持有股票張數 *{response.get("stocks")}*，要不要來點新鮮的股票？\n"
+        f"💵┃總資產共 {response.get("totalValue")}",
         parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
 
 
@@ -49,9 +46,9 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if not portfolio_response.get("detail") == "noexist":
         await update.message.reply_text(
-            f"""
-            😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*
-        """, parse_mode=ParseMode.MARKDOWN_V2)
+            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*",
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
         return
 
     if not context.args:
@@ -61,12 +58,9 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         ]
 
         await update.message.reply_text(
-            """
-            😿 *你沒有給本喵專屬於你的註冊碼*
-
->你可以在你的 email 裡面找到那個註冊碼，然後把註冊碼加在 `/register` 後面
->例如說，你的註冊碼是 `12345678`，你應該要輸入 `/register 12345678`
-            """,
+            "😿 *你沒有給本喵專屬於你的註冊碼*\n\n"
+            ">你可以在你的 email 裡面找到那個註冊碼，然後把註冊碼加在 `/register` 後面\n"
+            ">例如說，你的註冊碼是 `12345678`，你應該要輸入 `/register 12345678\n`",
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=InlineKeyboardMarkup(buttons),
         )
@@ -83,25 +77,28 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if response.get("ok"):
         name = response.get("message").split(":")[1]
         await update.message.reply_text(
-            f"""
-            😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，原來你就是 *{name}* 啊！
-
-很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友
-我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！
-        """, parse_mode=ParseMode.MARKDOWN_V2)
+            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，原來你就是 *{name}* 啊！\n\n"
+            f"很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友\n"
+            f"我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！"
+            , parse_mode=ParseMode.MARKDOWN_V2)
     else:
         message = response.get("message")
 
         match message:
             case "noexist":
-                await update.message.reply_text(f"🙀 你輸入的註冊碼 `{escape_markdown(key, 2)}` 好像不存在", parse_mode=ParseMode.MARKDOWN_V2)
+                await update.message.reply_text(
+                    f"🙀 你輸入的註冊碼 `{escape_markdown(key, 2)}` 好像不存在",
+                    parse_mode=ParseMode.MARKDOWN_V2)
             case "already_activated":
-                await update.message.reply_text(f"🙀 註冊碼 `{escape_markdown(key, 2)}` 已經被註冊過了", parse_mode=ParseMode.MARKDOWN_V2)
+                await update.message.reply_text(
+                    f"🙀 註冊碼 `{escape_markdown(key, 2)}` 已經被註冊過了",
+                    parse_mode=ParseMode.MARKDOWN_V2)
             case "error":
-                await update.message.reply_text(f"🤯 後端爆炸了，請敲工作人員！")
+                await update.message.reply_text("🤯 後端爆炸了，請敲工作人員！")
             case _:
-                await update.message.reply_text(f"🙀 好像有什麼東西炸掉了")
+                await update.message.reply_text("🙀 好像有什麼東西炸掉了")
                 logger.error(f"Executing register got {message}")
+
 
 async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # TODO: Team to chat ID mapping
@@ -110,9 +107,8 @@ async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     result = next((item for item in response if item["name"] == "第一組"), None)
 
     await update.message.reply_text(
-        f"""
-        👥 小隊 __*3*__ 目前的點數共：*{result.get("total_points")}* 點
-        """, parse_mode=ParseMode.MARKDOWN_V2)
+        f"👥 小隊 __*3*__ 目前的點數共：*{result.get("total_points")}* 點", parse_mode=ParseMode.MARKDOWN_V2)
+
 
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"/start triggered by {update.effective_user.id}")
@@ -135,11 +131,10 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(lines)
 
     await update.message.reply_text(
-        f"""
-        😺 *{escape_markdown(update.effective_user.full_name)} 的點數紀錄*
-        
-{"\n".join(lines)}
-        """, parse_mode=ParseMode.MARKDOWN_V2)
+        f"😺 *{escape_markdown(update.effective_user.full_name)} 的點數紀錄*\n"
+        f"{"\n".join(lines)}",
+        parse_mode=ParseMode.MARKDOWN_V2)
+
 
 async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:

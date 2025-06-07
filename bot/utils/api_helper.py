@@ -15,7 +15,8 @@ BACKEND_TOKEN = environ.get("BACKEND_TOKEN")
 if BACKEND_URL.endswith("/"):
     BACKEND_URL = BACKEND_URL[:-1]
 
-def get(path, protected_route = False, **kwargs) -> Dict:
+
+def get(path, protected_route=False, **kwargs) -> Dict:
     headers = kwargs.get("headers", {}) or {}
 
     if protected_route:
@@ -27,7 +28,8 @@ def get(path, protected_route = False, **kwargs) -> Dict:
 
     return response.json()
 
-def post(path, protected_route = False, **kwargs) -> Dict:
+
+def post(path, protected_route=False, **kwargs) -> Dict:
     headers = kwargs.get("headers", {}) or {}
 
     if protected_route:
@@ -39,7 +41,8 @@ def post(path, protected_route = False, **kwargs) -> Dict:
 
     return response.json()
 
-def put(path, protected_route = False, **kwargs) -> Dict:
+
+def put(path, protected_route=False, **kwargs) -> Dict:
     headers = kwargs.get("headers", {}) or {}
 
     if protected_route:
@@ -51,7 +54,8 @@ def put(path, protected_route = False, **kwargs) -> Dict:
 
     return response.json()
 
-def delete(path, protected_route = False, **kwargs) -> Dict:
+
+def delete(path, protected_route=False, **kwargs) -> Dict:
     headers = kwargs.get("headers", {}) or {}
 
     if protected_route:
@@ -63,10 +67,10 @@ def delete(path, protected_route = False, **kwargs) -> Dict:
 
     return response.json()
 
+
 def _log_api_error(response: httpx.Response, path):
     status_code = response.status_code
 
     if 200 <= status_code < 300:
         return
     logger.error(f"{path} returned status code {status_code}")
-

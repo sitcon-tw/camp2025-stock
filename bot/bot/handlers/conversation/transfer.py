@@ -9,6 +9,7 @@ from utils import api_helper
 
 INPUT_AMOUNT, CHOOSE_TEAM, CHOOSE_PERSON, CONFIRM_TRANSFER = range(4)
 
+
 async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
         "from_user": str(update.effective_user.id),
@@ -18,7 +19,8 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     if context.user_data.get("in_transfer_convo"):
-        await update.message.reply_text("😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
+        await update.message.reply_text(
+            "😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
         return None
 
     if context.user_data.get("in_stock_convo"):
@@ -32,6 +34,7 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("😺 請輸入你要轉帳的點數️", reply_markup=InlineKeyboardMarkup(buttons))
     return INPUT_AMOUNT
+
 
 async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.text.isdigit():
@@ -64,6 +67,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("😺 請選擇隊伍：", reply_markup=InlineKeyboardMarkup(buttons))
     return CHOOSE_TEAM
 
+
 async def choose_team(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -93,6 +97,7 @@ async def choose_team(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode=ParseMode.MARKDOWN_V2
     )
     return CHOOSE_PERSON
+
 
 async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -125,6 +130,7 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return CONFIRM_TRANSFER
 
+
 async def confirm_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -146,6 +152,7 @@ async def confirm_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["in_transfer_convo"] = False
     return ConversationHandler.END
 
+
 async def cancel_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.callback_query:
         await update.callback_query.answer()
@@ -155,6 +162,7 @@ async def cancel_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["in_transfer_convo"] = False
     return ConversationHandler.END
+
 
 transfer_conversation = ConversationHandler(
     entry_points=[CommandHandler("transfer", start_transfer)],
