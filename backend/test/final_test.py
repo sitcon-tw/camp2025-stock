@@ -3,16 +3,24 @@
 SITCON Camp 2025 學員啟用與交易模擬腳本 (含股票交易)
 
 功能：
-1. 啟用所有學員（通過給予初始點數）
-2. 模擬隨機的點數轉帳交易
-3. 模擬隨機的股票買賣交易
-4. 查詢投資組合和市場狀態
+1. 自動檢查市場開放狀態，可選擇自動開啟市場
+2. 啟用所有學員（通過給予初始點數）
+3. 模擬隨機的點數轉帳交易
+4. 模擬隨機的股票買賣交易
+5. IPO股票發行和購買測試
+6. 查詢投資組合和市場狀態
+7. 完整資料庫重置功能
 
 需要安裝的套件：
 pip install requests
 
 使用方法：
-python camp_trading_simulation.py
+python final_test.py
+
+注意事項：
+- 腳本會自動檢查市場是否開放，如果關閉會詢問是否開啟
+- 提供完整的交易系統測試，包括IPO和用戶間交易
+- 包含資料庫重置功能，請謹慎使用
 """
 
 import requests
@@ -220,6 +228,85 @@ class CampTradingSimulator:
                 
         except Exception as e:
             self.log(f"資料重置異常: {e}", "ERROR")
+            return False
+    
+    def check_and_ensure_market_open(self) -> bool:
+        """檢查並確保市場開放交易"""
+        try:
+            self.log("🔍 檢查市場開放狀態...")
+            
+            # 檢查當前市場狀態
+            market_response = self.session.get(f"{self.base_url}/api/status")
+            if market_response.status_code != 200:
+                self.log(f"❌ 無法查詢市場狀態: {market_response.status_code}", "ERROR")
+                return False
+            
+            market_data = market_response.json()
+            is_open = market_data.get("isOpen", False)
+            current_time = market_data.get("currentTime", "unknown")
+            
+            if is_open:
+                self.log("✅ 市場目前開放交易")
+                return True
+            
+            self.log("⚠️ 市場目前關閉")
+            self.log(f"   當前時間: {current_time}")
+            
+            # 詢問是否要開放市場
+            open_market = input("是否要開放市場進行測試？ (Y/n): ").strip().lower()
+            if open_market in ['', 'y', 'yes']:
+                return self.open_market_for_testing()
+            else:
+                self.log("❌ 市場未開放，無法進行交易測試", "WARNING")
+                return False
+                
+        except Exception as e:
+            self.log(f"檢查市場狀態異常: {e}", "ERROR")
+            return False
+    
+    def open_market_for_testing(self) -> bool:
+        """開放市場進行測試"""
+        try:
+            from datetime import datetime, timezone, timedelta
+            
+            self.log("🔓 正在開放市場...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            # 設定市場開放時間為現在起24小時
+            current_time = datetime.now(timezone.utc)
+            start_time = int((current_time - timedelta(hours=1)).timestamp())  # 1小時前開始
+            end_time = int((current_time + timedelta(hours=24)).timestamp())   # 24小時後結束
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/market/update",
+                headers=self.get_admin_headers(),
+                json={
+                    "openTime": [
+                        {
+                            "start": start_time,
+                            "end": end_time
+                        }
+                    ]
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok", False):
+                    self.log("✅ 市場已開放，交易時間: 現在 ~ 24小時後")
+                    return True
+                else:
+                    self.log(f"❌ 開放市場失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ 開放市場請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"開放市場異常: {e}", "ERROR")
             return False
     
     def get_admin_headers(self) -> Dict[str, str]:
@@ -1028,6 +1115,12 @@ def main():
     # 管理員登入
     if not simulator.admin_login():
         print("❌ 管理員登入失敗，程式結束")
+        sys.exit(1)
+    
+    # 檢查並確保市場開放
+    print("\n🏪 檢查市場狀態...")
+    if not simulator.check_and_ensure_market_open():
+        print("❌ 市場未開放且無法開啟，程式結束")
         sys.exit(1)
     
     # 詢問使用者要執行的操作
