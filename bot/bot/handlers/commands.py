@@ -177,21 +177,23 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         side_emoji = "🟢" if order.get('side') == 'buy' else "🔴"
         side_text = "買入" if order.get('side') == 'buy' else "賣出"
         
-        order_info = f"{side_emoji} {side_text} {order.get('quantity', 0)} 股 @ {order.get('price', 0)} 元"
+        quantity = order.get('quantity', 0)
+        price = order.get('price', 0)
+        order_info = f"{side_emoji} {side_text} {quantity} 股 @ {price} 元"
         
         if status in ['pending', 'partial', 'pending_limit']:
             # 進行中的訂單
             status_text = {
                 'pending': '等待成交',
                 'partial': '部分成交',
-                'pending_limit': '等待(超出限制)'
+                'pending_limit': '等待\\(超出限制\\)'
             }.get(status, status)
             
             filled_qty = order.get('filled_quantity', 0)
             if filled_qty > 0:
-                order_info += f" (已成交: {filled_qty})"
+                order_info += f" \\(已成交: {filled_qty}\\)"
             
-            pending_orders.append(f"• {order_info} - {status_text}")
+            pending_orders.append(f"• {escape_markdown(order_info, 2)} \\- {escape_markdown(status_text, 2)}")
             
         elif status in ['filled', 'cancelled']:
             # 已完成的訂單
@@ -203,12 +205,12 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             # 添加時間
             if order.get('created_at'):
                 try:
-                    time = datetime.fromisoformat(order['created_at'].replace('Z', '+00:00')).strftime("%m-%d %H:%M")
-                    order_info += f" ({time})"
+                    time = datetime.fromisoformat(order['created_at'].replace('Z', '+00:00')).strftime("%m\\-%d %H:%M")
+                    order_info += f" \\({time}\\)"
                 except:
                     pass
             
-            completed_orders.append(f"• {order_info} - {status_text}")
+            completed_orders.append(f"• {escape_markdown(order_info, 2)} \\- {escape_markdown(status_text, 2)}")
 
     # 構建回復訊息
     lines = []
@@ -217,7 +219,7 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         lines.append("🔄 *進行中的訂單：*")
         lines.extend(pending_orders[:10])  # 最多顯示 10 筆進行中訂單
         if len(pending_orders) > 10:
-            lines.append(f"... 還有 {len(pending_orders) - 10} 筆訂單")
+            lines.append(f"\\.\\.\\. 還有 {len(pending_orders) - 10} 筆訂單")
     
     if completed_orders:
         if lines:  # 如果已有進行中訂單，添加分隔
@@ -225,7 +227,7 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         lines.append("✅ *最近完成的訂單：*")
         lines.extend(completed_orders[:5])  # 最多顯示 5 筆已完成訂單
         if len(completed_orders) > 5:
-            lines.append(f"... 還有 {len(completed_orders) - 5} 筆歷史訂單")
+            lines.append(f"\\.\\.\\. 還有 {len(completed_orders) - 5} 筆歷史訂單")
 
     if not lines:
         lines.append("📋 目前沒有訂單記錄")
