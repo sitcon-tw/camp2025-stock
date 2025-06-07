@@ -47,7 +47,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "from_user": str(update.effective_user.id)
     })
 
-    if not portfolio_response.get("detail") == "detail":
+    if not portfolio_response.get("detail") == "noexist":
         await update.message.reply_text(
             f"""
             😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*
@@ -113,81 +113,6 @@ async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"""
         👥 小隊 __*3*__ 目前的點數共：*{result.get("total_points")}* 點
         """, parse_mode=ParseMode.MARKDOWN_V2)
-
-async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not context.args:
-        buttons = [
-            [InlineKeyboardButton(text="複製買入指令", copy_text=CopyTextButton("/stock buy "))],
-            [InlineKeyboardButton(text="複製買出指令", copy_text=CopyTextButton("/stock buy "))],
-            [InlineKeyboardButton(text="複製查看股價指令", copy_text=CopyTextButton("/stock list "))]
-        ]
-
-        await update.message.reply_text(
-            f"""
-            🐱 *三幣指數股交易系統*
-
-*/stock buy 數量* 買入三幣指數股
-*/stock sell 數量* 賣出三幣指數股
-*/stock list* 查看持有股票與現價
-            """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
-        return
-
-    is_sell_command = context.args[0] == "sell"
-
-    if (context.args[0] == "buy" or context.args[0] == "sell") and len(context.args) <= 1:
-        await update.message.reply_text(
-            f"""
-            ❓ 你要{is_sell_command and "賣出" or "買入"}多少張三幣指數股？
-請把要{is_sell_command and "賣出" or "買入"}的數量加在指令後面哦
-            """)
-        return
-
-    if not (context.args[1]).isdigit():
-        await update.message.reply_text("❓ 可以給我一個正常的數字嗎")
-        return
-
-    quantity = int(context.args[1])
-
-    if quantity <= 0:
-        await update.message.reply_text("❓ 幽默，想要買 0 張股票")
-        return
-    elif quantity > 30:
-        await update.message.reply_text("😿 最多只能買 30 張股票")
-        return
-
-    buttons = [[
-        InlineKeyboardButton(text="❌ 取消", callback_data=f"cb:stock:{is_sell_command and "sell" or "buy"}:cancel:{update.effective_user.id}"),
-        InlineKeyboardButton(text="✅ 確定", callback_data=f"cb:stock:{is_sell_command and "sell" or "buy"}:proceed:{quantity}:{update.effective_user.id}")
-    ]]
-
-    match context.args[0]:
-        case "buy":
-            await update.message.reply_text(
-                f"""
-                🙀 是否真的要*購買 {context.args[1]} 張*三幣指數股？
-                """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
-            return
-        case "sell":
-            await update.message.reply_text(
-                f"""
-                🙀 是否真的要*賣出 {context.args[1]} 張*三幣指數股？
-                """, parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
-            return
-        case "list":
-            await update.message.reply_text(
-                f"""
-                🏦 三幣指數股目前股價：
-
-📈 上漲：+10%
-💰 目前股價：$100
-                """, parse_mode=ParseMode.MARKDOWN_V2)
-            return
-        case _:
-            await update.message.reply_text(
-                f"""
-                😿 我沒有叫做 `{context.args[1]}` 的指令！
-                """)
-            return
 
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"/start triggered by {update.effective_user.id}")
