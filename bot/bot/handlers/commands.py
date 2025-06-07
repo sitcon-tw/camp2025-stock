@@ -193,8 +193,10 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     for item in response:
         time = datetime.fromisoformat(item['created_at']).strftime("%Y-%m-%d %H:%M")
 
-        line = f"`{escape_markdown(time, 2)}`： *{escape_markdown(item['note'], 2)}* {item['amount']} 點，餘額 *{item['balance_after']}* 點".strip()
+        line = f"`{escape_markdown(time, 2)}`： *{escape_markdown(item['note'], 2)}* {escape_markdown(str(item['amount']), 2)} 點，餘額 *{escape_markdown(str(item['balance_after']), 2)}* 點".strip()
         lines.append(line)
+
+    print(lines)
 
     await update.message.reply_text(
         f"""
