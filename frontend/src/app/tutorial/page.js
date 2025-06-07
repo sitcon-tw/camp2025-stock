@@ -65,11 +65,12 @@ export default function TutorialPage() {
             <h3 className="text-xl font-semibold mb-3 text-[#82bee2]">✅ 即時買（市價買入）</h3>
             <div className="bg-[#1a2e4a] p-4 rounded-lg mb-4">
                 <p className="font-semibold mb-2 text-[#82bee2]">📩 指令格式：</p>
-                <code className="bg-black text-green-400 px-2 py-1 rounded">/buy &lt;張數&gt;</code>
+                <code className="bg-black text-green-400 px-2 py-1 rounded">/stock</code>
             </div>
             <div className="mb-6">
                 <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
                 <ul className="list-disc pl-6 text-white">
+                    <li>使用 /stock 指令進入交易介面，選擇市價買入。</li>
                     <li>用當下市場「賣一價」直接買入。</li>
                     <li>系統會顯示「你花了多少點數，買了幾張」。</li>
                 </ul>
@@ -78,11 +79,12 @@ export default function TutorialPage() {
             <h3 className="text-xl font-semibold mb-3 text-[#82bee2]">✅ 掛單買（限價掛單）</h3>
             <div className="bg-[#1a2e4a] p-4 rounded-lg mb-4">
                 <p className="font-semibold mb-2 text-[#82bee2]">📩 指令格式：</p>
-                <code className="bg-black text-green-400 px-2 py-1 rounded">/bid &lt;價格&gt; &lt;張數&gt;</code>
+                <code className="bg-black text-green-400 px-2 py-1 rounded">/stock</code>
             </div>
             <div className="mb-8">
                 <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
                 <ul className="list-disc pl-6 text-white">
+                    <li>使用 /stock 指令進入交易介面，選擇限價掛單買入。</li>
                     <li>掛在市場等人賣給你。</li>
                     <li>只有當「有人的賣價 ≤ 你的買價」時才會成交。</li>
                 </ul>
@@ -93,11 +95,12 @@ export default function TutorialPage() {
             <h3 className="text-xl font-semibold mb-3 text-[#82bee2]">✅ 即時賣（市價賣出）</h3>
             <div className="bg-[#1a2e4a] p-4 rounded-lg mb-4">
                 <p className="font-semibold mb-2 text-[#82bee2]">📩 指令格式：</p>
-                <code className="bg-black text-green-400 px-2 py-1 rounded">/sell &lt;張數&gt;</code>
+                <code className="bg-black text-green-400 px-2 py-1 rounded">/stock</code>
             </div>
             <div className="mb-6">
                 <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
                 <ul className="list-disc pl-6 text-white">
+                    <li>使用 /stock 指令進入交易介面，選擇市價賣出。</li>
                     <li>以當下市場「買一價」賣出。</li>
                     <li>越多競爭者願意買，價格越好。</li>
                 </ul>
@@ -106,25 +109,39 @@ export default function TutorialPage() {
             <h3 className="text-xl font-semibold mb-3 text-[#82bee2]">✅ 掛單賣（限價掛單）</h3>
             <div className="bg-[#1a2e4a] p-4 rounded-lg mb-4">
                 <p className="font-semibold mb-2 text-[#82bee2]">📩 指令格式：</p>
-                <code className="bg-black text-green-400 px-2 py-1 rounded">/ask &lt;價格&gt; &lt;張數&gt;</code>
+                <code className="bg-black text-green-400 px-2 py-1 rounded">/stock</code>
             </div>
             <div className="mb-8">
                 <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
                 <ul className="list-disc pl-6 text-white">
+                    <li>使用 /stock 指令進入交易介面，選擇限價掛單賣出。</li>
                     <li>掛單等待市場出價。</li>
                     <li>只有當「有人的買價 ≥ 你的賣價」時才會成交。</li>
                 </ul>
             </div>
 
-            <h2 className="text-2xl font-bold mb-4 text-[#82bee2]">💰 如何「取消掛單」？</h2>
+            <h2 className="text-2xl font-bold mb-4 text-[#82bee2]">💸 如何「轉帳」？</h2>
             <div className="bg-[#1a2e4a] p-4 rounded-lg mb-4">
                 <p className="font-semibold mb-2 text-[#82bee2]">📩 指令格式：</p>
-                <code className="bg-black text-green-400 px-2 py-1 rounded">/cancel</code>
+                <code className="bg-black text-green-400 px-2 py-1 rounded">/transfer</code>
             </div>
             <div className="mb-8">
                 <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
                 <ul className="list-disc pl-6 text-white">
-                    <li>系統會顯示所有目前你參與的遊戲（掛單和 PVP），可選擇項目取消。</li>
+                    <li>可以轉點數給其他人。</li>
+                    <li>會抽取 1% 手續費。</li>
+                </ul>
+            </div>
+
+            <h2 className="text-2xl font-bold mb-4 text-[#82bee2]">🔍 如何「查看小隊點數」？</h2>
+            <div className="bg-[#1a2e4a] p-4 rounded-lg mb-4">
+                <p className="font-semibold mb-2 text-[#82bee2]">📩 指令格式：</p>
+                <code className="bg-black text-green-400 px-2 py-1 rounded">/point</code>
+            </div>
+            <div className="mb-8">
+                <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
+                <ul className="list-disc pl-6 text-white">
+                    <li>查看自己小隊的總點數。</li>
                 </ul>
             </div>
 
@@ -216,7 +233,7 @@ export default function TutorialPage() {
 
                 <div>
                     <h3 className="text-lg font-semibold mb-2 text-[#82bee2]">❓ 我可以轉點數給別人嗎？</h3>
-                    <p className="text-white">可以。會抽取 1% 手續費。</p>
+                    <p className="text-white">可以。使用 /transfer 指令，會抽取 1% 手續費。</p>
                 </div>
 
                 <div>
