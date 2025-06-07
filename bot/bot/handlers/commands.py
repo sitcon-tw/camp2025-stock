@@ -146,3 +146,93 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     target_username = context.args[0]
+
+
+async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """查看自己的掛單清單"""
+    logger.info(f"/orders triggered by {update.effective_user.id}")
+
+    # 調用後端 API 獲取用戶的股票訂單
+    response = api_helper.post("/api/bot/stock/orders", protected_route=True, json={
+        "from_user": str(update.effective_user.id),
+        "limit": 20  # 顯示最近 20 筆訂單
+    })
+
+    if await verify_existing_user(response, update):
+        return
+
+    if not response:
+        await update.message.reply_text(
+            "📋 你目前沒有任何股票訂單記錄",
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
+        return
+
+    # 分別處理進行中和已完成的訂單
+    pending_orders = []
+    completed_orders = []
+    
+    for order in response:
+        status = order.get('status', 'unknown')
+        side_emoji = "🟢" if order.get('side') == 'buy' else "🔴"
+        side_text = "買入" if order.get('side') == 'buy' else "賣出"
+        
+        order_info = f"{side_emoji} {side_text} {order.get('quantity', 0)} 股 @ {order.get('price', 0)} 元"
+        
+        if status in ['pending', 'partial', 'pending_limit']:
+            # 進行中的訂單
+            status_text = {
+                'pending': '等待成交',
+                'partial': '部分成交',
+                'pending_limit': '等待(超出限制)'
+            }.get(status, status)
+            
+            filled_qty = order.get('filled_quantity', 0)
+            if filled_qty > 0:
+                order_info += f" (已成交: {filled_qty})"
+            
+            pending_orders.append(f"• {order_info} - {status_text}")
+            
+        elif status in ['filled', 'cancelled']:
+            # 已完成的訂單
+            status_text = "已成交" if status == 'filled' else "已取消"
+            filled_price = order.get('filled_price')
+            if filled_price:
+                order_info += f" → 成交價: {filled_price} 元"
+            
+            # 添加時間
+            if order.get('created_at'):
+                try:
+                    time = datetime.fromisoformat(order['created_at'].replace('Z', '+00:00')).strftime("%m-%d %H:%M")
+                    order_info += f" ({time})"
+                except:
+                    pass
+            
+            completed_orders.append(f"• {order_info} - {status_text}")
+
+    # 構建回復訊息
+    lines = []
+    
+    if pending_orders:
+        lines.append("🔄 *進行中的訂單：*")
+        lines.extend(pending_orders[:10])  # 最多顯示 10 筆進行中訂單
+        if len(pending_orders) > 10:
+            lines.append(f"... 還有 {len(pending_orders) - 10} 筆訂單")
+    
+    if completed_orders:
+        if lines:  # 如果已有進行中訂單，添加分隔
+            lines.append("")
+        lines.append("✅ *最近完成的訂單：*")
+        lines.extend(completed_orders[:5])  # 最多顯示 5 筆已完成訂單
+        if len(completed_orders) > 5:
+            lines.append(f"... 還有 {len(completed_orders) - 5} 筆歷史訂單")
+
+    if not lines:
+        lines.append("📋 目前沒有訂單記錄")
+
+    message_text = f"📊 *{escape_markdown(update.effective_user.full_name)} 的股票訂單*\n\n" + "\n".join(lines)
+    
+    await update.message.reply_text(
+        message_text,
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
