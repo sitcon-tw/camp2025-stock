@@ -309,9 +309,12 @@ class AdminService:
     # 設定漲跌限制
     async def set_trading_limit(self, request: MarketLimitRequest) -> MarketLimitResponse:
         try:
+            # 將傳入的百分比轉換為基點 (basis points)
+            limit_in_basis_points = request.limit_percent * 100
+            
             limit_config = {
                 "type": "trading_limit",
-                "limitPercent": request.limit_percent,
+                "limitPercent": limit_in_basis_points,
                 "updated_at": datetime.utcnow(),
                 "updated_by": "admin"
             }
@@ -323,7 +326,7 @@ class AdminService:
                 upsert=True
             )
             
-            logger.info(f"Trading limit set to {request.limit_percent}%")
+            logger.info(f"Trading limit set to {request.limit_percent}% ({limit_in_basis_points} bp)")
             return MarketLimitResponse(ok=True)
             
         except Exception as e:
