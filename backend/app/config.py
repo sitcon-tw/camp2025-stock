@@ -17,7 +17,7 @@ class Settings:
     CAMP_ADMIN_PASSWORD: str = os.getenv("CAMP_ADMIN_PASSWORD", "admin123")
     
     # API 設定
-    CAMP_INTERNAL_API_KEY: str = os.getenv("CAMP_INTERNAL_API_KEY", "internal-secret")
+    CAMP_INTERNAL_API_KEY: str = os.getenv("CAMP_INTERNAL_API_KEY", "neverGonnaGiveYouUp")
     
     # CORS 設定
     CAMP_ALLOWED_HOSTS: list = os.getenv("CAMP_ALLOWED_HOSTS", "*").split(",")

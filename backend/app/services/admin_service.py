@@ -233,6 +233,8 @@ class AdminService:
     async def _send_system_announcement(self, title: str, message: str):
         """發送系統自動公告到 Telegram Bot"""
         try:
+            logger.info(f"Starting system announcement: {title}")
+            
             # 儲存公告到資料庫
             announcement_doc = {
                 "title": title,
@@ -241,10 +243,16 @@ class AdminService:
                 "created_at": datetime.utcnow(),
                 "created_by": "system"
             }
-            await self.db[Collections.ANNOUNCEMENTS].insert_one(announcement_doc)
+            result = await self.db[Collections.ANNOUNCEMENTS].insert_one(announcement_doc)
+            logger.info(f"Announcement saved to database with ID: {result.inserted_id}")
             
             # 廣播到 Telegram Bot
             CAMP_TELEGRAM_BOT_API_URL = settings.CAMP_TELEGRAM_BOT_API_URL
+            CAMP_INTERNAL_API_KEY = settings.CAMP_INTERNAL_API_KEY
+            
+            logger.info(f"Bot API URL: {CAMP_TELEGRAM_BOT_API_URL}")
+            logger.info(f"API Key: {CAMP_INTERNAL_API_KEY[:10]}..." if CAMP_INTERNAL_API_KEY else "API Key: None")
+            
             if CAMP_TELEGRAM_BOT_API_URL:
                 payload = {
                     "title": title,
@@ -252,19 +260,26 @@ class AdminService:
                 }
                 headers = {
                     "Content-Type": "application/json",
-                    "token": settings.CAMP_INTERNAL_API_KEY
+                    "token": CAMP_INTERNAL_API_KEY
                 }
-                logger.info(f"Broadcasting system announcement: {title}")
-                response = requests.post(CAMP_TELEGRAM_BOT_API_URL, json=payload, headers=headers)
+                
+                logger.info(f"Sending POST request to: {CAMP_TELEGRAM_BOT_API_URL}")
+                logger.info(f"Payload: {payload}")
+                
+                response = requests.post(CAMP_TELEGRAM_BOT_API_URL, json=payload, headers=headers, timeout=10)
+                
+                logger.info(f"Response status: {response.status_code}")
+                logger.info(f"Response text: {response.text}")
+                
                 if response.status_code == 200:
                     logger.info(f"System announcement broadcasted successfully: {title}")
                 else:
-                    logger.warning(f"Failed to broadcast system announcement: {response.text}")
+                    logger.warning(f"Failed to broadcast system announcement: HTTP {response.status_code} - {response.text}")
             else:
                 logger.warning("Telegram Bot API URL not configured, skipping broadcast")
                 
         except Exception as e:
-            logger.error(f"Failed to send system announcement: {e}")
+            logger.error(f"Failed to send system announcement: {e}", exc_info=True)
             # 不拋出異常，避免影響主要操作
     
     # 更新市場開放時間

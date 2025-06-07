@@ -532,3 +532,37 @@ async def reset_all_data(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"重置所有資料失敗: {str(e)}"
         )
+
+
+@router.post(
+    "/test-announcement",
+    responses={
+        200: {"description": "測試公告成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="測試系統公告",
+    description="測試系統公告功能是否正常工作"
+)
+async def test_announcement(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """測試系統公告功能"""
+    try:
+        await admin_service._send_system_announcement(
+            title="🧪 測試公告",
+            message="這是一個測試公告，用來驗證系統公告功能是否正常工作。"
+        )
+        
+        return {
+            "ok": True,
+            "message": "測試公告已發送"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to send test announcement: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"發送測試公告失敗: {str(e)}"
+        )
