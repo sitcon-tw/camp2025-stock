@@ -1461,6 +1461,21 @@ class UserService:
             
             logger.info(f"Call auction completed: {matched_volume} shares matched at price {best_price}")
             
+            # 重新查詢更新後的訂單狀態以獲得正確的統計
+            updated_buy_orders = await self.db[Collections.STOCK_ORDERS].find(
+                {"side": "buy", "status": {"$in": ["pending", "pending_limit"]}, "order_type": "limit"}
+            ).sort([("price", -1), ("created_at", 1)]).to_list(None)
+            
+            updated_sell_orders = await self.db[Collections.STOCK_ORDERS].find(
+                {"side": "sell", "status": {"$in": ["pending", "pending_limit"]}, "order_type": "limit"}
+            ).sort([("price", 1), ("created_at", 1)]).to_list(None)
+            
+            # 重新計算訂單統計
+            updated_pending_buy = len([o for o in updated_buy_orders if o.get("status") == "pending"])
+            updated_pending_sell = len([o for o in updated_sell_orders if o.get("status") == "pending"])
+            updated_limit_buy = len([o for o in updated_buy_orders if o.get("status") == "pending_limit"])
+            updated_limit_sell = len([o for o in updated_sell_orders if o.get("status") == "pending_limit"])
+            
             # 發送集合競價公告到 Telegram Bot
             try:
                 from app.services.admin_service import AdminService
@@ -1470,10 +1485,10 @@ class UserService:
                 announcement_message = f"管理員執行集合競價撮合完成！\n"
                 announcement_message += f"📊 撮合結果：{matched_volume} 股於 {best_price} 元成交\n"
                 announcement_message += f"📈 處理訂單：{len(buy_orders)} 張買單、{len(sell_orders)} 張賣單\n"
-                announcement_message += f"⚖️ 訂單狀態：{pending_buy} 張待撮合買單、{pending_sell} 張待撮合賣單"
+                announcement_message += f"⚖️ 訂單狀態：{updated_pending_buy} 張待撮合買單、{updated_pending_sell} 張待撮合賣單"
                 
-                if limit_buy > 0 or limit_sell > 0:
-                    announcement_message += f"、{limit_buy + limit_sell} 張限制等待訂單"
+                if updated_limit_buy > 0 or updated_limit_sell > 0:
+                    announcement_message += f"、{updated_limit_buy + updated_limit_sell} 張限制等待訂單"
                 
                 await admin_service._send_system_announcement(
                     title="📈 集合競價撮合完成",
@@ -1488,10 +1503,10 @@ class UserService:
                 "matched_volume": matched_volume,
                 "message": f"集合競價完成：{matched_volume} 股於 {best_price} 元成交",
                 "order_stats": {
-                    "pending_buy": pending_buy, "pending_sell": pending_sell,
-                    "limit_buy": limit_buy, "limit_sell": limit_sell,
-                    "total_buy_orders": len(buy_orders),
-                    "total_sell_orders": len(sell_orders)
+                    "pending_buy": updated_pending_buy, "pending_sell": updated_pending_sell,
+                    "limit_buy": updated_limit_buy, "limit_sell": updated_limit_sell,
+                    "total_buy_orders": len(updated_buy_orders),
+                    "total_sell_orders": len(updated_sell_orders)
                 },
                 "order_details": order_details
             }

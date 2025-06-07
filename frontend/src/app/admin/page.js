@@ -360,7 +360,7 @@ export default function AdminPage() {
             setCallAuctionResult(result);
             setShowCallAuctionModal(true);
             
-            if (result.ok) {
+            if (result.success) {
                 let message = result.message;
                 
                 // 如果有詳細統計，添加到通知中
@@ -1479,14 +1479,14 @@ export default function AdminPage() {
 
                         <div className="space-y-4">
                             {/* 結果總結 */}
-                            <div className={`rounded-lg p-4 ${callAuctionResult.ok ? 'bg-green-900 border border-green-600' : 'bg-red-900 border border-red-600'}`}>
-                                <h4 className={`font-medium mb-2 ${callAuctionResult.ok ? 'text-green-200' : 'text-red-200'}`}>
-                                    {callAuctionResult.ok ? '✅ 集合競價成功' : '❌ 集合競價失敗'}
+                            <div className={`rounded-lg p-4 ${callAuctionResult.success ? 'bg-green-900 border border-green-600' : 'bg-red-900 border border-red-600'}`}>
+                                <h4 className={`font-medium mb-2 ${callAuctionResult.success ? 'text-green-200' : 'text-red-200'}`}>
+                                    {callAuctionResult.success ? '✅ 集合競價成功' : '❌ 集合競價失敗'}
                                 </h4>
-                                <p className={`text-sm ${callAuctionResult.ok ? 'text-green-300' : 'text-red-300'}`}>
+                                <p className={`text-sm ${callAuctionResult.success ? 'text-green-300' : 'text-red-300'}`}>
                                     {callAuctionResult.message}
                                 </p>
-                                {callAuctionResult.ok && (
+                                {callAuctionResult.success && (
                                     <div className="mt-2 text-green-200 text-sm">
                                         <p>撮合價格: {callAuctionResult.auction_price} 元</p>
                                         <p>成交量: {callAuctionResult.matched_volume} 股</p>
