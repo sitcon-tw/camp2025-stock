@@ -190,4 +190,42 @@ export async function forceSettlement(token) {
     });
 }
 
+// IPO 管理功能
+// 查詢IPO狀態
+export async function getIpoStatus(token) {
+    return apiRequest('/api/admin/ipo/status', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 重置IPO狀態
+export async function resetIpo(token, initialShares = 1000, initialPrice = 20) {
+    return apiRequest(`/api/admin/ipo/reset?initial_shares=${initialShares}&initial_price=${initialPrice}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 更新IPO參數
+export async function updateIpo(token, sharesRemaining = null, initialPrice = null) {
+    const params = new URLSearchParams();
+    if (sharesRemaining !== null) params.append('shares_remaining', sharesRemaining);
+    if (initialPrice !== null) params.append('initial_price', initialPrice);
+    
+    return apiRequest(`/api/admin/ipo/update?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
 export { API_BASE_URL };

@@ -14,7 +14,10 @@ import {
     getMarketStatus,
     getTradingHours,
     resetAllData,
-    forceSettlement
+    forceSettlement,
+    getIpoStatus,
+    resetIpo,
+    updateIpo
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -56,6 +59,15 @@ export default function AdminPage() {
 
     // 市場狀態
     const [marketStatus, setMarketStatus] = useState(null);
+
+    // IPO 管理狀態
+    const [ipoStatus, setIpoStatus] = useState(null);
+    const [ipoLoading, setIpoLoading] = useState(false);
+    const [showIpoUpdateModal, setShowIpoUpdateModal] = useState(false);
+    const [ipoUpdateForm, setIpoUpdateForm] = useState({
+        sharesRemaining: '',
+        initialPrice: ''
+    });
 
     // 新增時間 Modal
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
@@ -129,6 +141,7 @@ export default function AdminPage() {
                     fetchTeams(token);
                     fetchMarketStatus();
                     fetchTradingHours();
+                    fetchIpoStatus(token);
                 }
             } catch (error) {
                 if (error.status === 401) {
@@ -230,6 +243,56 @@ export default function AdminPage() {
             }
         } catch (error) {
             console.error('獲取交易時間失敗:', error);
+        }
+    };
+
+    // 撈IPO狀態
+    const fetchIpoStatus = async (token) => {
+        try {
+            setIpoLoading(true);
+            const data = await getIpoStatus(token);
+            setIpoStatus(data);
+        } catch (error) {
+            handleApiError(error, '獲取IPO狀態');
+        } finally {
+            setIpoLoading(false);
+        }
+    };
+
+    // 更新IPO
+    const handleIpoUpdate = async () => {
+        try {
+            setIpoLoading(true);
+            
+            const sharesRemaining = ipoUpdateForm.sharesRemaining !== '' ? parseInt(ipoUpdateForm.sharesRemaining) : null;
+            const initialPrice = ipoUpdateForm.initialPrice !== '' ? parseInt(ipoUpdateForm.initialPrice) : null;
+            
+            const result = await updateIpo(adminToken, sharesRemaining, initialPrice);
+            
+            showNotification(result.message, 'success');
+            setShowIpoUpdateModal(false);
+            setIpoUpdateForm({ sharesRemaining: '', initialPrice: '' });
+            
+            // 重新取得IPO狀態
+            await fetchIpoStatus(adminToken);
+        } catch (error) {
+            handleApiError(error, 'IPO更新');
+        } finally {
+            setIpoLoading(false);
+        }
+    };
+
+    // 重置IPO
+    const handleIpoReset = async () => {
+        try {
+            setIpoLoading(true);
+            const result = await resetIpo(adminToken, 1000, 20);
+            showNotification(result.message, 'success');
+            await fetchIpoStatus(adminToken);
+        } catch (error) {
+            handleApiError(error, 'IPO重置');
+        } finally {
+            setIpoLoading(false);
         }
     };
 
@@ -888,6 +951,64 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            {/* IPO 管理 */}
+            <div className="max-w-4xl mx-auto px-4 mt-8">
+                <div className="bg-[#1A325F] rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-white">IPO 管理</h2>
+                        <button
+                            onClick={() => fetchIpoStatus(adminToken)}
+                            disabled={ipoLoading}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white px-3 py-1 rounded-lg text-sm"
+                        >
+                            {ipoLoading ? '載入中...' : '重新整理'}
+                        </button>
+                    </div>
+                    
+                    {ipoStatus ? (
+                        <div className="space-y-4">
+                            {/* IPO 狀態顯示 */}
+                            <div className="grid grid-cols-3 gap-4 bg-[#0f203e] p-4 rounded-xl">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-white">{ipoStatus.initialShares?.toLocaleString()}</div>
+                                    <div className="text-gray-400 text-sm">初始股數</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-orange-400">{ipoStatus.sharesRemaining?.toLocaleString()}</div>
+                                    <div className="text-gray-400 text-sm">剩餘股數</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-green-400">{ipoStatus.initialPrice}</div>
+                                    <div className="text-gray-400 text-sm">每股價格 (點)</div>
+                                </div>
+                            </div>
+                            
+                            {/* 操作按鈕 */}
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setShowIpoUpdateModal(true)}
+                                    disabled={ipoLoading}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                >
+                                    更新參數
+                                </button>
+                                <button
+                                    onClick={handleIpoReset}
+                                    disabled={ipoLoading}
+                                    className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                >
+                                    {ipoLoading ? '重置中...' : '重置IPO'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center text-gray-400 py-4">
+                            {ipoLoading ? '載入IPO狀態中...' : '無法載入IPO狀態'}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Danger Zone */}
             <div className="max-w-4xl mx-auto px-4 mt-8">
                 <div className="bg-[#1A325F] rounded-xl p-6 border-2 border-red-500">
@@ -1144,6 +1265,81 @@ export default function AdminPage() {
                                     className="bg-[#7BC2E6] hover:bg-[#6bb0d4] text-black py-2 px-6 rounded-xl transition-colors font-medium"
                                 >
                                     關閉
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* IPO 更新 Modal */}
+            {showIpoUpdateModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-[#7BC2E6]">更新 IPO 參數</h3>
+                            <button
+                                onClick={() => setShowIpoUpdateModal(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                    剩餘股數 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={ipoUpdateForm.sharesRemaining}
+                                    onChange={(e) => setIpoUpdateForm({ ...ipoUpdateForm, sharesRemaining: e.target.value })}
+                                    placeholder="例如: 0"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">
+                                    當前: {ipoStatus?.sharesRemaining?.toLocaleString()} 股
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                    IPO 價格 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={ipoUpdateForm.initialPrice}
+                                    onChange={(e) => setIpoUpdateForm({ ...ipoUpdateForm, initialPrice: e.target.value })}
+                                    placeholder="例如: 25"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">
+                                    當前: {ipoStatus?.initialPrice} 點/股
+                                </p>
+                            </div>
+
+                            <div className="bg-blue-900 border border-blue-600 rounded-lg p-3">
+                                <p className="text-blue-200 text-sm">
+                                    💡 提示：設定剩餘股數為 0 可以強制市價單使用限價單撮合，實現價格發現機制
+                                </p>
+                            </div>
+
+                            <div className="flex space-x-3 mt-6">
+                                <button
+                                    onClick={() => setShowIpoUpdateModal(false)}
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleIpoUpdate}
+                                    disabled={ipoLoading}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    {ipoLoading ? '更新中...' : '更新'}
                                 </button>
                             </div>
                         </div>

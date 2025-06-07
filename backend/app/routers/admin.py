@@ -334,6 +334,72 @@ async def final_settlement(
     return await admin_service.final_settlement()
 
 
+@router.get(
+    "/ipo/status",
+    responses={
+        200: {"description": "IPO狀態查詢成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="查詢IPO狀態",
+    description="查詢當前IPO狀態資訊"
+)
+async def get_ipo_status(
+    current_admin=Depends(get_current_admin)
+):
+    """查詢IPO狀態
+    
+    Args:
+        current_admin: 目前管理員（自動注入）
+
+    Returns:
+        IPO狀態資訊
+    """
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        
+        # 查詢IPO狀態
+        ipo_config = await db[Collections.MARKET_CONFIG].find_one(
+            {"type": "ipo_status"}
+        )
+        
+        if ipo_config:
+            return {
+                "ok": True,
+                "initialShares": ipo_config.get("initial_shares", 1000),
+                "sharesRemaining": ipo_config.get("shares_remaining", 1000),
+                "initialPrice": ipo_config.get("initial_price", 20),
+                "updatedAt": ipo_config.get("updated_at").isoformat() if ipo_config.get("updated_at") else None
+            }
+        else:
+            # IPO未初始化，返回預設值
+            import os
+            try:
+                initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+            except (ValueError, TypeError):
+                initial_shares = 1000
+                initial_price = 20
+            
+            return {
+                "ok": True,
+                "initialShares": initial_shares,
+                "sharesRemaining": initial_shares,
+                "initialPrice": initial_price,
+                "updatedAt": None,
+                "note": "IPO未初始化，顯示預設值"
+            }
+        
+    except Exception as e:
+        logger.error(f"Failed to get IPO status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="查詢IPO狀態失敗"
+        )
+
+
 @router.post(
     "/ipo/reset",
     responses={
@@ -394,6 +460,93 @@ async def reset_ipo(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="重置IPO失敗"
+        )
+
+
+@router.post(
+    "/ipo/update",
+    responses={
+        200: {"description": "更新成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="更新IPO參數",
+    description="更新IPO剩餘股數或價格，不重置整個IPO狀態"
+)
+async def update_ipo(
+    shares_remaining: int = None,
+    initial_price: int = None,
+    current_admin=Depends(get_current_admin)
+):
+    """更新IPO參數
+    
+    Args:
+        shares_remaining: 剩餘股數（可選）
+        initial_price: IPO價格（可選）
+        current_admin: 目前管理員（自動注入）
+
+    Returns:
+        操作結果
+    """
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        
+        db = get_database()
+        
+        # 構建更新字段
+        update_fields = {"updated_at": datetime.now(timezone.utc)}
+        
+        if shares_remaining is not None:
+            update_fields["shares_remaining"] = max(0, shares_remaining)
+        
+        if initial_price is not None:
+            update_fields["initial_price"] = max(1, initial_price)
+        
+        # 更新IPO狀態
+        result = await db[Collections.MARKET_CONFIG].update_one(
+            {"type": "ipo_status"},
+            {"$set": update_fields}
+        )
+        
+        if result.matched_count == 0:
+            # IPO配置不存在，創建新的
+            await db[Collections.MARKET_CONFIG].insert_one({
+                "type": "ipo_status",
+                "initial_shares": 1000,
+                "shares_remaining": shares_remaining if shares_remaining is not None else 0,
+                "initial_price": initial_price if initial_price is not None else 20,
+                "updated_at": datetime.now(timezone.utc)
+            })
+        
+        # 取得更新後的狀態
+        updated_config = await db[Collections.MARKET_CONFIG].find_one(
+            {"type": "ipo_status"}
+        )
+        
+        message_parts = []
+        if shares_remaining is not None:
+            message_parts.append(f"剩餘股數: {shares_remaining}")
+        if initial_price is not None:
+            message_parts.append(f"IPO價格: {initial_price} 點")
+        
+        message = f"IPO已更新：{', '.join(message_parts)}" if message_parts else "IPO狀態已更新"
+        
+        logger.info(f"IPO updated: {message}")
+        
+        return {
+            "ok": True,
+            "message": message,
+            "initialShares": updated_config.get("initial_shares", 1000),
+            "sharesRemaining": updated_config.get("shares_remaining", 0),
+            "initialPrice": updated_config.get("initial_price", 20)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to update IPO: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新IPO失敗"
         )
 
 

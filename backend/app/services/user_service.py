@@ -885,16 +885,100 @@ class UserService:
             message = ""
             
             if side == "buy":
-                ipo_config = await self._get_or_initialize_ipo_config(session=session)
-                if ipo_config and ipo_config.get("shares_remaining", 0) >= quantity:
-                    user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
-                    ipo_price = ipo_config["initial_price"]
-                    if user.get("points", 0) >= quantity * ipo_price:
-                        price = ipo_price
-                        is_ipo_purchase = True
-                        shares_remaining = ipo_config.get("shares_remaining", 0)
-                        message = f"市價單已向系統IPO申購成交，價格: {price} 元/股，系統剩餘: {shares_remaining - quantity} 股"
-                        logger.info(f"IPO purchase: user {user_oid} bought {quantity} shares at {price}, remaining: {shares_remaining - quantity}")
+                # 首先嘗試與現有限價賣單撮合
+                best_sell_order = await self.db[Collections.STOCK_ORDERS].find_one(
+                    {"side": "sell", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"},
+                    sort=[("price", 1)],  # 最低價格優先
+                    session=session
+                )
+                
+                if best_sell_order and best_sell_order.get("quantity", 0) > 0:
+                    # 有賣單可以撮合，將此市價買單轉換為限價單並執行撮合
+                    price = best_sell_order["price"]
+                    logger.info(f"Market buy order will match with limit sell order at price {price}")
+                    
+                    # 創建一個臨時的買單用於撮合
+                    temp_buy_order = {
+                        "_id": None,  # 將在插入時分配
+                        "user_id": user_oid,
+                        "side": "buy",
+                        "quantity": quantity,
+                        "price": price,
+                        "status": "pending",
+                        "order_type": "market_converted",  # 標記為市價單轉換
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    
+                    # 插入訂單以獲得ID
+                    temp_result = await self.db[Collections.STOCK_ORDERS].insert_one(temp_buy_order, session=session)
+                    temp_buy_order["_id"] = temp_result.inserted_id
+                    
+                    # 執行撮合
+                    await self._match_orders_logic(temp_buy_order, best_sell_order, session=session)
+                    
+                    message = f"市價買單已與限價賣單撮合成交，價格: {price} 元/股"
+                    
+                    return StockOrderResponse(
+                        success=True,
+                        order_id=str(temp_result.inserted_id),
+                        message=message,
+                        executed_price=price,
+                        executed_quantity=quantity
+                    )
+                else:
+                    # 沒有賣單，檢查是否可以從 IPO 購買
+                    ipo_config = await self._get_or_initialize_ipo_config(session=session)
+                    if ipo_config and ipo_config.get("shares_remaining", 0) >= quantity:
+                        user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
+                        ipo_price = ipo_config["initial_price"]
+                        if user.get("points", 0) >= quantity * ipo_price:
+                            price = ipo_price
+                            is_ipo_purchase = True
+                            shares_remaining = ipo_config.get("shares_remaining", 0)
+                            message = f"市價單已向系統IPO申購成交，價格: {price} 元/股，系統剩餘: {shares_remaining - quantity} 股"
+                            logger.info(f"IPO purchase: user {user_oid} bought {quantity} shares at {price}, remaining: {shares_remaining - quantity}")
+            
+            elif side == "sell":
+                # 賣單：嘗試與現有限價買單撮合
+                best_buy_order = await self.db[Collections.STOCK_ORDERS].find_one(
+                    {"side": "buy", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"},
+                    sort=[("price", -1)],  # 最高價格優先
+                    session=session
+                )
+                
+                if best_buy_order and best_buy_order.get("quantity", 0) > 0:
+                    # 有買單可以撮合，將此市價賣單轉換為限價單並執行撮合
+                    price = best_buy_order["price"]
+                    logger.info(f"Market sell order will match with limit buy order at price {price}")
+                    
+                    # 創建一個臨時的賣單用於撮合
+                    temp_sell_order = {
+                        "_id": None,  # 將在插入時分配
+                        "user_id": user_oid,
+                        "side": "sell",
+                        "quantity": quantity,
+                        "price": price,
+                        "status": "pending",
+                        "order_type": "market_converted",  # 標記為市價單轉換
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    
+                    # 插入訂單以獲得ID
+                    temp_result = await self.db[Collections.STOCK_ORDERS].insert_one(temp_sell_order, session=session)
+                    temp_sell_order["_id"] = temp_result.inserted_id
+                    
+                    # 執行撮合
+                    await self._match_orders_logic(best_buy_order, temp_sell_order, session=session)
+                    
+                    message = f"市價賣單已與限價買單撮合成交，價格: {price} 元/股"
+                    
+                    return StockOrderResponse(
+                        success=True,
+                        order_id=str(temp_result.inserted_id),
+                        message=message,
+                        executed_price=price,
+                        executed_quantity=quantity
+                    )
 
             if price is None:
                 price = await self._get_current_stock_price()
