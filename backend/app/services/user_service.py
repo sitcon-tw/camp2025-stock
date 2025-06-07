@@ -516,7 +516,8 @@ class UserService:
         to_user = await self.db[Collections.USERS].find_one({
             "$or": [
                 {"name": request.to_username},
-                {"id": request.to_username}
+                {"id": request.to_username},
+                {"telegram_id": request.to_username}
             ]
         }, session=session)
         if not to_user:
