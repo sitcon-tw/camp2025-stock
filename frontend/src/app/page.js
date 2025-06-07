@@ -137,7 +137,7 @@ export default function Home() {
                             onClick={() => setIsModalOpen(true)}
                             className="bg-[#7BC2E6] text-[#101f3e] px-3 py-1 rounded-lg text-sm font-medium hover:bg-[#AFE1F5] transition-colors w-20"
                         >
-                            查看全部
+                            全部
                         </button>
                     </div>
                     {loading ? (
