@@ -1082,7 +1082,7 @@ export default function AdminPage() {
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
                                     <div className="text-2xl font-bold">{systemStats.total_stocks.toLocaleString()}</div>
-                                    <div className="text-gray-400 text-sm mt-1">總股票數</div>
+                                    <div className="text-gray-400 text-sm mt-1">總股票數(單位:股)</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl col-span-2">
                                     <div className="text-2xl font-bold">{systemStats.total_trades}</div>
