@@ -31,7 +31,7 @@ function RankingItem({ rank, user, isGroup = false }) {
 
     return (
         <div className="bg-[#1A325F] flex w-11/12 rounded-2xl py-1 px-2 items-center transition-all duration-300">
-            <div className="flex items-center justify-center w-12 h-12 mr-4">
+            <div className="flex items-center justify-center w-12 h-12">
                 <span className="text-[#AFE1F5] font-bold text-lg">
                     {getRankIcon(rank)}
                 </span>

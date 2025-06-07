@@ -79,7 +79,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
             if (!isMounted) return; try {
                 fetchingRef.current = true;
                 setLoading(true);
-                const historicalData = await apiService.getHistoricalData(168);
+                const historicalData = await apiService.getHistoricalData(24);
 
                 if (!isMounted) return;
 

@@ -21,8 +21,15 @@ export default function AdminPage() {
 
     const [adminToken, setAdminToken] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [notification, setNotification] = useState({ show: false, message: '', type: 'info' });
+
+    // loading state
+    const [givePointsLoading, setGivePointsLoading] = useState(false);
+    const [tradingLimitLoading, setTradingLimitLoading] = useState(false);
+    const [marketTimesLoading, setMarketTimesLoading] = useState(false);
+    const [announcementLoading, setAnnouncementLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [userAssetsLoading, setUserAssetsLoading] = useState(false);
 
     const [givePointsForm, setGivePointsForm] = useState({
         type: 'user',
@@ -55,10 +62,10 @@ export default function AdminPage() {
         end: '9:00'
     });
 
-    // Danger Zone 相關狀態
+    // Danger Zone 
     const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
     const [showResetResultModal, setShowResetResultModal] = useState(false);
-    const [resetResult, setResetResult] = useState(null);    // 通知彈窗
+    const [resetResult, setResetResult] = useState(null);
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -85,7 +92,9 @@ export default function AdminPage() {
         } else {
             showNotification(`${context}失敗: ${error.message}`, 'error');
         }
-    };    // 檢查登入狀態
+    };
+    
+    // 檢查登入狀態
     useEffect(() => {
         let isMounted = true;
 
@@ -131,7 +140,9 @@ export default function AdminPage() {
         return () => {
             isMounted = false;
         };
-    }, [router]);    // 管理員登出
+    }, [router]);
+    
+    // 管理員登出
     const handleLogout = () => {
         setIsLoggedIn(false);
         setAdminToken(null);
@@ -141,16 +152,18 @@ export default function AdminPage() {
         setUserAssets([]);
         setSystemStats(null);
         router.push('/login');
-    };    // 撈學員的資料
+    };
+    
+    // 撈學員的資料
     const fetchUserAssets = async (token, searchUser = null) => {
         try {
-            setLoading(true);
+            setUserAssetsLoading(true);
             const data = await getUserAssets(token, searchUser);
             setUserAssets(data);
         } catch (error) {
             handleApiError(error, '獲取使用者資產');
         } finally {
-            setLoading(false);
+            setUserAssetsLoading(false);
         }
     };
 
@@ -267,7 +280,7 @@ export default function AdminPage() {
         setShowSuggestions(false);
         setSuggestions([]);
     }; const handleGivePoints = async () => {
-        setLoading(true);
+        setGivePointsLoading(true);
         try {
             await givePoints(
                 adminToken,
@@ -288,18 +301,18 @@ export default function AdminPage() {
         } catch (error) {
             handleApiError(error, '發放點數');
         }
-        setLoading(false);
+        setGivePointsLoading(false);
     };
 
     const handleSetTradingLimit = async () => {
-        setLoading(true);
+        setTradingLimitLoading(true);
         try {
             await setTradingLimit(adminToken, parseFloat(tradingLimitPercent));
             showNotification('交易限制設定成功！', 'success');
         } catch (error) {
             handleApiError(error, '設定交易限制');
         }
-        setLoading(false);
+        setTradingLimitLoading(false);
     };
 
     // 時間管理 Modal
@@ -322,7 +335,7 @@ export default function AdminPage() {
         const newTimes = marketTimes.filter((_, i) => i !== index);
         setMarketTimes(newTimes);
     }; const saveMarketTimes = async () => {
-        setLoading(true);
+        setMarketTimesLoading(true);
         try {
             const openTime = marketTimes.map(time => {
                 const today = new Date();
@@ -340,7 +353,7 @@ export default function AdminPage() {
         } catch (error) {
             handleApiError(error, '設定市場時間');
         }
-        setLoading(false);
+        setMarketTimesLoading(false);
     };
 
     // 查學員
@@ -355,7 +368,7 @@ export default function AdminPage() {
             return;
         }
 
-        setLoading(true);
+        setAnnouncementLoading(true);
         try {
             await createAnnouncement(
                 adminToken,
@@ -373,7 +386,7 @@ export default function AdminPage() {
         } catch (error) {
             handleApiError(error, '發布公告');
         }
-        setLoading(false);
+        setAnnouncementLoading(false);
     };
 
     // Danger Zone 相關函數
@@ -391,7 +404,7 @@ export default function AdminPage() {
     };
 
     const handleResetAllData = async () => {
-        setLoading(true);
+        setResetLoading(true);
         setShowResetConfirmModal(false);
         
         try {
@@ -402,7 +415,7 @@ export default function AdminPage() {
         } catch (error) {
             handleApiError(error, '重置資料');
         }
-        setLoading(false);
+        setResetLoading(false);
     };
 
     // 未登入時顯示載入畫面
@@ -444,7 +457,7 @@ export default function AdminPage() {
                     <h1 className="text-2xl font-bold text-[#AFE1F5]">管理員面板</h1>
                     <button
                         onClick={handleLogout}
-                        className="bg-[#7BC2E6] text-black px-4 py-2 rounded-xl transition-colors"
+                        className="bg-[#7BC2E6] hover:bg-[#6bb0d4] text-black px-4 py-2 rounded-xl transition-colors"
                     >
                         登出
                     </button>
@@ -535,10 +548,10 @@ export default function AdminPage() {
                             <div className='w-full items-center flex justify-center'>
                                 <button
                                     onClick={handleGivePoints}
-                                    disabled={loading || !givePointsForm.username}
-                                    className="mx-auto bg-[#7BC2E6] text-black font-medium py-2 px-4 rounded-lg transition-colors"
+                                    disabled={givePointsLoading || !givePointsForm.username}
+                                    className="mx-auto bg-[#7BC2E6] hover:bg-[#6bb0d4] disabled:bg-[#4a5568] disabled:hover:bg-[#4a5568] disabled:cursor-not-allowed text-black disabled:text-[#a0aec0] font-medium py-2 px-4 rounded-lg transition-colors"
                                 >
-                                    {loading ? '發放中...' : '發點數'}
+                                    {givePointsLoading ? '發放中...' : '發點數'}
                                 </button>
                             </div>
                         </div>
@@ -569,10 +582,10 @@ export default function AdminPage() {
                             <div className='w-full items-center flex justify-center'>
                                 <button
                                     onClick={handleSetTradingLimit}
-                                    disabled={loading}
-                                    className="mx-auto bg-[#7BC2E6] text-black font-medium py-2 px-4 rounded-lg transition-colors"
+                                    disabled={tradingLimitLoading}
+                                    className="mx-auto bg-[#7BC2E6] hover:bg-[#6bb0d4] disabled:bg-[#4a5568] disabled:hover:bg-[#4a5568] disabled:cursor-not-allowed text-black disabled:text-[#a0aec0] font-medium py-2 px-4 rounded-lg transition-colors"
                                 >
-                                    {loading ? '設定中...' : '設定'}
+                                    {tradingLimitLoading ? '設定中...' : '設定'}
                                 </button>
                             </div>
                         </div>
@@ -626,10 +639,10 @@ export default function AdminPage() {
                         <div className='w-full items-center flex justify-center mt-4'>
                             <button
                                 onClick={saveMarketTimes}
-                                disabled={loading}
-                                className="mx-auto bg-[#7BC2E6] text-black font-medium py-2 px-4 rounded-lg transition-colors"
+                                disabled={marketTimesLoading}
+                                className="mx-auto bg-[#7BC2E6] hover:bg-[#6bb0d4] disabled:bg-[#4a5568] disabled:hover:bg-[#4a5568] disabled:cursor-not-allowed text-black disabled:text-[#a0aec0] font-medium py-2 px-4 rounded-lg transition-colors"
                             >
-                                {loading ? '保存中...' : '保存交易時間'}
+                                {marketTimesLoading ? '保存中...' : '保存交易時間'}
                             </button>
                         </div>
                     </div>
@@ -689,48 +702,82 @@ export default function AdminPage() {
                             <div className='w-full items-center flex justify-center'>
                                 <button
                                     onClick={handleCreateAnnouncement}
-                                    disabled={loading || !announcementForm.title.trim() || !announcementForm.message.trim()}
-                                    className="mx-auto bg-[#7BC2E6] text-black font-medium py-2 px-4 rounded-lg transition-colors"
+                                    disabled={announcementLoading || !announcementForm.title.trim() || !announcementForm.message.trim()}
+                                    className="mx-auto bg-[#7BC2E6] hover:bg-[#6bb0d4] disabled:bg-[#4a5568] disabled:hover:bg-[#4a5568] disabled:cursor-not-allowed text-black disabled:text-[#a0aec0] font-medium py-2 px-4 rounded-lg transition-colors"
                                 >
-                                    {loading ? '發布中...' : '發布公告'}
+                                    {announcementLoading ? '發布中...' : '發布公告'}
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* 使用者資產 */}
-                    {userAssets.length > 0 && (
-                        <div className="bg-[#1A325F] rounded-xl p-6">
-                            <h2 className="text-xl font-bold text-white mb-4">使用者資產明細</h2>
+                    <div className="bg-[#1A325F] rounded-xl p-6">
+                        <h2 className="text-xl font-bold text-white mb-4">使用者資產明細</h2>
 
-                            <div className="space-y-2 mb-4">
-                                <input
-                                    type="text"
-                                    value={userSearchTerm}
-                                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                                    placeholder="查詢使用者名稱..."
-                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
-                                />
-                                <div className="flex space-x-2">
-                                    <button
-                                        onClick={handleUserSearch}
-                                        className="bg-[#7bc2e6] text-black px-4 py-2 rounded-xl transition-colors flex-1"
-                                    >
-                                        查詢
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setUserSearchTerm('');
-                                            fetchUserAssets(adminToken);
-                                        }}
-                                        className="bg-gray-600 text-white px-4 py-2 rounded-xl transition-colors flex-1"
-                                    >
-                                        重置
-                                    </button>
-                                </div>
+                        <div className="space-y-2 mb-4">
+                            <input
+                                type="text"
+                                value={userSearchTerm}
+                                onChange={(e) => setUserSearchTerm(e.target.value)}
+                                placeholder="查詢使用者名稱..."
+                                className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                onKeyPress={(e) => e.key === 'Enter' && handleUserSearch()}
+                            />
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={handleUserSearch}
+                                    disabled={userAssetsLoading}
+                                    className="bg-[#7bc2e6] hover:bg-[#6bb0d4] disabled:bg-[#4a5568] disabled:hover:bg-[#4a5568] disabled:cursor-not-allowed text-black disabled:text-[#a0aec0] px-4 py-2 rounded-xl transition-colors flex-1"
+                                >
+                                    {userAssetsLoading ? '查詢中...' : '查詢'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setUserSearchTerm('');
+                                        fetchUserAssets(adminToken);
+                                    }}
+                                    disabled={userAssetsLoading}
+                                    className="bg-gray-600 hover:bg-gray-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] px-4 py-2 rounded-xl transition-colors flex-1"
+                                >
+                                    {userAssetsLoading ? '重置中...' : '重置'}
+                                </button>
                             </div>
+                        </div>
 
+                        {userAssetsLoading ? (
+                            // Loading skeleton
+                            <div className="space-y-3">
+                                {[1, 2, 3].map((index) => (
+                                    <div key={index} className="bg-[#0f203e] p-4 rounded-xl animate-pulse">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <div className="h-5 bg-[#1A325F] rounded w-24 mb-2"></div>
+                                                <div className="h-4 bg-[#1A325F] rounded w-16"></div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="h-6 bg-[#1A325F] rounded w-20 mb-1"></div>
+                                                <div className="h-3 bg-[#1A325F] rounded w-12"></div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 text-sm">
+                                            <div className="text-center">
+                                                <div className="h-5 bg-[#1A325F] rounded w-16 mx-auto mb-1"></div>
+                                                <div className="h-3 bg-[#1A325F] rounded w-8 mx-auto"></div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="h-5 bg-[#1A325F] rounded w-8 mx-auto mb-1"></div>
+                                                <div className="h-3 bg-[#1A325F] rounded w-10 mx-auto"></div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="h-5 bg-[#1A325F] rounded w-16 mx-auto mb-1"></div>
+                                                <div className="h-3 bg-[#1A325F] rounded w-12 mx-auto"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : userAssets.length > 0 ? (
                             <div className="space-y-3">
                                 {userAssets.slice(0, 3).map((user, index) => (
                                     <div key={index} className="bg-[#0f203e] p-4 rounded-xl">
@@ -766,8 +813,12 @@ export default function AdminPage() {
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="text-center text-gray-400 py-8">
+                                暫無使用者資料
+                            </div>
+                        )}
+                    </div>
 
                     {/* 系統統計 */}
                     {systemStats && (
@@ -817,10 +868,10 @@ export default function AdminPage() {
                             </div>
                             <button
                                 onClick={openResetConfirmModal}
-                                disabled={loading}
-                                className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white px-4 py-2 rounded-xl font-medium transition-colors w-full"
+                                disabled={resetLoading}
+                                className="bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] px-4 py-2 rounded-xl font-medium transition-colors w-full"
                             >
-                                {loading ? '處理中...' : '重置所有資料'}
+                                {resetLoading ? '處理中...' : '重置所有資料'}
                             </button>
                         </div>
                     </div>
@@ -871,13 +922,13 @@ export default function AdminPage() {
                             <div className="flex space-x-3 mt-6">
                                 <button
                                     onClick={closeAddTimeModal}
-                                    className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-xl transition-colors"
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors"
                                 >
                                     取消
                                 </button>
                                 <button
                                     onClick={handleAddNewTime}
-                                    className="flex-1 bg-[#7BC2E6] text-black py-2 px-4 rounded-xl transition-colors"
+                                    className="flex-1 bg-[#7BC2E6] hover:bg-[#6bb0d4] text-black py-2 px-4 rounded-xl transition-colors"
                                 >
                                     新增
                                 </button>
@@ -920,10 +971,10 @@ export default function AdminPage() {
                                 </button>
                                 <button
                                     onClick={handleResetAllData}
-                                    disabled={loading}
-                                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white py-2 px-4 rounded-xl transition-colors font-medium"
+                                    disabled={resetLoading}
+                                    className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] py-2 px-4 rounded-xl transition-colors font-medium"
                                 >
-                                    {loading ? '重置中...' : '確認重置'}
+                                    {resetLoading ? '重置中...' : '確認重置'}
                                 </button>
                             </div>
                         </div>
