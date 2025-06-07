@@ -434,3 +434,51 @@ class PublicService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to retrieve announcements"
             )
+    
+    # 取得IPO狀態
+    async def get_ipo_status(self) -> dict:
+        """
+        取得IPO狀態資訊
+        
+        Returns:
+            dict: IPO狀態資訊
+        """
+        try:
+            # 查詢IPO配置
+            ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "ipo_status"}
+            )
+            
+            if ipo_config:
+                return {
+                    "available": True,
+                    "initialShares": ipo_config.get("initial_shares", 0),
+                    "sharesRemaining": ipo_config.get("shares_remaining", 0),
+                    "initialPrice": ipo_config.get("initial_price", 20),
+                    "updatedAt": ipo_config.get("updated_at", datetime.now(timezone.utc)).isoformat()
+                }
+            else:
+                # IPO還未初始化，返回預設值
+                import os
+                try:
+                    initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                    initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+                except (ValueError, TypeError):
+                    initial_shares = 1000
+                    initial_price = 20
+                
+                return {
+                    "available": True,
+                    "initialShares": initial_shares,
+                    "sharesRemaining": initial_shares,
+                    "initialPrice": initial_price,
+                    "updatedAt": datetime.now(timezone.utc).isoformat(),
+                    "note": "IPO not yet initialized, showing default values"
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to get IPO status: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve IPO status"
+            )

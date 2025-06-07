@@ -257,3 +257,23 @@ async def get_announcements(
         List[PublicAnnouncement]: 公告列表，按時間倒序排列
     """
     return await public_service.get_public_announcements(limit)
+
+
+@router.get(
+    "/ipo/status",
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢IPO狀態",
+    description="查詢目前IPO（首次公開發行）的狀態，包括剩餘股數和價格"
+)
+async def get_ipo_status(
+    public_service: PublicService = Depends(get_public_service)
+):
+    """
+    查詢IPO狀態
+    
+    Returns:
+        dict: IPO狀態資訊，包含初始股數、剩餘股數、初始價格等
+    """
+    return await public_service.get_ipo_status()

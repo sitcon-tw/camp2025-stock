@@ -237,15 +237,42 @@ class UserService:
             else:
                 # 限價單加入訂單簿
                 result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc)
+                order_id = str(result.inserted_id)
                 
-                # 嘗試撮合
+                logger.info(f"Limit order placed: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
+                
+                # 立即嘗試撮合
                 await self._try_match_orders()
                 
-                return StockOrderResponse(
-                    success=True,
-                    order_id=str(result.inserted_id),
-                    message="限價單已提交"
-                )
+                # 檢查訂單是否已被撮合
+                updated_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": result.inserted_id})
+                if updated_order and updated_order.get("status") == "filled":
+                    executed_price = updated_order.get("filled_price", request.price)
+                    executed_quantity = updated_order.get("filled_quantity", request.quantity)
+                    return StockOrderResponse(
+                        success=True,
+                        order_id=order_id,
+                        message=f"限價單已立即成交，價格: {executed_price} 元/股",
+                        executed_price=executed_price,
+                        executed_quantity=executed_quantity
+                    )
+                elif updated_order and updated_order.get("status") == "partial":
+                    filled_quantity = updated_order.get("filled_quantity", 0)
+                    remaining_quantity = updated_order.get("quantity", 0)
+                    filled_price = updated_order.get("filled_price", request.price)
+                    return StockOrderResponse(
+                        success=True,
+                        order_id=order_id,
+                        message=f"限價單部分成交: {filled_quantity} 股 @ {filled_price} 元，剩餘 {remaining_quantity} 股等待撮合",
+                        executed_price=filled_price,
+                        executed_quantity=filled_quantity
+                    )
+                else:
+                    return StockOrderResponse(
+                        success=True,
+                        order_id=order_id,
+                        message=f"限價單已提交，等待撮合 ({request.side} {request.quantity} 股 @ {request.price} 元)"
+                    )
                 
         except Exception as e:
             logger.error(f"Failed to place stock order: {e}")
@@ -677,7 +704,9 @@ class UserService:
                     if user.get("points", 0) >= quantity * ipo_price:
                         price = ipo_price
                         is_ipo_purchase = True
-                        message = f"市價單已向系統申購成交，價格: {price}"
+                        shares_remaining = ipo_config.get("shares_remaining", 0)
+                        message = f"市價單已向系統IPO申購成交，價格: {price} 元/股，系統剩餘: {shares_remaining - quantity} 股"
+                        logger.info(f"IPO purchase: user {user_oid} bought {quantity} shares at {price}, remaining: {shares_remaining - quantity}")
 
             if price is None:
                 price = await self._get_current_stock_price()
@@ -685,18 +714,29 @@ class UserService:
                 if price is None:
                     logger.warning("Current stock price is None, using default price 20")
                     price = 20
-                message = f"市價單已成交，價格: {price}"
+                message = f"市價單已按市價成交，價格: {price} 元/股"
+                logger.info(f"Market order execution: user {user_oid} {'bought' if side == 'buy' else 'sold'} {quantity} shares at market price {price}")
 
             current_price = price
             
             # 計算交易金額
             trade_amount = quantity * current_price
             
-            # 買入前再次確認點數
+            # 買入前再次確認點數，賣出前確認持股
             if side == "buy":
                 user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
                 if user.get("points", 0) < trade_amount:
                     return StockOrderResponse(success=False, message=f"點數不足，需要 {trade_amount} 點")
+            elif side == "sell":
+                # 賣單執行時也要確認持股
+                stock_holding = await self.db[Collections.STOCKS].find_one({"user_id": user_oid}, session=session)
+                current_stocks = stock_holding.get("stock_amount", 0) if stock_holding else 0
+                if current_stocks < quantity:
+                    return StockOrderResponse(success=False, message=f"持股不足，僅有 {current_stocks} 股")
+                
+                # 賣單總是按市價執行
+                message = f"市價賣單已成交，價格: {price} 元/股"
+                logger.info(f"Market sell order: user {user_oid} sold {quantity} shares at {price}")
 
             # 更新訂單狀態
             order_doc.update({
@@ -777,11 +817,17 @@ class UserService:
                     "created_at": datetime.min.replace(tzinfo=timezone.utc)
                 }
                 sell_book.append(system_sell_order)
-                # 重新排序賣單，確保系統訂單在價格相同時排在時間較早的用戶訂單之後
+                logger.info(f"Added system IPO to sell book: {ipo_config['shares_remaining']} shares @ {ipo_config['initial_price']}")
+                
+                # 重新排序賣單：價格優先，時間優先（系統訂單時間最早）
                 sell_book.sort(key=lambda x: (x.get('price', float('inf')), x.get('created_at', datetime.now(timezone.utc))))
 
             # 優化的撮合邏輯
             buy_idx, sell_idx = 0, 0
+            matches_found = 0
+            
+            logger.info(f"Starting order matching: {len(buy_book)} buy orders, {len(sell_book)} sell orders")
+            
             while buy_idx < len(buy_book) and sell_idx < len(sell_book):
                 buy_order = buy_book[buy_idx]
                 sell_order = sell_book[sell_idx]
@@ -794,9 +840,16 @@ class UserService:
                     sell_idx += 1
                     continue
 
-                if buy_order["price"] >= sell_order["price"]:
+                buy_price = buy_order.get("price", 0)
+                sell_price = sell_order.get("price", float('inf'))
+                
+                if buy_price >= sell_price:
                     # 價格匹配，進行交易
+                    is_system_sale = sell_order.get("is_system_order", False)
+                    logger.info(f"Matching orders: Buy {buy_order.get('quantity')} @ {buy_price} vs Sell {sell_order.get('quantity')} @ {sell_price} {'(SYSTEM IPO)' if is_system_sale else ''}")
+                    
                     await self._match_orders(buy_order, sell_order)
+                    matches_found += 1
 
                     # 根據交易後的數量更新索引
                     if buy_order.get("quantity", 0) <= 0:
@@ -805,7 +858,11 @@ class UserService:
                         sell_idx += 1
                 else:
                     # 買價小於賣價，由於賣單已按價格排序，後續也不可能成交，故結束
+                    logger.debug(f"No more matches possible: buy price {buy_price} < sell price {sell_price}")
                     break
+            
+            if matches_found > 0:
+                logger.info(f"Order matching completed: {matches_found} matches executed")
                     
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
@@ -898,7 +955,7 @@ class UserService:
                 session=session
             )
             
-            # 賣方：增加點數，減少股票
+            # 賣方：增加點數，減少股票 (只有非系統交易才需要)
             if not is_system_sale:
                 await self.db[Collections.USERS].update_one(
                     {"_id": sell_order["user_id"]},
@@ -910,6 +967,9 @@ class UserService:
                     {"$inc": {"stock_amount": -trade_quantity}},
                     session=session
                 )
+            else:
+                # 系統IPO交易，系統不需要更新點數和持股
+                logger.info(f"System IPO sale: {trade_quantity} shares @ {trade_price} to user {buy_order['user_id']}")
             
             # 記錄交易記錄
             await self.db[Collections.TRADES].insert_one({
