@@ -69,6 +69,8 @@ export default function AdminPage() {
     const [showResetResultModal, setShowResetResultModal] = useState(false);
     const [resetResult, setResetResult] = useState(null);
     const [showSettlementConfirmModal, setShowSettlementConfirmModal] = useState(false);
+    const [showSettlementResultModal, setShowSettlementResultModal] = useState(false);
+    const [settlementResult, setSettlementResult] = useState(null);
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -414,6 +416,11 @@ export default function AdminPage() {
         setShowSettlementConfirmModal(false);
     };
 
+    const closeSettlementResultModal = () => {
+        setShowSettlementResultModal(false);
+        setSettlementResult(null);
+    };
+
     const handleResetAllData = async () => {
         setResetLoading(true);
         setShowResetConfirmModal(false);
@@ -435,6 +442,8 @@ export default function AdminPage() {
         
         try {
             const result = await forceSettlement(adminToken);
+            setSettlementResult(result);
+            setShowSettlementResultModal(true);
             showNotification('強制結算完成！', 'success');
             
             // 重新獲取統計數據
@@ -1061,6 +1070,43 @@ export default function AdminPage() {
                                     className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:hover:bg-[#2d3748] disabled:cursor-not-allowed text-white disabled:text-[#718096] py-2 px-4 rounded-xl transition-colors font-medium"
                                 >
                                     {forceSettlementLoading ? '結算中...' : '確認結算'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 強制結算結果 Modal */}
+            {showSettlementResultModal && settlementResult && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-green-500">強制結算完成</h3>
+                            <button
+                                onClick={closeSettlementResultModal}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-4">
+                                <h4 className="text-[#7BC2E6] font-medium mb-3">後端回應：</h4>
+                                <div className="bg-gray-900 rounded p-3 font-mono text-sm text-gray-300 whitespace-pre-wrap overflow-auto max-h-96">
+                                    {JSON.stringify(settlementResult, null, 2)}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={closeSettlementResultModal}
+                                    className="bg-[#7BC2E6] hover:bg-[#6bb0d4] text-black py-2 px-6 rounded-xl transition-colors font-medium"
+                                >
+                                    關閉
                                 </button>
                             </div>
                         </div>
