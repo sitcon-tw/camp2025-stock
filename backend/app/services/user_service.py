@@ -1273,13 +1273,23 @@ class UserService:
                     )
 
             if price is None:
+                # 對於買單：如果沒有賣單可撮合且 IPO 也無法購買，則拒絕交易
+                if side == "buy":
+                    await session.abort_transaction()
+                    logger.warning(f"Market buy order rejected: no sell orders available and IPO exhausted for user {user_oid}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="無法執行市價買單：市場上沒有可用的賣單，且 IPO 股票已售完或點數不足"
+                    )
+                
+                # 對於賣單：使用市場價格（因為是賣出現有股票）
                 price = await self._get_current_stock_price()
                 # 防護性檢查：確保價格不為 None
                 if price is None:
                     logger.warning("Current stock price is None, using default price 20")
                     price = 20
-                message = f"市價單已按市價成交，價格: {price} 元/股"
-                logger.info(f"Market order execution: user {user_oid} {'bought' if side == 'buy' else 'sold'} {quantity} shares at market price {price}")
+                message = f"市價賣單已按市價成交，價格: {price} 元/股"
+                logger.info(f"Market sell order execution: user {user_oid} sold {quantity} shares at market price {price}")
 
             current_price = price
             
@@ -1353,13 +1363,27 @@ class UserService:
             )
             logger.info(f"Stocks update result: matched={stocks_update_result.matched_count}, modified={stocks_update_result.modified_count}, upserted={stocks_update_result.upserted_id}")
 
-            # 更新 IPO 剩餘數量
+            # 更新 IPO 剩餘數量 - 使用原子操作確保不會減成負數
             if is_ipo_purchase:
-                await self.db[Collections.MARKET_CONFIG].update_one(
-                    {"type": "ipo_status"},
+                ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
+                    {
+                        "type": "ipo_status",
+                        "shares_remaining": {"$gte": quantity}  # 確保有足夠股數
+                    },
                     {"$inc": {"shares_remaining": -quantity}},
                     session=session
                 )
+                
+                # 驗證 IPO 更新是否成功
+                if ipo_update_result.modified_count == 0:
+                    logger.error(f"Failed to update IPO stock in market order: insufficient shares for quantity {quantity}")
+                    await session.abort_transaction()
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="IPO 股數不足，無法完成交易"
+                    )
+                
+                logger.info(f"✅ Market order IPO stock updated: reduced by {quantity} shares")
             
             # 交易完成後檢查點數完整性
             await self._validate_transaction_integrity(
@@ -1426,14 +1450,18 @@ class UserService:
             buy_book.sort(key=lambda x: safe_sort_key(x, reverse_price=True), reverse=True)
             sell_book.sort(key=lambda x: safe_sort_key(x, reverse_price=False))
 
-            # 將系統 IPO 作為一個虛擬賣單加入
+            # 將系統 IPO 作為一個虛擬賣單加入（僅當確實有剩餘股數時）
             ipo_config = await self._get_or_initialize_ipo_config()
-            if ipo_config and ipo_config.get("shares_remaining", 0) > 0:
+            shares_remaining = ipo_config.get("shares_remaining", 0) if ipo_config else 0
+            
+            logger.info(f"IPO status check: config exists={ipo_config is not None}, shares_remaining={shares_remaining}")
+            
+            if ipo_config and shares_remaining > 0:
                 system_sell_order = {
                     "_id": "SYSTEM_IPO",
                     "user_id": "SYSTEM",
                     "side": "sell",
-                    "quantity": ipo_config["shares_remaining"],
+                    "quantity": shares_remaining,
                     "price": ipo_config["initial_price"],
                     "status": "pending",
                     "order_type": "limit",
@@ -1441,10 +1469,12 @@ class UserService:
                     "created_at": datetime.min.replace(tzinfo=timezone.utc)
                 }
                 sell_book.append(system_sell_order)
-                logger.info(f"Added system IPO to sell book: {ipo_config['shares_remaining']} shares @ {ipo_config['initial_price']}")
+                logger.info(f"✅ Added system IPO to sell book: {shares_remaining} shares @ {ipo_config['initial_price']}")
                 
                 # 重新排序賣單包含系統IPO訂單
                 sell_book.sort(key=lambda x: safe_sort_key(x, reverse_price=False))
+            else:
+                logger.info(f"❌ IPO not added to sell book: no shares remaining (remaining: {shares_remaining})")
 
             # 優化的撮合邏輯
             buy_idx, sell_idx = 0, 0
@@ -1962,12 +1992,25 @@ class UserService:
                     session=session
                 )
             else:
-                # 更新系統 IPO 庫存
-                await self.db[Collections.MARKET_CONFIG].update_one(
-                    {"type": "ipo_status"},
+                # 更新系統 IPO 庫存 - 使用原子操作確保不會減成負數
+                ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
+                    {
+                        "type": "ipo_status",
+                        "shares_remaining": {"$gte": trade_quantity}  # 確保有足夠股數
+                    },
                     {"$inc": {"shares_remaining": -trade_quantity}},
                     session=session
                 )
+                
+                # 驗證 IPO 更新是否成功
+                if ipo_update_result.modified_count == 0:
+                    logger.error(f"Failed to update IPO stock: insufficient shares for quantity {trade_quantity}")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="IPO 股數不足，無法完成交易"
+                    )
+                
+                logger.info(f"✅ IPO stock updated: reduced by {trade_quantity} shares")
             
             # 更新使用者資產
             # 買方：安全扣除點數
