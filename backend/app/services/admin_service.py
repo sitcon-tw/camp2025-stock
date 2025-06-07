@@ -327,7 +327,7 @@ class AdminService:
             )
             
             logger.info(f"Trading limit set to {request.limit_percent}% ({limit_in_basis_points} bp)")
-            return MarketLimitResponse(ok=True)
+            return MarketLimitResponse(ok=True, limit_percent=request.limit_percent, message=f"Trading limit set to {request.limit_percent}% ({limit_in_basis_points} bp)")
             
         except Exception as e:
             logger.error(f"Failed to set trading limit: {e}")

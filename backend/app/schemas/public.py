@@ -166,6 +166,11 @@ class MarketLimitRequest(BaseModel):
 # 漲跌限制設定回應
 class MarketLimitResponse(BaseModel):
     ok: bool = Field(True, description="操作結果")
+    limit_percent: int = Field(..., description="漲跌限制（百分比，例如 10 代表 10%）", alias="limitPercent")
+    message: Optional[str] = Field(None, description="操作訊息")
+
+    class Config:
+        populate_by_name = True
 
 
 # 公開公告資訊
