@@ -437,7 +437,7 @@ class UserService:
             ]
         })
         if not user:
-            raise HTTPException(status_code=404, detail=f"使用者 '{username}' 不存在")
+            raise HTTPException(status_code=404, detail="noexist")
         return user
     
     async def get_user_portfolio_by_username(self, username: str) -> UserPortfolio:

@@ -196,8 +196,6 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         line = f"`{escape_markdown(time, 2)}`： *{escape_markdown(item['note'], 2)}* {item['amount']} 點，餘額 *{item['balance_after']}* 點".strip()
         lines.append(line)
 
-    print(lines)
-
     await update.message.reply_text(
         f"""
         😺 *{escape_markdown(update.effective_user.full_name)} 的點數紀錄*
