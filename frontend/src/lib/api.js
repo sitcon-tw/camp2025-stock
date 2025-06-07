@@ -96,6 +96,16 @@ export async function getSystemStats(token) {
     });
 }
 
+// 取得所有隊伍的基本資料，包括隊伍名稱、成員數量等
+export async function getTeams(token) {
+    return apiRequest('/api/admin/teams', {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
 export async function givePoints(token, username, type, amount) {
     return apiRequest('/api/admin/users/give-points', {
         method: 'POST',
@@ -142,15 +152,6 @@ export async function createAnnouncement(token, title, message, broadcast) {
 
 export async function getStudents(token) {
     return apiRequest('/api/admin/students', {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-    });
-}
-
-export async function getTeams(token) {
-    return apiRequest('/api/admin/teams', {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

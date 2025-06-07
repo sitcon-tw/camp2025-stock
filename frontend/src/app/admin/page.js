@@ -59,7 +59,8 @@ export default function AdminPage() {
     });
 
     // 學員跟小隊列表
-    const [students, setStudents] = useState([]); const [teams, setTeams] = useState([]);
+    const [students, setStudents] = useState([]); 
+    const [teams, setTeams] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -74,6 +75,9 @@ export default function AdminPage() {
         sharesRemaining: '',
         initialPrice: ''
     });
+
+    //隊伍相關
+    const [teamNumber, setTeamNumber] = useState(0);
 
     // 集合競價狀態
     const [callAuctionLoading, setCallAuctionLoading] = useState(false);
@@ -223,6 +227,7 @@ export default function AdminPage() {
         try {
             const data = await getStudents(token);
             setStudents(data);
+            setTeamNumber(data.length);
         } catch (error) {
             handleApiError(error, '獲取學生列表');
         }
@@ -1073,7 +1078,7 @@ export default function AdminPage() {
                                     <div className="text-gray-400 text-sm mt-1">個使用者</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
-                                    <div className="text-2xl font-bold">{systemStats.total_groups}</div>
+                                    <div className="text-2xl font-bold">{teamNumber}</div>
                                     <div className="text-gray-400 text-sm mt-1">個隊伍</div>
                                 </div>
                                 <div className="text-center bg-[#0f203e] p-3 rounded-xl">
