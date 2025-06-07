@@ -27,7 +27,7 @@ async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     if context.user_data.get("in_stock_convo"):
-        await update.message.reply_text("你已經有一個進行中的操作了！請先完成那個或是執行 /cancel 來取消 💢")
+        await update.message.reply_text("😿 你已經有一個進行中的操作了！請先完成那個或是執行 /cancel 來取消")
         return ConversationHandler.END
 
     context.user_data["in_stock_convo"] = True
@@ -52,7 +52,7 @@ async def choose_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     action = query.data.split(":")[1]
     context.user_data["action"] = action
-    await query.edit_message_text(f"請輸入你要{"買" if action == "buy" else "賣"}的數量（1 ~ 30）：")
+    await query.edit_message_text(f"🎫 請輸入你要{"買" if action == "buy" else "賣"}的數量（1 ~ 30）：")
     return INPUT_AMOUNT
 
 async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -64,17 +64,17 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     amount = int(text)
     if amount < 1 or amount > 30:
-        await update.message.reply_text("數量不可以小於 1 或大於 30 ❌")
+        await update.message.reply_text("❌ 數量不可以小於 1 或大於 30")
         return INPUT_AMOUNT
 
     context.user_data["amount"] = amount
 
     keyboard = [
-        [InlineKeyboardButton("市價單", callback_data="order:market"),
-         InlineKeyboardButton("限價單", callback_data="order:limit")]
+        [InlineKeyboardButton("🏦 市價單", callback_data="order:market"),
+         InlineKeyboardButton("🖊️ 限價單", callback_data="order:limit")]
     ]
     await update.message.reply_text(
-        "請選擇下單方式 🧾",
+        "🧾 請選擇下單方式",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     return CHOOSE_ORDER_TYPE
@@ -87,7 +87,7 @@ async def choose_order_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["order_type"] = order_type
 
     if order_type == "limit":
-        await query.edit_message_text("請輸入限價價格（1~1000）💰：")
+        await query.edit_message_text("💰 請輸入限價價格（1~1000）：")
         return INPUT_LIMIT_PRICE
     else:
         await confirm_order(update, context)
@@ -112,6 +112,7 @@ async def input_limit_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = context.user_data
     action = "買" if data["action"] == "buy" else "賣"
+    direction = "入" if data["action"] == "buy" else "出"
     amount = data["amount"]
     order_type = "市價單" if data["order_type"] == "market" else "限價單"
     price = data.get("price")
@@ -123,12 +124,13 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = (f"😺 請確認以下訂單\n"
            f"\n"
-           f"你想要*{action}* `{amount}` 張 SITC\n"
-           f"訂單是*{order_type}*")
+           f"💵 你想要*{action}* `{amount}` 張 SITC\n"
+           f"📜 訂單是*{order_type}*")
+
     if price:
-        msg += f"，{action}入價格為 `{price}` 點"
+        msg += f"，{action}{direction}價格為 `{price}` 點"
     else:
-        msg += "\n\m>下單種類為市價單，將會立即使用目前市價下單"
+        msg += "\n>⚠️ 下單種類為市價單，將會立即使用目前市價下單"
         keyboard.append([InlineKeyboardButton("查看目前的股價", url="https://camp.sitcon.party/")])
 
     if isinstance(update, Update) and update.callback_query:

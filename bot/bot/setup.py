@@ -65,7 +65,7 @@ async def initialize():
     await bot.initialize()
     await bot.bot.set_my_commands([
         ("start", "顯示你的個人資訊，喵喵"),
-        ("register", "註冊你自己！"),
+        ("register", "註冊你的 Telegram 帳號"),
         ("point", "查看小隊們與自己的點數"),
         ("stock", "買賣點數"),
         ("log", "查看自己的點數交易紀錄"),
