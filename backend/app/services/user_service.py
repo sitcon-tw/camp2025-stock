@@ -2216,6 +2216,7 @@ class UserService:
                             "$setOnInsert": {
                                 "enabled": False,  # 新學員預設未啟用
                                 "points": 100,     # 初始點數
+                                "stock_amount": 5000,  # 5張 = 5000股數
                                 "created_at": datetime.now(timezone.utc)
                             }
                         },
