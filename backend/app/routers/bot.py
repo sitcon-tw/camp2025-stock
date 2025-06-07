@@ -47,6 +47,20 @@ async def bot_get_portfolio(
 
 
 @router.post(
+    "/debug",
+    summary="BOT Debug User Data",
+    description="Debug user data lookup issues"
+)
+async def bot_debug_user(
+    request: BotPortfolioRequest,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+):
+    """Debug user data"""
+    return await user_service.debug_user_data(request.from_user)
+
+
+@router.post(
     "/points/history",
     response_model=List[UserPointLog],
     summary="BOT 查詢點數記錄",

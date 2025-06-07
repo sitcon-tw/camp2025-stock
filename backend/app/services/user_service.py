@@ -455,7 +455,16 @@ class UserService:
     
     async def _get_user_(self, username: str):
         """根據用戶名或ID查詢使用者"""
-        user = await self.db[Collections.USERS].find_one({
+        # Special handling for numeric lookups (likely Telegram user IDs)
+        if username.isdigit():
+            # For numeric values, first try telegram_id field specifically
+            user_by_telegram = await self.db[Collections.USERS].find_one({"telegram_id": username})
+            if user_by_telegram:
+                logger.info(f"Found user by telegram_id '{username}': id={user_by_telegram.get('id')}, name={user_by_telegram.get('name')}, points={user_by_telegram.get('points')}, enabled={user_by_telegram.get('enabled')}")
+                return user_by_telegram
+        
+        # Check for multiple potential matches to debug duplicates
+        all_matches_cursor = self.db[Collections.USERS].find({
             "$or": [
                 {"name": username},
                 {"id": username},
@@ -463,14 +472,116 @@ class UserService:
                 {"telegram_nickname": username}
             ]
         })
-        if not user:
+        all_matches = await all_matches_cursor.to_list(length=None)
+        
+        if not all_matches:
             raise HTTPException(status_code=404, detail="noexist")
+        
+        # Log all matches for debugging
+        if len(all_matches) > 1:
+            logger.warning(f"Multiple users found for lookup '{username}':")
+            for i, match in enumerate(all_matches):
+                logger.warning(f"  Match {i+1}: id={match.get('id')}, name={match.get('name')}, telegram_id={match.get('telegram_id')}, points={match.get('points')}, enabled={match.get('enabled')}")
+            
+            # Prioritize enabled users with stock activity (non-zero stocks or non-100 points)
+            enabled_users = [u for u in all_matches if u.get('enabled', False)]
+            if enabled_users:
+                # Check each enabled user for stock activity
+                for user_candidate in enabled_users:
+                    # Check if this user has stock holdings
+                    stock_holding = await self.db[Collections.STOCKS].find_one({"user_id": user_candidate["_id"]})
+                    if stock_holding and stock_holding.get("stock_amount", 0) > 0:
+                        logger.info(f"Selected enabled user with stock holdings: {user_candidate.get('id')}")
+                        return user_candidate
+                
+                # If no user has stocks, prefer one with non-default points
+                non_default_users = [u for u in enabled_users if u.get('points', 0) != 100]
+                if non_default_users:
+                    user = non_default_users[0]
+                    logger.info(f"Selected enabled user with non-default points: {user.get('id')}")
+                else:
+                    user = enabled_users[0]
+                    logger.info(f"Selected first enabled user: {user.get('id')}")
+            else:
+                user = all_matches[0]
+                logger.info(f"No enabled users found, using first match: {user.get('id')}")
+        else:
+            user = all_matches[0]
+        
+        logger.info(f"Found user for lookup '{username}': id={user.get('id')}, name={user.get('name')}, telegram_id={user.get('telegram_id')}, points={user.get('points')}, enabled={user.get('enabled')}")
+        
         return user
+    
+    async def debug_user_data(self, username: str) -> dict:
+        """Debug method to inspect all user data and stocks"""
+        try:
+            # Find all matching users
+            all_users_cursor = self.db[Collections.USERS].find({
+                "$or": [
+                    {"name": username},
+                    {"id": username},
+                    {"telegram_id": username},
+                    {"telegram_nickname": username}
+                ]
+            })
+            all_users = await all_users_cursor.to_list(length=None)
+            
+            # Find all stock records for these users
+            stock_records = []
+            for user in all_users:
+                stock_record = await self.db[Collections.STOCKS].find_one({"user_id": user["_id"]})
+                stock_records.append({
+                    "user_id": str(user["_id"]),
+                    "stock_record": stock_record
+                })
+            
+            # Find recent stock orders
+            recent_orders = []
+            for user in all_users:
+                orders_cursor = self.db[Collections.STOCK_ORDERS].find(
+                    {"user_id": user["_id"]}, 
+                    sort=[("created_at", -1)]
+                ).limit(5)
+                orders = await orders_cursor.to_list(length=5)
+                recent_orders.append({
+                    "user_id": str(user["_id"]),
+                    "orders": [
+                        {
+                            "order_id": str(order["_id"]),
+                            "side": order.get("side"),
+                            "quantity": order.get("quantity"),
+                            "price": order.get("price"),
+                            "status": order.get("status"),
+                            "created_at": order.get("created_at").isoformat() if order.get("created_at") else None
+                        } for order in orders
+                    ]
+                })
+            
+            return {
+                "lookup_value": username,
+                "users_found": [
+                    {
+                        "id": user.get("id"),
+                        "name": user.get("name"),
+                        "telegram_id": user.get("telegram_id"),
+                        "points": user.get("points"),
+                        "enabled": user.get("enabled"),
+                        "user_oid": str(user["_id"])
+                    } for user in all_users
+                ],
+                "stock_records": stock_records,
+                "recent_orders": recent_orders
+            }
+            
+        except Exception as e:
+            logger.error(f"Debug user data failed: {e}")
+            return {"error": str(e)}
     
     async def get_user_portfolio_by_username(self, username: str) -> UserPortfolio:
         """根據用戶名查詢使用者投資組合"""
         try:
             user = await self._get_user_(username)
+            logger.info(f"PORTFOLIO: Using user {user.get('id')} (ObjectId: {user['_id']}) for portfolio query. Points: {user.get('points')}")
             return await self.get_user_portfolio(str(user["_id"]))
         except Exception as e:
             logger.error(f"Failed to get user portfolio by username: {e}")
@@ -480,6 +591,7 @@ class UserService:
         """根據用戶名下股票訂單"""
         try:
             user = await self._get_user_(username)
+            logger.info(f"STOCK ORDER: Using user {user.get('id')} (ObjectId: {user['_id']}) for order placement. Points: {user.get('points')}")
             return await self.place_stock_order(str(user["_id"]), request)
         except Exception as e:
             logger.error(f"Failed to place stock order by username: {e}")
@@ -523,6 +635,8 @@ class UserService:
                 "telegram_id": user.get("telegram_id"),
                 "telegram_nickname": user.get("telegram_nickname"),
                 "enabled": user.get("enabled", False),
+                "points": user.get("points", 0),
+                "stock_amount": user.get("stock_amount", 0),
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
             }
         except Exception as e:
@@ -782,6 +896,26 @@ class UserService:
                 "amount": trade_amount,
                 "created_at": order_doc["filled_at"]
             }, session=session)
+
+            # 更新用戶資產
+            logger.info(f"Updating user assets: user_id={user_oid}, deducting {trade_amount} points, adding {quantity} stocks")
+            
+            # 扣除用戶點數
+            points_update_result = await self.db[Collections.USERS].update_one(
+                {"_id": user_oid},
+                {"$inc": {"points": -trade_amount}},
+                session=session
+            )
+            logger.info(f"Points update result: matched={points_update_result.matched_count}, modified={points_update_result.modified_count}")
+            
+            # 增加股票持有
+            stocks_update_result = await self.db[Collections.STOCKS].update_one(
+                {"user_id": user_oid},
+                {"$inc": {"stock_amount": quantity}},
+                upsert=True,
+                session=session
+            )
+            logger.info(f"Stocks update result: matched={stocks_update_result.matched_count}, modified={stocks_update_result.modified_count}, upserted={stocks_update_result.upserted_id}")
 
             # 更新 IPO 剩餘數量
             if is_ipo_purchase:
