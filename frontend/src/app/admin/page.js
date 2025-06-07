@@ -106,6 +106,7 @@ export default function AdminPage() {
     const [showSettlementConfirmModal, setShowSettlementConfirmModal] = useState(false);
     const [showSettlementResultModal, setShowSettlementResultModal] = useState(false);
     const [settlementResult, setSettlementResult] = useState(null);
+
     const showNotification = (message, type = 'info') => {
         setNotification({ show: true, message, type });
         setTimeout(() => {
@@ -133,7 +134,7 @@ export default function AdminPage() {
             showNotification(`${context}失敗: ${error.message}`, 'error');
         }
     };
-    
+
     // 檢查登入狀態
     useEffect(() => {
         let isMounted = true;
@@ -155,14 +156,12 @@ export default function AdminPage() {
 
                 // Token 有效，設置狀態並初始化數據
                 setAdminToken(token);
-                setIsLoggedIn(true);
-
-                if (isMounted) {
+                setIsLoggedIn(true); if (isMounted) {
                     fetchUserAssets(token);
                     fetchSystemStats(token);
                     fetchStudents(token);
                     fetchTeams(token);
-                    fetchMarketStatus(); // This calls our new market control status function
+                    fetchMarketStatus(token); // Pass token to fetchMarketStatus
                     fetchTradingHours();
                     fetchIpoStatus(token);
                     fetchIpoDefaults(token);
@@ -183,7 +182,7 @@ export default function AdminPage() {
             isMounted = false;
         };
     }, [router]);
-    
+
     // 管理員登出
     const handleLogout = () => {
         setIsLoggedIn(false);
@@ -195,7 +194,7 @@ export default function AdminPage() {
         setSystemStats(null);
         router.push('/login');
     };
-    
+
     // 撈學員的資料
     const fetchUserAssets = async (token, searchUser = null) => {
         try {
@@ -236,16 +235,6 @@ export default function AdminPage() {
             setTeams(data);
         } catch (error) {
             handleApiError(error, '獲取團隊列表');
-        }
-    };
-
-    // 撈市場狀態
-    const fetchPublicMarketStatus = async () => {
-        try {
-            const data = await getMarketStatus();
-            // This is for public market hours display
-        } catch (error) {
-            console.error('獲取公開市場狀態失敗:', error);
         }
     };
 
@@ -300,16 +289,16 @@ export default function AdminPage() {
     const handleIpoUpdate = async () => {
         try {
             setIpoLoading(true);
-            
+
             const sharesRemaining = ipoUpdateForm.sharesRemaining !== '' ? parseInt(ipoUpdateForm.sharesRemaining) : null;
             const initialPrice = ipoUpdateForm.initialPrice !== '' ? parseInt(ipoUpdateForm.initialPrice) : null;
-            
+
             const result = await updateIpo(adminToken, sharesRemaining, initialPrice);
-            
+
             showNotification(result.message, 'success');
             setShowIpoUpdateModal(false);
             setIpoUpdateForm({ sharesRemaining: '', initialPrice: '' });
-            
+
             // 重新取得IPO狀態
             await fetchIpoStatus(adminToken);
         } catch (error) {
@@ -337,16 +326,16 @@ export default function AdminPage() {
     const handleIpoDefaultsUpdate = async () => {
         try {
             setIpoDefaultsLoading(true);
-            
+
             const defaultShares = ipoDefaultsForm.defaultInitialShares !== '' ? parseInt(ipoDefaultsForm.defaultInitialShares) : null;
             const defaultPrice = ipoDefaultsForm.defaultInitialPrice !== '' ? parseInt(ipoDefaultsForm.defaultInitialPrice) : null;
-            
+
             const result = await updateIpoDefaults(adminToken, defaultShares, defaultPrice);
-            
+
             showNotification(result.message, 'success');
             setShowIpoDefaultsModal(false);
             setIpoDefaultsForm({ defaultInitialShares: '', defaultInitialPrice: '' });
-            
+
             // 重新取得IPO預設設定
             await fetchIpoDefaults(adminToken);
         } catch (error) {
@@ -361,14 +350,14 @@ export default function AdminPage() {
         try {
             setCallAuctionLoading(true);
             const result = await executeCallAuction(adminToken);
-            
+
             // 儲存結果供顯示
             setCallAuctionResult(result);
             setShowCallAuctionModal(true);
-            
+
             if (result.success) {
                 let message = result.message;
-                
+
                 // 如果有詳細統計，添加到通知中
                 if (result.order_stats) {
                     const stats = result.order_stats;
@@ -376,11 +365,11 @@ export default function AdminPage() {
                     const totalSell = (stats.pending_sell || 0) + (stats.limit_sell || 0);
                     message += ` (處理了 ${totalBuy} 張買單、${totalSell} 張賣單)`;
                 }
-                
+
                 showNotification(message, 'success');
             } else {
                 let errorMessage = result.message || '集合競價執行失敗';
-                
+
                 // 如果有統計信息，添加到錯誤消息中
                 if (result.order_stats) {
                     const stats = result.order_stats;
@@ -390,7 +379,7 @@ export default function AdminPage() {
                         errorMessage += ` (目前有 ${totalPending} 張待撮合訂單、${totalLimit} 張限制等待訂單)`;
                     }
                 }
-                
+
                 showNotification(errorMessage, 'error');
             }
         } catch (error) {
@@ -399,11 +388,9 @@ export default function AdminPage() {
             setCallAuctionLoading(false);
         }
     };
-
-    // 市場開關控制
-    const fetchMarketStatus = async () => {
+    const fetchMarketStatus = async (token = adminToken) => {
         try {
-            const status = await getAdminMarketStatus(adminToken);
+            const status = await getAdminMarketStatus(token);
             setMarketStatus(status);
         } catch (error) {
             console.error('取得市場狀態失敗:', error);
@@ -413,13 +400,11 @@ export default function AdminPage() {
     const handleOpenMarket = async () => {
         try {
             setMarketControlLoading(true);
-            const result = await openMarket(adminToken);
-            
-            if (result.success) {
+            const result = await openMarket(adminToken); if (result.success) {
                 showNotification(result.message, 'success');
-                await fetchMarketStatus(); // 更新市場狀態
-                
-                // 如果有集合競價結果，顯示詳細信息
+                await fetchMarketStatus(adminToken);
+
+                // 如果有集合競價結果就顯示詳細信息
                 if (result.call_auction_result && result.call_auction_result.success) {
                     const auctionResult = result.call_auction_result;
                     const auctionMessage = `集合競價完成：${auctionResult.matched_volume} 股於 ${auctionResult.auction_price} 元成交`;
@@ -438,11 +423,10 @@ export default function AdminPage() {
     const handleCloseMarket = async () => {
         try {
             setMarketControlLoading(true);
-            const result = await closeMarket(adminToken);
-            
-            if (result.success) {
+            const result = await closeMarket(adminToken); if (result.success) {
                 showNotification(result.message, 'success');
-                await fetchMarketStatus(); // 更新市場狀態
+
+                await fetchMarketStatus(adminToken);
             } else {
                 showNotification(result.message || '收盤失敗', 'error');
             }
@@ -586,7 +570,9 @@ export default function AdminPage() {
         if (adminToken) {
             fetchUserAssets(adminToken, userSearchTerm.trim() || null);
         }
-    };    // 發布公告
+    };
+
+    // 發布公告
     const handleCreateAnnouncement = async () => {
         if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
             showNotification('請填寫公告標題和內容', 'error');
@@ -644,7 +630,7 @@ export default function AdminPage() {
     const handleResetAllData = async () => {
         setResetLoading(true);
         setShowResetConfirmModal(false);
-        
+
         try {
             const result = await resetAllData(adminToken);
             setResetResult(result);
@@ -659,13 +645,13 @@ export default function AdminPage() {
     const handleForceSettlement = async () => {
         setForceSettlementLoading(true);
         setShowSettlementConfirmModal(false);
-        
+
         try {
             const result = await forceSettlement(adminToken);
             setSettlementResult(result);
             setShowSettlementResultModal(true);
             showNotification('強制結算完成！', 'success');
-            
+
             // 重新獲取統計數據
             await fetchSystemStats(adminToken);
             await fetchUserAssets(adminToken);
@@ -1109,7 +1095,7 @@ export default function AdminPage() {
             </div>
 
             {/* IPO 管理 */}
-            <div className="max-w-4xl mx-auto px-4 mt-8">
+            <div className="max-w-4xl mx-auto px-4 mt-2">
                 <div className="bg-[#1A325F] rounded-xl p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-white">IPO 管理</h2>
@@ -1121,7 +1107,7 @@ export default function AdminPage() {
                             {ipoLoading ? '載入中...' : '重新整理'}
                         </button>
                     </div>
-                    
+
                     {ipoStatus ? (
                         <div className="space-y-4">
                             {/* IPO 狀態顯示 */}
@@ -1139,7 +1125,7 @@ export default function AdminPage() {
                                     <div className="text-gray-400 text-sm">每股價格 (點)</div>
                                 </div>
                             </div>
-                            
+
                             {/* 操作按鈕 */}
                             <div className="grid grid-cols-2 gap-3 mb-3">
                                 <button
@@ -1186,18 +1172,17 @@ export default function AdminPage() {
             <div className="max-w-4xl mx-auto px-4 mt-8">
                 <div className="bg-[#1A325F] rounded-xl p-6">
                     <h2 className="text-xl font-bold text-white mb-4">市場開關控制</h2>
-                    
+
                     {/* 市場狀態顯示 */}
                     {marketStatus && (
                         <div className="mb-6 p-4 bg-[#0f203e] rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray-300">市場狀態:</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    marketStatus.is_open 
-                                        ? 'bg-green-600 text-green-100' 
-                                        : 'bg-red-600 text-red-100'
-                                }`}>
-                                    {marketStatus.is_open ? '🟢 開盤中' : '🔴 已收盤'}
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${marketStatus.is_open
+                                    ? 'bg-green-600 text-green-100'
+                                    : 'bg-red-600 text-red-100'
+                                    }`}>
+                                    {marketStatus.is_open ? '開盤中' : '已收盤'}
                                 </span>
                             </div>
                             {marketStatus.last_updated && (
@@ -1212,7 +1197,7 @@ export default function AdminPage() {
                             )}
                         </div>
                     )}
-                    
+
                     {/* 控制按鈕 */}
                     <div className="grid grid-cols-2 gap-4">
                         <button
@@ -1220,21 +1205,21 @@ export default function AdminPage() {
                             disabled={marketControlLoading || (marketStatus && marketStatus.is_open)}
                             className="bg-green-600 hover:bg-green-700 disabled:bg-[#2d3748] disabled:text-gray-500 text-white px-6 py-3 rounded-xl font-medium transition-colors"
                         >
-                            {marketControlLoading ? '處理中...' : '🔔 開盤 (含集合競價)'}
+                            {marketControlLoading ? '處理中...' : <p>開盤<br />(含集合競價)</p>}
                         </button>
                         <button
                             onClick={handleCloseMarket}
                             disabled={marketControlLoading || (marketStatus && !marketStatus.is_open)}
                             className="bg-red-600 hover:bg-red-700 disabled:bg-[#2d3748] disabled:text-gray-500 text-white px-6 py-3 rounded-xl font-medium transition-colors"
                         >
-                            {marketControlLoading ? '處理中...' : '🔒 收盤'}
+                            {marketControlLoading ? '處理中...' : '收盤'}
                         </button>
                     </div>
-                    
+
                     <div className="mt-4 p-3 bg-[#0f203e] rounded-lg">
                         <div className="text-sm text-gray-300">
-                            <p className="mb-1">💡 <strong>開盤</strong>：會自動執行集合競價，然後開放市場交易</p>
-                            <p>💡 <strong>收盤</strong>：停止接受新的交易訂單</p>
+                            <p className="mb-1"><strong>開盤</strong>：會自動執行集合競價，然後開放市場交易</p>
+                            <p><strong>收盤</strong>：停止接受新的交易訂單</p>
                         </div>
                     </div>
                 </div>
@@ -1263,7 +1248,7 @@ export default function AdminPage() {
                                 {forceSettlementLoading ? '結算中...' : '強制結算'}
                             </button>
                         </div>
-                        
+
                         <div className="flex flex-col gap-5 w-full justify-between mt-6 pt-6 border-t border-red-500">
                             <div>
                                 <h3 className="text-white font-medium">重置所有資料 (Dev)</h3>
