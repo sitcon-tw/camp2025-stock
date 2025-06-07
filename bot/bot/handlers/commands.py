@@ -32,7 +32,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         f"""
-        😺 *早安 {update.effective_user.full_name}*
+        😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*
 
 🤑┃目前點數 *{response.get("points")}*
 🏛️┃目前持有股票張數 *{response.get("stocks")}*，要不要來點新鮮的股票？
