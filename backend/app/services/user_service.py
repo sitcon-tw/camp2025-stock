@@ -1319,6 +1319,38 @@ class UserService:
             limit_buy = len([o for o in buy_orders if o.get("status") == "pending_limit"])
             limit_sell = len([o for o in sell_orders if o.get("status") == "pending_limit"])
             
+            # 構建訂單詳細列表
+            order_details = {
+                "buy_orders": [],
+                "sell_orders": []
+            }
+            
+            # 處理買單詳情
+            for order in buy_orders:
+                user_info = await self.db[Collections.USERS].find_one({"_id": order.get("user_id")})
+                username = user_info.get("username", "unknown") if user_info else "unknown"
+                order_details["buy_orders"].append({
+                    "id": str(order.get("_id")),
+                    "username": username,
+                    "price": order.get("price"),
+                    "quantity": order.get("quantity"),
+                    "status": order.get("status"),
+                    "created_at": order.get("created_at").isoformat() if order.get("created_at") else None
+                })
+            
+            # 處理賣單詳情
+            for order in sell_orders:
+                user_info = await self.db[Collections.USERS].find_one({"_id": order.get("user_id")})
+                username = user_info.get("username", "unknown") if user_info else "unknown"
+                order_details["sell_orders"].append({
+                    "id": str(order.get("_id")),
+                    "username": username,
+                    "price": order.get("price"),
+                    "quantity": order.get("quantity"),
+                    "status": order.get("status"),
+                    "created_at": order.get("created_at").isoformat() if order.get("created_at") else None
+                })
+            
             if not buy_orders and not sell_orders:
                 return {
                     "success": False, 
@@ -1326,7 +1358,8 @@ class UserService:
                     "order_stats": {
                         "pending_buy": 0, "pending_sell": 0,
                         "limit_buy": 0, "limit_sell": 0
-                    }
+                    },
+                    "order_details": order_details
                 }
             elif not buy_orders:
                 return {
@@ -1335,7 +1368,8 @@ class UserService:
                     "order_stats": {
                         "pending_buy": pending_buy, "pending_sell": pending_sell,
                         "limit_buy": limit_buy, "limit_sell": limit_sell
-                    }
+                    },
+                    "order_details": order_details
                 }
             elif not sell_orders:
                 return {
@@ -1344,14 +1378,19 @@ class UserService:
                     "order_stats": {
                         "pending_buy": pending_buy, "pending_sell": pending_sell,
                         "limit_buy": limit_buy, "limit_sell": limit_sell
-                    }
+                    },
+                    "order_details": order_details
                 }
             
             # 找出最佳撮合價格（最大成交量的價格）
             best_price, max_volume = await self._find_best_auction_price(buy_orders, sell_orders)
             
             if best_price is None:
-                return {"success": False, "message": "no matching price found"}
+                return {
+                    "success": False, 
+                    "message": "no matching price found",
+                    "order_details": order_details
+                }
             
             # 在最佳價格進行批量撮合
             matched_volume = await self._execute_call_auction(buy_orders, sell_orders, best_price)
@@ -1389,12 +1428,17 @@ class UserService:
                     "limit_buy": limit_buy, "limit_sell": limit_sell,
                     "total_buy_orders": len(buy_orders),
                     "total_sell_orders": len(sell_orders)
-                }
+                },
+                "order_details": order_details
             }
             
         except Exception as e:
             logger.error(f"Failed to execute call auction: {e}")
-            return {"success": False, "message": f"call auction failed: {str(e)}"}
+            return {
+                "success": False, 
+                "message": f"call auction failed: {str(e)}",
+                "order_details": {"buy_orders": [], "sell_orders": []}
+            }
 
     async def _find_best_auction_price(self, buy_orders: list, sell_orders: list) -> tuple:
         """找出集合競價的最佳成交價格"""

@@ -74,6 +74,8 @@ export default function AdminPage() {
 
     // 集合競價狀態
     const [callAuctionLoading, setCallAuctionLoading] = useState(false);
+    const [showCallAuctionModal, setShowCallAuctionModal] = useState(false);
+    const [callAuctionResult, setCallAuctionResult] = useState(null);
 
     // IPO 預設配置狀態
     const [ipoDefaults, setIpoDefaults] = useState(null);
@@ -353,6 +355,10 @@ export default function AdminPage() {
         try {
             setCallAuctionLoading(true);
             const result = await executeCallAuction(adminToken);
+            
+            // 儲存結果供顯示
+            setCallAuctionResult(result);
+            setShowCallAuctionModal(true);
             
             if (result.ok) {
                 let message = result.message;
@@ -1448,6 +1454,128 @@ export default function AdminPage() {
                                     className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
                                 >
                                     {ipoLoading ? '更新中...' : '更新'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 集合競價結果 Modal */}
+            {showCallAuctionModal && callAuctionResult && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-[#7BC2E6]">集合競價結果</h3>
+                            <button
+                                onClick={() => setShowCallAuctionModal(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* 結果總結 */}
+                            <div className={`rounded-lg p-4 ${callAuctionResult.ok ? 'bg-green-900 border border-green-600' : 'bg-red-900 border border-red-600'}`}>
+                                <h4 className={`font-medium mb-2 ${callAuctionResult.ok ? 'text-green-200' : 'text-red-200'}`}>
+                                    {callAuctionResult.ok ? '✅ 集合競價成功' : '❌ 集合競價失敗'}
+                                </h4>
+                                <p className={`text-sm ${callAuctionResult.ok ? 'text-green-300' : 'text-red-300'}`}>
+                                    {callAuctionResult.message}
+                                </p>
+                                {callAuctionResult.ok && (
+                                    <div className="mt-2 text-green-200 text-sm">
+                                        <p>撮合價格: {callAuctionResult.auction_price} 元</p>
+                                        <p>成交量: {callAuctionResult.matched_volume} 股</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 訂單統計 */}
+                            {callAuctionResult.order_stats && (
+                                <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-4">
+                                    <h4 className="text-[#7BC2E6] font-medium mb-3">訂單統計</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <h5 className="text-white font-medium mb-2">買單</h5>
+                                            <p className="text-sm text-gray-300">待撮合: {callAuctionResult.order_stats.pending_buy || 0} 張</p>
+                                            <p className="text-sm text-gray-300">限制等待: {callAuctionResult.order_stats.limit_buy || 0} 張</p>
+                                            <p className="text-sm text-yellow-300">總計: {callAuctionResult.order_stats.total_buy_orders || 0} 張</p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-white font-medium mb-2">賣單</h5>
+                                            <p className="text-sm text-gray-300">待撮合: {callAuctionResult.order_stats.pending_sell || 0} 張</p>
+                                            <p className="text-sm text-gray-300">限制等待: {callAuctionResult.order_stats.limit_sell || 0} 張</p>
+                                            <p className="text-sm text-yellow-300">總計: {callAuctionResult.order_stats.total_sell_orders || 0} 張</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 訂單詳細列表 */}
+                            {callAuctionResult.order_details && (
+                                <div className="space-y-4">
+                                    {/* 買單列表 */}
+                                    <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-4">
+                                        <h4 className="text-green-400 font-medium mb-3">買單列表 ({callAuctionResult.order_details.buy_orders?.length || 0} 筆)</h4>
+                                        {callAuctionResult.order_details.buy_orders?.length > 0 ? (
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {callAuctionResult.order_details.buy_orders.map((order, index) => (
+                                                    <div key={index} className="flex justify-between items-center bg-[#1A325F] p-2 rounded text-sm">
+                                                        <div>
+                                                            <span className="text-white font-medium">{order.username}</span>
+                                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${order.status === 'pending' ? 'bg-yellow-600 text-yellow-100' : 'bg-orange-600 text-orange-100'}`}>
+                                                                {order.status === 'pending' ? '待撮合' : '限制等待'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-green-400 font-medium">{order.price} 元 x {order.quantity} 股</div>
+                                                            <div className="text-gray-400 text-xs">{new Date(order.created_at).toLocaleString()}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-400 text-sm">無買單</p>
+                                        )}
+                                    </div>
+
+                                    {/* 賣單列表 */}
+                                    <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-4">
+                                        <h4 className="text-red-400 font-medium mb-3">賣單列表 ({callAuctionResult.order_details.sell_orders?.length || 0} 筆)</h4>
+                                        {callAuctionResult.order_details.sell_orders?.length > 0 ? (
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {callAuctionResult.order_details.sell_orders.map((order, index) => (
+                                                    <div key={index} className="flex justify-between items-center bg-[#1A325F] p-2 rounded text-sm">
+                                                        <div>
+                                                            <span className="text-white font-medium">{order.username}</span>
+                                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${order.status === 'pending' ? 'bg-yellow-600 text-yellow-100' : 'bg-orange-600 text-orange-100'}`}>
+                                                                {order.status === 'pending' ? '待撮合' : '限制等待'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-red-400 font-medium">{order.price} 元 x {order.quantity} 股</div>
+                                                            <div className="text-gray-400 text-xs">{new Date(order.created_at).toLocaleString()}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-400 text-sm">無賣單</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end mt-6">
+                                <button
+                                    onClick={() => setShowCallAuctionModal(false)}
+                                    className="bg-[#7BC2E6] hover:bg-[#6bb0d4] text-black py-2 px-6 rounded-xl transition-colors font-medium"
+                                >
+                                    關閉
                                 </button>
                             </div>
                         </div>
