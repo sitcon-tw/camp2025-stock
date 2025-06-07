@@ -295,9 +295,11 @@ class AdminService:
             total_shares = 0
             
             for order in buy_orders:
-                cost = order.get("price", 20) * order.get("stock_amount", 0)
+                price = order.get("price") or 20  # Handle None price
+                stock_amount = order.get("stock_amount") or 0  # Handle None stock_amount
+                cost = price * stock_amount
                 total_cost += cost
-                total_shares += order.get("stock_amount", 0)
+                total_shares += stock_amount
             
             return int(total_cost / total_shares) if total_shares > 0 else 20
             
