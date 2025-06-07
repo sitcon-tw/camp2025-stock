@@ -500,6 +500,18 @@ async def reset_all_data(
         
         logger.warning(f"Database reset completed: {total_deleted} documents deleted")
         
+        # 發送系統公告到 Telegram Bot
+        try:
+            # 使用 admin_service 發送系統公告
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            await admin_service._send_system_announcement(
+                title="🔄 系統資料重置完成",
+                message=f"管理員已執行系統重置作業，共清除 {total_deleted} 筆記錄。系統已恢復到初始狀態，所有使用者資料已清空。"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send reset announcement: {e}")
+        
         return {
             "ok": True,
             "message": f"資料庫已完全重置，共刪除 {total_deleted} 筆記錄",

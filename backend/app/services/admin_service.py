@@ -229,6 +229,44 @@ class AdminService:
             logger.error(f"Failed to create announcement: {e}")
             raise AdminException("Failed to create announcement")
     
+    # 系統自動公告（用於重置和結算）
+    async def _send_system_announcement(self, title: str, message: str):
+        """發送系統自動公告到 Telegram Bot"""
+        try:
+            # 儲存公告到資料庫
+            announcement_doc = {
+                "title": title,
+                "message": message,
+                "broadcast": True,
+                "created_at": datetime.utcnow(),
+                "created_by": "system"
+            }
+            await self.db[Collections.ANNOUNCEMENTS].insert_one(announcement_doc)
+            
+            # 廣播到 Telegram Bot
+            CAMP_TELEGRAM_BOT_API_URL = settings.CAMP_TELEGRAM_BOT_API_URL
+            if CAMP_TELEGRAM_BOT_API_URL:
+                payload = {
+                    "title": title,
+                    "message": message
+                }
+                headers = {
+                    "Content-Type": "application/json",
+                    "token": settings.CAMP_INTERNAL_API_KEY
+                }
+                logger.info(f"Broadcasting system announcement: {title}")
+                response = requests.post(CAMP_TELEGRAM_BOT_API_URL, json=payload, headers=headers)
+                if response.status_code == 200:
+                    logger.info(f"System announcement broadcasted successfully: {title}")
+                else:
+                    logger.warning(f"Failed to broadcast system announcement: {response.text}")
+            else:
+                logger.warning("Telegram Bot API URL not configured, skipping broadcast")
+                
+        except Exception as e:
+            logger.error(f"Failed to send system announcement: {e}")
+            # 不拋出異常，避免影響主要操作
+    
     # 更新市場開放時間
     async def update_market_hours(self, request: MarketUpdateRequest) -> MarketUpdateResponse:
         try:
@@ -429,6 +467,13 @@ class AdminService:
 
             message = f"Final settlement complete for {updated_users} users"
             logger.info(message)
+            
+            # 發送系統公告到 Telegram Bot
+            await self._send_system_announcement(
+                title="📊 強制結算完成",
+                message=f"系統已完成強制結算作業，共處理 {updated_users} 位使用者的持股。所有股票已按固定價格 {final_price} 元轉換為點數。"
+            )
+            
             return GivePointsResponse(ok=True, message=message)
 
         except Exception as e:

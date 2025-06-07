@@ -24,7 +24,7 @@ class Settings:
     
 
     # Telegram Bot API URL
-    CAMP_TELEGRAM_BOT_API_URL: str = os.getenv("CAMP_TELEGRAM_BOT_API_URL", "https://api.telegram.org/bot")
+    CAMP_TELEGRAM_BOT_API_URL: str = os.getenv("CAMP_TELEGRAM_BOT_API_URL", "https://camp.sitcon.party/bot/broadcast/")
     
     # 環境設定
     CAMP_ENVIRONMENT: str = os.getenv("CAMP_ENVIRONMENT", "development")
