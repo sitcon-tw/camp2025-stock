@@ -368,8 +368,8 @@ async def get_ipo_status(
         if ipo_config:
             return {
                 "ok": True,
-                "initialShares": ipo_config.get("initial_shares", 1000),
-                "sharesRemaining": ipo_config.get("shares_remaining", 1000),
+                "initialShares": ipo_config.get("initial_shares", 1000000),
+                "sharesRemaining": ipo_config.get("shares_remaining", 1000000),
                 "initialPrice": ipo_config.get("initial_price", 20),
                 "updatedAt": ipo_config.get("updated_at").isoformat() if ipo_config.get("updated_at") else None
             }
@@ -377,10 +377,10 @@ async def get_ipo_status(
             # IPO未初始化，返回預設值
             import os
             try:
-                initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
                 initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
             except (ValueError, TypeError):
-                initial_shares = 1000
+                initial_shares = 1000000000
                 initial_price = 20
             
             return {
@@ -441,16 +441,16 @@ async def reset_ipo(
             
             if defaults_config:
                 if initial_shares is None:
-                    initial_shares = defaults_config.get("default_initial_shares", 1000)
+                    initial_shares = defaults_config.get("default_initial_shares", 1000000)
                 if initial_price is None:
                     initial_price = defaults_config.get("default_initial_price", 20)
             else:
                 # 回退到環境變數或硬編碼預設值
                 if initial_shares is None:
                     try:
-                        initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                        initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
                     except (ValueError, TypeError):
-                        initial_shares = 1000
+                        initial_shares = 1000000000
                         
                 if initial_price is None:
                     try:
@@ -551,7 +551,7 @@ async def update_ipo(
             # IPO配置不存在，創建新的
             await db[Collections.MARKET_CONFIG].insert_one({
                 "type": "ipo_status",
-                "initial_shares": 1000,
+                "initial_shares": 1000000,
                 "shares_remaining": shares_remaining if shares_remaining is not None else 0,
                 "initial_price": initial_price if initial_price is not None else 20,
                 "updated_at": datetime.now(timezone.utc)
@@ -600,7 +600,7 @@ async def update_ipo(
         return {
             "ok": True,
             "message": message,
-            "initialShares": updated_config.get("initial_shares", 1000),
+            "initialShares": updated_config.get("initial_shares", 1000000),
             "sharesRemaining": updated_config.get("shares_remaining", 0),
             "initialPrice": updated_config.get("initial_price", 20)
         }
@@ -679,10 +679,10 @@ async def reset_all_data(
         # 重新初始化基本配置
         try:
             # 初始化IPO狀態
-            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
             initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
         except (ValueError, TypeError):
-            initial_shares = 1000
+            initial_shares = 1000000
             initial_price = 20
         
         # 創建初始IPO配置
@@ -853,7 +853,7 @@ async def get_ipo_defaults(
         if defaults_config:
             return {
                 "ok": True,
-                "defaultInitialShares": defaults_config.get("default_initial_shares", 1000),
+                "defaultInitialShares": defaults_config.get("default_initial_shares", 1000000),
                 "defaultInitialPrice": defaults_config.get("default_initial_price", 20),
                 "updatedAt": defaults_config.get("updated_at").isoformat() if defaults_config.get("updated_at") else None
             }
@@ -861,10 +861,10 @@ async def get_ipo_defaults(
             # 如果沒有配置，回傳環境變數或預設值
             import os
             try:
-                default_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+                default_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
                 default_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
             except (ValueError, TypeError):
-                default_shares = 1000
+                default_shares = 1000000
                 default_price = 20
             
             return {
@@ -966,7 +966,7 @@ async def update_ipo_defaults(
         return {
             "ok": True,
             "message": message,
-            "defaultInitialShares": updated_config.get("default_initial_shares", 1000),
+            "defaultInitialShares": updated_config.get("default_initial_shares", 1000000),
             "defaultInitialPrice": updated_config.get("default_initial_price", 20)
         }
         

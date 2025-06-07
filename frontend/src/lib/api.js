@@ -203,7 +203,7 @@ export async function getIpoStatus(token) {
 }
 
 // 重置IPO狀態
-export async function resetIpo(token, initialShares = 1000, initialPrice = 20) {
+export async function resetIpo(token, initialShares = 1000000, initialPrice = 20) {
     return apiRequest(`/api/admin/ipo/reset?initial_shares=${initialShares}&initial_price=${initialPrice}`, {
         method: 'POST',
         headers: {

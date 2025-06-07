@@ -1710,7 +1710,7 @@ export default function AdminPage() {
                                     type="number"
                                     value={ipoDefaultsForm.defaultInitialShares}
                                     onChange={(e) => setIpoDefaultsForm({ ...ipoDefaultsForm, defaultInitialShares: e.target.value })}
-                                    placeholder="例如: 1000"
+                                    placeholder="例如: 1000000"
                                     className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 <p className="text-gray-400 text-xs mt-1">
