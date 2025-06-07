@@ -114,6 +114,13 @@ async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         👥 小隊 __*3*__ 目前的點數共：*{result.get("total_points")}* 點
         """, parse_mode=ParseMode.MARKDOWN_V2)
 
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.user_data.get("active_stock_convo"):
+        await update.message.reply_text("❌ 指令似乎出錯了，已解鎖 /stock 指令")
+        context.user_data["active_stock_convo"] = False
+    else:
+        await update.message.reply_text("❌ 沒有正在操作的指令")
+
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"/start triggered by {update.effective_user.id}")
 

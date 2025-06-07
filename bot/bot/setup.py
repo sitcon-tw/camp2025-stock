@@ -52,11 +52,12 @@ async def error_handler(update: Optional[object], context: CallbackContext) -> N
         await context.bot.send_message(ERROR_CHANNEL, f"無可回報之 message object")
 
 async def initialize():
+    bot.add_handler(stock_conversation)
     bot.add_handler(CommandHandler("start", commands.start))
     bot.add_handler(CommandHandler("register", commands.register))
     bot.add_handler(CommandHandler("point", commands.point))
     bot.add_handler(CommandHandler("log", commands.log))
-    bot.add_handler(stock_conversation)
+    bot.add_handler(CommandHandler("cancel", commands.cancel))
     bot.add_handler(CallbackQueryHandler(buttons.handle_zombie_clicks))
     bot.add_handler(ChatMemberHandler(welcome.welcome_member, ChatMemberHandler.CHAT_MEMBER))
     bot.add_error_handler(error_handler)
