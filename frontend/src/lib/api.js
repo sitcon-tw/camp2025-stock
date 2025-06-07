@@ -228,4 +228,42 @@ export async function updateIpo(token, sharesRemaining = null, initialPrice = nu
     });
 }
 
+// 執行集合競價
+export async function executeCallAuction(token) {
+    return apiRequest('/api/admin/market/call-auction', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// IPO 預設配置管理
+// 查詢IPO預設配置
+export async function getIpoDefaults(token) {
+    return apiRequest('/api/admin/ipo/defaults', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 更新IPO預設配置
+export async function updateIpoDefaults(token, defaultInitialShares = null, defaultInitialPrice = null) {
+    const params = new URLSearchParams();
+    if (defaultInitialShares !== null) params.append('default_initial_shares', defaultInitialShares);
+    if (defaultInitialPrice !== null) params.append('default_initial_price', defaultInitialPrice);
+    
+    return apiRequest(`/api/admin/ipo/defaults?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
 export { API_BASE_URL };

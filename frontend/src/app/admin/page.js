@@ -17,7 +17,10 @@ import {
     forceSettlement,
     getIpoStatus,
     resetIpo,
-    updateIpo
+    updateIpo,
+    executeCallAuction,
+    getIpoDefaults,
+    updateIpoDefaults
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -68,6 +71,18 @@ export default function AdminPage() {
         sharesRemaining: '',
         initialPrice: ''
     });
+
+    // 集合競價狀態
+    const [callAuctionLoading, setCallAuctionLoading] = useState(false);
+
+    // IPO 預設配置狀態
+    const [ipoDefaults, setIpoDefaults] = useState(null);
+    const [showIpoDefaultsModal, setShowIpoDefaultsModal] = useState(false);
+    const [ipoDefaultsForm, setIpoDefaultsForm] = useState({
+        defaultInitialShares: '',
+        defaultInitialPrice: ''
+    });
+    const [ipoDefaultsLoading, setIpoDefaultsLoading] = useState(false);
 
     // 新增時間 Modal
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
@@ -142,6 +157,7 @@ export default function AdminPage() {
                     fetchMarketStatus();
                     fetchTradingHours();
                     fetchIpoStatus(token);
+                    fetchIpoDefaults(token);
                 }
             } catch (error) {
                 if (error.status === 401) {
@@ -259,6 +275,19 @@ export default function AdminPage() {
         }
     };
 
+    // 撈IPO預設配置
+    const fetchIpoDefaults = async (token) => {
+        try {
+            setIpoDefaultsLoading(true);
+            const data = await getIpoDefaults(token);
+            setIpoDefaults(data);
+        } catch (error) {
+            handleApiError(error, '獲取IPO預設配置');
+        } finally {
+            setIpoDefaultsLoading(false);
+        }
+    };
+
     // 更新IPO
     const handleIpoUpdate = async () => {
         try {
@@ -286,13 +315,76 @@ export default function AdminPage() {
     const handleIpoReset = async () => {
         try {
             setIpoLoading(true);
-            const result = await resetIpo(adminToken, 1000, 20);
+            const result = await resetIpo(adminToken);
             showNotification(result.message, 'success');
             await fetchIpoStatus(adminToken);
         } catch (error) {
             handleApiError(error, 'IPO重置');
         } finally {
             setIpoLoading(false);
+        }
+    };
+
+    // 更新IPO預設配置
+    const handleIpoDefaultsUpdate = async () => {
+        try {
+            setIpoDefaultsLoading(true);
+            
+            const defaultShares = ipoDefaultsForm.defaultInitialShares !== '' ? parseInt(ipoDefaultsForm.defaultInitialShares) : null;
+            const defaultPrice = ipoDefaultsForm.defaultInitialPrice !== '' ? parseInt(ipoDefaultsForm.defaultInitialPrice) : null;
+            
+            const result = await updateIpoDefaults(adminToken, defaultShares, defaultPrice);
+            
+            showNotification(result.message, 'success');
+            setShowIpoDefaultsModal(false);
+            setIpoDefaultsForm({ defaultInitialShares: '', defaultInitialPrice: '' });
+            
+            // 重新取得IPO預設配置
+            await fetchIpoDefaults(adminToken);
+        } catch (error) {
+            handleApiError(error, 'IPO預設配置更新');
+        } finally {
+            setIpoDefaultsLoading(false);
+        }
+    };
+
+    // 執行集合競價
+    const handleCallAuction = async () => {
+        try {
+            setCallAuctionLoading(true);
+            const result = await executeCallAuction(adminToken);
+            
+            if (result.ok) {
+                let message = result.message;
+                
+                // 如果有詳細統計，添加到通知中
+                if (result.order_stats) {
+                    const stats = result.order_stats;
+                    const totalBuy = (stats.pending_buy || 0) + (stats.limit_buy || 0);
+                    const totalSell = (stats.pending_sell || 0) + (stats.limit_sell || 0);
+                    message += ` (處理了 ${totalBuy} 張買單、${totalSell} 張賣單)`;
+                }
+                
+                showNotification(message, 'success');
+            } else {
+                let errorMessage = result.message || '集合競價執行失敗';
+                
+                // 如果有統計信息，添加到錯誤消息中
+                if (result.order_stats) {
+                    const stats = result.order_stats;
+                    const totalPending = (stats.pending_buy || 0) + (stats.pending_sell || 0);
+                    const totalLimit = (stats.limit_buy || 0) + (stats.limit_sell || 0);
+                    if (totalPending > 0 || totalLimit > 0) {
+                        errorMessage += ` (目前有 ${totalPending} 張待撮合訂單、${totalLimit} 張限制等待訂單)`;
+                    }
+                }
+                
+                showNotification(errorMessage, 'error');
+            }
+        } catch (error) {
+            handleApiError(error, '集合競價執行');
+        } finally {
+            setCallAuctionLoading(false);
         }
     };
 
@@ -984,20 +1076,36 @@ export default function AdminPage() {
                             </div>
                             
                             {/* 操作按鈕 */}
-                            <div className="flex gap-4">
+                            <div className="grid grid-cols-2 gap-3 mb-3">
                                 <button
                                     onClick={() => setShowIpoUpdateModal(true)}
                                     disabled={ipoLoading}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
                                 >
                                     更新參數
                                 </button>
                                 <button
                                     onClick={handleIpoReset}
                                     disabled={ipoLoading}
-                                    className="flex-1 bg-orange-600 hover:bg-orange-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                    className="bg-orange-600 hover:bg-orange-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
                                 >
                                     {ipoLoading ? '重置中...' : '重置IPO'}
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={handleCallAuction}
+                                    disabled={callAuctionLoading}
+                                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                >
+                                    {callAuctionLoading ? '撮合中...' : '集合競價'}
+                                </button>
+                                <button
+                                    onClick={() => setShowIpoDefaultsModal(true)}
+                                    disabled={ipoDefaultsLoading}
+                                    className="bg-green-600 hover:bg-green-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                >
+                                    管理預設值
                                 </button>
                             </div>
                         </div>
@@ -1340,6 +1448,81 @@ export default function AdminPage() {
                                     className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
                                 >
                                     {ipoLoading ? '更新中...' : '更新'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* IPO 預設配置 Modal */}
+            {showIpoDefaultsModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-[#7BC2E6]">IPO 預設配置管理</h3>
+                            <button
+                                onClick={() => setShowIpoDefaultsModal(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                    預設初始股數 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={ipoDefaultsForm.defaultInitialShares}
+                                    onChange={(e) => setIpoDefaultsForm({ ...ipoDefaultsForm, defaultInitialShares: e.target.value })}
+                                    placeholder="例如: 1000"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">
+                                    目前: {ipoDefaults?.defaultInitialShares?.toLocaleString()} 股
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                    預設IPO價格 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={ipoDefaultsForm.defaultInitialPrice}
+                                    onChange={(e) => setIpoDefaultsForm({ ...ipoDefaultsForm, defaultInitialPrice: e.target.value })}
+                                    placeholder="例如: 20"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">
+                                    目前: {ipoDefaults?.defaultInitialPrice} 點/股
+                                </p>
+                            </div>
+
+                            <div className="bg-green-900 border border-green-600 rounded-lg p-3">
+                                <p className="text-green-200 text-sm">
+                                    ⚙️ 這些設定將用於未來的IPO重置操作，不會影響當前的IPO狀態
+                                </p>
+                            </div>
+
+                            <div className="flex space-x-3 mt-6">
+                                <button
+                                    onClick={() => setShowIpoDefaultsModal(false)}
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleIpoDefaultsUpdate}
+                                    disabled={ipoDefaultsLoading}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    {ipoDefaultsLoading ? '更新中...' : '更新配置'}
                                 </button>
                             </div>
                         </div>
