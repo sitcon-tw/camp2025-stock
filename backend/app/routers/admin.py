@@ -714,6 +714,13 @@ async def reset_all_data(
             "updated_at": datetime.now(timezone.utc)
         })
         
+        # 重置當前價格為 IPO 初始價格
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "current_price",
+            "price": initial_price,
+            "updated_at": datetime.now(settings.timezone)
+        })
+        
         logger.warning(f"Database reset completed: {total_deleted} documents deleted")
         
         # 發送系統公告到 Telegram Bot

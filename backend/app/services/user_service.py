@@ -200,18 +200,13 @@ class UserService:
     async def _get_price_limit_info(self, order_price: float) -> dict:
         """取得價格限制的詳細資訊"""
         try:
-            # 取得前日收盤價作為基準價格
+            # 取得前一日收盤價作為基準價格
             reference_price = await self._get_reference_price_for_limit()
             
-            if reference_price is None:
-                return {
-                    "within_limit": True,
-                    "reference_price": 20.0,
-                    "limit_percent": 0.0,
-                    "min_price": 0.0,
-                    "max_price": float('inf'),
-                    "note": "無法確定基準價格"
-                }
+            # 如果無法取得前一日收盤價，使用預設值
+            if reference_price is None or reference_price <= 0:
+                logger.warning("Cannot determine reference price, using default price 20.0")
+                reference_price = 20.0
             
             # 取得動態漲跌限制
             limit_percent = await self._get_dynamic_price_limit(reference_price)
@@ -222,6 +217,9 @@ class UserService:
             
             # 檢查是否在限制範圍內
             within_limit = min_price <= order_price <= max_price
+            
+            logger.info(f"Price limit check: reference={reference_price}, limit={limit_percent}%, " +
+                       f"range={min_price:.2f}~{max_price:.2f}, order={order_price}, within={within_limit}")
             
             return {
                 "within_limit": within_limit,
@@ -247,8 +245,9 @@ class UserService:
     async def _get_reference_price_for_limit(self) -> float:
         """取得漲跌限制的基準價格（前日收盤價）"""
         try:
-            # 取得今日開始時間
-            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            # 取得今日開始時間 (使用 Asia/Taipei 時區)
+            from app.config import settings
+            today_start = datetime.now(settings.timezone).replace(hour=0, minute=0, second=0, microsecond=0)
             yesterday_end = today_start - timedelta(seconds=1)
             
             # 查找昨日最後一筆成交記錄作為前日收盤價
