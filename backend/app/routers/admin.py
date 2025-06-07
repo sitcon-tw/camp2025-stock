@@ -395,3 +395,128 @@ async def reset_ipo(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="重置IPO失敗"
         )
+
+
+@router.post(
+    "/reset/alldata",
+    responses={
+        200: {"description": "重置成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="重置所有資料",
+    description="清空所有資料庫集合，將系統恢復到初始狀態"
+)
+async def reset_all_data(
+    current_admin=Depends(get_current_admin)
+):
+    """重置所有資料
+    
+    Args:
+        current_admin: 目前管理員（自動注入）
+
+    Returns:
+        操作結果
+    """
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        import os
+        
+        db = get_database()
+        
+        logger.warning("Starting complete database reset - this will delete ALL data")
+        
+        # 記錄重置前的統計
+        collections_to_reset = [
+            Collections.USERS,
+            Collections.GROUPS, 
+            Collections.STOCKS,
+            Collections.STOCK_ORDERS,
+            Collections.TRADES,
+            Collections.POINT_LOGS,
+            Collections.ANNOUNCEMENTS,
+            Collections.MARKET_CONFIG
+        ]
+        
+        reset_stats = {}
+        for collection_name in collections_to_reset:
+            try:
+                count = await db[collection_name].count_documents({})
+                reset_stats[collection_name] = count
+                logger.info(f"Collection {collection_name}: {count} documents")
+            except Exception as e:
+                logger.warning(f"Could not count {collection_name}: {e}")
+                reset_stats[collection_name] = "unknown"
+        
+        # 清空所有集合
+        total_deleted = 0
+        for collection_name in collections_to_reset:
+            try:
+                result = await db[collection_name].delete_many({})
+                deleted_count = result.deleted_count
+                total_deleted += deleted_count
+                logger.info(f"Deleted {deleted_count} documents from {collection_name}")
+            except Exception as e:
+                logger.error(f"Failed to delete from {collection_name}: {e}")
+        
+        # 重新初始化基本配置
+        try:
+            # 初始化IPO狀態
+            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+            initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+        except (ValueError, TypeError):
+            initial_shares = 1000
+            initial_price = 20
+        
+        # 創建初始IPO配置
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "ipo_status",
+            "initial_shares": initial_shares,
+            "shares_remaining": initial_shares,
+            "initial_price": initial_price,
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        # 創建預設市場開放時間 (9:00-17:00 UTC)
+        current_time = datetime.now(timezone.utc)
+        start_time = int(current_time.replace(hour=9, minute=0, second=0).timestamp())
+        end_time = int(current_time.replace(hour=17, minute=0, second=0).timestamp())
+        
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "market_hours",
+            "openTime": [
+                {"start": start_time, "end": end_time}
+            ],
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        # 創建預設漲跌限制 (20%)
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "trading_limit",
+            "limitPercent": 2000,  # 20% = 2000 basis points
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        logger.warning(f"Database reset completed: {total_deleted} documents deleted")
+        
+        return {
+            "ok": True,
+            "message": f"資料庫已完全重置，共刪除 {total_deleted} 筆記錄",
+            "deletedDocuments": total_deleted,
+            "resetCollections": list(reset_stats.keys()),
+            "collectionStats": reset_stats,
+            "initializedConfigs": {
+                "ipo": {"shares": initial_shares, "price": initial_price},
+                "market_hours": {"start": start_time, "end": end_time},
+                "trading_limit": 2000
+            },
+            "resetAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to reset all data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"重置所有資料失敗: {str(e)}"
+        )

@@ -190,6 +190,38 @@ class CampTradingSimulator:
             self.log(f"IPO重置異常: {e}", "ERROR")
             return False
     
+    def reset_all_data(self) -> bool:
+        """重置所有資料"""
+        try:
+            self.log("🔄 重置所有資料庫資料...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/reset/alldata",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ 資料重置成功: {data.get('message')}")
+                    self.log(f"📊 刪除記錄數: {data.get('deletedDocuments', 0)}")
+                    self.log(f"🔧 重新初始化配置: IPO {data.get('initializedConfigs', {}).get('ipo', {})}")
+                    return True
+                else:
+                    self.log(f"❌ 資料重置失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ 資料重置請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"資料重置異常: {e}", "ERROR")
+            return False
+    
     def get_admin_headers(self) -> Dict[str, str]:
         """取得管理員API請求標頭"""
         if not self.admin_token:
@@ -1009,11 +1041,12 @@ def main():
     print("7. 快速市場測試")
     print("8. 深度調試 - 檢查成交和撮合機制")
     print("9. 重置IPO狀態")
-    print("10. 退出")
+    print("10. 重置所有資料")
+    print("11. 退出")
     
     while True:
         try:
-            choice = input("\n請輸入選項 (1-10): ").strip()
+            choice = input("\n請輸入選項 (1-11): ").strip()
             
             if choice == "1":
                 initial_points = input("請輸入初始點數 (預設 1000): ").strip()
@@ -1148,6 +1181,19 @@ def main():
                 break
                 
             elif choice == "10":
+                # 重置所有資料
+                confirm = input("⚠️ 這將刪除所有資料，確定要繼續嗎？ (y/N): ").strip().lower()
+                if confirm == 'y':
+                    if simulator.reset_all_data():
+                        print("✅ 所有資料已重置")
+                        simulator.show_market_info()
+                    else:
+                        print("❌ 資料重置失敗")
+                else:
+                    print("❌ 操作已取消")
+                break
+                
+            elif choice == "11":
                 print("👋 程式結束")
                 sys.exit(0)
                 
