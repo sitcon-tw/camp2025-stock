@@ -583,6 +583,14 @@ class UserService:
             for order in buy_orders:
                 quantity = order.get("filled_quantity", order.get("quantity", 0))
                 price = order.get("filled_price", order.get("price", 0))
+                
+                if price is None or price <= 0:
+                    logger.warning(f"Order {order.get('_id')} has invalid price {price} for avg cost calculation. Skipping.")
+                    continue
+                if quantity is None or quantity <= 0:
+                    logger.warning(f"Order {order.get('_id')} has invalid quantity {quantity} for avg cost calculation. Skipping.")
+                    continue
+                
                 total_cost += quantity * price
                 total_quantity += quantity
             
@@ -701,6 +709,18 @@ class UserService:
             # 插入已完成的訂單
             result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
             
+            # 記錄交易記錄
+            await self.db[Collections.TRADES].insert_one({
+                "buy_order_id": result.inserted_id,
+                "sell_order_id": None,
+                "buy_user_id": user_oid,
+                "sell_user_id": "SYSTEM" if is_ipo_purchase else "MARKET",
+                "price": current_price,
+                "quantity": quantity,
+                "amount": trade_amount,
+                "created_at": order_doc["filled_at"]
+            }, session=session)
+
             # 更新 IPO 剩餘數量
             if is_ipo_purchase:
                 await self.db[Collections.MARKET_CONFIG].update_one(
@@ -709,37 +729,11 @@ class UserService:
                     session=session
                 )
             
-            # 更新使用者資產
-            if side == "buy":
-                # 買入：扣除點數，增加股票
-                await self.db[Collections.USERS].update_one(
-                    {"_id": user_oid},
-                    {"$inc": {"points": -trade_amount}},
-                    session=session
-                )
-                await self.db[Collections.STOCKS].update_one(
-                    {"user_id": user_oid},
-                    {"$inc": {"stock_amount": quantity}},
-                    upsert=True,
-                    session=session
-                )
-            else:
-                # 賣出：增加點數，減少股票
-                await self.db[Collections.USERS].update_one(
-                    {"_id": user_oid},
-                    {"$inc": {"points": trade_amount}},
-                    session=session
-                )
-                await self.db[Collections.STOCKS].update_one(
-                    {"user_id": user_oid},
-                    {"$inc": {"stock_amount": -quantity}},
-                    session=session
-                )
-            
             return StockOrderResponse(
                 success=True,
                 order_id=str(result.inserted_id),
-                message=message
+                message=message,
+                executed_price=current_price
             )
             
         except Exception as e:
@@ -756,17 +750,17 @@ class UserService:
     async def _try_match_orders(self):
         """嘗試撮合買賣訂單"""
         try:
-            # 查找待成交的買賣單
-            buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "side": "buy", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"
-            }).sort("price", -1)  # 買單按價格降序
+            # 查找待成交的買賣單，並按價格-時間優先級排序
+            buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
+                {"side": "buy", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"}
+            ).sort([("price", -1), ("created_at", 1)])
             
-            sell_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "side": "sell", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"
-            }).sort("price", 1)  # 賣單按價格升序
+            sell_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
+                {"side": "sell", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"}
+            ).sort([("price", 1), ("created_at", 1)])
 
-            buy_orders = await buy_orders_cursor.to_list(None)
-            sell_orders = await sell_orders_cursor.to_list(None)
+            buy_book = await buy_orders_cursor.to_list(None)
+            sell_book = await sell_orders_cursor.to_list(None)
 
             # 將系統 IPO 作為一個虛擬賣單加入
             ipo_config = await self._get_or_initialize_ipo_config()
@@ -779,30 +773,39 @@ class UserService:
                     "price": ipo_config["initial_price"],
                     "status": "pending",
                     "order_type": "limit",
-                    "is_system_order": True
+                    "is_system_order": True,
+                    "created_at": datetime.min.replace(tzinfo=timezone.utc)
                 }
-                sell_orders.append(system_sell_order)
-                sell_orders.sort(key=lambda x: x.get('price', float('inf')))
+                sell_book.append(system_sell_order)
+                # 重新排序賣單，確保系統訂單在價格相同時排在時間較早的用戶訂單之後
+                sell_book.sort(key=lambda x: (x.get('price', float('inf')), x.get('created_at', datetime.now(timezone.utc))))
 
-            # 進行撮合
-            for buy_order in buy_orders:
-                # 確保 buy_order 的 quantity > 0 才進行撮合
+            # 優化的撮合邏輯
+            buy_idx, sell_idx = 0, 0
+            while buy_idx < len(buy_book) and sell_idx < len(sell_book):
+                buy_order = buy_book[buy_idx]
+                sell_order = sell_book[sell_idx]
+
+                # 確保訂單仍有數量
                 if buy_order.get("quantity", 0) <= 0:
+                    buy_idx += 1
+                    continue
+                if sell_order.get("quantity", 0) <= 0:
+                    sell_idx += 1
                     continue
 
-                for sell_order in sell_orders:
-                    # 確保 sell_order 的 quantity > 0
-                    if sell_order.get("quantity", 0) <= 0:
-                        continue
+                if buy_order["price"] >= sell_order["price"]:
+                    # 價格匹配，進行交易
+                    await self._match_orders(buy_order, sell_order)
 
-                    # 檢查是否可以撮合
-                    if buy_order["price"] >= sell_order["price"]:
-                        # 使用事務進行撮合
-                        await self._match_orders(buy_order, sell_order)
-                        
-                        # 如果買單已完全成交，跳出內層循環
-                        if buy_order.get("quantity", 0) <= 0:
-                            break
+                    # 根據交易後的數量更新索引
+                    if buy_order.get("quantity", 0) <= 0:
+                        buy_idx += 1
+                    if sell_order.get("quantity", 0) <= 0:
+                        sell_idx += 1
+                else:
+                    # 買價小於賣價，由於賣單已按價格排序，後續也不可能成交，故結束
+                    break
                     
         except Exception as e:
             logger.error(f"Failed to match orders: {e}")
@@ -843,16 +846,15 @@ class UserService:
             
             is_system_sale = sell_order.get("is_system_order", False)
 
-            # 更新訂單狀態和剩餘數量
+            # 更新訂單狀態和剩餘數量 (在記憶體中，供撮合循環使用)
             buy_order["quantity"] -= trade_quantity
-            if not is_system_sale:
-                sell_order["quantity"] -= trade_quantity
+            sell_order["quantity"] -= trade_quantity
             
             buy_order["status"] = "filled" if buy_order["quantity"] == 0 else "partial"
             if not is_system_sale:
                 sell_order["status"] = "filled" if sell_order["quantity"] == 0 else "partial"
             
-            # 更新買方訂單
+            # 更新買方訂單 (資料庫)
             await self.db[Collections.STOCK_ORDERS].update_one(
                 {"_id": buy_order["_id"]},
                 {
@@ -863,7 +865,7 @@ class UserService:
                 session=session
             )
             
-            # 更新賣方訂單或系統庫存
+            # 更新賣方訂單或系統庫存 (資料庫)
             if not is_system_sale:
                 await self.db[Collections.STOCK_ORDERS].update_one(
                     {"_id": sell_order["_id"]},

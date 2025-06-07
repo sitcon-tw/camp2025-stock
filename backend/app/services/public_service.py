@@ -160,9 +160,13 @@ class PublicService:
             
             trade_records = []
             for trade in trades:
-                # Skip trades with invalid or missing price data
+                # Get price from either 'price' or 'filled_price' field
                 price = trade.get("price")
                 if price is None:
+                    price = trade.get("filled_price")
+                
+                # Skip trades with invalid or missing price data
+                if price is None or price <= 0:
                     continue
                     
                 trade_records.append(TradeRecord(

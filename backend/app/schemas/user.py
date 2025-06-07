@@ -47,8 +47,8 @@ class UserLoginResponse(BaseModel):
 
 # 股票下單請求
 class StockOrderRequest(BaseModel):
-    order_type: str = Field(..., description="訂單類型：market 或 limit")
-    side: str = Field(..., description="買賣方向：buy 或 sell")
+    order_type: str = Field(..., description="訂單類型 (market, limit)")
+    side: str = Field(..., description="交易方向 (buy, sell)")
     quantity: int = Field(..., gt=0, description="數量")
     price: Optional[int] = Field(None, gt=0, description="價格（元，限價單必填）")
     
@@ -87,7 +87,7 @@ class UserPortfolio(BaseModel):
     stocks: int = Field(..., description="持股數量")
     stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
     total_value: int = Field(..., description="總資產（元）", alias="totalValue")
-    avg_cost: int = Field(..., description="平均成本（元）", alias="avgCost")
+    avg_cost: float = Field(..., description="平均成本（元）", alias="avgCost")
     
     class Config:
         populate_by_name = True
