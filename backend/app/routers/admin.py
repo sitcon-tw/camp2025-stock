@@ -1061,3 +1061,86 @@ async def get_market_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="查詢市場狀態失敗"
         )
+
+
+@router.get(
+    "/system/check-negative-balances",
+    responses={
+        200: {"description": "負點數檢查成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="檢查負點數使用者",
+    description="檢查系統中是否有負點數的使用者"
+)
+async def check_negative_balances(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """檢查負點數使用者"""
+    try:
+        result = await admin_service.check_and_fix_negative_balances(fix_mode=False)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to check negative balances: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"檢查負點數失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/system/fix-negative-balances",
+    responses={
+        200: {"description": "負點數修復成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="修復負點數使用者",
+    description="將所有負點數使用者的點數重置為0"
+)
+async def fix_negative_balances(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """修復負點數使用者"""
+    try:
+        result = await admin_service.check_and_fix_negative_balances(fix_mode=True)
+        logger.info(f"Negative balances fixed: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to fix negative balances: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"修復負點數失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/system/trigger-balance-check",
+    responses={
+        200: {"description": "系統全面檢查成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="觸發系統全面點數檢查",
+    description="對所有使用者進行全面的點數完整性檢查，如發現負點數會立即發送警報"
+)
+async def trigger_system_wide_balance_check(
+    current_admin=Depends(get_current_admin),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """觸發系統全面點數檢查"""
+    try:
+        result = await admin_service.trigger_system_wide_balance_check()
+        logger.info(f"System-wide balance check completed: {result}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to trigger system-wide balance check: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"系統全面檢查失敗: {str(e)}"
+        )

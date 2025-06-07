@@ -547,12 +547,19 @@ class UserService:
         # 執行轉帳
         transaction_id = str(uuid.uuid4())
         
-        # 扣除發送方點數
-        await self.db[Collections.USERS].update_one(
-            {"_id": from_user_oid},
-            {"$inc": {"points": -total_deduct}},
+        # 安全扣除發送方點數
+        deduction_result = await self._safe_deduct_points(
+            user_id=from_user_oid,
+            amount=total_deduct,
+            operation_note=f"轉帳給 {request.to_username}：{request.amount} 點 (含手續費 {fee} 點)",
             session=session
         )
+        
+        if not deduction_result['success']:
+            return TransferResponse(
+                success=False,
+                message=deduction_result['message']
+            )
         
         # 增加接收方點數
         await self.db[Collections.USERS].update_one(
@@ -860,6 +867,76 @@ class UserService:
             await self.db[Collections.POINT_LOGS].insert_one(log_entry, session=session)
         except Exception as e:
             logger.error(f"Failed to log point change: {e}")
+    
+    # 安全的點數扣除（防止負點數）
+    async def _safe_deduct_points(self, user_id: ObjectId, amount: int, 
+                                operation_note: str, session=None) -> dict:
+        """
+        安全地扣除使用者點數，防止產生負數餘額
+        
+        Args:
+            user_id: 使用者ID
+            amount: 要扣除的點數
+            operation_note: 操作說明
+            session: 資料庫session（用於交易）
+            
+        Returns:
+            dict: {'success': bool, 'message': str, 'balance_before': int, 'balance_after': int}
+        """
+        try:
+            # 使用 MongoDB 的條件更新確保原子性
+            update_result = await self.db[Collections.USERS].update_one(
+                {
+                    "_id": user_id,
+                    "points": {"$gte": amount}  # 確保扣除後不會變負數
+                },
+                {"$inc": {"points": -amount}},
+                session=session
+            )
+            
+            if update_result.modified_count == 0:
+                # 扣除失敗，檢查使用者當前餘額
+                user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+                current_balance = user.get("points", 0) if user else 0
+                
+                return {
+                    'success': False,
+                    'message': f'點數不足，需要 {amount} 點，目前餘額: {current_balance} 點',
+                    'balance_before': current_balance,
+                    'balance_after': current_balance
+                }
+            
+            # 扣除成功，取得更新後的餘額
+            user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+            balance_after = user.get("points", 0) if user else 0
+            balance_before = balance_after + amount
+            
+            # 記錄點數變化
+            await self._log_point_change(
+                user_id=user_id,
+                change_type="deduction",
+                amount=-amount,
+                note=operation_note,
+                session=session
+            )
+            
+            logger.info(f"Safe point deduction successful: user {user_id}, amount {amount}, balance: {balance_before} -> {balance_after}")
+            
+            return {
+                'success': True,
+                'message': f'成功扣除 {amount} 點',
+                'balance_before': balance_before,
+                'balance_after': balance_after
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to safely deduct points: user {user_id}, amount {amount}, error: {e}")
+            return {
+                'success': False,
+                'message': f'點數扣除失敗: {str(e)}',
+                'balance_before': 0,
+                'balance_after': 0
+            }
     
     # 取得目前股票價格（單位：元）
     async def _get_current_stock_price(self) -> int:
@@ -1177,13 +1254,20 @@ class UserService:
             # 更新用戶資產
             logger.info(f"Updating user assets: user_id={user_oid}, deducting {trade_amount} points, adding {quantity} stocks")
             
-            # 扣除用戶點數
-            points_update_result = await self.db[Collections.USERS].update_one(
-                {"_id": user_oid},
-                {"$inc": {"points": -trade_amount}},
+            # 安全扣除用戶點數
+            deduction_result = await self._safe_deduct_points(
+                user_id=user_oid,
+                amount=trade_amount,
+                operation_note=f"市價買單成交：{quantity} 股 @ {price} 元",
                 session=session
             )
-            logger.info(f"Points update result: matched={points_update_result.matched_count}, modified={points_update_result.modified_count}")
+            
+            if not deduction_result['success']:
+                logger.error(f"Point deduction failed: {deduction_result['message']}")
+                return StockOrderResponse(
+                    success=False,
+                    message=deduction_result['message']
+                )
             
             # 增加股票持有
             stocks_update_result = await self.db[Collections.STOCKS].update_one(
@@ -1643,11 +1727,17 @@ class UserService:
                 }
             )
             
-            # 更新用戶資產
-            await self.db[Collections.USERS].update_one(
-                {"_id": buy_order["user_id"]},
-                {"$inc": {"points": -trade_amount}}
+            # 更新用戶資產 - 買方：安全扣除點數
+            deduction_result = await self._safe_deduct_points(
+                user_id=buy_order["user_id"],
+                amount=trade_amount,
+                operation_note=f"限價訂單成交：{trade_volume} 股 @ {buy_order['price']} 元",
+                session=session
             )
+            
+            if not deduction_result['success']:
+                logger.error(f"Limit order point deduction failed: {deduction_result['message']}")
+                raise Exception(f"買方點數不足: {deduction_result['message']}")
             await self.db[Collections.STOCKS].update_one(
                 {"user_id": buy_order["user_id"]},
                 {"$inc": {"stock_amount": trade_volume}},
@@ -1787,12 +1877,17 @@ class UserService:
                 )
             
             # 更新使用者資產
-            # 買方：扣除點數，增加股票
-            await self.db[Collections.USERS].update_one(
-                {"_id": buy_order["user_id"]},
-                {"$inc": {"points": -trade_amount}},
+            # 買方：安全扣除點數
+            deduction_result = await self._safe_deduct_points(
+                user_id=buy_order["user_id"],
+                amount=trade_amount,
+                operation_note=f"訂單撮合成交：{trade_quantity} 股 @ {trade_price} 元",
                 session=session
             )
+            
+            if not deduction_result['success']:
+                logger.error(f"Order matching point deduction failed: {deduction_result['message']}")
+                raise Exception(f"買方點數不足: {deduction_result['message']}")
             await self.db[Collections.STOCKS].update_one(
                 {"user_id": buy_order["user_id"]},
                 {"$inc": {"stock_amount": trade_quantity}},
@@ -1893,12 +1988,17 @@ class UserService:
                     )
                     
                     # 更新使用者資產
-                    # 買方：扣除點數，增加股票
-                    await self.db[Collections.USERS].update_one(
-                        {"_id": buy_order["user_id"]},
-                        {"$inc": {"points": -trade_amount}},
+                    # 買方：安全扣除點數
+                    deduction_result = await self._safe_deduct_points(
+                        user_id=buy_order["user_id"],
+                        amount=trade_amount,
+                        operation_note=f"訂單部分成交：{trade_quantity} 股 @ {trade_price} 元",
                         session=session
                     )
+                    
+                    if not deduction_result['success']:
+                        logger.error(f"Partial order point deduction failed: {deduction_result['message']}")
+                        raise Exception(f"買方點數不足: {deduction_result['message']}")
                     await self.db[Collections.STOCKS].update_one(
                         {"user_id": buy_order["user_id"]},
                         {"$inc": {"stock_amount": trade_quantity}},

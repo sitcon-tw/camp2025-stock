@@ -626,3 +626,83 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to get manual market status: {e}")
             raise AdminException("無法取得市場狀態")
+
+    # 檢查和修復負點數使用者
+    async def check_and_fix_negative_balances(self, fix_mode: bool = False) -> Dict[str, any]:
+        """
+        檢查系統中是否有負點數的使用者，並可選擇性修復
+        
+        Args:
+            fix_mode: 是否自動修復負點數（設為0）
+            
+        Returns:
+            dict: 檢查結果和修復統計
+        """
+        try:
+            # 查找所有負點數的使用者
+            negative_users = await self.db[Collections.USERS].find(
+                {"points": {"$lt": 0}}
+            ).to_list(None)
+            
+            if not negative_users:
+                return {
+                    "success": True,
+                    "message": "沒有發現負點數使用者",
+                    "negative_count": 0,
+                    "fixed_count": 0,
+                    "negative_users": []
+                }
+            
+            # 準備負點數使用者列表
+            negative_user_list = []
+            for user in negative_users:
+                user_info = {
+                    "user_id": str(user["_id"]),
+                    "username": user.get("username", user.get("name", "未知")),
+                    "points": user.get("points", 0),
+                    "team": user.get("team", "無")
+                }
+                negative_user_list.append(user_info)
+            
+            fixed_count = 0
+            if fix_mode:
+                # 修復模式：將所有負點數設為0
+                for user in negative_users:
+                    original_points = user.get("points", 0)
+                    
+                    # 設定點數為0
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": user["_id"]},
+                        {"$set": {"points": 0}}
+                    )
+                    
+                    # 記錄修復操作
+                    from app.services.user_service import UserService
+                    user_service = UserService(self.db)
+                    await user_service._log_point_change(
+                        user_id=user["_id"],
+                        change_type="admin_fix",
+                        amount=abs(original_points),
+                        note=f"系統修復負點數：{original_points} -> 0"
+                    )
+                    
+                    fixed_count += 1
+                    logger.info(f"Fixed negative balance for user {user.get('username', user['_id'])}: {original_points} -> 0")
+                
+                # 發送系統公告
+                await self._send_system_announcement(
+                    title="🔧 系統維護通知",
+                    message=f"系統已修復 {fixed_count} 位使用者的負點數問題。所有負點數已重置為 0。"
+                )
+            
+            return {
+                "success": True,
+                "message": f"發現 {len(negative_users)} 位負點數使用者" + (f"，已修復 {fixed_count} 位" if fix_mode else ""),
+                "negative_count": len(negative_users),
+                "fixed_count": fixed_count,
+                "negative_users": negative_user_list
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to check/fix negative balances: {e}")
+            raise AdminException(f"檢查負點數失敗: {str(e)}")
