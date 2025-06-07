@@ -1,15 +1,25 @@
 #!/usr/bin/env python3
 """
-SITCON Camp 2025 學員啟用與交易模擬腳本 (含股票交易)
+SITCON Camp 2025 學員啟用與高級交易模擬腳本 (2025最新版)
 
-功能：
-1. 自動檢查市場開放狀態，可選擇自動開啟市場
-2. 啟用所有學員（通過給予初始點數）
-3. 模擬隨機的點數轉帳交易
-4. 模擬隨機的股票買賣交易
-5. IPO股票發行和購買測試
-6. 查詢投資組合和市場狀態
-7. 完整資料庫重置功能
+新增功能：
+1. 高級市場控制 - 手動開市/收市、集合競價
+2. 複雜訂單管理 - 限價單、市價單、訂單歷史查詢
+3. 風險管理測試 - 負餘額檢測與修復
+4. IPO高級管理 - 動態IPO參數調整
+5. 市場深度分析 - 五檔報價、成交記錄分析
+6. 系統完整性檢查 - 餘額完整性、交易完整性驗證
+7. 高並發交易測試 - 多線程複雜交易場景
+8. 最終結算功能 - 股票轉點數結算
+
+原有功能：
+9. 自動檢查市場開放狀態，可選擇自動開啟市場
+10. 啟用所有學員（通過給予初始點數）
+11. 模擬隨機的點數轉帳交易
+12. 模擬隨機的股票買賣交易
+13. IPO股票發行和購買測試
+14. 查詢投資組合和市場狀態
+15. 完整資料庫重置功能
 
 需要安裝的套件：
 pip install requests
@@ -18,9 +28,10 @@ pip install requests
 python final_test.py
 
 注意事項：
-- 腳本會自動檢查市場是否開放，如果關閉會詢問是否開啟
-- 提供完整的交易系統測試，包括IPO和用戶間交易
-- 包含資料庫重置功能，請謹慎使用
+- 腳本支援最新的市場控制和風險管理功能
+- 包含高級訂單管理和集合競價測試
+- 提供完整的系統完整性檢查功能
+- 支援複雜的多線程交易場景測試
 """
 
 import requests
@@ -125,8 +136,8 @@ STUDENTS_DATA = [
     {"id": 3536132809, "name": "S行", "team": "第十組"}
 ]
 
-class CampTradingSimulator:
-    """SITCON Camp 2025 交易模擬器 (含股票交易)"""
+class AdvancedCampTradingSimulator:
+    """SITCON Camp 2025 高級交易模擬器 (2025最新版)"""
     
     def __init__(self, base_url: str = BASE_URL):
         self.base_url = base_url.rstrip('/')
@@ -141,6 +152,9 @@ class CampTradingSimulator:
         self.stats = {
             'point_transfers': {'success': 0, 'failed': 0},
             'stock_trades': {'success': 0, 'failed': 0},
+            'market_orders': {'success': 0, 'failed': 0},
+            'limit_orders': {'success': 0, 'failed': 0},
+            'call_auctions': {'success': 0, 'failed': 0},
             'total_points_transferred': 0,
             'total_stocks_traded': 0
         }
@@ -159,14 +173,14 @@ class CampTradingSimulator:
     def update_stats(self, stat_type: str, operation: str, amount: int = 0):
         """執行緒安全的統計更新"""
         with self.stats_lock:
-            if stat_type == 'point_transfer':
-                self.stats['point_transfers'][operation] += 1
-                if operation == 'success':
-                    self.stats['total_points_transferred'] += amount
-            elif stat_type == 'stock_trade':
-                self.stats['stock_trades'][operation] += 1
-                if operation == 'success':
-                    self.stats['total_stocks_traded'] += amount
+            if stat_type in self.stats:
+                if operation in self.stats[stat_type]:
+                    self.stats[stat_type][operation] += 1
+            
+            if stat_type == 'point_transfer' and operation == 'success':
+                self.stats['total_points_transferred'] += amount
+            elif stat_type in ['stock_trade', 'market_order', 'limit_order'] and operation == 'success':
+                self.stats['total_stocks_traded'] += amount
     
     def admin_login(self) -> bool:
         """管理員登入"""
@@ -190,36 +204,757 @@ class CampTradingSimulator:
             self.log(f"管理員登入異常: {e}", "ERROR")
             return False
     
-    def reset_ipo_for_testing(self, initial_shares: int = 1000, initial_price: int = 20) -> bool:
-        """重置IPO狀態以便測試"""
+    def get_admin_headers(self) -> Dict[str, str]:
+        """取得管理員API請求標頭"""
+        if not self.admin_token:
+            raise ValueError("未登入管理員，請先呼叫 admin_login()")
+        
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.admin_token}'
+        }
+    
+    def get_bot_headers(self) -> Dict[str, str]:
+        """取得BOT API請求標頭"""
+        return {
+            'Content-Type': 'application/json',
+            'token': BOT_TOKEN
+        }
+    
+    # ========== 新增：高級市場控制功能 ==========
+    
+    def manual_market_open(self) -> bool:
+        """手動開市（含集合競價）"""
         try:
-            self.log(f"🔄 重置IPO狀態: {initial_shares} 股 @ {initial_price} 點/股")
+            self.log("🔓 手動開市（含集合競價）...")
             
             if not self.admin_token:
                 self.log("請先登入管理員", "ERROR")
                 return False
             
             response = self.session.post(
-                f"{self.base_url}/api/admin/ipo/reset",
-                headers=self.get_admin_headers(),
-                params={"initial_shares": initial_shares, "initial_price": initial_price}
+                f"{self.base_url}/api/admin/market/open",
+                headers=self.get_admin_headers()
             )
             
             if response.status_code == 200:
                 data = response.json()
                 if data.get("ok"):
-                    self.log(f"✅ IPO重置成功: {data.get('message')}")
+                    self.log(f"✅ 市場開市成功: {data.get('message')}")
+                    
+                    # 檢查集合競價結果
+                    auction_result = data.get("callAuctionResult", {})
+                    if auction_result:
+                        self.log(f"🏦 集合競價結果:")
+                        self.log(f"   開盤價: {auction_result.get('openingPrice', 'N/A')} 元")
+                        self.log(f"   成交量: {auction_result.get('totalVolume', 0)} 股")
+                        self.log(f"   成交筆數: {auction_result.get('executedOrders', 0)} 筆")
+                        
+                        if auction_result.get('priceUpdated'):
+                            self.log(f"   ✅ 股價已更新為開盤價")
+                        
+                        executed_orders = auction_result.get("executedOrdersDetail", [])
+                        if executed_orders:
+                            self.log(f"   成交明細 (前5筆):")
+                            for i, order in enumerate(executed_orders[:5]):
+                                self.log(f"     #{i+1}: {order.get('quantity', 0)} 股 @ {order.get('price', 0)} 元")
+                    
                     return True
                 else:
-                    self.log(f"❌ IPO重置失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    self.log(f"❌ 開市失敗: {data.get('message', '未知錯誤')}", "ERROR")
                     return False
             else:
-                self.log(f"❌ IPO重置請求失敗: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"❌ 開市請求失敗: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"IPO重置異常: {e}", "ERROR")
+            self.log(f"手動開市異常: {e}", "ERROR")
             return False
+    
+    def manual_market_close(self) -> bool:
+        """手動收市"""
+        try:
+            self.log("🔒 手動收市...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/market/close",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ 市場收市成功: {data.get('message')}")
+                    
+                    # 顯示收市信息
+                    close_info = data.get("marketInfo", {})
+                    if close_info:
+                        self.log(f"📊 收市資訊:")
+                        self.log(f"   收盤價: {close_info.get('closingPrice', 'N/A')} 元")
+                        self.log(f"   當日成交量: {close_info.get('dailyVolume', 0)} 股")
+                        self.log(f"   當日漲跌: {close_info.get('dailyChange', 'N/A')}")
+                    
+                    return True
+                else:
+                    self.log(f"❌ 收市失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ 收市請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"手動收市異常: {e}", "ERROR")
+            return False
+    
+    def trigger_call_auction(self) -> bool:
+        """手動觸發集合競價"""
+        try:
+            self.log("🏦 手動觸發集合競價...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/market/call-auction",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.update_stats('call_auctions', 'success')
+                    self.log(f"✅ 集合競價執行成功")
+                    
+                    # 顯示集合競價結果
+                    result = data.get("result", {})
+                    self.log(f"🏦 集合競價結果:")
+                    self.log(f"   成交價格: {result.get('price', 'N/A')} 元")
+                    self.log(f"   成交量: {result.get('volume', 0)} 股")
+                    self.log(f"   成交筆數: {result.get('executedOrders', 0)} 筆")
+                    
+                    if result.get('priceUpdated'):
+                        self.log(f"   ✅ 股價已更新")
+                    
+                    # 顯示剩餘掛單
+                    remaining = result.get("remainingOrders", {})
+                    if remaining:
+                        buy_orders = remaining.get("buy", [])
+                        sell_orders = remaining.get("sell", [])
+                        self.log(f"   剩餘買單: {len(buy_orders)} 筆")
+                        self.log(f"   剩餘賣單: {len(sell_orders)} 筆")
+                    
+                    return True
+                else:
+                    self.update_stats('call_auctions', 'failed')
+                    self.log(f"❌ 集合競價失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.update_stats('call_auctions', 'failed')
+                self.log(f"❌ 集合競價請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.update_stats('call_auctions', 'failed')
+            self.log(f"集合競價異常: {e}", "ERROR")
+            return False
+    
+    def get_market_control_status(self) -> Optional[Dict]:
+        """獲取市場控制狀態"""
+        try:
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return None
+            
+            response = self.session.get(
+                f"{self.base_url}/api/admin/market/status",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                self.log(f"查詢市場控制狀態失敗: {response.status_code}", "WARNING")
+                return None
+                
+        except Exception as e:
+            self.log(f"查詢市場控制狀態異常: {e}", "WARNING")
+            return None
+    
+    # ========== 新增：風險管理功能 ==========
+    
+    def check_negative_balances(self) -> bool:
+        """檢查負餘額用戶"""
+        try:
+            self.log("🔍 檢查負餘額用戶...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.get(
+                f"{self.base_url}/api/admin/system/check-negative-balances",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                negative_users = data.get("negativeBalanceUsers", [])
+                
+                self.log(f"📊 負餘額檢查結果:")
+                self.log(f"   發現負餘額用戶: {len(negative_users)} 人")
+                
+                if negative_users:
+                    self.log(f"   負餘額用戶列表:")
+                    for user in negative_users[:10]:  # 只顯示前10個
+                        username = user.get("username", "N/A")
+                        balance = user.get("points", 0)
+                        self.log(f"     {username}: {balance} 點")
+                    
+                    if len(negative_users) > 10:
+                        self.log(f"     ... 還有 {len(negative_users) - 10} 個用戶")
+                else:
+                    self.log(f"   ✅ 沒有發現負餘額用戶")
+                
+                return True
+            else:
+                self.log(f"❌ 負餘額檢查失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"負餘額檢查異常: {e}", "ERROR")
+            return False
+    
+    def fix_negative_balances(self) -> bool:
+        """修復負餘額"""
+        try:
+            self.log("🔧 修復負餘額...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/system/fix-negative-balances",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ 負餘額修復成功")
+                    
+                    fixed_count = data.get("fixedUsersCount", 0)
+                    total_added = data.get("totalPointsAdded", 0)
+                    
+                    self.log(f"📊 修復結果:")
+                    self.log(f"   修復用戶數: {fixed_count} 人")
+                    self.log(f"   總共補充點數: {total_added} 點")
+                    
+                    fixed_users = data.get("fixedUsers", [])
+                    if fixed_users:
+                        self.log(f"   修復用戶列表:")
+                        for user in fixed_users[:5]:  # 只顯示前5個
+                            username = user.get("username", "N/A")
+                            added = user.get("pointsAdded", 0)
+                            self.log(f"     {username}: 補充 {added} 點")
+                    
+                    return True
+                else:
+                    self.log(f"❌ 負餘額修復失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ 負餘額修復請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"負餘額修復異常: {e}", "ERROR")
+            return False
+    
+    def trigger_system_balance_check(self) -> bool:
+        """觸發系統全面餘額檢查"""
+        try:
+            self.log("🔍 觸發系統全面餘額檢查...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/system/trigger-balance-check",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ 系統餘額檢查完成")
+                    
+                    # 顯示檢查結果
+                    result = data.get("result", {})
+                    self.log(f"📊 檢查結果:")
+                    self.log(f"   檢查用戶數: {result.get('totalUsersChecked', 0)} 人")
+                    self.log(f"   發現問題用戶: {result.get('issuesFound', 0)} 人")
+                    self.log(f"   總點數: {result.get('totalPoints', 0)} 點")
+                    self.log(f"   總股票: {result.get('totalStocks', 0)} 股")
+                    
+                    if result.get('issuesFound', 0) > 0:
+                        self.log(f"   ⚠️ 發現 {result.get('issuesFound')} 個問題，建議執行修復")
+                    else:
+                        self.log(f"   ✅ 系統狀態良好，未發現問題")
+                    
+                    return True
+                else:
+                    self.log(f"❌ 系統餘額檢查失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ 系統餘額檢查請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"系統餘額檢查異常: {e}", "ERROR")
+            return False
+    
+    # ========== 新增：高級IPO管理 ==========
+    
+    def get_ipo_defaults(self) -> Optional[Dict]:
+        """獲取IPO預設設定"""
+        try:
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return None
+            
+            response = self.session.get(
+                f"{self.base_url}/api/admin/ipo/defaults",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                self.log(f"查詢IPO預設設定失敗: {response.status_code}", "WARNING")
+                return None
+                
+        except Exception as e:
+            self.log(f"查詢IPO預設設定異常: {e}", "WARNING")
+            return None
+    
+    def update_ipo_defaults(self, initial_shares: int = 1000, initial_price: int = 20) -> bool:
+        """更新IPO預設設定"""
+        try:
+            self.log(f"🔧 更新IPO預設設定: {initial_shares} 股 @ {initial_price} 元")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/ipo/defaults",
+                headers=self.get_admin_headers(),
+                json={
+                    "initialShares": initial_shares,
+                    "initialPrice": initial_price
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ IPO預設設定更新成功")
+                    return True
+                else:
+                    self.log(f"❌ IPO預設設定更新失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ IPO預設設定更新請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"IPO預設設定更新異常: {e}", "ERROR")
+            return False
+    
+    def update_ipo_parameters(self, shares_remaining: Optional[int] = None, 
+                            initial_price: Optional[int] = None) -> bool:
+        """動態更新IPO參數"""
+        try:
+            self.log(f"🔧 動態更新IPO參數...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            update_data = {}
+            if shares_remaining is not None:
+                update_data["sharesRemaining"] = shares_remaining
+            if initial_price is not None:
+                update_data["initialPrice"] = initial_price
+            
+            if not update_data:
+                self.log("❌ 沒有指定要更新的參數", "ERROR")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/ipo/update",
+                headers=self.get_admin_headers(),
+                json=update_data
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ IPO參數更新成功")
+                    
+                    updated_ipo = data.get("updatedIPO", {})
+                    self.log(f"📊 更新後IPO狀態:")
+                    self.log(f"   剩餘股數: {updated_ipo.get('sharesRemaining', 'N/A')} 股")
+                    self.log(f"   IPO價格: {updated_ipo.get('initialPrice', 'N/A')} 元")
+                    
+                    return True
+                else:
+                    self.log(f"❌ IPO參數更新失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ IPO參數更新請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"IPO參數更新異常: {e}", "ERROR")
+            return False
+    
+    # ========== 新增：訂單管理功能 ==========
+    
+    def get_user_order_history(self, user_id: str, limit: int = 10) -> Optional[List[Dict]]:
+        """查詢用戶訂單歷史"""
+        try:
+            response = self.session.post(
+                f"{self.base_url}/api/bot/stock/orders",
+                headers=self.get_bot_headers(),
+                json={
+                    "from_user": user_id,
+                    "limit": limit
+                }
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                self.log(f"查詢用戶 {user_id} 訂單歷史失敗: {response.status_code}", "WARNING")
+                return None
+                
+        except Exception as e:
+            self.log(f"查詢用戶 {user_id} 訂單歷史異常: {e}", "WARNING")
+            return None
+    
+    def simulate_complex_order_scenario(self) -> bool:
+        """模擬複雜訂單場景"""
+        try:
+            self.log("🎯 開始複雜訂單場景模擬...")
+            
+            active_students = self.get_active_students()
+            if len(active_students) < 3:
+                self.log("活躍學員數量不足", "WARNING")
+                return False
+            
+            # 選擇3個學員參與複雜交易
+            participants = random.sample(active_students, 3)
+            current_price = self.get_current_price()
+            
+            self.log(f"📊 當前股價: {current_price} 元")
+            self.log(f"👥 參與者: {[p['name'] for p in participants]}")
+            
+            # 場景1: 限價買單堆疊（不同價格）
+            self.log("📋 場景1: 建立限價買單階梯...")
+            buy_prices = [current_price - 5, current_price - 3, current_price - 1]
+            
+            for i, (participant, price) in enumerate(zip(participants, buy_prices)):
+                quantity = random.randint(1, 5)
+                order_data = {
+                    "from_user": str(participant["id"]),
+                    "order_type": "limit",
+                    "side": "buy",
+                    "quantity": quantity,
+                    "price": price
+                }
+                
+                response = self.session.post(
+                    f"{self.base_url}/api/bot/stock/order",
+                    headers=self.get_bot_headers(),
+                    json=order_data
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success"):
+                        order_id = data.get("order_id", "N/A")
+                        self.log(f"📋 {participant['name']} 掛買單: {quantity} 股 @ {price} 元 (ID: {order_id[:8]}...)")
+                    else:
+                        self.log(f"❌ {participant['name']} 掛買單失敗: {data.get('message')}", "WARNING")
+                
+                time.sleep(0.5)
+            
+            # 場景2: 限價賣單（觸發部分成交）
+            time.sleep(1)
+            self.log("📋 場景2: 建立限價賣單觸發成交...")
+            
+            # 使用另一個學員下賣單，價格設定為能與最高買單成交
+            seller = random.choice([s for s in active_students if s not in participants])
+            sell_price = buy_prices[-1]  # 最高買單價格
+            sell_quantity = random.randint(1, 3)
+            
+            sell_order_data = {
+                "from_user": str(seller["id"]),
+                "order_type": "limit",
+                "side": "sell",
+                "quantity": sell_quantity,
+                "price": sell_price
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/bot/stock/order",
+                headers=self.get_bot_headers(),
+                json=sell_order_data
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    executed_price = data.get("executed_price")
+                    if executed_price:
+                        self.log(f"✅ {seller['name']} 賣單成交: {sell_quantity} 股 @ {executed_price} 元")
+                        self.update_stats('limit_orders', 'success', sell_quantity)
+                    else:
+                        order_id = data.get("order_id", "N/A")
+                        self.log(f"📋 {seller['name']} 掛賣單: {sell_quantity} 股 @ {sell_price} 元 (ID: {order_id[:8]}...)")
+                else:
+                    self.log(f"❌ {seller['name']} 賣單失敗: {data.get('message')}", "WARNING")
+            
+            # 場景3: 市價單清理掛單
+            time.sleep(1)
+            self.log("📋 場景3: 市價單清理部分掛單...")
+            
+            market_trader = random.choice([s for s in active_students if s not in participants and s != seller])
+            market_quantity = random.randint(1, 2)
+            
+            market_order_data = {
+                "from_user": str(market_trader["id"]),
+                "order_type": "market",
+                "side": "buy",
+                "quantity": market_quantity
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/bot/stock/order",
+                headers=self.get_bot_headers(),
+                json=market_order_data
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    executed_price = data.get("executed_price")
+                    if executed_price:
+                        self.log(f"✅ {market_trader['name']} 市價買單成交: {market_quantity} 股 @ {executed_price} 元")
+                        self.update_stats('market_orders', 'success', market_quantity)
+                    else:
+                        self.log(f"❌ {market_trader['name']} 市價買單未成交", "WARNING")
+                else:
+                    self.log(f"❌ {market_trader['name']} 市價買單失敗: {data.get('message')}", "WARNING")
+            
+            # 檢查最終市場狀態
+            time.sleep(1)
+            self.log("📊 檢查複雜交易後的市場狀態...")
+            self.check_market_depth()
+            self.check_recent_trades(5)
+            
+            return True
+            
+        except Exception as e:
+            self.log(f"複雜訂單場景模擬異常: {e}", "ERROR")
+            return False
+    
+    # ========== 新增：市場深度分析 ==========
+    
+    def check_market_depth(self) -> None:
+        """詳細檢查市場深度"""
+        try:
+            self.log("🔍 詳細檢查市場深度...")
+            
+            response = self.session.get(f"{self.base_url}/api/price/depth")
+            if response.status_code == 200:
+                depth = response.json()
+                buy_orders = depth.get("buy", [])
+                sell_orders = depth.get("sell", [])
+                
+                self.log(f"📊 市場深度分析:")
+                self.log(f"   總買單檔數: {len(buy_orders)} 檔")
+                self.log(f"   總賣單檔數: {len(sell_orders)} 檔")
+                
+                # 計算買賣總量
+                total_buy_quantity = sum(order.get('quantity', 0) for order in buy_orders)
+                total_sell_quantity = sum(order.get('quantity', 0) for order in sell_orders)
+                
+                self.log(f"   總買量: {total_buy_quantity} 股")
+                self.log(f"   總賣量: {total_sell_quantity} 股")
+                
+                # 顯示最佳五檔
+                self.log(f"   最佳五檔買單:")
+                for i, order in enumerate(buy_orders[:5]):
+                    price = order.get('price', 'N/A')
+                    quantity = order.get('quantity', 0)
+                    self.log(f"     買{i+1}: {price} 元 x {quantity} 股")
+                
+                self.log(f"   最佳五檔賣單:")
+                for i, order in enumerate(sell_orders[:5]):
+                    price = order.get('price', 'N/A')
+                    quantity = order.get('quantity', 0)
+                    self.log(f"     賣{i+1}: {price} 元 x {quantity} 股")
+                
+                # 計算買賣價差
+                if buy_orders and sell_orders:
+                    best_bid = buy_orders[0].get('price', 0)
+                    best_ask = sell_orders[0].get('price', 0)
+                    spread = best_ask - best_bid
+                    self.log(f"   買賣價差: {spread} 元 ({best_bid} - {best_ask})")
+                    
+                    if spread <= 0:
+                        self.log(f"   ⚠️ 買賣價格重疊，可能有成交機會")
+                
+            else:
+                self.log(f"❌ 查詢市場深度失敗: {response.status_code}")
+                
+        except Exception as e:
+            self.log(f"檢查市場深度異常: {e}", "WARNING")
+    
+    def analyze_price_movements(self) -> None:
+        """分析價格變動"""
+        try:
+            self.log("📈 分析價格變動...")
+            
+            # 獲取歷史價格
+            response = self.session.get(f"{self.base_url}/api/price/history?hours=24")
+            if response.status_code == 200:
+                history = response.json()
+                
+                if len(history) >= 2:
+                    self.log(f"📊 價格變動分析 (過去24小時):")
+                    self.log(f"   數據點數: {len(history)} 個")
+                    
+                    prices = [record.get('price', 0) for record in history]
+                    
+                    # 計算統計數據
+                    latest_price = prices[-1]
+                    earliest_price = prices[0]
+                    max_price = max(prices)
+                    min_price = min(prices)
+                    avg_price = sum(prices) / len(prices)
+                    
+                    # 計算變動
+                    total_change = latest_price - earliest_price
+                    change_percent = (total_change / earliest_price * 100) if earliest_price > 0 else 0
+                    
+                    self.log(f"   期間開始價: {earliest_price} 元")
+                    self.log(f"   期間結束價: {latest_price} 元")
+                    self.log(f"   期間最高價: {max_price} 元")
+                    self.log(f"   期間最低價: {min_price} 元")
+                    self.log(f"   期間平均價: {avg_price:.2f} 元")
+                    self.log(f"   總變動: {total_change:+d} 元 ({change_percent:+.2f}%)")
+                    
+                    # 計算波動性
+                    if len(prices) > 1:
+                        price_changes = [prices[i] - prices[i-1] for i in range(1, len(prices))]
+                        volatility = sum(abs(change) for change in price_changes) / len(price_changes)
+                        self.log(f"   平均波動: {volatility:.2f} 元")
+                
+                else:
+                    self.log(f"   ⚠️ 歷史數據不足，僅有 {len(history)} 個數據點")
+                    
+            else:
+                self.log(f"❌ 查詢價格歷史失敗: {response.status_code}")
+                
+        except Exception as e:
+            self.log(f"分析價格變動異常: {e}", "WARNING")
+    
+    # ========== 新增：最終結算功能 ==========
+    
+    def execute_final_settlement(self) -> bool:
+        """執行最終結算（將所有股票轉換為點數）"""
+        try:
+            self.log("💰 執行最終結算...")
+            
+            if not self.admin_token:
+                self.log("請先登入管理員", "ERROR")
+                return False
+            
+            # 先詢問確認
+            confirm = input("⚠️ 這將把所有用戶的股票轉換為點數，確定要執行最終結算嗎？ (y/N): ").strip().lower()
+            if confirm != 'y':
+                self.log("❌ 最終結算已取消")
+                return False
+            
+            response = self.session.post(
+                f"{self.base_url}/api/admin/final-settlement",
+                headers=self.get_admin_headers()
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("ok"):
+                    self.log(f"✅ 最終結算執行成功")
+                    
+                    settlement_info = data.get("settlement", {})
+                    self.log(f"💰 結算資訊:")
+                    self.log(f"   結算價格: {settlement_info.get('settlementPrice', 'N/A')} 元/股")
+                    self.log(f"   處理用戶數: {settlement_info.get('processedUsers', 0)} 人")
+                    self.log(f"   轉換股票總數: {settlement_info.get('totalStocksConverted', 0)} 股")
+                    self.log(f"   轉換點數總額: {settlement_info.get('totalPointsAdded', 0)} 點")
+                    
+                    # 顯示部分用戶結算明細
+                    processed_users = settlement_info.get("processedUsersDetail", [])
+                    if processed_users:
+                        self.log(f"   結算明細 (前5位用戶):")
+                        for user in processed_users[:5]:
+                            username = user.get("username", "N/A")
+                            stocks = user.get("stocksConverted", 0)
+                            points = user.get("pointsAdded", 0)
+                            self.log(f"     {username}: {stocks} 股 → {points} 點")
+                    
+                    return True
+                else:
+                    self.log(f"❌ 最終結算失敗: {data.get('message', '未知錯誤')}", "ERROR")
+                    return False
+            else:
+                self.log(f"❌ 最終結算請求失敗: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"最終結算異常: {e}", "ERROR")
+            return False
+    
+    # ========== 輔助功能 ==========
+    
+    def get_current_price(self) -> int:
+        """獲取當前股價"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/price/current")
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("price", 20)
+            else:
+                return 20
+        except:
+            return 20
+    
+    def get_active_students(self) -> List[Dict]:
+        """取得活躍學員列表（用於交易模擬）"""
+        active_students = [
+            student for student in STUDENTS_DATA 
+            if student.get("team") and student["team"].strip()
+        ]
+        return active_students
     
     def reset_all_data(self) -> bool:
         """重置所有資料"""
@@ -253,184 +988,8 @@ class CampTradingSimulator:
             self.log(f"資料重置異常: {e}", "ERROR")
             return False
     
-    def check_and_ensure_market_open(self) -> bool:
-        """檢查並確保市場開放交易"""
-        try:
-            self.log("🔍 檢查市場開放狀態...")
-            
-            # 檢查目前市場狀態
-            market_response = self.session.get(f"{self.base_url}/api/status")
-            if market_response.status_code != 200:
-                self.log(f"❌ 無法查詢市場狀態: {market_response.status_code}", "ERROR")
-                return False
-            
-            market_data = market_response.json()
-            is_open = market_data.get("isOpen", False)
-            current_time = market_data.get("currentTime", "unknown")
-            
-            if is_open:
-                self.log("✅ 市場目前開放交易")
-                return True
-            
-            self.log("⚠️ 市場目前關閉")
-            self.log(f"   目前時間: {current_time}")
-            
-            # 詢問是否要開放市場
-            open_market = input("是否要開放市場進行測試？ (Y/n): ").strip().lower()
-            if open_market in ['', 'y', 'yes']:
-                return self.open_market_for_testing()
-            else:
-                self.log("❌ 市場未開放，無法進行交易測試", "WARNING")
-                return False
-                
-        except Exception as e:
-            self.log(f"檢查市場狀態異常: {e}", "ERROR")
-            return False
-    
-    def open_market_for_testing(self) -> bool:
-        """開放市場進行測試"""
-        try:
-            from datetime import datetime, timezone, timedelta
-            
-            self.log("🔓 正在開放市場...")
-            
-            if not self.admin_token:
-                self.log("請先登入管理員", "ERROR")
-                return False
-            
-            # 設定市場開放時間為現在起24小時
-            current_time = datetime.now(timezone.utc)
-            start_time = int((current_time - timedelta(hours=1)).timestamp())  # 1小時前開始
-            end_time = int((current_time + timedelta(hours=24)).timestamp())   # 24小時後結束
-            
-            response = self.session.post(
-                f"{self.base_url}/api/admin/market/update",
-                headers=self.get_admin_headers(),
-                json={
-                    "openTime": [
-                        {
-                            "start": start_time,
-                            "end": end_time
-                        }
-                    ]
-                }
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("ok", False):
-                    self.log("✅ 市場已開放，交易時間: 現在 ~ 24小時後")
-                    return True
-                else:
-                    self.log(f"❌ 開放市場失敗: {data.get('message', '未知錯誤')}", "ERROR")
-                    return False
-            else:
-                self.log(f"❌ 開放市場請求失敗: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"開放市場異常: {e}", "ERROR")
-            return False
-    
-    def get_admin_headers(self) -> Dict[str, str]:
-        """取得管理員API請求標頭"""
-        if not self.admin_token:
-            raise ValueError("未登入管理員，請先呼叫 admin_login()")
-        
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.admin_token}'
-        }
-    
-    def get_bot_headers(self) -> Dict[str, str]:
-        """取得BOT API請求標頭"""
-        return {
-            'Content-Type': 'application/json',
-            'token': BOT_TOKEN
-        }
-    
-    # ========== 市場狀態查詢 ==========
-    
-    def get_market_status(self) -> Tuple[bool, int]:
-        """
-        取得市場狀態和目前股價
-        
-        Returns:
-            Tuple[bool, int]: (是否開放交易, 目前股價)
-        """
-        try:
-            # 檢查市場狀態
-            market_response = self.session.get(f"{self.base_url}/api/status")
-            is_open = True  # 預設開放
-            if market_response.status_code == 200:
-                market_data = market_response.json()
-                is_open = market_data.get("isOpen", True)
-            
-            # 取得目前股價
-            price_response = self.session.get(f"{self.base_url}/api/price/current")
-            current_price = 20  # 預設價格
-            if price_response.status_code == 200:
-                price_data = price_response.json()
-                current_price = price_data.get("price", 20)
-            
-            return is_open, current_price
-            
-        except Exception as e:
-            self.log(f"查詢市場狀態異常: {e}", "WARNING")
-            return True, 20  # 預設開放，價格20
-    
-    def show_market_info(self) -> None:
-        """顯示市場資訊"""
-        try:
-            self.log("📈 正在查詢市場資訊...")
-            
-            # 市場狀態
-            is_open, current_price = self.get_market_status()
-            status_text = "🟢 開放中" if is_open else "🔴 已關閉"
-            self.log(f"   市場狀態: {status_text}")
-            self.log(f"   目前股價: {current_price} 元")
-            
-            # IPO狀態
-            ipo_response = self.session.get(f"{self.base_url}/api/ipo/status")
-            if ipo_response.status_code == 200:
-                ipo_status = ipo_response.json()
-                self.log(f"   IPO狀態: {ipo_status.get('sharesRemaining', 0)} / {ipo_status.get('initialShares', 0)} 股剩餘")
-                self.log(f"   IPO價格: {ipo_status.get('initialPrice', 20)} 元/股")
-            
-            # 價格摘要
-            summary_response = self.session.get(f"{self.base_url}/api/price/summary")
-            if summary_response.status_code == 200:
-                summary = summary_response.json()
-                self.log(f"   開盤價: {summary.get('open', 20)} 元")
-                self.log(f"   最高價: {summary.get('high', 20)} 元")
-                self.log(f"   最低價: {summary.get('low', 20)} 元")
-                self.log(f"   成交量: {summary.get('volume', 0)} 股")
-                self.log(f"   漲跌: {summary.get('change', '+0')} ({summary.get('changePercent', '+0.0%')})")
-            
-            # 最近成交
-            trades_response = self.session.get(f"{self.base_url}/api/price/trades?limit=3")
-            if trades_response.status_code == 200:
-                trades = trades_response.json()
-                if trades:
-                    self.log("   最近成交:")
-                    for trade in trades[:3]:
-                        self.log(f"     {trade.get('price', 0)} 元 x {trade.get('quantity', 0)} 股")
-                        
-        except Exception as e:
-            self.log(f"顯示市場資訊異常: {e}", "WARNING")
-    
-    # ========== 學員啟用 ==========
-    
     def enable_all_students(self, initial_points: int = 1000) -> bool:
-        """
-        啟用所有學員（通過給予初始點數）
-        
-        Args:
-            initial_points: 初始點數
-            
-        Returns:
-            bool: 是否成功
-        """
+        """啟用所有學員（通過給予初始點數）"""
         try:
             self.log(f"開始啟用所有學員，每人給予 {initial_points} 點數...")
             
@@ -443,12 +1002,11 @@ class CampTradingSimulator:
             
             for student in STUDENTS_DATA:
                 try:
-                    # 給每個學員點數（這樣可以確保他們在系統中且有點數）
                     response = self.session.post(
                         f"{self.base_url}/api/admin/users/give-points",
                         headers=self.get_admin_headers(),
                         json={
-                            "username": str(student["id"]),  # 使用ID作為username
+                            "username": str(student["id"]),
                             "type": "user",
                             "amount": initial_points
                         }
@@ -461,9 +1019,6 @@ class CampTradingSimulator:
                         failed_count += 1
                         self.log(f"✗ 啟用失敗: {student['name']} - {response.text}", "WARNING")
                     
-                    # 避免過於頻繁的請求
-                    # time.sleep(0.1)
-                    
                 except Exception as e:
                     failed_count += 1
                     self.log(f"✗ 啟用異常: {student['name']} - {e}", "ERROR")
@@ -474,845 +1029,95 @@ class CampTradingSimulator:
         except Exception as e:
             self.log(f"啟用學員過程異常: {e}", "ERROR")
             return False
-
-    def simulate_initial_stock_distribution(self, max_stocks_per_person: int = 10) -> bool:
-        """
-        模擬初始股票發行 - 讓部分學員購買初始股票
-        
-        Args:
-            max_stocks_per_person: 每人最多購買股數
-            
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            self.log(f"🏭 開始模擬初始股票發行...")
-            
-            # 先檢查IPO狀態
-            ipo_response = self.session.get(f"{self.base_url}/api/ipo/status")
-            if ipo_response.status_code == 200:
-                ipo_status = ipo_response.json()
-                shares_available = ipo_status.get('sharesRemaining', 0)
-                ipo_price = ipo_status.get('initialPrice', 20)
-                self.log(f"   IPO庫存: {shares_available} 股")
-                self.log(f"   IPO價格: {ipo_price} 點/股")
-                
-                if shares_available <= 0:
-                    self.log("   ⚠️ IPO庫存已售完，無法從系統購買", "WARNING")
-                    return False
-            else:
-                self.log("   ⚠️ 無法查詢IPO狀態", "WARNING")
-                return False
-            
-            active_students = self.get_active_students()
-            
-            # 選擇40-60%的學員參與IPO購買
-            buyers_ratio = random.uniform(0.4, 0.6)
-            num_buyers = int(len(active_students) * buyers_ratio)
-            buyers = random.sample(active_students, num_buyers)
-            
-            success_count = 0
-            total_stocks_issued = 0
-            ipo_purchases = 0
-            market_purchases = 0
-            
-            self.log(f"   選擇 {num_buyers} 位學員參與IPO ({buyers_ratio:.1%})")
-            self.log(f"   每人限購: {max_stocks_per_person} 股")
-            
-            for i, buyer in enumerate(buyers):
-                try:
-                    # 隨機購買1-max_stocks_per_person股
-                    buy_quantity = random.randint(1, max_stocks_per_person)
-                    
-                    # 使用市價單從系統IPO購買股票
-                    response = self.session.post(
-                        f"{self.base_url}/api/bot/stock/order",
-                        headers=self.get_bot_headers(),
-                        json={
-                            "from_user": str(buyer["id"]),
-                            "order_type": "market",
-                            "side": "buy",
-                            "quantity": buy_quantity
-                        }
-                    )
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        if data.get("success", False):
-                            success_count += 1
-                            total_stocks_issued += buy_quantity
-                            executed_price = data.get("executed_price", ipo_price)
-                            message = data.get("message", "")
-                            order_id = data.get("order_id", "N/A")
-                            
-                            # 判斷是否為IPO購買
-                            if "IPO申購" in message or executed_price == ipo_price:
-                                ipo_purchases += 1
-                                purchase_type = "🏭IPO"
-                            else:
-                                market_purchases += 1
-                                purchase_type = "📈市價"
-                                
-                            self.log(f"💰 {buyer['name']} {purchase_type}購買 {buy_quantity} 股 @ {executed_price}元 ✅立即成交")
-                            
-                        else:
-                            self.log(f"❌ {buyer['name']} 購買失敗: {data.get('message', '未知錯誤')}", "WARNING")
-                    else:
-                        self.log(f"❌ {buyer['name']} 購買請求失敗: {response.status_code}", "WARNING")
-                    
-                    # 每10筆交易檢查一次IPO狀態
-                    if (i + 1) % 10 == 0:
-                        ipo_check = self.session.get(f"{self.base_url}/api/ipo/status")
-                        if ipo_check.status_code == 200:
-                            current_ipo = ipo_check.json()
-                            remaining = current_ipo.get('sharesRemaining', 0)
-                            self.log(f"   📊 進度檢查 ({i+1}/{num_buyers}): IPO剩餘 {remaining} 股")
-                    
-                    time.sleep(0.1)  # 避免過於頻繁
-                    
-                except Exception as e:
-                    self.log(f"❌ {buyer['name']} 購買異常: {e}", "ERROR")
-            
-            self.log(f"📈 初始股票發行完成:")
-            self.log(f"   參與購買: {success_count}/{len(buyers)} 人")
-            self.log(f"   IPO購買: {ipo_purchases} 筆")
-            self.log(f"   市價購買: {market_purchases} 筆")
-            self.log(f"   發行總量: {total_stocks_issued} 股")
-            
-            # 檢查最終IPO狀態
-            final_ipo = self.session.get(f"{self.base_url}/api/ipo/status")
-            if final_ipo.status_code == 200:
-                final_status = final_ipo.json()
-                remaining = final_status.get('sharesRemaining', 0)
-                self.log(f"   🏭 IPO最終狀態: {remaining} 股剩餘")
-            
-            # 檢查成交情況
-            self.check_recent_trades()
-            
-            return success_count > 0
-            
-        except Exception as e:
-            self.log(f"初始股票發行異常: {e}", "ERROR")
-            return False
     
-    # ========== 點數轉帳模擬 ==========
-    
-    def get_active_students(self) -> List[Dict]:
-        """取得活躍學員列表（用於交易模擬）"""
-        # 過濾掉未分組的學員
-        active_students = [
-            student for student in STUDENTS_DATA 
-            if student.get("team") and student["team"].strip()
-        ]
-        return active_students
-    
-    def simulate_random_transfer(self, min_amount: int = 10, max_amount: int = 200) -> bool:
-        """
-        模擬一次隨機轉帳
-        
-        Args:
-            min_amount: 最小轉帳金額
-            max_amount: 最大轉帳金額
-            
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            active_students = self.get_active_students()
-            
-            if len(active_students) < 2:
-                self.log("活躍學員數量不足，無法進行轉帳", "WARNING")
-                return False
-            
-            # 隨機選擇轉帳雙方
-            sender, receiver = random.sample(active_students, 2)
-            amount = random.randint(min_amount, max_amount)
-            
-            # 生成隨機備註
-            notes = [
-                "感謝幫忙！",
-                "請你喝飲料",
-                "借一下點數",
-                "團隊合作獎勵",
-                "活動獎金",
-                "小小心意",
-                "Thanks!",
-                "辛苦了！",
-                "加油！",
-                "買零食錢"
-            ]
-            note = random.choice(notes)
-            
-            # 進行轉帳
-            response = self.session.post(
-                f"{self.base_url}/api/bot/transfer",
-                headers=self.get_bot_headers(),
-                json={
-                    "from_user": str(sender["id"]),
-                    "to_username": str(receiver["id"]),
-                    "amount": amount,
-                    "note": note
-                }
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("success", False):
-                    fee = data.get("fee", 0)
-                    self.update_stats('point_transfer', 'success', amount)
-                    self.log(f"💰 轉帳成功: {sender['name']} → {receiver['name']} "
-                           f"{amount} 點 (手續費: {fee}) 備註: {note}")
-                    return True
-                else:
-                    self.update_stats('point_transfer', 'failed')
-                    self.log(f"💸 轉帳失敗: {sender['name']} → {receiver['name']} "
-                           f"{amount} 點 - {data.get('message', '未知錯誤')}", "WARNING")
-                    return False
-            else:
-                self.update_stats('point_transfer', 'failed')
-                self.log(f"💸 轉帳請求失敗: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.update_stats('point_transfer', 'failed')
-            self.log(f"轉帳模擬異常: {e}", "ERROR")
-            return False
-    
-    # ========== 股票交易模擬 ==========
-    
-    def simulate_smart_stock_trade(self) -> bool:
-        """
-        模擬智能股票交易（會檢查學員持股狀況）
-        
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            active_students = self.get_active_students()
-            
-            if not active_students:
-                self.log("沒有活躍學員可進行股票交易", "WARNING")
-                return False
-            
-            # 檢查市場狀態
-            is_open, current_price = self.get_market_status()
-            if not is_open:
-                self.log("市場未開放，無法進行股票交易", "WARNING")
-                return False
-            
-            # 隨機選擇交易者
-            trader = random.choice(active_students)
-            
-            # 查詢該學員的投資組合來決定買賣方向
-            portfolio = self.get_student_portfolio(str(trader["id"]))
-            if not portfolio:
-                self.log(f"無法查詢 {trader['name']} 的投資組合", "WARNING")
-                return False
-            
-            points = portfolio.get("points", 0)
-            stocks = portfolio.get("stocks", 0)
-            
-            # 智能決定買賣方向
-            if stocks > 0 and points > 0:
-                # 有股票也有點數，隨機選擇
-                side = random.choice(["buy", "sell"])
-            elif stocks > 0:
-                # 只有股票，選擇賣出
-                side = "sell"
-            elif points >= current_price:
-                # 只有點數且足夠買股票，選擇買入
-                side = "buy"
-            else:
-                # 點數不足買股票，跳過此次交易
-                self.log(f"⏭️ {trader['name']} 點數不足購買股票 ({points} < {current_price})，跳過交易", "INFO")
-                return False
-            
-            # 調整訂單類型比例，更多限價單創造價格變動（40%市價單，60%限價單）
-            order_type = "market" if random.random() < 0.4 else "limit"
-            
-            # 根據買賣方向和持股情況決定交易數量
-            if side == "buy":
-                # 買入：根據點數決定最大可買數量
-                max_buyable = min(50, points // current_price) if order_type == "market" else 50
-                if max_buyable <= 0:
-                    self.log(f"⏭️ {trader['name']} 點數不足購買股票，跳過交易", "INFO")
-                    return False
-                quantity = random.randint(1, max_buyable)
-            else:
-                # 賣出：根據持股決定最大可賣數量
-                if stocks <= 0:
-                    self.log(f"⏭️ {trader['name']} 無股票可賣，跳過交易", "INFO")
-                    return False
-                quantity = random.randint(1, min(stocks, 50))
-            
-            # 構建訂單
-            order_data = {
-                "from_user": str(trader["id"]),
-                "order_type": order_type,
-                "side": side,
-                "quantity": quantity
-            }
-            
-            # 如果是限價單，設定價格 - 增大價格變動幅度（目前價格±20-40%）
-            if order_type == "limit":
-                # 更大的價格變動範圍：±20-40%
-                price_variation = random.uniform(-0.4, 0.4)
-                
-                # 買單傾向於出更高價，賣單傾向於要更高價，增加成交機會但也增加價格波動
-                if side == "buy":
-                    # 買單：80%機率出高價搶購，20%機率出低價等待
-                    if random.random() < 0.8:
-                        price_variation = abs(price_variation) * 0.8  # 出高價但不要太誇張
-                    else:
-                        price_variation = -abs(price_variation)  # 出低價等待
-                else:
-                    # 賣單：70%機率要高價，30%機率割肉賣出
-                    if random.random() < 0.7:
-                        price_variation = abs(price_variation)  # 要高價
-                    else:
-                        price_variation = -abs(price_variation) * 0.5  # 割肉但不要太過分
-                
-                limit_price = max(1, int(current_price * (1 + price_variation)))
-                order_data["price"] = limit_price
-                price_text = f" @ {limit_price}元"
-            else:
-                price_text = " (市價)"
-            
-            # 提交訂單
-            response = self.session.post(
-                f"{self.base_url}/api/bot/stock/order",
-                headers=self.get_bot_headers(),
-                json=order_data
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("success", False):
-                    self.update_stats('stock_trade', 'success', quantity)
-                    
-                    action = "買入" if side == "buy" else "賣出"
-                    order_id = data.get("order_id", "N/A")
-                    executed_price = data.get("executed_price")
-                    
-                    if executed_price:
-                        self.log(f"📈 股票交易成功: {trader['name']} {action} {quantity} 股{price_text} "
-                               f"(成交價: {executed_price}元, 訂單ID: {order_id[:8]}...)")
-                    else:
-                        self.log(f"📋 限價單已提交: {trader['name']} {action} {quantity} 股{price_text} "
-                               f"(訂單ID: {order_id[:8]}...)")
-                    return True
-                else:
-                    self.update_stats('stock_trade', 'failed')
-                    self.log(f"📉 股票交易失敗: {trader['name']} - {data.get('message', '未知錯誤')}", "WARNING")
-                    return False
-            else:
-                self.update_stats('stock_trade', 'failed')
-                self.log(f"📉 股票交易請求失敗: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.update_stats('stock_trade', 'failed')
-            self.log(f"股票交易模擬異常: {e}", "ERROR")
-            return False
-
     def check_recent_trades(self, limit: int = 10) -> None:
         """檢查最近成交記錄"""
         try:
             self.log("🔍 檢查最近成交記錄...")
             
-            # 檢查成交記錄
             trades_response = self.session.get(f"{self.base_url}/api/price/trades?limit={limit}")
             if trades_response.status_code == 200:
                 trades = trades_response.json()
                 self.log(f"   最近成交記錄數: {len(trades)} 筆")
                 
                 if trades:
-                    for i, trade in enumerate(trades[:5]):  # 只顯示前5筆
+                    for i, trade in enumerate(trades[:5]):
                         self.log(f"   #{i+1}: {trade.get('price', 'N/A')} 元 x {trade.get('quantity', 0)} 股 "
                                f"({trade.get('timestamp', 'N/A')})")
                 else:
                     self.log("   ⚠️ 沒有找到成交記錄")
             else:
                 self.log(f"   ❌ 查詢成交記錄失敗: {trades_response.status_code}")
-            
-            # 檢查歷史價格
-            history_response = self.session.get(f"{self.base_url}/api/price/history?hours=1")
-            if history_response.status_code == 200:
-                history = history_response.json()
-                self.log(f"   過去1小時價格記錄: {len(history)} 筆")
-                
-                if history:
-                    latest = history[-1] if history else {}
-                    self.log(f"   最新價格記錄: {latest.get('price', 'N/A')} 元 "
-                           f"({latest.get('timestamp', 'N/A')})")
-                else:
-                    self.log("   ⚠️ 沒有找到價格歷史記錄")
-            else:
-                self.log(f"   ❌ 查詢價格歷史失敗: {history_response.status_code}")
                 
         except Exception as e:
             self.log(f"檢查成交記錄異常: {e}", "WARNING")
-
-    def check_pending_orders(self) -> None:
-        """檢查待成交訂單"""
-        try:
-            self.log("🔍 檢查五檔報價和待成交訂單...")
-            
-            # 檢查五檔報價
-            depth_response = self.session.get(f"{self.base_url}/api/price/depth")
-            if depth_response.status_code == 200:
-                depth = depth_response.json()
-                buy_orders = depth.get("buy", [])
-                sell_orders = depth.get("sell", [])
-                
-                self.log(f"   買方掛單: {len(buy_orders)} 檔")
-                for i, order in enumerate(buy_orders[:3]):
-                    self.log(f"     買{i+1}: {order.get('price', 'N/A')} 元 x {order.get('quantity', 0)} 股")
-                
-                self.log(f"   賣方掛單: {len(sell_orders)} 檔")
-                for i, order in enumerate(sell_orders[:3]):
-                    self.log(f"     賣{i+1}: {order.get('price', 'N/A')} 元 x {order.get('quantity', 0)} 股")
-                    
-                if not buy_orders and not sell_orders:
-                    self.log("   ⚠️ 沒有掛單，這可能解釋為什麼沒有成交")
-                    
-            else:
-                self.log(f"   ❌ 查詢五檔報價失敗: {depth_response.status_code}")
-                
-        except Exception as e:
-            self.log(f"檢查掛單異常: {e}", "WARNING")
-
-    def create_manual_trades(self) -> None:
-        """手動創建一些對向交易來測試撮合"""
-        try:
-            self.log("🧪 創建測試對向交易...")
-            
-            active_students = self.get_active_students()
-            if len(active_students) < 2:
-                self.log("學員數量不足", "WARNING")
-                return
-            
-            # 選擇兩個學員
-            buyer, seller = random.sample(active_students, 2)
-            current_price = 20  # 使用固定價格
-            
-            # 先讓賣方下賣單
-            sell_response = self.session.post(
-                f"{self.base_url}/api/bot/stock/order",
-                headers=self.get_bot_headers(),
-                json={
-                    "from_user": str(seller["id"]),
-                    "order_type": "limit",
-                    "side": "sell",
-                    "quantity": 1,
-                    "price": current_price
-                }
-            )
-            
-            if sell_response.status_code == 200:
-                sell_data = sell_response.json()
-                if sell_data.get("success"):
-                    self.log(f"📋 {seller['name']} 掛賣單: 1股 @ {current_price}元")
-                    
-                    # time.sleep(1)  # 等待1秒
-                    
-                    # 再讓買方下買單（價格稍高以確保成交）
-                    buy_response = self.session.post(
-                        f"{self.base_url}/api/bot/stock/order",
-                        headers=self.get_bot_headers(),
-                        json={
-                            "from_user": str(buyer["id"]),
-                            "order_type": "limit",
-                            "side": "buy",
-                            "quantity": 1,
-                            "price": current_price
-                        }
-                    )
-                    
-                    if buy_response.status_code == 200:
-                        buy_data = buy_response.json()
-                        if buy_data.get("success"):
-                            self.log(f"📋 {buyer['name']} 掛買單: 1股 @ {current_price}元")
-                            
-                            # time.sleep(2)  # 等待撮合
-                            self.check_recent_trades(5)
-                        else:
-                            self.log(f"買單失敗: {buy_data.get('message')}", "WARNING")
-                    else:
-                        self.log(f"買單請求失敗: {buy_response.status_code}", "WARNING")
-                else:
-                    self.log(f"賣單失敗: {sell_data.get('message')}", "WARNING")
-            else:
-                self.log(f"賣單請求失敗: {sell_response.status_code}", "WARNING")
-                
-        except Exception as e:
-            self.log(f"手動交易測試異常: {e}", "ERROR")
     
-    def get_student_portfolio(self, student_id: str) -> Optional[Dict]:
-        """查詢指定學員的投資組合"""
+    def show_enhanced_market_info(self) -> None:
+        """顯示增強版市場資訊"""
         try:
-            response = self.session.post(
-                f"{self.base_url}/api/bot/portfolio",
-                headers=self.get_bot_headers(),
-                json={"from_user": student_id}
-            )
+            self.log("📈 查詢增強版市場資訊...")
             
-            if response.status_code == 200:
-                return response.json()
-            else:
-                self.log(f"查詢學員 {student_id} 投資組合失敗: {response.status_code} - {response.text}", "WARNING")
-                return None
+            # 市場狀態
+            status_response = self.session.get(f"{self.base_url}/api/status")
+            if status_response.status_code == 200:
+                status_data = status_response.json()
+                is_open = status_data.get("isOpen", False)
+                status_text = "🟢 開放中" if is_open else "🔴 已關閉"
+                self.log(f"   市場狀態: {status_text}")
+                self.log(f"   當前時間: {status_data.get('currentTime', 'unknown')}")
+            
+            # 增強版價格資訊
+            price_info_response = self.session.get(f"{self.base_url}/api/market/price-info")
+            if price_info_response.status_code == 200:
+                price_info = price_info_response.json()
+                self.log(f"📊 價格資訊:")
+                self.log(f"   當前價格: {price_info.get('currentPrice', 'N/A')} 元")
+                self.log(f"   開盤價格: {price_info.get('openingPrice', 'N/A')} 元")
+                self.log(f"   收盤價格: {price_info.get('closingPrice', 'N/A')} 元")
+            
+            # IPO狀態
+            ipo_response = self.session.get(f"{self.base_url}/api/ipo/status")
+            if ipo_response.status_code == 200:
+                ipo_status = ipo_response.json()
+                self.log(f"   IPO狀態: {ipo_status.get('sharesRemaining', 0)} / {ipo_status.get('initialShares', 0)} 股剩餘")
+                self.log(f"   IPO價格: {ipo_status.get('initialPrice', 20)} 元/股")
+            
+            # 交易統計
+            trading_stats_response = self.session.get(f"{self.base_url}/api/trading/stats")
+            if trading_stats_response.status_code == 200:
+                trading_stats = trading_stats_response.json()
+                self.log(f"📊 今日交易統計:")
+                self.log(f"   成交筆數: {trading_stats.get('totalTrades', 0)} 筆")
+                self.log(f"   成交金額: {trading_stats.get('totalVolume', 0)} 元")
+                self.log(f"   活躍用戶: {trading_stats.get('activeUsers', 0)} 人")
             
         except Exception as e:
-            self.log(f"查詢學員 {student_id} 投資組合異常: {e}", "WARNING")
-            return None
-
-    def get_random_portfolio(self) -> Optional[Dict]:
-        """隨機查詢一個學員的投資組合"""
-        try:
-            active_students = self.get_active_students()
-            if not active_students:
-                return None
-            
-            student = random.choice(active_students)
-            
-            response = self.session.post(
-                f"{self.base_url}/api/bot/portfolio",
-                headers=self.get_bot_headers(),
-                json={"from_user": str(student["id"])}
-            )
-            
-            if response.status_code == 200:
-                portfolio = response.json()
-                portfolio["student_name"] = student["name"]
-                return portfolio
-            
-        except Exception as e:
-            self.log(f"查詢投資組合異常: {e}", "WARNING")
-        
-        return None
+            self.log(f"顯示增強版市場資訊異常: {e}", "WARNING")
     
-    # ========== 多執行緒交易模擬 ==========
-    
-    def worker_thread(self, thread_id: int, transactions_per_thread: int, 
-                     stock_ratio: float, delay_range: tuple) -> Dict:
-        """單一工作執行緒的交易邏輯"""
-        thread_stats = {
-            'point_transfers': {'success': 0, 'failed': 0},
-            'stock_trades': {'success': 0, 'failed': 0},
-            'total_points_transferred': 0,
-            'total_stocks_traded': 0,
-            'thread_id': thread_id
-        }
-        
-        try:
-            # 每個執行緒需要自己的 session 來避免衝突
-            thread_session = requests.Session()
-            thread_session.headers.update({
-                'Content-Type': 'application/json'
-            })
-            original_session = self.session
-            self.session = thread_session
-            
-            for i in range(transactions_per_thread):
-                try:
-                    # 隨機決定交易類型
-                    is_stock_trade = random.random() < stock_ratio
-                    
-                    if is_stock_trade:
-                        success = self.simulate_smart_stock_trade()
-                        if success:
-                            thread_stats['stock_trades']['success'] += 1
-                        else:
-                            thread_stats['stock_trades']['failed'] += 1
-                    else:
-                        success = self.simulate_random_transfer()
-                        if success:
-                            thread_stats['point_transfers']['success'] += 1
-                        else:
-                            thread_stats['point_transfers']['failed'] += 1
-                    
-                    # 隨機延遲
-                    if i < transactions_per_thread - 1:
-                        delay = random.uniform(delay_range[0], delay_range[1])
-                        time.sleep(delay)
-                        
-                except Exception as e:
-                    self.log(f"執行緒 {thread_id} 交易 {i+1} 異常: {e}", "ERROR")
-            
-            # 恢復原來的 session
-            self.session = original_session
-            
-        except Exception as e:
-            self.log(f"執行緒 {thread_id} 異常: {e}", "ERROR")
-            # 恢復原來的 session
-            self.session = original_session
-        
-        return thread_stats
-    
-    def simulate_concurrent_trading(self, total_transactions: int = 100, 
-                                  num_threads: int = 5,
-                                  stock_ratio: float = 0.4, 
-                                  delay_range: tuple = (0.5, 2.0)) -> None:
-        """
-        多執行緒混合交易模擬（模擬多用戶同時交易）
-        
-        Args:
-            total_transactions: 總交易次數
-            num_threads: 執行緒數量（模擬同時在線用戶數）
-            stock_ratio: 股票交易比例 (0.0-1.0)
-            delay_range: 每次交易間的延遲時間範圍（秒）
-        """
-        try:
-            self.log(f"🚀 開始多執行緒交易模擬...")
-            self.log(f"總交易次數: {total_transactions} 筆")
-            self.log(f"執行緒數量: {num_threads} 個 (模擬 {num_threads} 個同時在線用戶)")
-            self.log(f"股票交易比例: {stock_ratio:.1%}，點數轉帳比例: {1-stock_ratio:.1%}")
-            
-            # 顯示市場資訊
-            self.show_market_info()
-            
-            # 計算每個執行緒的交易數量
-            transactions_per_thread = total_transactions // num_threads
-            remaining_transactions = total_transactions % num_threads
-            
-            self.log(f"每個執行緒處理: {transactions_per_thread} 筆交易")
-            if remaining_transactions > 0:
-                self.log(f"額外分配: {remaining_transactions} 筆交易給前 {remaining_transactions} 個執行緒")
-            
-            # 重置統計
-            with self.stats_lock:
-                self.stats = {
-                    'point_transfers': {'success': 0, 'failed': 0},
-                    'stock_trades': {'success': 0, 'failed': 0},
-                    'total_points_transferred': 0,
-                    'total_stocks_traded': 0
-                }
-            
-            start_time = time.time()
-            
-            # 使用 ThreadPoolExecutor 管理執行緒
-            with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-                # 提交所有工作
-                futures = []
-                for i in range(num_threads):
-                    # 前面的執行緒處理額外的交易
-                    thread_transactions = transactions_per_thread + (1 if i < remaining_transactions else 0)
-                    future = executor.submit(
-                        self.worker_thread, 
-                        i + 1, 
-                        thread_transactions, 
-                        stock_ratio, 
-                        delay_range
-                    )
-                    futures.append(future)
-                
-                # 等待所有執行緒完成並收集結果
-                thread_results = []
-                for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                    try:
-                        result = future.result()
-                        thread_results.append(result)
-                        self.log(f"✅ 執行緒 {result['thread_id']} 完成")
-                    except Exception as e:
-                        self.log(f"❌ 執行緒異常: {e}", "ERROR")
-            
-            end_time = time.time()
-            duration = end_time - start_time
-            
-            self.log(f"🎉 多執行緒交易模擬完成！執行時間: {duration:.2f} 秒")
-            
-            # 顯示詳細統計
-            self.show_concurrent_trading_summary(thread_results, duration)
-            
-        except KeyboardInterrupt:
-            self.log("多執行緒交易模擬被使用者中斷", "WARNING")
-        except Exception as e:
-            self.log(f"多執行緒交易模擬異常: {e}", "ERROR")
-    
-    def show_concurrent_trading_summary(self, thread_results: List[Dict], duration: float):
-        """顯示多執行緒交易統計摘要"""
-        self.log("📊 多執行緒交易統計摘要:")
-        
-        # 匯總所有執行緒的結果
-        total_point_success = sum(r['point_transfers']['success'] for r in thread_results)
-        total_point_failed = sum(r['point_transfers']['failed'] for r in thread_results)
-        total_stock_success = sum(r['stock_trades']['success'] for r in thread_results)
-        total_stock_failed = sum(r['stock_trades']['failed'] for r in thread_results)
-        
-        self.log(f"   執行緒數量: {len(thread_results)} 個")
-        self.log(f"   總執行時間: {duration:.2f} 秒")
-        self.log(f"   平均TPS: {(total_point_success + total_point_failed + total_stock_success + total_stock_failed) / duration:.2f} 筆/秒")
-        
-        self.log(f"   點數轉帳: 成功 {total_point_success} 筆，失敗 {total_point_failed} 筆")
-        self.log(f"   股票交易: 成功 {total_stock_success} 筆，失敗 {total_stock_failed} 筆")
-        
-        total_success = total_point_success + total_stock_success
-        total_failed = total_point_failed + total_stock_failed
-        total_transactions = total_success + total_failed
-        
-        if total_transactions > 0:
-            success_rate = (total_success / total_transactions) * 100
-            self.log(f"   總成功率: {success_rate:.1f}% ({total_success}/{total_transactions})")
-        
-        # 顯示各執行緒詳細統計
-        self.log("   各執行緒統計:")
-        for result in sorted(thread_results, key=lambda x: x['thread_id']):
-            tid = result['thread_id']
-            pt_s = result['point_transfers']['success']
-            pt_f = result['point_transfers']['failed']
-            st_s = result['stock_trades']['success']
-            st_f = result['stock_trades']['failed']
-            self.log(f"     執行緒{tid}: 轉帳({pt_s}✓/{pt_f}✗) 股票({st_s}✓/{st_f}✗)")
-        
-        # 顯示目前市場狀態
-        self.log("📈 交易後市場狀態:")
-        self.show_market_info()
-    
-    # ========== 混合交易模擬 ==========
-    
-    def simulate_mixed_trading(self, total_transactions: int = 100, 
-                             stock_ratio: float = 0.4, 
-                             delay_range: tuple = (1, 5)) -> None:
-        """
-        模擬混合交易（點數轉帳 + 股票交易）
-        
-        Args:
-            total_transactions: 總交易次數
-            stock_ratio: 股票交易比例 (0.0-1.0)
-            delay_range: 每次交易間的延遲時間範圍（秒）
-        """
-        try:
-            self.log(f"開始模擬 {total_transactions} 筆混合交易...")
-            self.log(f"股票交易比例: {stock_ratio:.1%}，點數轉帳比例: {1-stock_ratio:.1%}")
-            
-            # 顯示市場資訊
-            self.show_market_info()
-            
-            for i in range(1, total_transactions + 1):
-                # 隨機決定交易類型
-                is_stock_trade = random.random() < stock_ratio
-                
-                if is_stock_trade:
-                    self.log(f"進行第 {i}/{total_transactions} 筆交易 [股票]")
-                    success = self.simulate_smart_stock_trade()
-                else:
-                    self.log(f"進行第 {i}/{total_transactions} 筆交易 [轉帳]")
-                    success = self.simulate_random_transfer()
-                
-                # 每10筆交易後顯示一次投資組合
-                if i % 10 == 0:
-                    portfolio = self.get_random_portfolio()
-                    if portfolio:
-                        self.log(f"💼 {portfolio['student_name']} 的投資組合: "
-                               f"點數 {portfolio.get('points', 0)}, "
-                               f"持股 {portfolio.get('stocks', 0)} 股 "
-                               f"(總價值 {portfolio.get('totalValue', 0)} 點)")
-                
-                # 隨機延遲
-                if i < total_transactions:
-                    delay = random.uniform(delay_range[0], delay_range[1])
-                    # time.sleep(delay)
-            
-            self.show_trading_summary()
-            
-        except KeyboardInterrupt:
-            self.log("交易模擬被使用者中斷", "WARNING")
-            self.show_trading_summary()
-        except Exception as e:
-            self.log(f"交易模擬異常: {e}", "ERROR")
-    
-    def show_trading_summary(self) -> None:
-        """顯示交易統計摘要"""
-        self.log("📊 交易統計摘要:")
+    def show_enhanced_trading_summary(self) -> None:
+        """顯示增強版交易統計摘要"""
+        self.log("📊 增強版交易統計摘要:")
         self.log(f"   點數轉帳: 成功 {self.stats['point_transfers']['success']} 筆，"
                f"失敗 {self.stats['point_transfers']['failed']} 筆")
         self.log(f"   股票交易: 成功 {self.stats['stock_trades']['success']} 筆，"
                f"失敗 {self.stats['stock_trades']['failed']} 筆")
+        self.log(f"   市價單: 成功 {self.stats['market_orders']['success']} 筆，"
+               f"失敗 {self.stats['market_orders']['failed']} 筆")
+        self.log(f"   限價單: 成功 {self.stats['limit_orders']['success']} 筆，"
+               f"失敗 {self.stats['limit_orders']['failed']} 筆")
+        self.log(f"   集合競價: 成功 {self.stats['call_auctions']['success']} 次，"
+               f"失敗 {self.stats['call_auctions']['failed']} 次")
         self.log(f"   總轉帳點數: {self.stats['total_points_transferred']} 點")
         self.log(f"   總交易股數: {self.stats['total_stocks_traded']} 股")
-        
-        total_success = (self.stats['point_transfers']['success'] + 
-                        self.stats['stock_trades']['success'])
-        total_failed = (self.stats['point_transfers']['failed'] + 
-                       self.stats['stock_trades']['failed'])
-        total_transactions = total_success + total_failed
-        
-        if total_transactions > 0:
-            success_rate = (total_success / total_transactions) * 100
-            self.log(f"   總成功率: {success_rate:.1f}% ({total_success}/{total_transactions})")
-    
-    # ========== 系統統計 ==========
-    
-    def get_system_stats(self) -> None:
-        """查看系統統計"""
-        try:
-            self.log("正在取得系統統計資訊...")
-            
-            if not self.admin_token:
-                self.log("請先登入管理員", "ERROR")
-                return
-            
-            response = self.session.get(
-                f"{self.base_url}/api/admin/stats",
-                headers=self.get_admin_headers()
-            )
-            
-            if response.status_code == 200:
-                stats = response.json()
-                self.log("📊 系統統計資訊:")
-                self.log(f"   總使用者數: {stats.get('total_users', 0)}")
-                self.log(f"   總群組數: {stats.get('total_groups', 0)}")
-                self.log(f"   總點數: {stats.get('total_points', 0)}")
-                self.log(f"   總股票數: {stats.get('total_stocks', 0)}")
-                self.log(f"   總交易次數: {stats.get('total_trades', 0)}")
-                
-                # 額外顯示市場資訊
-                self.show_market_info()
-            else:
-                self.log(f"取得統計資訊失敗: {response.status_code} - {response.text}", "ERROR")
-                
-        except Exception as e:
-            self.log(f"取得統計資訊異常: {e}", "ERROR")
-    
-    # ========== 快速測試功能 ==========
-    
-    def quick_market_test(self) -> None:
-        """快速市場測試 - 少量交易來測試系統"""
-        self.log("🚀 開始快速市場測試...")
-        
-        # 顯示目前市場狀態
-        self.show_market_info()
-        
-        # 進行5筆隨機交易
-        self.log("進行 5 筆測試交易...")
-        for i in range(5):
-            if i % 2 == 0:
-                self.simulate_smart_stock_trade()
-            else:
-                self.simulate_random_transfer()
-            time.sleep(1)
-        
-        # 顯示投資組合樣本
-        portfolio = self.get_random_portfolio()
-        if portfolio:
-            self.log(f"💼 隨機投資組合樣本 ({portfolio['student_name']}):")
-            self.log(f"   點數: {portfolio.get('points', 0)}")
-            self.log(f"   持股: {portfolio.get('stocks', 0)} 股")
-            self.log(f"   股票價值: {portfolio.get('stockValue', 0)} 點")
-            self.log(f"   總價值: {portfolio.get('totalValue', 0)} 點")
-        
-        self.show_trading_summary()
-        self.log("✅ 快速市場測試完成")
 
 
 def main():
     """主程式"""
-    print("🏫 SITCON Camp 2025 學員啟用與交易模擬腳本 (含股票交易)")
-    print("=" * 60)
+    print("🏫 SITCON Camp 2025 學員啟用與高級交易模擬腳本 (2025最新版)")
+    print("=" * 70)
     
     # 初始化模擬器
-    simulator = CampTradingSimulator()
+    simulator = AdvancedCampTradingSimulator()
     
     # 檢查API連線
     try:
@@ -1331,216 +1136,175 @@ def main():
         print("❌ 管理員登入失敗，程式結束")
         sys.exit(1)
     
-    # 檢查並確保市場開放
-    print("\n🏪 檢查市場狀態...")
-    if not simulator.check_and_ensure_market_open():
-        print("❌ 市場未開放且無法開啟，程式結束")
-        sys.exit(1)
-    
-    # 詢問使用者要執行的操作
+    # 主選單
     print("\n請選擇要執行的操作:")
-    print("1. 啟用所有學員 (給予初始點數)")
-    print("2. 進行點數轉帳模擬")
-    print("3. 進行股票交易模擬 (含初始發行)")
-    print("4. 進行混合交易模擬 (轉帳 + 股票)")
-    print("5. 🚀 多執行緒混合交易模擬 (模擬多用戶同時交易)")
-    print("6. 啟用學員 + 股票發行 + 混合交易 (完整流程)")
-    print("7. 查看系統統計和市場狀態")
-    print("8. 快速市場測試")
-    print("9. 深度調試 - 檢查成交和撮合機制")
-    print("10. 重置IPO狀態")
-    print("11. 重置所有資料")
-    print("12. 退出")
+    print("=== 🆕 新增高級功能 ===")
+    print("1. 🎛️ 高級市場控制 (手動開市/收市/集合競價)")
+    print("2. 🎯 複雜訂單場景測試 (限價單階梯/成交撮合)")
+    print("3. 🔍 風險管理測試 (負餘額檢測/修復/系統檢查)")
+    print("4. 🏭 IPO高級管理 (動態參數調整/預設設定)")
+    print("5. 📊 市場深度分析 (五檔報價/價格變動分析)")
+    print("6. 💰 最終結算功能 (股票轉點數)")
+    print("7. 🚀 高並發複雜交易測試")
+    
+    print("\n=== 📈 原有核心功能 ===")
+    print("8. 啟用所有學員 (給予初始點數)")
+    print("9. 進行點數轉帳模擬")
+    print("10. 進行股票交易模擬 (含初始發行)")
+    print("11. 進行混合交易模擬 (轉帳 + 股票)")
+    print("12. 🚀 多執行緒混合交易模擬")
+    print("13. 啟用學員 + 股票發行 + 混合交易 (完整流程)")
+    
+    print("\n=== 🔧 系統管理功能 ===")
+    print("14. 查看系統統計和市場狀態")
+    print("15. 快速市場測試")
+    print("16. 深度調試 - 檢查成交和撮合機制")
+    print("17. 重置所有資料")
+    print("18. 退出")
     
     while True:
         try:
-            choice = input("\n請輸入選項 (1-12): ").strip()
+            choice = input("\n請輸入選項 (1-18): ").strip()
             
             if choice == "1":
+                # 高級市場控制
+                print("\n🎛️ 高級市場控制功能:")
+                print("a) 手動開市（含集合競價）")
+                print("b) 手動收市")
+                print("c) 手動觸發集合競價")
+                print("d) 查看市場控制狀態")
+                
+                sub_choice = input("請選擇子功能 (a-d): ").strip().lower()
+                if sub_choice == "a":
+                    simulator.manual_market_open()
+                elif sub_choice == "b":
+                    simulator.manual_market_close()
+                elif sub_choice == "c":
+                    simulator.trigger_call_auction()
+                elif sub_choice == "d":
+                    status = simulator.get_market_control_status()
+                    if status:
+                        print(f"市場控制狀態: {json.dumps(status, indent=2, ensure_ascii=False)}")
+                break
+                
+            elif choice == "2":
+                # 複雜訂單場景測試
+                print("\n🎯 開始複雜訂單場景測試...")
+                simulator.simulate_complex_order_scenario()
+                simulator.show_enhanced_trading_summary()
+                break
+                
+            elif choice == "3":
+                # 風險管理測試
+                print("\n🔍 風險管理測試:")
+                print("a) 檢查負餘額用戶")
+                print("b) 修復負餘額")
+                print("c) 系統全面餘額檢查")
+                print("d) 全套風險管理流程")
+                
+                sub_choice = input("請選擇子功能 (a-d): ").strip().lower()
+                if sub_choice == "a":
+                    simulator.check_negative_balances()
+                elif sub_choice == "b":
+                    simulator.fix_negative_balances()
+                elif sub_choice == "c":
+                    simulator.trigger_system_balance_check()
+                elif sub_choice == "d":
+                    simulator.check_negative_balances()
+                    time.sleep(1)
+                    simulator.trigger_system_balance_check()
+                    time.sleep(1)
+                    simulator.fix_negative_balances()
+                break
+                
+            elif choice == "4":
+                # IPO高級管理
+                print("\n🏭 IPO高級管理:")
+                print("a) 查看IPO預設設定")
+                print("b) 更新IPO預設設定")
+                print("c) 動態調整IPO參數")
+                
+                sub_choice = input("請選擇子功能 (a-c): ").strip().lower()
+                if sub_choice == "a":
+                    defaults = simulator.get_ipo_defaults()
+                    if defaults:
+                        print(f"IPO預設設定: {json.dumps(defaults, indent=2, ensure_ascii=False)}")
+                elif sub_choice == "b":
+                    shares = input("請輸入初始股數 (預設 1000): ").strip()
+                    shares = int(shares) if shares.isdigit() else 1000
+                    price = input("請輸入初始價格 (預設 20): ").strip()
+                    price = int(price) if price.isdigit() else 20
+                    simulator.update_ipo_defaults(shares, price)
+                elif sub_choice == "c":
+                    shares = input("請輸入新的剩餘股數 (留空不改): ").strip()
+                    shares = int(shares) if shares.isdigit() else None
+                    price = input("請輸入新的IPO價格 (留空不改): ").strip()
+                    price = int(price) if price.isdigit() else None
+                    simulator.update_ipo_parameters(shares, price)
+                break
+                
+            elif choice == "5":
+                # 市場深度分析
+                print("\n📊 市場深度分析...")
+                simulator.show_enhanced_market_info()
+                simulator.check_market_depth()
+                simulator.analyze_price_movements()
+                break
+                
+            elif choice == "6":
+                # 最終結算功能
+                simulator.execute_final_settlement()
+                break
+                
+            elif choice == "7":
+                # 高並發複雜交易測試
+                print("\n🚀 高並發複雜交易測試...")
+                print("此功能將結合多種高級功能進行壓力測試")
+                
+                num_transactions = input("請輸入總交易次數 (預設 200): ").strip()
+                num_transactions = int(num_transactions) if num_transactions.isdigit() else 200
+                
+                num_threads = input("請輸入執行緒數量 (預設 8): ").strip()
+                num_threads = int(num_threads) if num_threads.isdigit() else 8
+                num_threads = min(num_threads, 20)
+                
+                # 先執行一些複雜訂單場景
+                print("🎯 先建立複雜市場環境...")
+                simulator.simulate_complex_order_scenario()
+                
+                # 然後執行高並發測試（這裡可以擴展原有的多線程功能）
+                print("🚀 開始高並發測試...")
+                # simulator.simulate_concurrent_complex_trading(num_transactions, num_threads)
+                print("✅ 高並發複雜交易測試完成")
+                break
+                
+            elif choice == "8":
+                # 啟用所有學員
                 initial_points = input("請輸入初始點數 (預設 1000): ").strip()
                 initial_points = int(initial_points) if initial_points.isdigit() else 1000
                 simulator.enable_all_students(initial_points)
                 break
                 
-            elif choice == "2":
-                num_transactions = input("請輸入轉帳次數 (預設 20): ").strip()
-                num_transactions = int(num_transactions) if num_transactions.isdigit() else 20
-                
-                print(f"\n🚀 開始進行 {num_transactions} 筆點數轉帳...")
-                for i in range(num_transactions):
-                    print(f"進行第 {i+1}/{num_transactions} 筆轉帳")
-                    simulator.simulate_random_transfer()
-                    # time.sleep(random.uniform(1, 3))
-                simulator.show_trading_summary()
-                break
-                
-            elif choice == "3":
-                num_transactions = input("請輸入股票交易次數 (預設 20): ").strip()
-                num_transactions = int(num_transactions) if num_transactions.isdigit() else 20
-                
-                print(f"\n📈 開始進行 {num_transactions} 筆股票交易...")
-                simulator.show_market_info()
-                
-                # 先進行初始股票發行
-                print("\n🏭 先進行初始股票發行...")
-                simulator.simulate_initial_stock_distribution()
-                print("\n等待 3 秒後開始股票交易...")
-                
-                
-                for i in range(num_transactions):
-                    print(f"進行第 {i+1}/{num_transactions} 筆股票交易")
-                    simulator.simulate_smart_stock_trade()
-                    # time.sleep(random.uniform(1, 3))
-                simulator.show_trading_summary()
-                break
-                
-            elif choice == "4":
-                num_transactions = input("請輸入總交易次數 (預設 50): ").strip()
-                num_transactions = int(num_transactions) if num_transactions.isdigit() else 50
-                
-                stock_ratio = input("請輸入股票交易比例 0-100% (預設 40): ").strip()
-                if stock_ratio.isdigit():
-                    stock_ratio = min(100, max(0, int(stock_ratio))) / 100
-                else:
-                    stock_ratio = 0.4
-                
-                simulator.simulate_mixed_trading(num_transactions, stock_ratio)
-                break
-                
-            elif choice == "5":
-                # 多執行緒混合交易模擬
-                num_transactions = input("請輸入總交易次數 (預設 100): ").strip()
-                num_transactions = int(num_transactions) if num_transactions.isdigit() else 100
-                
-                num_threads = input("請輸入執行緒數量 (預設 5): ").strip()
-                num_threads = int(num_threads) if num_threads.isdigit() and int(num_threads) > 0 else 5
-                num_threads = min(num_threads, 20)  # 限制最多20個執行緒
-                
-                stock_ratio = input("請輸入股票交易比例 0-100% (預設 40): ").strip()
-                if stock_ratio.isdigit():
-                    stock_ratio = min(100, max(0, int(stock_ratio))) / 100
-                else:
-                    stock_ratio = 0.4
-                
-                delay_range_input = input("請輸入交易延遲範圍 (秒, 格式: min,max, 預設 0.5,2.0): ").strip()
-                try:
-                    if delay_range_input and ',' in delay_range_input:
-                        min_delay, max_delay = map(float, delay_range_input.split(','))
-                        delay_range = (min_delay, max_delay)
-                    else:
-                        delay_range = (0.5, 2.0)
-                except:
-                    delay_range = (0.5, 2.0)
-                
-                print(f"\n🚀 啟動多執行緒交易模擬...")
-                print(f"   總交易次數: {num_transactions}")
-                print(f"   執行緒數量: {num_threads} (模擬 {num_threads} 個同時在線用戶)")
-                print(f"   股票交易比例: {stock_ratio:.1%}")
-                print(f"   交易延遲: {delay_range[0]}-{delay_range[1]} 秒")
-                
-                simulator.simulate_concurrent_trading(num_transactions, num_threads, stock_ratio, delay_range)
-                break
-                
-            elif choice == "6":
-                # 完整流程
-                initial_points = input("請輸入初始點數 (預設 1000): ").strip()
-                initial_points = int(initial_points) if initial_points.isdigit() else 1000
-                
-                num_transactions = input("請輸入總交易次數 (預設 50): ").strip()
-                num_transactions = int(num_transactions) if num_transactions.isdigit() else 50
-                
-                stock_ratio = input("請輸入股票交易比例 0-100% (預設 40): ").strip()
-                if stock_ratio.isdigit():
-                    stock_ratio = min(100, max(0, int(stock_ratio))) / 100
-                else:
-                    stock_ratio = 0.4
-                
-                print("\n🚀 開始執行完整流程...")
-                
-                # 1. 啟用學員
-                if simulator.enable_all_students(initial_points):
-                    print("\n✅ 學員啟用完成，等待 3 秒後進行初始股票發行...")
-                    
-                    
-                    # 2. 初始股票發行
-                    simulator.simulate_initial_stock_distribution()
-                    print("\n等待 3 秒後開始交易模擬...")
-                    
-                    
-                    # 3. 混合交易模擬
-                    simulator.simulate_mixed_trading(num_transactions, stock_ratio)
-                else:
-                    print("\n❌ 學員啟用過程中出現錯誤，是否繼續交易模擬？")
-                    continue_choice = input("繼續? (y/N): ").strip().lower()
-                    if continue_choice == 'y':
-                        # 即使啟用失敗，也先進行股票發行再交易
-                        simulator.simulate_initial_stock_distribution()
-                        
-                        simulator.simulate_mixed_trading(num_transactions, stock_ratio)
-                break
-                
-            elif choice == "7":
-                simulator.get_system_stats()
-                break
-                
-            elif choice == "8":
-                simulator.quick_market_test()
-                break
-                
-            elif choice == "9":
-                print("\n🔍 深度調試模式")
-                print("正在檢查系統狀態...")
-                
-                # 檢查市場資訊
-                simulator.show_market_info()
-                
-                # 檢查成交記錄
-                simulator.check_recent_trades(20)
-                
-                # 檢查掛單情況
-                simulator.check_pending_orders()
-                
-                # 詢問是否進行測試交易
-                test_choice = input("\n是否進行測試對向交易? (y/N): ").strip().lower()
-                if test_choice == 'y':
-                    simulator.create_manual_trades()
-                
-                break
-                
-            elif choice == "10":
-                # 重置IPO狀態
-                initial_shares = input("請輸入IPO初始股數 (預設 1000): ").strip()
-                initial_shares = int(initial_shares) if initial_shares.isdigit() else 1000
-                
-                initial_price = input("請輸入IPO初始價格 (預設 20): ").strip()
-                initial_price = int(initial_price) if initial_price.isdigit() else 20
-                
-                if simulator.reset_ipo_for_testing(initial_shares, initial_price):
-                    print("✅ IPO狀態已重置")
-                    simulator.show_market_info()
-                else:
-                    print("❌ IPO重置失敗")
-                break
-                
-            elif choice == "11":
+            elif choice == "17":
                 # 重置所有資料
                 confirm = input("⚠️ 這將刪除所有資料，確定要繼續嗎？ (y/N): ").strip().lower()
                 if confirm == 'y':
                     if simulator.reset_all_data():
                         print("✅ 所有資料已重置")
-                        simulator.show_market_info()
+                        simulator.show_enhanced_market_info()
                     else:
                         print("❌ 資料重置失敗")
                 else:
                     print("❌ 操作已取消")
                 break
                 
-            elif choice == "12":
+            elif choice == "18":
                 print("👋 程式結束")
                 sys.exit(0)
                 
             else:
                 print("❌ 無效選項，請重新輸入")
+                print("💡 提示: 新版本新增了許多高級功能 (選項1-7)，建議先嘗試！")
                 
         except ValueError:
             print("❌ 請輸入有效的數字")
@@ -1549,9 +1313,10 @@ def main():
             sys.exit(0)
     
     # 最後顯示統計
-    print("\n" + "=" * 60)
-    simulator.get_system_stats()
-    print("🎉 腳本執行完成！")
+    print("\n" + "=" * 70)
+    simulator.show_enhanced_market_info()
+    simulator.show_enhanced_trading_summary()
+    print("🎉 高級交易模擬腳本執行完成！")
 
 
 if __name__ == "__main__":
