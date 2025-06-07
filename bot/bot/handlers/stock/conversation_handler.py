@@ -149,7 +149,9 @@ async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE)
         }
 
         if data.get("price"):
-            request_body["price"] = int(data["price"]),
+            request_body["price"] = int(data.get("price"))
+
+        print(request_body)
 
         response = api_helper.post("/api/bot/stock/order", protected_route=True, json=request_body)
 
