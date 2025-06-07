@@ -50,11 +50,11 @@ class UserService:
             
         # 如果不存在，則從環境變數讀取設定並以原子操作寫入
         try:
-            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000"))
+            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
             initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
         except (ValueError, TypeError):
             logger.error("無效的 IPO 環境變數，使用預設值。")
-            initial_shares = 1000
+            initial_shares = 1000000
             initial_price = 20
         
         ipo_doc_on_insert = {
@@ -2229,10 +2229,10 @@ class UserService:
                         created_count += 1
                         logger.info(f"Created student: {student['id']} - {student['name']} - {student['team']}")
                         
-                        # 為新學員初始化股票持有記錄
+                        # 為新學員初始化股票持有記錄，給予5股初始股票
                         await self.db[Collections.STOCKS].insert_one({
                             "user_id": result.upserted_id,
-                            "stock_amount": 0,
+                            "stock_amount": 5000,  # 5股 = 5000股數
                             "updated_at": datetime.now(timezone.utc)
                         })
                         
