@@ -398,6 +398,8 @@ class AdminService:
                     "id": user_id,
                     "username": user_name,  # 為了前端相容性，保持 username 
                     "name": user_name,       # 新的 name 字段
+                    "telegram_id": user.get("telegram_id", "Unknown"),
+                    "telegram_nickname": user.get("telegram_nickname", "Unknown"),
                     "team": user.get("team", "Unknown"),
                     "enabled": user.get("enabled", False)  # 新增啟用狀態
                 })
