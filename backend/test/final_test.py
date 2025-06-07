@@ -1264,7 +1264,7 @@ class CampTradingSimulator:
                 self.log(f"   總使用者數: {stats.get('total_users', 0)}")
                 self.log(f"   總群組數: {stats.get('total_groups', 0)}")
                 self.log(f"   總點數: {stats.get('total_points', 0)}")
-                self.log(f"   總股票數: {stats.get('total_stocks', 0)}")
+                self.log(f"   總股票數(單位:股): {stats.get('total_stocks', 0)}")
                 self.log(f"   總交易次數: {stats.get('total_trades', 0)}")
                 
                 # 額外顯示市場資訊
