@@ -196,6 +196,53 @@ class UserService:
             logger.error(f"Failed to check price limit: {e}")
             # 發生錯誤時，預設允許交易
             return True
+    
+    async def _get_price_limit_info(self, order_price: float) -> dict:
+        """取得價格限制的詳細資訊"""
+        try:
+            # 取得前日收盤價作為基準價格
+            reference_price = await self._get_reference_price_for_limit()
+            
+            if reference_price is None:
+                return {
+                    "within_limit": True,
+                    "reference_price": 20.0,
+                    "limit_percent": 0.0,
+                    "min_price": 0.0,
+                    "max_price": float('inf'),
+                    "note": "無法確定基準價格"
+                }
+            
+            # 取得動態漲跌限制
+            limit_percent = await self._get_dynamic_price_limit(reference_price)
+            
+            # 計算漲跌停價格
+            max_price = reference_price * (1 + limit_percent / 100.0)
+            min_price = reference_price * (1 - limit_percent / 100.0)
+            
+            # 檢查是否在限制範圍內
+            within_limit = min_price <= order_price <= max_price
+            
+            return {
+                "within_limit": within_limit,
+                "reference_price": reference_price,
+                "limit_percent": limit_percent,
+                "min_price": min_price,
+                "max_price": max_price,
+                "order_price": order_price
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get price limit info: {e}")
+            return {
+                "within_limit": True,
+                "reference_price": 20.0,
+                "limit_percent": 0.0,
+                "min_price": 0.0,
+                "max_price": float('inf'),
+                "order_price": order_price,
+                "note": "取得限制資訊失敗"
+            }
 
     async def _get_reference_price_for_limit(self) -> float:
         """取得漲跌限制的基準價格（前日收盤價）"""
@@ -228,7 +275,7 @@ class UserService:
                     logger.info(f"Using today's opening price as reference: {price}")
                     return float(price)
             
-            # 最後回到市場設定或預設價格
+            # 最後回到市場配置或預設價格
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "current_price"}
             )
@@ -297,8 +344,11 @@ class UserService:
             # 檢查限價單的價格是否在漲跌限制內
             order_status = "pending"
             limit_exceeded = False
+            limit_info = None
             if request.order_type == "limit":
-                if not await self._check_price_limit(request.price):
+                # 取得漲跌限制資訊
+                limit_info = await self._get_price_limit_info(request.price)
+                if not limit_info["within_limit"]:
                     # 允許掛單但標記為等待漲跌限制解除狀態
                     order_status = "pending_limit"
                     limit_exceeded = True
@@ -362,10 +412,18 @@ class UserService:
                 
                 if limit_exceeded:
                     logger.info(f"Limit order queued due to price limit: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
+                    
+                    # 構建詳細的限制訊息
+                    limit_msg = f"限價單已提交但因超出漲跌限制而暫時等待 ({request.side} {request.quantity} 股 @ {request.price} 元)\n"
+                    if limit_info:
+                        limit_msg += f"📊 當日漲跌限制：{limit_info['limit_percent']:.1f}%\n"
+                        limit_msg += f"📈 基準價格：{limit_info['reference_price']:.2f} 元\n"
+                        limit_msg += f"📊 允許交易範圍：{limit_info['min_price']:.2f} ~ {limit_info['max_price']:.2f} 元"
+                    
                     return StockOrderResponse(
                         success=True,
                         order_id=order_id,
-                        message=f"限價單已提交但因超出漲跌限制而暫時等待 ({request.side} {request.quantity} 股 @ {request.price} 元)"
+                        message=limit_msg
                     )
                 else:
                     logger.info(f"Limit order placed: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
@@ -397,10 +455,15 @@ class UserService:
                         executed_quantity=filled_quantity
                     )
                 else:
+                    # 如果有限制資訊，在成功訊息中顯示
+                    success_msg = f"限價單已提交，等待撮合 ({request.side} {request.quantity} 股 @ {request.price} 元)"
+                    if limit_info:
+                        success_msg += f"\n📊 當日漲跌限制：{limit_info['limit_percent']:.1f}% (範圍：{limit_info['min_price']:.2f} ~ {limit_info['max_price']:.2f} 元)"
+                    
                     return StockOrderResponse(
                         success=True,
                         order_id=order_id,
-                        message=f"限價單已提交，等待撮合 ({request.side} {request.quantity} 股 @ {request.price} 元)"
+                        message=success_msg
                     )
                 
         except Exception as e:
@@ -816,7 +879,7 @@ class UserService:
                 if filled_price is not None and filled_price > 0:
                     return filled_price
             
-            # 如果沒有成交記錄，從市場設定取得
+            # 如果沒有成交記錄，從市場配置取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "current_price"}
             )
@@ -876,13 +939,13 @@ class UserService:
         try:
             from datetime import datetime, timezone
             
-            # 取得市場開放時間設定
+            # 取得市場開放時間配置
             market_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "market_hours"}
             )
             
             if not market_config or "openTime" not in market_config:
-                # 如果沒有設定，預設市場開放
+                # 如果沒有配置，預設市場開放
                 return True
             
             current_timestamp = int(datetime.now(timezone.utc).timestamp())
