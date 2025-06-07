@@ -80,29 +80,29 @@ export default function Status() {
 			{/* 開盤價 今日最低 今日最高 */}
 			<div>
 				<div className="grid grid-cols-3 gap-4 text-center">
-					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">開盤價</h5>
 						<p className="text-2xl font-bold">{Math.round(stockData.open)}</p>
 					</div>
-					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">今日最低</h5>
 						<p className="text-2xl font-bold">{Math.round(stockData.low)}</p>
 					</div>
-					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">今日最高</h5>
 						<p className="text-2xl font-bold">{Math.round(stockData.high)}</p>
 					</div>
-					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">今日成交量</h5>
 						<p className="text-2xl font-bold">{tradingStats.total_volume.toLocaleString()}</p>
 						<p className="text-sm text-white">股</p>
 					</div>
-					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">成交額</h5>
 						<p className="text-2xl font-bold">{tradingStats.total_amount.toLocaleString()}</p>
 						<p className="text-sm text-white">點</p>
 					</div>
-					<div className="bg-[#1A325F] px-4 py-2 rounded-lg">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">成交筆數</h5>
 						<p className="text-2xl font-bold">{tradingStats.total_trades.toLocaleString()}</p>
 						<p className="text-sm text-white">筆</p>
