@@ -63,6 +63,16 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     key = context.args[0]
     logger.info(f"/register triggered by {update.effective_user.id}, key: {key}")
 
+    portfolio_response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
+        "from_user": str(update.effective_user.id)
+    })
+
+    if portfolio_response.get("details"):
+        await update.message.reply_text(
+            f"""
+            😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，你已經註冊過了！
+        """, parse_mode=ParseMode.MARKDOWN_V2)
+
     response = api_helper.post("/api/system/users/activate", protected_route=True, json={
         "id": key,
         "telegram_id": str(update.effective_user.id),
