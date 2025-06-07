@@ -169,6 +169,7 @@ export default function AdminPage() {
                     fetchTradingHours();
                     fetchIpoStatus(token);
                     fetchIpoDefaults(token);
+                    fetchTeamNumber(token);
                 }
             } catch (error) {
                 if (error.status === 401) {
@@ -227,9 +228,18 @@ export default function AdminPage() {
         try {
             const data = await getStudents(token);
             setStudents(data);
-            setTeamNumber(data.length);
         } catch (error) {
             handleApiError(error, '獲取學生列表');
+        }
+    };
+
+    // 撈隊伍列表，並計算出隊伍數量
+    const fetchTeamNumber = async (token) => {
+        try {
+            const data = await getTeams(token);
+            setTeamNumber(data.length);
+        } catch (error) {
+            handleApiError(error, '獲取隊伍列表');
         }
     };
 
