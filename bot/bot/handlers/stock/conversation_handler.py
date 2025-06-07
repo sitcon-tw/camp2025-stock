@@ -4,6 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters, \
     CommandHandler
+from telegram.helpers import escape_markdown
 from telegram.warnings import PTBUserWarning
 
 from bot.helper.existing_user import verify_existing_user
@@ -157,7 +158,7 @@ async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         if response.get("success"):
             await query.edit_message_text(
-                f"✅ 單號 `{response.get("order_id")}`：{response.get("message")}", parse_mode=ParseMode.MARKDOWN_V2
+                f"✅ 單號 `{response.get("order_id")}`：{escape_markdown(response.get("message"), 2)}", parse_mode=ParseMode.MARKDOWN_V2
             )
         else:
             print(response)
