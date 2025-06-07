@@ -277,3 +277,23 @@ async def get_ipo_status(
         dict: IPO狀態資訊，包含初始股數、剩餘股數、初始價格等
     """
     return await public_service.get_ipo_status()
+
+
+@router.get(
+    "/trading/stats",
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢交易統計",
+    description="查詢今日交易統計資訊，包括成交筆數、成交額、成交股數"
+)
+async def get_trading_stats(
+    public_service: PublicService = Depends(get_public_service)
+):
+    """
+    查詢今日交易統計
+    
+    Returns:
+        dict: 交易統計資訊，包含成交筆數、成交額、成交股數
+    """
+    return await public_service.get_daily_trading_stats()

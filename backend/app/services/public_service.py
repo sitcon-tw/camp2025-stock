@@ -435,6 +435,68 @@ class PublicService:
                 detail="Failed to retrieve announcements"
             )
     
+    # 取得今日交易統計
+    async def get_daily_trading_stats(self) -> dict:
+        """
+        取得今日交易統計資訊
+        
+        Returns:
+            dict: 包含成交筆數、成交額等統計資訊
+        """
+        try:
+            # 計算今日時間範圍
+            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # 聚合查詢今日交易統計
+            pipeline = [
+                {
+                    "$match": {
+                        "status": "filled",
+                        "created_at": {"$gte": today_start}
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "total_trades": {"$sum": 1},  # 成交筆數
+                        "total_volume": {"$sum": {"$abs": "$stock_amount"}},  # 成交股數
+                        "total_amount": {  # 成交額
+                            "$sum": {
+                                "$multiply": [
+                                    {"$abs": "$stock_amount"}, 
+                                    {"$ifNull": ["$price", {"$ifNull": ["$filled_price", 20]}]}
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+            
+            result = await self.db[Collections.STOCK_ORDERS].aggregate(pipeline).to_list(1)
+            
+            if result:
+                stats = result[0]
+                return {
+                    "total_trades": stats.get("total_trades", 0),
+                    "total_volume": stats.get("total_volume", 0), 
+                    "total_amount": int(stats.get("total_amount", 0))
+                }
+            else:
+                return {
+                    "total_trades": 0,
+                    "total_volume": 0,
+                    "total_amount": 0
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to get daily trading stats: {e}")
+            # 發生錯誤時回傳預設值
+            return {
+                "total_trades": 0,
+                "total_volume": 0,
+                "total_amount": 0
+            }
+    
     # 取得IPO狀態
     async def get_ipo_status(self) -> dict:
         """

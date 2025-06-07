@@ -762,6 +762,7 @@ class UserService:
             # 更新訂單狀態
             order_doc.update({
                 "status": "filled",
+                "price": current_price,  # 確保 price 欄位被設定為成交價
                 "filled_price": current_price,
                 "filled_quantity": quantity,
                 "filled_at": datetime.now(timezone.utc)
@@ -985,7 +986,12 @@ class UserService:
             await self.db[Collections.STOCK_ORDERS].update_one(
                 {"_id": buy_order["_id"]},
                 {
-                    "$set": {"quantity": buy_order["quantity"], "status": buy_order["status"], "filled_at": now},
+                    "$set": {
+                        "quantity": buy_order["quantity"], 
+                        "status": buy_order["status"], 
+                        "filled_at": now,
+                        "price": trade_price  # 確保 price 欄位也被更新為最新成交價
+                    },
                     "$inc": {"filled_quantity": trade_quantity},
                     "$max": {"filled_price": trade_price} # 記錄最高的成交價
                 },
@@ -997,7 +1003,12 @@ class UserService:
                 await self.db[Collections.STOCK_ORDERS].update_one(
                     {"_id": sell_order["_id"]},
                     {
-                        "$set": {"quantity": sell_order["quantity"], "status": sell_order["status"], "filled_at": now},
+                        "$set": {
+                            "quantity": sell_order["quantity"], 
+                            "status": sell_order["status"], 
+                            "filled_at": now,
+                            "price": trade_price  # 確保 price 欄位也被更新為最新成交價
+                        },
                         "$inc": {"filled_quantity": trade_quantity},
                         "$max": {"filled_price": trade_price} # 記錄最高的成交價
                     },
