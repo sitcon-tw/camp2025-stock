@@ -8,7 +8,7 @@ from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler
 from telegram.helpers import escape_markdown
 
 from bot.handlers import commands, welcome, buttons
-from bot.handlers.stock.conversation_handler import stock_conversation
+from bot.handlers.conversation import stock, transfer
 from bot.instance import bot
 from utils.logger import setup_logger
 
@@ -52,7 +52,8 @@ async def error_handler(update: Optional[object], context: CallbackContext) -> N
         await context.bot.send_message(ERROR_CHANNEL, f"無可回報之 message object")
 
 async def initialize():
-    bot.add_handler(stock_conversation)
+    bot.add_handler(stock.stock_conversation)
+    bot.add_handler(transfer.transfer_conversation)
     bot.add_handler(CommandHandler("start", commands.start))
     bot.add_handler(CommandHandler("register", commands.register))
     bot.add_handler(CommandHandler("point", commands.point))
@@ -69,5 +70,6 @@ async def initialize():
         ("point", "查看小隊們與自己的點數"),
         ("stock", "買賣點數"),
         ("log", "查看自己的點數交易紀錄"),
+        ("transfer", "轉帳給別人，小心 1% 手續費！"),
         ("cancel", "取消購買操作")
     ])
