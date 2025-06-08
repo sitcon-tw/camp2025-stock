@@ -2549,7 +2549,10 @@ class UserService:
             
             if existing_challenge:
                 # 檢查挑戰是否過期，如果過期則自動清理
-                if datetime.now(timezone.utc) > existing_challenge["expires_at"]:
+                expires_at = existing_challenge["expires_at"]
+                if not expires_at.tzinfo:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                if datetime.now(timezone.utc) > expires_at:
                     await self.db[Collections.PVP_CHALLENGES].update_one(
                         {"_id": existing_challenge["_id"]},
                         {"$set": {"status": "expired"}}
@@ -2680,7 +2683,10 @@ class UserService:
                 )
             
             # 檢查是否過期
-            if datetime.now(timezone.utc) > challenge["expires_at"]:
+            expires_at = challenge["expires_at"]
+            if not expires_at.tzinfo:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires_at:
                 await self.db[Collections.PVP_CHALLENGES].update_one(
                     {"_id": challenge_id},
                     {"$set": {"status": "expired"}}
