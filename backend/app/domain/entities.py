@@ -136,7 +136,8 @@ class Transfer:
     status: str = "pending"
     created_at: Optional[datetime] = None
     
-    def calculate_fee(self, amount: int) -> int:
+    @staticmethod
+    def calculate_fee(amount: int) -> int:
         """計算轉帳手續費 - 業務規則：1% 手續費，最低 1 點"""
         return max(1, amount // 100)
     

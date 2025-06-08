@@ -8,6 +8,7 @@ from decimal import Decimal
 from app.domain.services import (
     UserDomainService, StockTradingService, TransferService, IPOService
 )
+from app.core.base_classes import BaseApplicationService
 from app.domain.repositories import (
     UserRepository, StockRepository, StockOrderRepository, 
     TransferRepository, MarketConfigRepository
@@ -23,7 +24,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class UserApplicationService:
+class UserApplicationService(BaseApplicationService):
     """
     使用者應用服務
     SRP 原則：專注於使用者相關的應用邏輯
@@ -31,6 +32,7 @@ class UserApplicationService:
     """
     
     def __init__(self, user_domain_service: UserDomainService):
+        super().__init__("UserApplicationService")
         self.user_domain_service = user_domain_service
     
     async def login_user(self, request: UserLoginRequest) -> UserLoginResponse:
@@ -93,7 +95,7 @@ class UserApplicationService:
             return UserRegistrationResponse(success=False, message="註冊失敗")
 
 
-class TradingApplicationService:
+class TradingApplicationService(BaseApplicationService):
     """
     交易應用服務
     SRP 原則：專注於交易相關的應用邏輯
@@ -101,6 +103,7 @@ class TradingApplicationService:
     
     def __init__(self, trading_service: StockTradingService, user_repo: UserRepository, 
                  stock_repo: StockRepository, order_repo: StockOrderRepository):
+        super().__init__("TradingApplicationService")
         self.trading_service = trading_service
         self.user_repo = user_repo
         self.stock_repo = stock_repo
@@ -218,13 +221,14 @@ class TradingApplicationService:
             return []
 
 
-class TransferApplicationService:
+class TransferApplicationService(BaseApplicationService):
     """
     轉帳應用服務
     SRP 原則：專注於轉帳相關的應用邏輯
     """
     
     def __init__(self, transfer_service: TransferService, transfer_repo: TransferRepository):
+        super().__init__("TransferApplicationService")
         self.transfer_service = transfer_service
         self.transfer_repo = transfer_repo
     
@@ -265,13 +269,14 @@ class TransferApplicationService:
             return TransferResponse(success=False, message="轉帳失敗")
 
 
-class IPOApplicationService:
+class IPOApplicationService(BaseApplicationService):
     """
     IPO 應用服務
     SRP 原則：專注於 IPO 相關的應用邏輯
     """
     
     def __init__(self, ipo_service: IPOService):
+        super().__init__("IPOApplicationService")
         self.ipo_service = ipo_service
     
     async def purchase_ipo_shares(self, user_id: str, quantity: int) -> StockOrderResponse:
