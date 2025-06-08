@@ -231,7 +231,7 @@ class AdminService:
     
     # 系統自動公告（用於重置和結算）
     async def _send_system_announcement(self, title: str, message: str):
-        """發送系統自動公告到 Telegram Bot"""
+        """傳送系統自動公告到 Telegram Bot"""
         try:
             logger.info(f"Starting system announcement: {title}")
             
@@ -503,7 +503,7 @@ class AdminService:
             message = f"Final settlement complete for {updated_users} users, cancelled {cancelled_orders_count} pending orders"
             logger.info(message)
             
-            # 發送系統公告到 Telegram Bot
+            # 傳送系統公告到 Telegram Bot
             await self._send_system_announcement(
                 title="📊 強制結算完成",
                 message=f"系統已完成強制結算作業，共處理 {updated_users} 位使用者的持股，取消 {cancelled_orders_count} 筆進行中的掛單。所有股票已按固定價格 {final_price} 元轉換為點數。"
@@ -538,7 +538,7 @@ class AdminService:
                 upsert=True
             )
             
-            # 發送開盤公告
+            # 傳送開盤公告
             if call_auction_result.get("success"):
                 announcement_message = f"🔔 市場開盤公告\n\n"
                 announcement_message += f"📈 集合競價結果：{call_auction_result.get('matched_volume', 0)} 股於 {call_auction_result.get('auction_price', 0)} 元成交\n"
@@ -595,7 +595,7 @@ class AdminService:
                 upsert=True
             )
             
-            # 發送收盤公告
+            # 傳送收盤公告
             announcement_message = f"🔔 市場收盤公告\n\n"
             announcement_message += f"⏰ 市場已停止交易\n"
             announcement_message += f"💰 收盤價：{current_price} 元\n"
@@ -707,7 +707,7 @@ class AdminService:
                     fixed_count += 1
                     logger.info(f"Fixed negative balance for user {user.get('username', user['_id'])}: {original_points} -> 0")
                 
-                # 發送系統公告
+                # 傳送系統公告
                 await self._send_system_announcement(
                     title="🔧 系統維護通知",
                     message=f"系統已修復 {fixed_count} 位使用者的負點數問題。所有負點數已重置為 0。"
@@ -756,10 +756,10 @@ class AdminService:
                         "points": current_balance
                     })
                     
-                    # 發送即時警報
+                    # 傳送即時警報
                     logger.error(f"SYSTEM-WIDE CHECK: Negative balance detected - User: {username}, Balance: {current_balance}")
             
-            # 如果發現負點數，發送彙總報告
+            # 如果發現負點數，傳送彙總報告
             if negative_users:
                 summary_message = f"🚨 系統全面檢查結果\n\n"
                 summary_message += f"📊 檢查總數：{total_checked} 位使用者\n"

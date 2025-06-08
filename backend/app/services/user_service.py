@@ -524,13 +524,13 @@ class UserService:
 
     async def _execute_transfer(self, from_user_id: str, request: TransferRequest, session=None) -> TransferResponse:
         """執行轉帳邏輯"""
-        # 取得發送方使用者
+        # 取得傳送方使用者
         from_user_oid = ObjectId(from_user_id)
         from_user = await self.db[Collections.USERS].find_one({"_id": from_user_oid}, session=session)
         if not from_user:
             return TransferResponse(
                 success=False,
-                message="發送方使用者不存在"
+                message="傳送方使用者不存在"
             )
         
         # 取得接收方使用者 - 改為支援name或id查詢
@@ -568,7 +568,7 @@ class UserService:
         # 執行轉帳
         transaction_id = str(uuid.uuid4())
         
-        # 安全扣除發送方點數
+        # 安全扣除傳送方點數
         deduction_result = await self._safe_deduct_points(
             user_id=from_user_oid,
             amount=total_deduct,
@@ -965,10 +965,10 @@ class UserService:
                 'balance_after': 0
             }
     
-    # 實時檢查負點數並發送警報
+    # 實時檢查負點數並傳送警報
     async def _check_and_alert_negative_balance(self, user_id: ObjectId, operation_context: str = "") -> bool:
         """
-        檢查指定使用者是否有負點數，如有則發送警報
+        檢查指定使用者是否有負點數，如有則傳送警報
         
         Args:
             user_id: 使用者ID
@@ -990,7 +990,7 @@ class UserService:
                 # 記錄警報日誌
                 logger.error(f"NEGATIVE BALANCE DETECTED: User {username} (ID: {user_id}) has {current_balance} points after {operation_context}")
                 
-                # 發送即時警報到 Telegram Bot
+                # 傳送即時警報到 Telegram Bot
                 try:
                     from app.services.admin_service import AdminService
                     admin_service = AdminService(self.db)
@@ -1693,7 +1693,7 @@ class UserService:
             updated_limit_buy = len([o for o in updated_buy_orders if o.get("status") == "pending_limit"])
             updated_limit_sell = len([o for o in updated_sell_orders if o.get("status") == "pending_limit"])
             
-            # 發送集合競價公告到 Telegram Bot
+            # 傳送集合競價公告到 Telegram Bot
             try:
                 from app.services.admin_service import AdminService
                 admin_service = AdminService(self.db)
@@ -2539,7 +2539,7 @@ class UserService:
             
             return PVPResponse(
                 success=True,
-                message=f"🎯 {user.get('name', '未知用戶')} 發起了 {amount} 點的猜拳挑戰！\n發送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
+                message=f"🎯 {user.get('name', '未知用戶')} 發起了 {amount} 點的猜拳挑戰！\n傳送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
                 challenge_id=challenge_id,
                 amount=amount
             )
