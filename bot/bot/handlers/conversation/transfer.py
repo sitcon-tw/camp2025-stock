@@ -60,7 +60,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
 
-    teams = ["第一組測試更新", "第一組", "第二組", "第三組"]
+    teams = ["第一組測試更新", "第一組", "第二組", "第三組", "第四組", "第五組", "第六組", "第七組", "第八組", "第九組", "第十組"]
     buttons = [[InlineKeyboardButton(text=team, callback_data=f"transfer:team:{team}")] for team in teams]
     buttons.append([InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")])
 
