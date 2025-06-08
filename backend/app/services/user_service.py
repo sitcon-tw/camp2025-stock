@@ -1934,10 +1934,19 @@ class UserService:
                 {"_id": sell_order["user_id"]},
                 {"$inc": {"points": trade_amount}}
             )
-            await self.db[Collections.STOCKS].update_one(
-                {"user_id": sell_order["user_id"]},
+            # 使用原子操作確保股票數量不會變成負數
+            stock_update_result = await self.db[Collections.STOCKS].update_one(
+                {
+                    "user_id": sell_order["user_id"],
+                    "stock_amount": {"$gte": trade_volume}  # 確保有足夠股票
+                },
                 {"$inc": {"stock_amount": -trade_volume}}
             )
+            
+            # 驗證股票更新是否成功
+            if stock_update_result.modified_count == 0:
+                logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_volume}")
+                raise Exception(f"賣方股票不足：無法賣出 {trade_volume} 股")
             
             # 記錄交易
             await self.db[Collections.TRADES].insert_one({
@@ -2106,11 +2115,20 @@ class UserService:
                     {"$inc": {"points": trade_amount}},
                     session=session
                 )
-                await self.db[Collections.STOCKS].update_one(
-                    {"user_id": sell_order["user_id"]},
+                # 使用原子操作確保股票數量不會變成負數
+                stock_update_result = await self.db[Collections.STOCKS].update_one(
+                    {
+                        "user_id": sell_order["user_id"],
+                        "stock_amount": {"$gte": trade_quantity}  # 確保有足夠股票
+                    },
                     {"$inc": {"stock_amount": -trade_quantity}},
                     session=session
                 )
+                
+                # 驗證股票更新是否成功
+                if stock_update_result.modified_count == 0:
+                    logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_quantity}")
+                    raise Exception(f"賣方股票不足：無法賣出 {trade_quantity} 股")
             else:
                 # 系統IPO交易，系統不需要更新點數和持股
                 logger.info(f"System IPO sale: {trade_quantity} shares @ {trade_price} to user {buy_order['user_id']}")
@@ -2226,11 +2244,20 @@ class UserService:
                         {"$inc": {"points": trade_amount}},
                         session=session
                     )
-                    await self.db[Collections.STOCKS].update_one(
-                        {"user_id": sell_order["user_id"]},
+                    # 使用原子操作確保股票數量不會變成負數
+                    stock_update_result = await self.db[Collections.STOCKS].update_one(
+                        {
+                            "user_id": sell_order["user_id"],
+                            "stock_amount": {"$gte": trade_quantity}  # 確保有足夠股票
+                        },
                         {"$inc": {"stock_amount": -trade_quantity}},
                         session=session
                     )
+                    
+                    # 驗證股票更新是否成功
+                    if stock_update_result.modified_count == 0:
+                        logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_quantity}")
+                        raise Exception(f"賣方股票不足：無法賣出 {trade_quantity} 股")
                     
                     # 記錄交易記錄
                     await self.db[Collections.TRADES].insert_one({
