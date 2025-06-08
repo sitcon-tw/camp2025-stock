@@ -63,6 +63,7 @@ export default function AdminPage() {
     const [teams, setTeams] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [studentsLoading, setStudentsLoading] = useState(true); // 新增學員數據加載狀態
 
     // 市場狀態
     const [marketStatus, setMarketStatus] = useState(null);
@@ -160,16 +161,19 @@ export default function AdminPage() {
 
                 // Token 有效，設置狀態並初始化數據
                 setAdminToken(token);
-                setIsLoggedIn(true); if (isMounted) {
-                    fetchUserAssets(token);
-                    fetchSystemStats(token);
-                    fetchStudents(token);
-                    fetchTeams(token);
-                    fetchMarketStatus(token); // Pass token to fetchMarketStatus
-                    fetchTradingHours();
-                    fetchIpoStatus(token);
-                    fetchIpoDefaults(token);
-                    fetchTeamNumber(token);
+                setIsLoggedIn(true);
+                
+                if (isMounted) {
+                    // 確保按順序執行，避免並行執行造成的問題
+                    await fetchSystemStats(token);
+                    await fetchStudents(token);
+                    await fetchTeams(token);
+                    await fetchUserAssets(token);
+                    await fetchMarketStatus(token);
+                    await fetchTradingHours();
+                    await fetchIpoStatus(token);
+                    await fetchIpoDefaults(token);
+                    await fetchTeamNumber(token);
                 }
             } catch (error) {
                 if (error.status === 401) {
@@ -223,13 +227,25 @@ export default function AdminPage() {
         }
     };
 
-    // 撈學員列表
+    // 撈學員列表 - 使用 /api/admin/user 獲取完整用戶資料
     const fetchStudents = async (token) => {
         try {
-            const data = await getStudents(token);
-            setStudents(data);
+            setStudentsLoading(true);
+            const data = await getUserAssets(token); // 使用 getUserAssets 而不是 getStudents
+            console.log('學生資料:', data); // 調試用
+            // 確保資料格式正確
+            if (Array.isArray(data)) {
+                setStudents(data);
+            } else {
+                console.error('學生資料格式錯誤:', data);
+                setStudents([]);
+            }
         } catch (error) {
+            console.error('獲取學生列表錯誤:', error);
+            setStudents([]);
             handleApiError(error, '獲取學生列表');
+        } finally {
+            setStudentsLoading(false);
         }
     };
 
@@ -247,8 +263,17 @@ export default function AdminPage() {
     const fetchTeams = async (token) => {
         try {
             const data = await getTeams(token);
-            setTeams(data);
+            console.log('團隊資料:', data); // 調試用
+            // 確保資料格式正確
+            if (Array.isArray(data)) {
+                setTeams(data);
+            } else {
+                console.error('團隊資料格式錯誤:', data);
+                setTeams([]);
+            }
         } catch (error) {
+            console.error('獲取團隊列表錯誤:', error);
+            setTeams([]);
             handleApiError(error, '獲取團隊列表');
         }
     };
@@ -459,7 +484,7 @@ export default function AdminPage() {
             username: value
         });
 
-        if (value.trim() === '') {
+        if (value.trim() === '' || studentsLoading) {
             setSuggestions([]);
             setShowSuggestions(false);
             return;
@@ -468,30 +493,44 @@ export default function AdminPage() {
         let filteredSuggestions = [];
 
         if (givePointsForm.type === 'user') {
-
-            // 查學員
-            filteredSuggestions = students
-                .filter(student =>
-                    student.username.toLowerCase().includes(value.toLowerCase())
-                )
-                .map(student => ({
-                    value: student.username,
-                    label: `${student.username} (${student.team})`,
-                    type: 'user'
-                }));
+            // 查學員 - 加強錯誤檢查
+            console.log('搜尋學生:', value, '學生列表長度:', students.length); // 調試用
+            if (Array.isArray(students)) {
+                filteredSuggestions = students
+                    .filter(student => 
+                        student && 
+                        typeof student.username === 'string' && 
+                        student.username.toLowerCase().includes(value.toLowerCase())
+                    )
+                    .map(student => ({
+                        value: student.username,
+                        label: `${student.username}${student.team ? ` (${student.team})` : ''}`,
+                        type: 'user'
+                    }));
+            } else {
+                console.warn('學生資料不是陣列:', students);
+            }
         } else {
-            // 查小隊
-            filteredSuggestions = teams
-                .filter(team =>
-                    team.name.toLowerCase().includes(value.toLowerCase())
-                )
-                .map(team => ({
-                    value: team.name,
-                    label: `${team.name} (${team.member_count || 0}人)`,
-                    type: 'group'
-                }));
+            // 查小隊 - 加強錯誤檢查
+            console.log('搜尋團隊:', value, '團隊列表長度:', teams.length); // 調試用
+            if (Array.isArray(teams)) {
+                filteredSuggestions = teams
+                    .filter(team =>
+                        team && 
+                        typeof team.name === 'string' && 
+                        team.name.toLowerCase().includes(value.toLowerCase())
+                    )
+                    .map(team => ({
+                        value: team.name,
+                        label: `${team.name}${team.member_count ? ` (${team.member_count}人)` : ''}`,
+                        type: 'group'
+                    }));
+            } else {
+                console.warn('團隊資料不是陣列:', teams);
+            }
         }
 
+        console.log('過濾後的建議:', filteredSuggestions); // 調試用
         setSuggestions(filteredSuggestions.slice(0, 5));
         setShowSuggestions(filteredSuggestions.length > 0);
     };
@@ -756,15 +795,22 @@ export default function AdminPage() {
                                     value={givePointsForm.username}
                                     onChange={(e) => handleUsernameChange(e.target.value)}
                                     onFocus={() => {
-                                        if (suggestions.length > 0) {
-                                            setShowSuggestions(true);
+                                        // 重新觸發搜尋以顯示建議
+                                        if (givePointsForm.username.trim() !== '') {
+                                            handleUsernameChange(givePointsForm.username);
                                         }
                                     }}
-                                    onBlur={() => {
-                                        setTimeout(() => setShowSuggestions(false), 150);
+                                    onBlur={(e) => {
+                                        // 延遲隱藏建議，讓點擊事件能夠觸發
+                                        setTimeout(() => setShowSuggestions(false), 200);
                                     }}
-                                    className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder={givePointsForm.type === 'user' ? '搜尋學生姓名...' : '搜尋團隊名稱...'}
+                                    disabled={studentsLoading}
+                                    className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#0f203e] disabled:cursor-not-allowed disabled:opacity-50"
+                                    placeholder={
+                                        studentsLoading 
+                                            ? '正在載入用戶資料...' 
+                                            : (givePointsForm.type === 'user' ? '搜尋學生姓名...' : '搜尋團隊名稱...')
+                                    }
                                 />
 
                                 {/* 搜尋建議下拉 */}
@@ -773,7 +819,10 @@ export default function AdminPage() {
                                         {suggestions.map((suggestion, index) => (
                                             <div
                                                 key={index}
-                                                onClick={() => selectSuggestion(suggestion)}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault(); // 防止blur事件影響點擊
+                                                    selectSuggestion(suggestion);
+                                                }}
                                                 className="px-3 py-2 hover:bg-[#1A325F] cursor-pointer text-white text-sm transition-colors border-b border-[#469FD2] last:border-b-0"
                                             >
                                                 <div className="flex items-center justify-between">
@@ -786,6 +835,7 @@ export default function AdminPage() {
                                         ))}
                                     </div>
                                 )}
+                            
                             </div>
 
                             <div>
@@ -1578,6 +1628,7 @@ export default function AdminPage() {
                 </div>
             )}
 
+           
             {/* 集合競價結果 Modal */}
             {showCallAuctionModal && callAuctionResult && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
