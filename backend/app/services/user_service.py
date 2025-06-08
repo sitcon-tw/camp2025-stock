@@ -1965,6 +1965,11 @@ class UserService:
     async def _match_orders_logic(self, buy_order: dict, sell_order: dict, session=None):
         """訂單撮合邏輯"""
         try:
+            # 防止自己交易給自己
+            if buy_order.get("user_id") == sell_order.get("user_id"):
+                logger.warning(f"Prevented self-trading for user {buy_order.get('user_id')}")
+                return
+            
             # 計算成交數量和價格
             trade_quantity = min(buy_order["quantity"], sell_order["quantity"])
             trade_price = buy_order["price"]  # 以買方出價成交
