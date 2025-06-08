@@ -718,7 +718,7 @@ async def reset_all_data(
         await db[Collections.MARKET_CONFIG].insert_one({
             "type": "current_price",
             "price": initial_price,
-            "updated_at": datetime.now(settings.timezone)
+            "updated_at": datetime.now(timezone.utc)
         })
         
         logger.warning(f"Database reset completed: {total_deleted} documents deleted")
