@@ -180,7 +180,8 @@ const CandlestickChart = ({ data, width = 1000, height = 200, zoomLevel = 1, pan
                                     return date.toLocaleTimeString('zh-TW', {
                                         hour: '2-digit',
                                         minute: '2-digit',
-                                        hour12: false
+                                        hour12: false,
+                                        timeZone: 'Asia/Taipei'
                                     });
                                 } catch {
                                     return timeStr;

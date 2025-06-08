@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 
-const TradingTabs = ({ currentPrice = 20.0 }) => {
+const TradingTabs = () => {
     const [activeTab, setActiveTab] = useState('orderbook');
     const [orderbookData, setOrderbookData] = useState({
         sells: [],
@@ -12,8 +12,6 @@ const TradingTabs = ({ currentPrice = 20.0 }) => {
     const [tradeHistory, setTradeHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);    // 添加請求控制
-    const [lastFetchTime, setLastFetchTime] = useState(0);
-    const MIN_FETCH_INTERVAL = 5000; // 5秒最小間隔
 
     const fetchData = async () => {
         try {
@@ -123,6 +121,10 @@ const TradingTabs = ({ currentPrice = 20.0 }) => {
         // 時間格式化
         const formatTime = (timestamp) => {
             const date = new Date(timestamp);
+            
+            // make UTC+8 Asia/Taipei
+            date.setHours(date.getHours() + 8);
+            
             const month = date.getMonth() + 1;
             const day = date.getDate();
             const hours = date.getHours().toString().padStart(2, '0');

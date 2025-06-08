@@ -87,6 +87,10 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     const realPriceData = historicalData.map(item => item.price);
                     const labels = historicalData.map(item => {
                         const date = new Date(item.timestamp);
+
+                        // time zone asia/taipei
+                        date.setHours(date.getHours() + 8);
+
                         return date.toLocaleTimeString('zh-TW', {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -103,17 +107,17 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             const close = chunk[chunk.length - 1].price;
                             const high = Math.max(...chunk.map(d => d.price));
                             const low = Math.min(...chunk.map(d => d.price));
+
+                            let datetime = new Date(chunk[0].timestamp);
+                            datetime.setHours(datetime.getHours() + 8); // 時區調整
+
                             candlesticks.push({
                                 open,
                                 high,
                                 low,
                                 close,
                                 timestamp: chunk[0].timestamp,
-                                time: new Date(chunk[0].timestamp).toLocaleTimeString('zh-TW', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false
-                                })
+                                time: datetime
                             });
                         }
                     }
@@ -251,7 +255,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     };
 
     // 這邊會根據當天的漲或跌來決定圖表的顏色
-    // 上漲紅色 下跌或沒變化綠色
+    // 上漲紅色 下跌或沒變化綠色 (暫時)
     const lineColor = changePercent > 0 ? '#ef4444' : '#22c55e';
     const gradientColor = changePercent > 0
         ? 'rgba(239, 68, 68, 0.2)'
