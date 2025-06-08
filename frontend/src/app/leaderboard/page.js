@@ -5,7 +5,7 @@ import { apiService } from '@/services/apiService';
 
 function RankingItemSkeleton() {
     return (
-        <div className="bg-[#1A325F] flex w-11/12 h-14 rounded-2xl py-1 px-2 items-center transition-all duration-300 animate-pulse"></div>
+        <div className="bg-[#1A325F] flex w-11/12 h-18 rounded-2xl py-1 px-2 items-center transition-all duration-300 animate-pulse"></div>
     );
 }
 

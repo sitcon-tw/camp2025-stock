@@ -4,8 +4,9 @@
 /* 全域背景色設定 - 強制所有元素使用統一背景色 */
 html,
 body {
-    background-color: #0f203e !important;
-    min-height: 100vh !important;
+    background-color: #0f203e;
+    min-height: 100vh;
+    color: var(--color-white);
 }
 
 /* 強制所有容器背景色 */
@@ -37,4 +38,8 @@ main,
 
 .bg-default {
     background-color: #0f203e !important;
+}
+
+button{
+    cursor: pointer;
 }
