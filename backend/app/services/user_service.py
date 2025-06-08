@@ -65,7 +65,7 @@ class UserService:
             "updated_at": datetime.now(timezone.utc)
         }
 
-        # 使用 upsert + $setOnInsert 原子性地創建文件，避免競爭條件
+        # 使用 upsert + $setOnInsert 原子性地建立文件，避免競爭條件
         await self.db[Collections.MARKET_CONFIG].update_one(
             {"type": "ipo_status"},
             {"$setOnInsert": ipo_doc_on_insert},
@@ -1211,7 +1211,7 @@ class UserService:
                     price = best_sell_order["price"]
                     logger.info(f"Market buy order will match with limit sell order at price {price}")
                     
-                    # 創建一個臨時的買單用於撮合
+                    # 建立一個臨時的買單用於撮合
                     temp_buy_order = {
                         "_id": None,  # 將在插入時分配
                         "user_id": user_oid,
@@ -1265,7 +1265,7 @@ class UserService:
                     price = best_buy_order["price"]
                     logger.info(f"Market sell order will match with limit buy order at price {price}")
                     
-                    # 創建一個臨時的賣單用於撮合
+                    # 建立一個臨時的賣單用於撮合
                     temp_sell_order = {
                         "_id": None,  # 將在插入時分配
                         "user_id": user_oid,
@@ -2488,3 +2488,263 @@ class UserService:
                 status_code=500,
                 detail=f"查詢學員資訊失敗: {str(e)}"
             )
+
+    # ========== PVP 猜拳功能 ==========
+    
+    async def create_pvp_challenge(self, from_user: str, amount: int, chat_id: str):
+        """建立 PVP 挑戰"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 檢查發起者是否存在且有足夠點數
+            user = await self.db[Collections.USERS].find_one({"telegram_id": from_user})
+            if not user:
+                return PVPResponse(
+                    success=False,
+                    message="用戶不存在，請先註冊"
+                )
+            
+            if user.get("points", 0) < amount:
+                return PVPResponse(
+                    success=False,
+                    message=f"點數不足！你的點數：{user.get('points', 0)}，需要：{amount}"
+                )
+            
+            # 檢查是否已有進行中的挑戰
+            existing_challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "challenger": from_user,
+                "status": "pending"
+            })
+            
+            if existing_challenge:
+                return PVPResponse(
+                    success=False,
+                    message="你已經有一個進行中的挑戰！"
+                )
+            
+            # 建立挑戰記錄
+            challenge_id = str(uuid.uuid4())
+            challenge_doc = {
+                "_id": challenge_id,
+                "challenger": from_user,
+                "challenger_name": user.get("name", "未知用戶"),
+                "amount": amount,
+                "chat_id": chat_id,
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc),
+                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)  # 5分鐘過期
+            }
+            
+            await self.db[Collections.PVP_CHALLENGES].insert_one(challenge_doc)
+            
+            return PVPResponse(
+                success=True,
+                message=f"🎯 {user.get('name', '未知用戶')} 發起了 {amount} 點的猜拳挑戰！\n發送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
+                challenge_id=challenge_id,
+                amount=amount
+            )
+            
+        except Exception as e:
+            logger.error(f"Error creating PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="建立挑戰失敗，請稍後再試"
+            )
+    
+    async def accept_pvp_challenge(self, from_user: str, challenge_id: str, choice: str):
+        """接受 PVP 挑戰並進行猜拳遊戲"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_id,
+                "status": "pending"
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在或已結束"
+                )
+            
+            # 檢查是否過期
+            if datetime.now(timezone.utc) > challenge["expires_at"]:
+                await self.db[Collections.PVP_CHALLENGES].update_one(
+                    {"_id": challenge_id},
+                    {"$set": {"status": "expired"}}
+                )
+                return PVPResponse(
+                    success=False,
+                    message="挑戰已過期"
+                )
+            
+            # 檢查是否為發起者本人
+            if challenge["challenger"] == from_user:
+                return PVPResponse(
+                    success=False,
+                    message="不能接受自己的挑戰！"
+                )
+            
+            # 檢查接受者是否存在且有足夠點數
+            accepter = await self.db[Collections.USERS].find_one({"telegram_id": from_user})
+            if not accepter:
+                return PVPResponse(
+                    success=False,
+                    message="用戶不存在，請先註冊"
+                )
+            
+            amount = challenge["amount"]
+            if accepter.get("points", 0) < amount:
+                return PVPResponse(
+                    success=False,
+                    message=f"點數不足！你的點數：{accepter.get('points', 0)}，需要：{amount}"
+                )
+            
+            # 生成發起者的隨機選擇
+            choices = ["rock", "paper", "scissors"]
+            challenger_choice = random.choice(choices)
+            
+            # 判斷勝負
+            result = self._determine_winner(challenger_choice, choice)
+            
+            # 更新挑戰狀態
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_id},
+                {
+                    "$set": {
+                        "accepter": from_user,
+                        "accepter_name": accepter.get("name", "未知用戶"),
+                        "challenger_choice": challenger_choice,
+                        "accepter_choice": choice,
+                        "result": result,
+                        "status": "completed",
+                        "completed_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # 處理點數轉移
+            challenger_user = await self.db[Collections.USERS].find_one({"telegram_id": challenge["challenger"]})
+            
+            if result == "challenger_wins":
+                # 發起者勝利
+                winner_name = challenge["challenger_name"]
+                loser_name = accepter.get("name", "未知用戶")
+                
+                # 轉移點數
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": challenge["challenger"]},
+                    {"$inc": {"points": amount}}
+                )
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": from_user},
+                    {"$inc": {"points": -amount}}
+                )
+                
+                # 記錄點數變動
+                await self._log_point_change(
+                    user_id=challenger_user["_id"],
+                    operation_type="pvp_win",
+                    amount=amount,
+                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                )
+                await self._log_point_change(
+                    user_id=accepter["_id"],
+                    operation_type="pvp_lose",
+                    amount=-amount,
+                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                return PVPResponse(
+                    success=True,
+                    message=f"🎉 遊戲結束！\n{self._get_choice_emoji(challenger_choice)} {winner_name} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {loser_name} 出 {self._get_choice_name(choice)}\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！",
+                    winner=challenge["challenger"],
+                    loser=from_user,
+                    amount=amount
+                )
+                
+            elif result == "accepter_wins":
+                # 接受者勝利
+                winner_name = accepter.get("name", "未知用戶")
+                loser_name = challenge["challenger_name"]
+                
+                # 轉移點數
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": from_user},
+                    {"$inc": {"points": amount}}
+                )
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": challenge["challenger"]},
+                    {"$inc": {"points": -amount}}
+                )
+                
+                # 記錄點數變動
+                await self._log_point_change(
+                    user_id=accepter["_id"],
+                    operation_type="pvp_win",
+                    amount=amount,
+                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                )
+                await self._log_point_change(
+                    user_id=challenger_user["_id"],
+                    operation_type="pvp_lose",
+                    amount=-amount,
+                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                return PVPResponse(
+                    success=True,
+                    message=f"🎉 遊戲結束！\n{self._get_choice_emoji(challenger_choice)} {loser_name} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {winner_name} 出 {self._get_choice_name(choice)}\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！",
+                    winner=from_user,
+                    loser=challenge["challenger"],
+                    amount=amount
+                )
+                
+            else:  # tie
+                return PVPResponse(
+                    success=True,
+                    message=f"🤝 平手！\n{self._get_choice_emoji(challenger_choice)} {challenge['challenger_name']} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {accepter.get('name', '未知用戶')} 出 {self._get_choice_name(choice)}\n\n沒有點數變動！",
+                    amount=0
+                )
+                
+        except Exception as e:
+            logger.error(f"Error accepting PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="接受挑戰失敗，請稍後再試"
+            )
+    
+    def _determine_winner(self, choice1: str, choice2: str) -> str:
+        """判斷猜拳勝負"""
+        if choice1 == choice2:
+            return "tie"
+        
+        winning_combinations = {
+            ("rock", "scissors"): "challenger_wins",
+            ("paper", "rock"): "challenger_wins", 
+            ("scissors", "paper"): "challenger_wins",
+            ("scissors", "rock"): "accepter_wins",
+            ("rock", "paper"): "accepter_wins",
+            ("paper", "scissors"): "accepter_wins"
+        }
+        
+        return winning_combinations.get((choice1, choice2), "tie")
+    
+    def _get_choice_emoji(self, choice: str) -> str:
+        """獲取選擇對應的 emoji"""
+        emojis = {
+            "rock": "🪨",
+            "paper": "📄", 
+            "scissors": "✂️"
+        }
+        return emojis.get(choice, "❓")
+    
+    def _get_choice_name(self, choice: str) -> str:
+        """獲取選擇對應的中文名稱"""
+        names = {
+            "rock": "石頭",
+            "paper": "布",
+            "scissors": "剪刀"
+        }
+        return names.get(choice, "未知")

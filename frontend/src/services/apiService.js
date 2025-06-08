@@ -91,5 +91,5 @@ class ApiService {
     }
 }
 
-// 創建單例實例
+// 建立單例實例
 export const apiService = new ApiService();

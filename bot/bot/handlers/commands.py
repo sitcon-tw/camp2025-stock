@@ -137,15 +137,80 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """PVP 猜拳挑戰"""
+    logger.info(f"/pvp triggered by {update.effective_user.id}")
+    
+    # 檢查是否在群組中
+    if update.message.chat.type == 'private':
+        await update.message.reply_text(
+            "🚫 PVP 挑戰只能在群組中使用！",
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
+        return
+    
+    # 檢查是否提供了金額參數
     if not context.args:
         await update.message.reply_text(
-            f"""
-            😾 你得標一個人來 PVP！
-            """
+            "🎯 使用方法：`/pvp <金額>`\n例如：`/pvp 100`",
+            parse_mode=ParseMode.MARKDOWN_V2
         )
         return
 
-    target_username = context.args[0]
+    try:
+        amount = int(context.args[0])
+        if amount <= 0:
+            await update.message.reply_text(
+                "💰 金額必須大於 0！",
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+            return
+        if amount > 10000:
+            await update.message.reply_text(
+                "💰 金額不能超過 10000 點！",
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+            return
+    except ValueError:
+        await update.message.reply_text(
+            "🔢 請輸入有效的數字！",
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
+        return
+
+    # 調用後端 API 建立 PVP 挑戰
+    response = api_helper.post("/api/bot/pvp/create", protected_route=True, json={
+        "from_user": str(update.effective_user.id),
+        "amount": amount,
+        "chat_id": str(update.message.chat.id)
+    })
+
+    if await verify_existing_user(response, update):
+        return
+
+    if response.get("success"):
+        challenge_id = response.get("challenge_id")
+        message_text = escape_markdown(response.get("message"), 2)
+        
+        # 建立內聯鍵盤
+        keyboard = [
+            [
+                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_accept_{challenge_id}_rock"),
+                InlineKeyboardButton("📄 布", callback_data=f"pvp_accept_{challenge_id}_paper"),
+                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_accept_{challenge_id}_scissors")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await update.message.reply_text(
+            message_text,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=reply_markup
+        )
+    else:
+        await update.message.reply_text(
+            escape_markdown(response.get("message", "建立挑戰失敗"), 2),
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
 
 
 async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

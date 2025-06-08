@@ -4,7 +4,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from telegram.constants import ParseMode
-from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, CallbackContext
+from telegram.ext import CommandHandler, ChatMemberHandler, CallbackQueryHandler, CallbackContext, ConversationHandler
 from telegram.helpers import escape_markdown
 
 from bot.handlers import commands, welcome, buttons
@@ -65,6 +65,8 @@ async def initialize():
     bot.add_handler(CommandHandler("point", commands.point))
     bot.add_handler(CommandHandler("log", commands.log))
     bot.add_handler(CommandHandler("orders", commands.orders))
+    bot.add_handler(CommandHandler("pvp", commands.pvp))
+    bot.add_handler(CallbackQueryHandler(buttons.handle_pvp_accept, pattern=r"^pvp_accept_"))
     bot.add_handler(CallbackQueryHandler(buttons.handle_zombie_clicks))
     bot.add_handler(ChatMemberHandler(welcome.welcome_member, ChatMemberHandler.CHAT_MEMBER))
     bot.add_error_handler(error_handler)
@@ -76,6 +78,7 @@ async def initialize():
         ("point", "查看小隊們與自己的點數"),
         ("stock", "買賣點數"),
         ("orders", "查看自己的股票掛單清單"),
+        ("pvp", "發起猜拳挑戰 (僅限群組)"),
         ("log", "查看自己的點數交易紀錄"),
         ("transfer", "轉帳給別人，小心 1% 手續費！")
     ])

@@ -4,7 +4,8 @@ from app.services.admin_service import AdminService, get_admin_service
 from app.schemas.bot import (
     BotStockOrderRequest, BotTransferRequest,
     BotPortfolioRequest, BotPointHistoryRequest, BotStockOrdersRequest,
-    BotProfileRequest, TelegramWebhookRequest, BroadcastRequest, BroadcastAllRequest
+    BotProfileRequest, TelegramWebhookRequest, BroadcastRequest, BroadcastAllRequest,
+    PVPCreateRequest, PVPAcceptRequest, PVPResponse
 )
 from app.schemas.user import (
     UserRegistrationResponse, UserPortfolio, StockOrderResponse,
@@ -291,4 +292,55 @@ async def bot_get_teams(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve team data"
         )
+
+
+# ========== BOT PVP 猜拳 ==========
+
+@router.post(
+    "/pvp/create",
+    response_model=PVPResponse,
+    summary="BOT 建立 PVP 挑戰",
+    description="透過 BOT 在群組中建立 PVP 猜拳挑戰"
+)
+async def bot_create_pvp_challenge(
+    request: PVPCreateRequest,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+) -> PVPResponse:
+    """
+    BOT 建立 PVP 挑戰
+    
+    Args:
+        request: PVP 建立請求，包含發起者、金額、群組 ID
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        PVP 建立結果
+    """
+    return await user_service.create_pvp_challenge(request.from_user, request.amount, request.chat_id)
+
+
+@router.post(
+    "/pvp/accept",
+    response_model=PVPResponse,
+    summary="BOT 接受 PVP 挑戰",
+    description="透過 BOT 接受 PVP 猜拳挑戰並進行遊戲"
+)
+async def bot_accept_pvp_challenge(
+    request: PVPAcceptRequest,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+) -> PVPResponse:
+    """
+    BOT 接受 PVP 挑戰
+    
+    Args:
+        request: PVP 接受請求，包含接受者、挑戰 ID、出拳選擇
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        PVP 遊戲結果
+    """
+    return await user_service.accept_pvp_challenge(request.from_user, request.challenge_id, request.choice)
+
     

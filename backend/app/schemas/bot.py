@@ -97,3 +97,35 @@ class BroadcastResponse(BaseModel):
     """廣播回應模型"""
     ok: bool = Field(True, description="操作結果")
     message: Optional[str] = Field(None, description="回應訊息")
+
+
+# ========== PVP 猜拳模型 ==========
+
+class PVPCreateRequest(BaseModel):
+    """建立 PVP 挑戰請求"""
+    from_user: str = Field(..., description="發起者 Telegram ID")
+    amount: int = Field(..., gt=0, le=10000, description="賭金金額")
+    chat_id: str = Field(..., description="群組 ID")
+
+
+class PVPAcceptRequest(BaseModel):
+    """接受 PVP 挑戰請求"""
+    from_user: str = Field(..., description="接受者 Telegram ID")
+    challenge_id: str = Field(..., description="挑戰 ID")
+    choice: str = Field(..., description="出拳選擇：rock/paper/scissors")
+    
+    @validator('choice')
+    def validate_choice(cls, v):
+        if v not in ['rock', 'paper', 'scissors']:
+            raise ValueError('choice must be "rock", "paper", or "scissors"')
+        return v
+
+
+class PVPResponse(BaseModel):
+    """PVP 操作回應"""
+    success: bool = Field(..., description="操作是否成功")
+    message: str = Field(..., description="回應訊息")
+    challenge_id: Optional[str] = Field(None, description="挑戰 ID")
+    winner: Optional[str] = Field(None, description="勝利者")
+    loser: Optional[str] = Field(None, description="失敗者")
+    amount: Optional[int] = Field(None, description="轉移金額")
