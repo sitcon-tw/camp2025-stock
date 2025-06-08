@@ -29,18 +29,52 @@ function RankingItem({ rank, user, isGroup = false }) {
         return `${rank}.`
     };
 
+    const formatNumber = (num) => {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toLocaleString();
+    };
+
     return (
-        <div className="bg-[#1A325F] flex w-11/12 rounded-2xl py-1 px-2 items-center transition-all duration-300">
+        <div className="bg-[#1A325F] flex w-11/12 rounded-2xl py-3 px-4 items-center transition-all duration-300">
             <div className="flex items-center justify-center w-12 h-12">
                 <span className="text-[#AFE1F5] font-bold text-lg">
                     {getRankIcon(rank)}
                 </span>
             </div>
 
-            <div className="flex-1">
-                <h3 className="text-lg font-semibold text-[#AFE1F5]">
+            <div className="flex-1 ml-3">
+                <h3 className="text-lg font-semibold text-[#AFE1F5] mb-1">
                     {isGroup ? user.teamName : user.username}
                 </h3>
+                {isGroup ? (
+                    <div className="text-sm text-gray-300">
+                        <div>總價值: {formatNumber(user.totalValue || 0)}</div>
+                        <div className="text-xs text-gray-400">
+                            成員數: {user.memberCount || 0}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-sm text-gray-300">
+                        <div>點數: {formatNumber(user.points || 0)}</div>
+                        <div>股票價值: {formatNumber(user.stockValue || 0)}</div>
+                    </div>
+                )}
+            </div>
+
+            <div className="text-right">
+                <div className="text-lg font-bold text-[#82bee2]">
+                    {isGroup 
+                        ? formatNumber(user.totalValue || 0)
+                        : formatNumber((user.points || 0) + (user.stockValue || 0))
+                    }
+                </div>
+                <div className="text-xs text-gray-400">
+                    {isGroup ? '總價值' : '總資產'}
+                </div>
             </div>
         </div>
     );
@@ -83,9 +117,16 @@ export default function Leaderboard() {
             setError(null);
 
             const data = await apiService.getLeaderboardData();
-            setLeaderboardData(data);
+            
+            // 對個人資料按總資產排序
+            const sortedData = data.map(user => ({
+                ...user,
+                totalAssets: (user.points || 0) + (user.stockValue || 0)
+            })).sort((a, b) => b.totalAssets - a.totalAssets);
+            
+            setLeaderboardData(sortedData);
 
-            const groupData = processGroupLeaderboard(data);
+            const groupData = processGroupLeaderboard(sortedData);
             setGroupLeaderboard(groupData);
         } catch (error) {
             console.error('獲取排行榜失敗:', error);

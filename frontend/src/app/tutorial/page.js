@@ -129,7 +129,7 @@ export default function TutorialPage() {
                 <p className="font-semibold mb-2 text-[#82bee2]">📌 說明：</p>
                 <ul className="list-disc pl-6 text-white">
                     <li>可以轉點數給其他人。</li>
-                    <li>會抽取 1% 手續費。</li>
+                    <li>會抽取 5% 手續費。</li>
                 </ul>
             </div>
 
@@ -233,7 +233,7 @@ export default function TutorialPage() {
 
                 <div>
                     <h3 className="text-lg font-semibold mb-2 text-[#82bee2]">❓ 我可以轉點數給別人嗎？</h3>
-                    <p className="text-white">可以。使用 /transfer 指令，會抽取 1% 手續費。</p>
+                    <p className="text-white">可以。使用 /transfer 指令，會抽取 5% 手續費。</p>
                 </div>
 
                 <div>
