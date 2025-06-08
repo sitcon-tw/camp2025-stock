@@ -34,9 +34,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n\n"
-        f"🤑┃目前點數 *{escape_markdown(response.get("points"), 2)}*\n"
-        f"🏛️┃目前持有股票股數 *{escape_markdown(response.get("stocks"), 2)}*，要不要來點新鮮的股票？\n"
-        f"💵┃總資產共 {escape_markdown(response.get("totalValue"), 2)}",
+        f"🤑┃目前點數 *{escape_markdown(str(response.get("points")), 2)}*\n"
+        f"🏛️┃目前持有股票股數 *{escape_markdown(str(response.get("stocks")), 2)}*，要不要來點新鮮的股票？\n"
+        f"💵┃總資產共 {escape_markdown(str(response.get("totalValue")), 2)}",
         parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
 
 
