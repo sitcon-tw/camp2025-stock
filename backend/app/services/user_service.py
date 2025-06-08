@@ -1215,7 +1215,7 @@ class UserService:
                     logger.error(f"Failed to execute market order with non-retryable error: {e}")
                     return StockOrderResponse(
                         success=False,
-                        message="市價單執行失敗"
+                        message=f"市價單執行失敗：{str(e)}"
                     )
 
     async def _execute_market_order_with_transaction(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
@@ -1338,11 +1338,39 @@ class UserService:
             if price is None:
                 # 對於買單：如果沒有賣單可撮合且 IPO 也無法購買，則拒絕交易
                 if side == "buy":
+                    # 查詢更詳細的市場狀況以提供具體錯誤訊息
+                    sell_orders_count = await self.db[Collections.STOCK_ORDERS].count_documents({
+                        "side": "sell", 
+                        "status": "pending"
+                    }, session=session)
+                    
+                    ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                        {"type": "ipo_status"}, session=session
+                    )
+                    remaining_shares = ipo_config.get("shares_remaining", 0) if ipo_config else 0
+                    ipo_price = ipo_config.get("initial_price", 20) if ipo_config else 20
+                    required_points = quantity * ipo_price
+                    
+                    user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
+                    user_points = user.get("points", 0) if user else 0
+                    
                     await session.abort_transaction()
                     logger.warning(f"Market buy order rejected: no sell orders available and IPO exhausted for user {user_oid}")
+                    
+                    detail_parts = []
+                    if sell_orders_count == 0:
+                        detail_parts.append("市場上沒有可用的賣單")
+                    else:
+                        detail_parts.append(f"市場上有 {sell_orders_count} 個賣單但無法撮合")
+                    
+                    if remaining_shares < quantity:
+                        detail_parts.append(f"IPO 剩餘股數不足（需要 {quantity} 股，剩餘 {remaining_shares} 股）")
+                    elif user_points < required_points:
+                        detail_parts.append(f"IPO 點數不足（需要 {required_points} 點，擁有 {user_points} 點）")
+                    
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="無法執行市價買單：市場上沒有可用的賣單，且 IPO 股票已售完或點數不足"
+                        detail=f"無法執行市價買單：{', '.join(detail_parts)}"
                     )
                 
                 # 對於賣單：使用市場價格（因為是賣出現有股票）
@@ -1439,11 +1467,16 @@ class UserService:
                 
                 # 驗證 IPO 更新是否成功
                 if ipo_update_result.modified_count == 0:
-                    logger.error(f"Failed to update IPO stock in market order: insufficient shares for quantity {quantity}")
+                    # 查詢實際剩餘股數以提供更詳細的錯誤訊息
+                    current_ipo = await self.db[Collections.MARKET_CONFIG].find_one(
+                        {"type": "ipo_status"}, session=session
+                    )
+                    remaining_shares = current_ipo.get("shares_remaining", 0) if current_ipo else 0
+                    logger.error(f"Failed to update IPO stock in market order: insufficient shares for quantity {quantity}, remaining: {remaining_shares}")
                     await session.abort_transaction()
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="IPO 股數不足，無法完成交易"
+                        detail=f"IPO 股數不足，無法完成交易。需要 {quantity} 股，剩餘 {remaining_shares} 股"
                     )
                 
                 logger.info(f"✅ Market order IPO stock updated: reduced by {quantity} shares")
@@ -1474,7 +1507,7 @@ class UserService:
                 await session.abort_transaction()
             return StockOrderResponse(
                 success=False,
-                message="市價單執行失敗"
+                message=f"市價單執行失敗：{str(e)}"
             )
     
     # 嘗試撮合訂單
@@ -1945,8 +1978,11 @@ class UserService:
             
             # 驗證股票更新是否成功
             if stock_update_result.modified_count == 0:
-                logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_volume}")
-                raise Exception(f"賣方股票不足：無法賣出 {trade_volume} 股")
+                # 查詢實際持股數量以提供詳細錯誤訊息
+                current_holding = await self.db[Collections.STOCKS].find_one({"user_id": sell_order["user_id"]})
+                current_stocks = current_holding.get("stock_amount", 0) if current_holding else 0
+                logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_volume}, current: {current_stocks}")
+                raise Exception(f"賣方股票不足：需要賣出 {trade_volume} 股，實際持有 {current_stocks} 股")
             
             # 記錄交易
             await self.db[Collections.TRADES].insert_one({
@@ -2127,8 +2163,11 @@ class UserService:
                 
                 # 驗證股票更新是否成功
                 if stock_update_result.modified_count == 0:
-                    logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_quantity}")
-                    raise Exception(f"賣方股票不足：無法賣出 {trade_quantity} 股")
+                    # 查詢實際持股數量以提供詳細錯誤訊息
+                    current_holding = await self.db[Collections.STOCKS].find_one({"user_id": sell_order["user_id"]}, session=session)
+                    current_stocks = current_holding.get("stock_amount", 0) if current_holding else 0
+                    logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_quantity}, current: {current_stocks}")
+                    raise Exception(f"賣方股票不足：需要賣出 {trade_quantity} 股，實際持有 {current_stocks} 股")
             else:
                 # 系統IPO交易，系統不需要更新點數和持股
                 logger.info(f"System IPO sale: {trade_quantity} shares @ {trade_price} to user {buy_order['user_id']}")
@@ -2256,8 +2295,11 @@ class UserService:
                     
                     # 驗證股票更新是否成功
                     if stock_update_result.modified_count == 0:
-                        logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_quantity}")
-                        raise Exception(f"賣方股票不足：無法賣出 {trade_quantity} 股")
+                        # 查詢實際持股數量以提供詳細錯誤訊息
+                        current_holding = await self.db[Collections.STOCKS].find_one({"user_id": sell_order["user_id"]}, session=session)
+                        current_stocks = current_holding.get("stock_amount", 0) if current_holding else 0
+                        logger.error(f"Failed to update stock: insufficient shares for user {sell_order['user_id']}, quantity {trade_quantity}, current: {current_stocks}")
+                        raise Exception(f"賣方股票不足：需要賣出 {trade_quantity} 股，實際持有 {current_stocks} 股")
                     
                     # 記錄交易記錄
                     await self.db[Collections.TRADES].insert_one({
