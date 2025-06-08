@@ -50,6 +50,9 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*",
             parse_mode=ParseMode.MARKDOWN_V2
         )
+        logger.info(f"User {update.effective_user.id} already registered")
+        # 印出 response 詳細資訊到console
+        logger.info(f"User {update.effective_user.id} already registered, response: {portfolio_response}")
         return
 
     if not context.args:
