@@ -1254,7 +1254,6 @@ class UserService:
                     
                     # 建立一個臨時的買單用於撮合
                     temp_buy_order = {
-                        "_id": None,  # 將在插入時分配
                         "user_id": user_oid,
                         "side": "buy",
                         "quantity": quantity,
@@ -1308,7 +1307,6 @@ class UserService:
                     
                     # 建立一個臨時的賣單用於撮合
                     temp_sell_order = {
-                        "_id": None,  # 將在插入時分配
                         "user_id": user_oid,
                         "side": "sell",
                         "quantity": quantity,
