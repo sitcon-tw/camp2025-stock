@@ -2518,14 +2518,29 @@ class UserService:
             # 檢查是否已有進行中的挑戰
             existing_challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
                 "challenger": from_user,
-                "status": "pending"
+                "status": {"$in": ["pending", "waiting_accepter"]}
             })
             
             if existing_challenge:
-                return PVPResponse(
-                    success=False,
-                    message="你已經有一個進行中的挑戰！"
-                )
+                # 檢查挑戰是否過期，如果過期則自動清理
+                if datetime.now(timezone.utc) > existing_challenge["expires_at"]:
+                    await self.db[Collections.PVP_CHALLENGES].update_one(
+                        {"_id": existing_challenge["_id"]},
+                        {"$set": {"status": "expired"}}
+                    )
+                else:
+                    # 提供更詳細的訊息
+                    challenge_status = existing_challenge.get("status", "pending")
+                    if challenge_status == "waiting_accepter":
+                        return PVPResponse(
+                            success=False,
+                            message="你已經有一個等待接受的挑戰！請等待其他人接受或過期後再建立新挑戰。"
+                        )
+                    else:
+                        return PVPResponse(
+                            success=False,
+                            message="你已經有一個進行中的挑戰！請完成後再建立新挑戰。"
+                        )
             
             # 建立挑戰記錄
             challenge_id = str(uuid.uuid4())

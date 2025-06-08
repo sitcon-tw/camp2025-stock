@@ -1151,3 +1151,66 @@ async def trigger_system_wide_balance_check(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"系統全面檢查失敗: {str(e)}"
         )
+
+
+@router.post(
+    "/pvp/cleanup",
+    responses={
+        200: {"description": "PVP 挑戰清理成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="清理過期的 PVP 挑戰",
+    description="清理所有過期或卡住的 PVP 挑戰"
+)
+async def cleanup_pvp_challenges(
+    current_admin=Depends(get_current_admin)
+):
+    """清理過期的 PVP 挑戰"""
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        now = datetime.now(timezone.utc)
+        
+        # 清理過期的挑戰
+        expired_result = await db[Collections.PVP_CHALLENGES].update_many(
+            {
+                "status": {"$in": ["pending", "waiting_accepter"]},
+                "expires_at": {"$lt": now}
+            },
+            {"$set": {"status": "expired"}}
+        )
+        
+        # 獲取所有進行中的挑戰統計
+        pending_count = await db[Collections.PVP_CHALLENGES].count_documents({
+            "status": {"$in": ["pending", "waiting_accepter"]}
+        })
+        
+        expired_count = await db[Collections.PVP_CHALLENGES].count_documents({
+            "status": "expired"
+        })
+        
+        completed_count = await db[Collections.PVP_CHALLENGES].count_documents({
+            "status": "completed"
+        })
+        
+        logger.info(f"PVP cleanup: expired {expired_result.modified_count} challenges")
+        
+        return {
+            "ok": True,
+            "message": f"清理完成，過期了 {expired_result.modified_count} 個挑戰",
+            "stats": {
+                "expired_now": expired_result.modified_count,
+                "pending": pending_count,
+                "expired_total": expired_count,
+                "completed": completed_count
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to cleanup PVP challenges: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"清理 PVP 挑戰失敗: {str(e)}"
+        )
