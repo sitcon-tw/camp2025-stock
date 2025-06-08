@@ -62,7 +62,7 @@ def main():
         
         print("📡 啟動重構後的 FastAPI 應用程式...")
         print("🌐 應用程式將在 http://localhost:8000 運行")
-        print("📚 API 文檔: http://localhost:8000/docs")
+        print("📚 API 文件: http://localhost:8000/docs")
         print("🏗️  架構資訊: http://localhost:8000/api/architecture")
         print("❤️  健康檢查: http://localhost:8000/api/health")
         

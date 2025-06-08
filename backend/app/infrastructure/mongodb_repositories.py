@@ -83,7 +83,7 @@ class MongoUserRepository(UserRepository):
             raise
     
     def _document_to_entity(self, doc: dict) -> User:
-        """將 MongoDB 文檔轉換為領域實體"""
+        """將 MongoDB 文件轉換為領域實體"""
         return User(
             user_id=doc.get("id"),
             username=doc.get("username"),
@@ -96,7 +96,7 @@ class MongoUserRepository(UserRepository):
         )
     
     def _entity_to_document(self, user: User) -> dict:
-        """將領域實體轉換為 MongoDB 文檔"""
+        """將領域實體轉換為 MongoDB 文件"""
         return {
             "id": user.user_id,
             "username": user.username,
@@ -161,7 +161,7 @@ class MongoStockRepository(StockRepository):
             raise
     
     def _document_to_entity(self, doc: dict) -> Stock:
-        """將 MongoDB 文檔轉換為領域實體"""
+        """將 MongoDB 文件轉換為領域實體"""
         return Stock(
             user_id=doc.get("user_id"),
             quantity=doc.get("quantity", 0),
@@ -170,7 +170,7 @@ class MongoStockRepository(StockRepository):
         )
     
     def _entity_to_document(self, stock: Stock) -> dict:
-        """將領域實體轉換為 MongoDB 文檔"""
+        """將領域實體轉換為 MongoDB 文件"""
         return {
             "user_id": stock.user_id,
             "quantity": stock.quantity,
@@ -245,7 +245,7 @@ class MongoStockOrderRepository(StockOrderRepository):
             raise
     
     def _document_to_entity(self, doc: dict) -> StockOrder:
-        """將 MongoDB 文檔轉換為領域實體"""
+        """將 MongoDB 文件轉換為領域實體"""
         price = None
         if doc.get("price"):
             price = Decimal(str(doc.get("price")))
@@ -263,7 +263,7 @@ class MongoStockOrderRepository(StockOrderRepository):
         )
     
     def _entity_to_document(self, order: StockOrder) -> dict:
-        """將領域實體轉換為 MongoDB 文檔"""
+        """將領域實體轉換為 MongoDB 文件"""
         doc = {
             "order_id": order.order_id,
             "user_id": order.user_id,
@@ -325,7 +325,7 @@ class MongoTransferRepository(TransferRepository):
             return []
     
     def _document_to_entity(self, doc: dict) -> Transfer:
-        """將 MongoDB 文檔轉換為領域實體"""
+        """將 MongoDB 文件轉換為領域實體"""
         return Transfer(
             transfer_id=doc.get("transfer_id"),
             from_user_id=doc.get("from_user_id"),
@@ -338,7 +338,7 @@ class MongoTransferRepository(TransferRepository):
         )
     
     def _entity_to_document(self, transfer: Transfer) -> dict:
-        """將領域實體轉換為 MongoDB 文檔"""
+        """將領域實體轉換為 MongoDB 文件"""
         return {
             "transfer_id": transfer.transfer_id,
             "type": "transfer",

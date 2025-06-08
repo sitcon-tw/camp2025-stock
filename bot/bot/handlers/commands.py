@@ -236,14 +236,21 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
         "limit": 100  # 獲取更多訂單用於分頁
     })
 
-    if hasattr(update_or_query, 'message'):
-        # 來自 callback query
-        update = update_or_query
-        user_name = update.from_user.full_name
-        if await verify_existing_user(response, update, is_callback=True):
+    if hasattr(update_or_query, 'data'):
+        # 來自 callback query（CallbackQuery 對象）
+        query = update_or_query
+        user_name = query.from_user.full_name
+        # 創建一個模擬的 Update 對象來檢查用戶狀態
+        class MockUpdate:
+            def __init__(self, query):
+                self.effective_user = query.from_user
+                self.answer = query.answer
+        
+        mock_update = MockUpdate(query)
+        if await verify_existing_user(response, mock_update, is_callback=True):
             return
     else:
-        # 來自普通訊息
+        # 來自普通訊息（Update 對象）
         update = update_or_query
         user_name = update.effective_user.full_name
         if await verify_existing_user(response, update):
