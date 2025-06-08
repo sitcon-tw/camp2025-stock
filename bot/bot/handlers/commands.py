@@ -45,13 +45,24 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "from_user": str(update.effective_user.id)
     })
 
-    if not portfolio_response.get("detail") == "noexist":
+    # Check if user doesn't exist (either old format or new format)
+    detail = portfolio_response.get("detail", "")
+    logger.info(f"Portfolio response detail: '{detail}'")
+    
+    user_not_exists = (
+        detail == "noexist" or
+        detail.startswith("用戶不存在") or
+        (detail == "error" and portfolio_response.get("status_code") == 404)
+    )
+    
+    logger.info(f"User exists check: detail='{detail}', user_not_exists={user_not_exists}")
+    
+    if not user_not_exists:
         await update.message.reply_text(
             f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*",
             parse_mode=ParseMode.MARKDOWN_V2
         )
         logger.info(f"User {update.effective_user.id} already registered")
-        # 印出 response 詳細資訊到console
         logger.info(f"User {update.effective_user.id} already registered, response: {portfolio_response}")
         return
 

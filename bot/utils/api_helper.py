@@ -10,7 +10,7 @@ logger = setup_logger(__name__)
 load_dotenv()
 
 BACKEND_URL = environ.get("BACKEND_URL")
-BACKEND_TOKEN = environ.get("BACKEND_TOKEN")
+BACKEND_TOKEN = environ.get("BACKEND_TOKEN") or environ.get("INTERNAL_API_KEY")
 
 if BACKEND_URL.endswith("/"):
     BACKEND_URL = BACKEND_URL[:-1]
