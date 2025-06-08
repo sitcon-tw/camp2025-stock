@@ -19,12 +19,19 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     if context.user_data.get("in_transfer_convo"):
+        cancel_button = [[InlineKeyboardButton("❌ 取消現有轉帳", callback_data="transfer:cancel")]]
         await update.message.reply_text(
-            "😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消")
+            "😿 你已經有一個正在執行的 /transfer 指令了！請先完成那個動作或是按取消按鈕來取消",
+            reply_markup=InlineKeyboardMarkup(cancel_button)
+        )
         return None
 
     if context.user_data.get("in_stock_convo"):
-        await update.message.reply_text("😿 你已經有一個正在執行的 /stock 指令了！請先完成那個動作或是按取消按鈕來取消")
+        cancel_button = [[InlineKeyboardButton("❌ 取消現有交易", callback_data="stock:cancel")]]
+        await update.message.reply_text(
+            "😿 你已經有一個正在執行的 /stock 指令了！請先完成那個動作或是按取消按鈕來取消",
+            reply_markup=InlineKeyboardMarkup(cancel_button)
+        )
         return None
 
     context.user_data["in_transfer_convo"] = True
