@@ -2860,13 +2860,13 @@ class UserService:
                 # 記錄點數變動
                 await self._log_point_change(
                     user_id=challenger_user["_id"],
-                    operation_type="pvp_win",
+                    change_type="pvp_win",
                     amount=amount,
                     note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
                 )
                 await self._log_point_change(
                     user_id=accepter["_id"],
-                    operation_type="pvp_lose",
+                    change_type="pvp_lose",
                     amount=-amount,
                     note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
                 )
@@ -2897,13 +2897,13 @@ class UserService:
                 # 記錄點數變動
                 await self._log_point_change(
                     user_id=accepter["_id"],
-                    operation_type="pvp_win",
+                    change_type="pvp_win",
                     amount=amount,
                     note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
                 )
                 await self._log_point_change(
                     user_id=challenger_user["_id"],
-                    operation_type="pvp_lose",
+                    change_type="pvp_lose",
                     amount=-amount,
                     note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
                 )
