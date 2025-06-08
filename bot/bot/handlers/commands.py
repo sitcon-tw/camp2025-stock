@@ -1,5 +1,6 @@
 from datetime import datetime
 from os import environ
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
@@ -123,7 +124,7 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     lines = []
     for item in response:
-        time = datetime.fromisoformat(item['created_at']).strftime("%Y-%m-%d %H:%M")
+        time = datetime.fromisoformat(item['created_at']).replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M")
 
         line = f"`{escape_markdown(time, 2)}`： *{escape_markdown(item['note'], 2)}* {escape_markdown(str(item['amount']), 2)} 點，餘額 *{escape_markdown(str(item['balance_after']), 2)}* 點".strip()
         lines.append(line)
@@ -278,7 +279,7 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             # 添加時間
             if order.get('created_at'):
                 try:
-                    time = datetime.fromisoformat(order['created_at'].replace('Z', '+00:00')).strftime("%m-%d %H:%M")
+                    time = datetime.fromisoformat(order['created_at']).replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Taipei")).strftime("%m-%d %H:%M")
                     order_info += f" ({time})"
                 except:
                     pass
@@ -289,7 +290,7 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lines = []
     
     if pending_orders:
-        lines.append("🔄 *進行中的訂單：*")
+        lines.append("*進行中的訂單：*")
         lines.extend(pending_orders[:10])  # 最多顯示 10 筆進行中訂單
         if len(pending_orders) > 10:
             lines.append(f"\\.\\.\\. 還有 {len(pending_orders) - 10} 筆訂單")
@@ -297,7 +298,7 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if completed_orders:
         if lines:  # 如果已有進行中訂單，添加分隔
             lines.append("")
-        lines.append("✅ *最近完成的訂單：*")
+        lines.append("*最近完成的訂單：*")
         lines.extend(completed_orders[:5])  # 最多顯示 5 筆已完成訂單
         if len(completed_orders) > 5:
             lines.append(f"\\.\\.\\. 還有 {len(completed_orders) - 5} 筆歷史訂單")
