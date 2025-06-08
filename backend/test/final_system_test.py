@@ -218,13 +218,13 @@ class SystemTester:
             self.log(f"恢復市場開放錯誤: {e}", "FAIL")
     
     async def test_user_registration_and_trading(self):
-        """測試用戶註冊和交易功能"""
-        self.log("測試用戶註冊和交易功能", "INFO")
+        """測試使用者註冊和交易功能"""
+        self.log("測試使用者註冊和交易功能", "INFO")
         
         test_username = f"testuser_{int(time.time())}"
         test_email = f"{test_username}@test.com"
         
-        # 註冊測試用戶
+        # 註冊測試使用者
         try:
             async with self.session.post(
                 f"{BASE_URL}/api/user/register",
@@ -237,18 +237,18 @@ class SystemTester:
                 if resp.status == 200:
                     data = await resp.json()
                     if data.get("success"):
-                        self.log(f"用戶註冊成功: {test_username}", "PASS")
+                        self.log(f"使用者註冊成功: {test_username}", "PASS")
                     else:
-                        self.log(f"用戶註冊失敗: {data.get('message')}", "FAIL")
+                        self.log(f"使用者註冊失敗: {data.get('message')}", "FAIL")
                         return
                 else:
-                    self.log("用戶註冊請求失敗", "FAIL")
+                    self.log("使用者註冊請求失敗", "FAIL")
                     return
         except Exception as e:
-            self.log(f"用戶註冊錯誤: {e}", "FAIL")
+            self.log(f"使用者註冊錯誤: {e}", "FAIL")
             return
         
-        # 登入測試用戶
+        # 登入測試使用者
         user_token = None
         try:
             async with self.session.post(
@@ -259,18 +259,18 @@ class SystemTester:
                     data = await resp.json()
                     if data.get("success"):
                         user_token = data["token"]
-                        self.log(f"用戶登入成功: {test_username}", "PASS")
+                        self.log(f"使用者登入成功: {test_username}", "PASS")
                     else:
-                        self.log(f"用戶登入失敗: {data.get('message')}", "FAIL")
+                        self.log(f"使用者登入失敗: {data.get('message')}", "FAIL")
                         return
                 else:
-                    self.log("用戶登入請求失敗", "FAIL")
+                    self.log("使用者登入請求失敗", "FAIL")
                     return
         except Exception as e:
-            self.log(f"用戶登入錯誤: {e}", "FAIL")
+            self.log(f"使用者登入錯誤: {e}", "FAIL")
             return
         
-        # 給予測試用戶點數
+        # 給予測試使用者點數
         if self.admin_token:
             try:
                 headers = {"Authorization": f"Bearer {self.admin_token}"}
@@ -286,13 +286,13 @@ class SystemTester:
                     if resp.status == 200:
                         data = await resp.json()
                         if data.get("ok"):
-                            self.log(f"給予用戶點數成功: {test_username}", "PASS")
+                            self.log(f"給予使用者點數成功: {test_username}", "PASS")
                         else:
-                            self.log(f"給予用戶點數失敗: {data}", "FAIL")
+                            self.log(f"給予使用者點數失敗: {data}", "FAIL")
                     else:
-                        self.log("給予用戶點數請求失敗", "FAIL")
+                        self.log("給予使用者點數請求失敗", "FAIL")
             except Exception as e:
-                self.log(f"給予用戶點數錯誤: {e}", "FAIL")
+                self.log(f"給予使用者點數錯誤: {e}", "FAIL")
         
         # 測試交易功能
         if user_token:
@@ -312,13 +312,13 @@ class SystemTester:
                     if resp.status == 200:
                         data = await resp.json()
                         if data.get("success"):
-                            self.log(f"用戶交易成功: {test_username}", "PASS")
+                            self.log(f"使用者交易成功: {test_username}", "PASS")
                         else:
-                            self.log(f"用戶交易失敗: {data.get('message')}", "FAIL")
+                            self.log(f"使用者交易失敗: {data.get('message')}", "FAIL")
                     else:
-                        self.log("用戶交易請求失敗", "FAIL")
+                        self.log("使用者交易請求失敗", "FAIL")
             except Exception as e:
-                self.log(f"用戶交易錯誤: {e}", "FAIL")
+                self.log(f"使用者交易錯誤: {e}", "FAIL")
     
     async def run_all_tests(self):
         """執行所有測試"""
@@ -347,7 +347,7 @@ class SystemTester:
         self.log("   ✓ 管理員認證系統")
         self.log("   ✓ 機器人 API 端點")
         self.log("   ✓ 市場時間驗證")
-        self.log("   ✓ 用戶註冊與交易")
+        self.log("   ✓ 使用者註冊與交易")
         self.log("   ✓ 點數發放系統")
         self.log("   ✓ 股票交易系統")
 
@@ -358,7 +358,7 @@ async def main():
         async with SystemTester() as tester:
             await tester.run_all_tests()
     except KeyboardInterrupt:
-        print("\n⏹️  測試被用戶中斷")
+        print("\n⏹️  測試被使用者中斷")
     except Exception as e:
         print(f"\n❌ 測試過程中發生錯誤: {e}")
 

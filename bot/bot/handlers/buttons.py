@@ -58,7 +58,7 @@ async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAUL
                 error_message = escape_markdown(response.get("message", "設定選擇失敗"), 2)
                 await query.answer(error_message, show_alert=True)
         else:
-            # 用戶不存在或其他 API 錯誤
+            # 使用者不存在或其他 API 錯誤
             if await verify_existing_user(response, update):
                 return
             await query.answer("設定選擇失敗，請稍後再試", show_alert=True)
@@ -102,7 +102,7 @@ async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 error_message = escape_markdown(response.get("message", "接受挑戰失敗"), 2)
                 await query.answer(error_message, show_alert=True)
         else:
-            # 用戶不存在或其他 API 錯誤
+            # 使用者不存在或其他 API 錯誤
             if await verify_existing_user(response, update):
                 return
             await query.answer("接受挑戰失敗，請稍後再試", show_alert=True)

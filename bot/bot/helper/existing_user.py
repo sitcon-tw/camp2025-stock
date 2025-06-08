@@ -27,7 +27,7 @@ async def verify_existing_user(response, update: Update, is_callback: bool = Fal
     
     # Check for new style PVP response with user not found message
     if (response.get("success") == False and 
-        response.get("message") == "用戶不存在，請先註冊"):
+        response.get("message") == "使用者不存在，請先註冊"):
         message_text = (
             f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n"
             f"你還沒完成註冊程序，請輸入 /register 來看看怎麼註冊！"

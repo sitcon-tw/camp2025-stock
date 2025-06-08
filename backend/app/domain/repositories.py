@@ -16,7 +16,7 @@ class UserRepository(ABC):
     
     @abstractmethod
     async def get_by_username(self, username: str) -> Optional[User]:
-        """根據用戶名獲取使用者"""
+        """根據使用者名獲取使用者"""
         pass
     
     @abstractmethod

@@ -73,10 +73,10 @@ async def fix_negative_stocks():
                     print(f"   - 取消訂單數: {result.get('cancelled_orders', 0)}")
                     print(f"   - 狀態: {result.get('message', 'N/A')}")
                     
-                    # 顯示受影響的用戶
+                    # 顯示受影響的使用者
                     negative_users = result.get('negative_users', [])
                     if negative_users:
-                        print(f"📋 受影響的用戶 ({len(negative_users)} 人):")
+                        print(f"📋 受影響的使用者 ({len(negative_users)} 人):")
                         for user in negative_users:
                             print(f"   - {user['username']} (ID: {user['user_id']}): {user['negative_amount']} 股")
                 else:

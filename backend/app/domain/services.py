@@ -53,14 +53,14 @@ class UserDomainService:
                           telegram_id: Optional[int] = None) -> str:
         """
         註冊新使用者
-        SRP 原則：專注於用戶註冊邏輯
+        SRP 原則：專注於使用者註冊邏輯
         """
-        # 檢查用戶是否已存在
+        # 檢查使用者是否已存在
         existing_user = await self.user_repo.get_by_username(username)
         if existing_user:
             raise ValueError("user_already_exists")
         
-        # 創建新用戶實體
+        # 創建新使用者實體
         user = User(
             user_id=str(uuid.uuid4()),
             username=username,

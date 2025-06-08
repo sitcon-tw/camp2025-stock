@@ -112,7 +112,7 @@ class RefactoredSystemTester:
                 self.log_test_result(
                     "使用者註冊", 
                     success,
-                    f"用戶: {test_user_data['username']}, 訊息: {data.get('message')}"
+                    f"使用者: {test_user_data['username']}, 訊息: {data.get('message')}"
                 )
                 return success, test_user_data
             else:
@@ -145,7 +145,7 @@ class RefactoredSystemTester:
                     self.log_test_result(
                         "使用者登入", 
                         True,
-                        f"用戶: {user_data['username']}, Token 長度: {len(token)}"
+                        f"使用者: {user_data['username']}, Token 長度: {len(token)}"
                     )
                     return True
                 else:

@@ -1377,7 +1377,7 @@ async def update_transfer_fee_config(
 @router.post(
     "/fix-negative-stocks",
     summary="修復負股票持有量",
-    description="修復系統中的負股票持有量問題，可選擇是否同時取消相關用戶的待成交賣單"
+    description="修復系統中的負股票持有量問題，可選擇是否同時取消相關使用者的待成交賣單"
 )
 async def fix_negative_stocks(
     cancel_pending_orders: bool = True,
@@ -1388,7 +1388,7 @@ async def fix_negative_stocks(
     修復負股票持有量
     
     Args:
-        cancel_pending_orders: 是否同時取消相關用戶的待成交賣單（預設為 True）
+        cancel_pending_orders: 是否同時取消相關使用者的待成交賣單（預設為 True）
         
     Returns:
         修復結果，包含修復的記錄數量和取消的訂單數量
@@ -1428,7 +1428,7 @@ async def fix_invalid_orders(
     查找並修復 quantity <= 0 但狀態不是 filled 的異常訂單
     
     Returns:
-        修復結果，包含修復的訂單數量和詳細信息
+        修復結果，包含修復的訂單數量和詳細訊息
     """
     try:
         logger.info(f"Admin {current_admin.get('username')} initiated invalid orders fix")

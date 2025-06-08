@@ -54,14 +54,14 @@ class SimpleExampleValidator:
             return False
     
     async def setup_users(self):
-        """設定三個測試用戶：A、B、C"""
+        """設定三個測試使用者：A、B、C"""
         users = [
             {"username": "UserA", "email": "a@test.com", "team": "測試隊"},
             {"username": "UserB", "email": "b@test.com", "team": "測試隊"},
             {"username": "UserC", "email": "c@test.com", "team": "測試隊"}
         ]
         
-        # 註冊用戶
+        # 註冊使用者
         for user in users:
             try:
                 async with self.session.post(
@@ -71,16 +71,16 @@ class SimpleExampleValidator:
                     if resp.status == 200:
                         data = await resp.json()
                         if data.get("success"):
-                            await self.log(f"✅ 用戶 {user['username']} 註冊成功")
+                            await self.log(f"✅ 使用者 {user['username']} 註冊成功")
                         else:
-                            await self.log(f"⚠️  用戶 {user['username']} 註冊失敗: {data.get('message')}")
+                            await self.log(f"⚠️  使用者 {user['username']} 註冊失敗: {data.get('message')}")
                     else:
                         error_text = await resp.text()
-                        await self.log(f"❌ 用戶 {user['username']} 註冊請求失敗 ({resp.status}): {error_text}")
+                        await self.log(f"❌ 使用者 {user['username']} 註冊請求失敗 ({resp.status}): {error_text}")
             except Exception as e:
-                await self.log(f"❌ 用戶 {user['username']} 註冊錯誤: {e}")
+                await self.log(f"❌ 使用者 {user['username']} 註冊錯誤: {e}")
         
-        # 用戶登入
+        # 使用者登入
         for user in users:
             try:
                 async with self.session.post(
@@ -91,14 +91,14 @@ class SimpleExampleValidator:
                         data = await resp.json()
                         if data.get("success"):
                             self.user_tokens[user["username"]] = data["token"]
-                            await self.log(f"✅ 用戶 {user['username']} 登入成功")
+                            await self.log(f"✅ 使用者 {user['username']} 登入成功")
                         else:
-                            await self.log(f"❌ 用戶 {user['username']} 登入失敗: {data.get('message')}")
+                            await self.log(f"❌ 使用者 {user['username']} 登入失敗: {data.get('message')}")
                     else:
                         error_text = await resp.text()
-                        await self.log(f"❌ 用戶 {user['username']} 登入請求失敗 ({resp.status}): {error_text}")
+                        await self.log(f"❌ 使用者 {user['username']} 登入請求失敗 ({resp.status}): {error_text}")
             except Exception as e:
-                await self.log(f"❌ 用戶 {user['username']} 登入錯誤: {e}")
+                await self.log(f"❌ 使用者 {user['username']} 登入錯誤: {e}")
         
         # 給予每人 100 點
         headers = {"Authorization": f"Bearer {self.admin_token}"}
@@ -116,12 +116,12 @@ class SimpleExampleValidator:
                     if resp.status == 200:
                         data = await resp.json()
                         if data.get("ok"):
-                            await self.log(f"✅ 給予用戶 {user['username']} 100 點數")
+                            await self.log(f"✅ 給予使用者 {user['username']} 100 點數")
             except Exception as e:
                 await self.log(f"❌ 給予 {user['username']} 點數錯誤: {e}")
     
     async def get_portfolio(self, username: str):
-        """取得用戶投資組合"""
+        """取得使用者投資組合"""
         if username not in self.user_tokens:
             return None
         
@@ -177,8 +177,8 @@ class SimpleExampleValidator:
             return False
     
     async def show_status(self, step_name: str):
-        """顯示所有用戶狀態"""
-        await self.log(f"\n📊 {step_name} - 用戶狀態:")
+        """顯示所有使用者狀態"""
+        await self.log(f"\n📊 {step_name} - 使用者狀態:")
         total_points = 0
         
         for username in ["UserA", "UserB", "UserC"]:
@@ -227,7 +227,7 @@ class SimpleExampleValidator:
             await self.log("❌ 驗證中止：管理員登入失敗")
             return
         
-        # 2. 設定用戶
+        # 2. 設定使用者
         await self.setup_users()
         await asyncio.sleep(2)
         
@@ -276,7 +276,7 @@ async def main():
         async with SimpleExampleValidator() as validator:
             await validator.run_example_validation()
     except KeyboardInterrupt:
-        print("\n⏹️  驗證被用戶中斷")
+        print("\n⏹️  驗證被使用者中斷")
     except Exception as e:
         print(f"\n❌ 驗證過程中發生錯誤: {e}")
 

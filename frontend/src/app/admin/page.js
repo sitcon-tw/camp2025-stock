@@ -238,7 +238,7 @@ export default function AdminPage() {
         }
     };
 
-    // 撈學員列表 - 使用 /api/admin/user 獲取完整用戶資料
+    // 撈學員列表 - 使用 /api/admin/user 獲取完整使用者資料
     const fetchStudents = async (token) => {
         try {
             setStudentsLoading(true);
@@ -457,7 +457,7 @@ export default function AdminPage() {
             } else {
                 let errorMessage = result.message || '集合競價執行失敗';
 
-                // 如果有統計信息，添加到錯誤消息中
+                // 如果有統計訊息，添加到錯誤消息中
                 if (result.order_stats) {
                     const stats = result.order_stats;
                     const totalPending = (stats.pending_buy || 0) + (stats.pending_sell || 0);
@@ -491,7 +491,7 @@ export default function AdminPage() {
                 showNotification(result.message, 'success');
                 await fetchMarketStatus(adminToken);
 
-                // 如果有集合競價結果就顯示詳細信息
+                // 如果有集合競價結果就顯示詳細訊息
                 if (result.call_auction_result && result.call_auction_result.success) {
                     const auctionResult = result.call_auction_result;
                     const auctionMessage = `集合競價完成：${auctionResult.matched_volume} 股於 ${auctionResult.auction_price} 元成交`;
@@ -855,7 +855,7 @@ export default function AdminPage() {
                                     className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#0f203e] disabled:cursor-not-allowed disabled:opacity-50"
                                     placeholder={
                                         studentsLoading 
-                                            ? '正在載入用戶資料...' 
+                                            ? '正在載入使用者資料...' 
                                             : (givePointsForm.type === 'user' ? '搜尋學生姓名...' : '搜尋團隊名稱...')
                                     }
                                 />

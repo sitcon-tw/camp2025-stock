@@ -89,7 +89,18 @@ def _log_api_error(response: httpx.Response, path):
 
     if 200 <= status_code < 300:
         return
-    logger.error(f"{path} returned status code {status_code}")
+    
+    # 更友善的錯誤訊息
+    if status_code == 404:
+        logger.error(f"🌐 API 端點不存在: {path} (404)")
+    elif status_code == 401:
+        logger.error(f"🔒 API 認證失敗: {path} (401)")
+    elif status_code == 403:
+        logger.error(f"🚫 API 權限不足: {path} (403)")
+    elif status_code >= 500:
+        logger.error(f"💥 後端伺服器錯誤: {path} ({status_code})")
+    else:
+        logger.error(f"🌐 API 請求失敗: {path} ({status_code})")
 
 
 def test_backend_connection():
@@ -129,7 +140,7 @@ def test_backend_connection():
                             json={"from_user": "__test_connection__"},
                             timeout=5.0)
         
-        if response.status_code in [200, 404]:  # 404 是預期的（測試用戶不存在）
+        if response.status_code in [200, 404]:  # 404 是預期的（測試使用者不存在）
             logger.info("✅ 後端 API 認證成功！")
         elif response.status_code == 401:
             logger.error("❌ 後端 API 認證失敗！請檢查 TOKEN 設定")

@@ -31,7 +31,7 @@ class MongoUserRepository(UserRepository):
         self.collection = db[Collections.USERS]
     
     async def get_by_username(self, username: str) -> Optional[User]:
-        """根據用戶名獲取使用者"""
+        """根據使用者名獲取使用者"""
         try:
             doc = await self.collection.find_one({"username": username})
             return self._document_to_entity(doc) if doc else None

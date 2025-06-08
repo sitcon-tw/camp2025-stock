@@ -19,7 +19,7 @@ BACKEND_URL = environ.get("BACKEND_URL")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.info(f"/start triggered by {update.effective_user.id}")
+    logger.info(f"🚀 使用者 {update.effective_user.full_name} ({update.effective_user.id}) 啟動 BOT")
 
     response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
         "from_user": str(update.effective_user.id)
@@ -47,27 +47,26 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Check if user doesn't exist (either old format or new format)
     detail = portfolio_response.get("detail", "")
-    logger.info(f"Portfolio response detail: '{detail}'")
+    logger.info(f"📊 Portfolio API 回應: {detail}")
     
     user_not_exists = (
         detail == "noexist" or
-        detail.startswith("用戶不存在") or
+        detail.startswith("使用者不存在") or
         (detail == "error" and portfolio_response.get("status_code") == 404)
     )
     
-    logger.info(f"User exists check: detail='{detail}', user_not_exists={user_not_exists}")
+    logger.info(f"👤 使用者狀態檢查: {'使用者不存在' if user_not_exists else '使用者已存在'}")
     
     if not user_not_exists:
         await update.message.reply_text(
             f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*",
             parse_mode=ParseMode.MARKDOWN_V2
         )
-        logger.info(f"User {update.effective_user.id} already registered")
-        logger.info(f"User {update.effective_user.id} already registered, response: {portfolio_response}")
+        logger.info(f"✋ 使用者 {update.effective_user.full_name} ({update.effective_user.id}) 已經註冊過了")
         return
 
     if not context.args:
-        logger.info(f"/register triggered by {update.effective_user.id} without key")
+        logger.info(f"📝 使用者 {update.effective_user.full_name} 嘗試註冊但未提供註冊碼")
         buttons = [
             [InlineKeyboardButton(text="複製註冊指令", copy_text=CopyTextButton("/register "))],
         ]
@@ -81,7 +80,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
     key = context.args[0]
-    logger.info(f"/register triggered by {update.effective_user.id}, key: {key}")
+    logger.info(f"📝 使用者 {update.effective_user.full_name} 開始註冊流程，註冊碼: {key}")
 
     response = api_helper.post("/api/system/users/activate", protected_route=True, json={
         "id": key,
@@ -151,7 +150,7 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """PVP 猜拳挑戰"""
-    logger.info(f"/pvp triggered by {update.effective_user.id}")
+    logger.info(f"🎯 使用者 {update.effective_user.full_name} 發起 PVP 挑戰")
     
     # 檢查是否在群組中
     if update.message.chat.type == 'private':
@@ -230,7 +229,7 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """查看自己的掛單清單 - 支援分頁顯示"""
-    logger.info(f"/orders triggered by {update.effective_user.id}")
+    logger.info(f"📋 使用者 {update.effective_user.full_name} 查看訂單清單")
     
     # 獲取頁碼參數，預設為第1頁
     page = 1
@@ -244,7 +243,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
     """顯示指定頁面的訂單清單"""
     ORDERS_PER_PAGE = 8  # 每頁顯示的訂單數量
     
-    # 調用後端 API 獲取用戶的所有股票訂單
+    # 調用後端 API 獲取使用者的所有股票訂單
     response = api_helper.post("/api/bot/stock/orders", protected_route=True, json={
         "from_user": user_id,
         "limit": 100  # 獲取更多訂單用於分頁
@@ -254,7 +253,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
         # 來自 callback query（CallbackQuery 對象）
         query = update_or_query
         user_name = query.from_user.full_name
-        # 創建一個模擬的 Update 對象來檢查用戶狀態
+        # 創建一個模擬的 Update 對象來檢查使用者狀態
         class MockUpdate:
             def __init__(self, query):
                 self.effective_user = query.from_user

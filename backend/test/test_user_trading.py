@@ -402,7 +402,7 @@ async def main():
         async with TradingTestRunner() as runner:
             await runner.run_full_test()
     except KeyboardInterrupt:
-        print("\n⏹️  測試被用戶中斷")
+        print("\n⏹️  測試被使用者中斷")
     except Exception as e:
         print(f"\n❌ 測試過程中發生錯誤: {e}")
 

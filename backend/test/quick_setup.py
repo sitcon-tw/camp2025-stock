@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 快速市場設定腳本
-用於快速啟動市場、建立測試用戶、開始交易
+用於快速啟動市場、建立測試使用者、開始交易
 適合開發階段快速測試使用
 """
 
@@ -96,12 +96,12 @@ class QuickMarketSetup:
             return False
     
     async def create_test_users(self, count: int = 5):
-        """建立測試用戶"""
+        """建立測試使用者"""
         teams = ["紅隊", "藍隊", "綠隊"]
         users = []
         user_tokens = {}
         
-        self.log(f"🏗️ 建立 {count} 個測試用戶...")
+        self.log(f"🏗️ 建立 {count} 個測試使用者...")
         
         for i in range(count):
             user_data = {
@@ -111,7 +111,7 @@ class QuickMarketSetup:
             }
             users.append(user_data)
         
-        # 註冊用戶
+        # 註冊使用者
         for user in users:
             try:
                 async with self.session.post(
@@ -127,7 +127,7 @@ class QuickMarketSetup:
             except Exception as e:
                 self.log(f"  ❌ {user['username']} 註冊錯誤: {e}")
         
-        # 用戶登入並記錄 token
+        # 使用者登入並記錄 token
         for user in users:
             try:
                 async with self.session.post(
@@ -168,10 +168,10 @@ class QuickMarketSetup:
         """演示交易"""
         self.log("📈 開始演示交易...")
         
-        # 取得用戶列表
+        # 取得使用者列表
         usernames = list(user_tokens.keys())
         if len(usernames) < 3:
-            self.log("❌ 需要至少3個用戶才能演示交易")
+            self.log("❌ 需要至少3個使用者才能演示交易")
             return
         
         # 演示交易場景
@@ -280,11 +280,11 @@ class QuickMarketSetup:
     async def show_trading_instructions(self, user_tokens):
         """顯示交易說明"""
         self.log("📖 === 交易說明 ===")
-        self.log("市場已準備就緒！以下是測試用戶的登入令牌:")
+        self.log("市場已準備就緒！以下是測試使用者的登入令牌:")
         self.log("")
         
         for username, token in user_tokens.items():
-            self.log(f"用戶: {username}")
+            self.log(f"使用者: {username}")
             self.log(f"Token: {token}")
             self.log(f"測試下單 API:")
             self.log(f"  curl -X POST '{BASE_URL}/api/user/stock/order' \\")
@@ -322,11 +322,11 @@ class QuickMarketSetup:
         # 3. 開市
         await self.open_market()
         
-        # 4. 建立測試用戶
+        # 4. 建立測試使用者
         user_tokens = await self.create_test_users(user_count)
         
         if not user_tokens:
-            self.log("❌ 無法建立測試用戶")
+            self.log("❌ 無法建立測試使用者")
             return False
         
         await asyncio.sleep(2)
@@ -355,7 +355,7 @@ async def main():
         try:
             user_count = int(sys.argv[1])
         except ValueError:
-            print("用戶數量必須是數字")
+            print("使用者數量必須是數字")
             return
     
     if len(sys.argv) > 2:
@@ -365,13 +365,13 @@ async def main():
         async with QuickMarketSetup() as setup:
             await setup.quick_setup(user_count, demo_trade)
     except KeyboardInterrupt:
-        print("\n⏹️ 設定被用戶中斷")
+        print("\n⏹️ 設定被使用者中斷")
     except Exception as e:
         print(f"\n❌ 設定過程中發生錯誤: {e}")
 
 if __name__ == "__main__":
     print("⚡ SITCON Camp 2025 快速市場設定")
-    print("用法: python quick_setup.py [用戶數量] [是否演示交易]")
+    print("用法: python quick_setup.py [使用者數量] [是否演示交易]")
     print("範例: python quick_setup.py 10 true")
     print("確保後端服務運行在 http://localhost:8000")
     print("-" * 50)

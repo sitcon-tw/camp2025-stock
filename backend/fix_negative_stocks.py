@@ -39,16 +39,16 @@ async def fix_negative_stocks():
             user_id = stock.get("user_id")
             amount = stock.get("stock_amount", 0)
             
-            # 獲取用戶信息
+            # 獲取使用者訊息
             user = await db.users.find_one({"_id": user_id})
             username = user.get("name", "Unknown") if user else "Unknown"
             
-            logger.info(f"用戶 {username} (ID: {user_id}) 持有 {amount} 股")
+            logger.info(f"使用者 {username} (ID: {user_id}) 持有 {amount} 股")
         
         # 詢問是否要修復
         print("\n選擇修復方式:")
         print("1. 將所有負股票設為 0")
-        print("2. 取消所有相關用戶的待成交賣單，然後將負股票設為 0") 
+        print("2. 取消所有相關使用者的待成交賣單，然後將負股票設為 0") 
         print("3. 僅顯示問題，不修復")
         print("4. 退出")
         
@@ -63,10 +63,10 @@ async def fix_negative_stocks():
             logger.info(f"已修復 {result.modified_count} 個負股票記錄，全部設為 0 股")
             
         elif choice == "2":
-            # 取消相關用戶的待成交賣單，然後將負股票設為 0
+            # 取消相關使用者的待成交賣單，然後將負股票設為 0
             negative_user_ids = [stock["user_id"] for stock in negative_stocks]
             
-            # 取消這些用戶的待成交賣單
+            # 取消這些使用者的待成交賣單
             cancel_result = await db.stock_orders.update_many(
                 {
                     "user_id": {"$in": negative_user_ids},
@@ -152,10 +152,10 @@ async def show_stock_summary():
         if result:
             stats = result[0]
             logger.info("=== 股票持有摘要 ===")
-            logger.info(f"總用戶數: {stats['total_users']}")
-            logger.info(f"正股票用戶: {stats['positive_stocks']}")
-            logger.info(f"零股票用戶: {stats['zero_stocks']}")
-            logger.info(f"負股票用戶: {stats['negative_stocks']}")
+            logger.info(f"總使用者數: {stats['total_users']}")
+            logger.info(f"正股票使用者: {stats['positive_stocks']}")
+            logger.info(f"零股票使用者: {stats['zero_stocks']}")
+            logger.info(f"負股票使用者: {stats['negative_stocks']}")
             logger.info(f"總股票數量: {stats['total_stock_amount']}")
             logger.info(f"最小持股: {stats['min_stock']}")
             logger.info(f"最大持股: {stats['max_stock']}")

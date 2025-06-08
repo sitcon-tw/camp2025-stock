@@ -163,7 +163,7 @@ class MarketSimulator:
             return False
     
     async def create_test_users(self, count: int = 10) -> bool:
-        """建立測試用戶"""
+        """建立測試使用者"""
         teams = ["紅隊", "藍隊", "綠隊", "黃隊", "紫隊"]
         
         self.test_users = []
@@ -175,7 +175,7 @@ class MarketSimulator:
             }
             self.test_users.append(user_data)
         
-        # 註冊用戶
+        # 註冊使用者
         success_count = 0
         for user in self.test_users:
             try:
@@ -188,13 +188,13 @@ class MarketSimulator:
                         if data.get("success"):
                             success_count += 1
                         else:
-                            self.log(f"用戶 {user['username']} 註冊失敗: {data.get('message')}", "WARNING")
+                            self.log(f"使用者 {user['username']} 註冊失敗: {data.get('message')}", "WARNING")
                     else:
-                        self.log(f"用戶 {user['username']} 註冊請求失敗: {resp.status}", "WARNING")
+                        self.log(f"使用者 {user['username']} 註冊請求失敗: {resp.status}", "WARNING")
             except Exception as e:
-                self.log(f"用戶 {user['username']} 註冊錯誤: {e}", "ERROR")
+                self.log(f"使用者 {user['username']} 註冊錯誤: {e}", "ERROR")
         
-        # 用戶登入
+        # 使用者登入
         login_count = 0
         for user in self.test_users:
             try:
@@ -208,15 +208,15 @@ class MarketSimulator:
                             self.user_tokens[user["username"]] = data["token"]
                             login_count += 1
                         else:
-                            self.log(f"用戶 {user['username']} 登入失敗: {data.get('message')}", "WARNING")
+                            self.log(f"使用者 {user['username']} 登入失敗: {data.get('message')}", "WARNING")
             except Exception as e:
-                self.log(f"用戶 {user['username']} 登入錯誤: {e}", "ERROR")
+                self.log(f"使用者 {user['username']} 登入錯誤: {e}", "ERROR")
         
-        self.log(f"測試用戶建立完成: {success_count}/{count} 註冊, {login_count}/{count} 登入", "SUCCESS")
+        self.log(f"測試使用者建立完成: {success_count}/{count} 註冊, {login_count}/{count} 登入", "SUCCESS")
         return login_count > 0
     
     async def give_initial_points(self, points_per_user: int = 1000) -> bool:
-        """給予用戶初始點數"""
+        """給予使用者初始點數"""
         headers = {"Authorization": f"Bearer {self.admin_token}"}
         success_count = 0
         
@@ -331,8 +331,8 @@ class MarketSimulator:
         """模擬 IPO 階段"""
         self.log("🚀 開始 IPO 階段模擬", "MARKET")
         
-        # 一些用戶進行 IPO 申購（市價單）
-        ipo_buyers = random.sample(self.test_users[:8], 5)  # 隨機選5個用戶
+        # 一些使用者進行 IPO 申購（市價單）
+        ipo_buyers = random.sample(self.test_users[:8], 5)  # 隨機選5個使用者
         
         for user in ipo_buyers:
             quantity = random.randint(10, 50)  # 10-50股
@@ -475,8 +475,8 @@ class MarketSimulator:
         await self.setup_trading_limits()
         await self.open_market()
         
-        # 2. 用戶設定
-        self.log("👥 階段 2: 用戶設定", "ADMIN") 
+        # 2. 使用者設定
+        self.log("👥 階段 2: 使用者設定", "ADMIN") 
         await self.create_test_users(10)
         await self.give_initial_points(1000)
         
@@ -512,7 +512,7 @@ class MarketSimulator:
         await self.show_leaderboard()
         
         self.log("🎉 === 模擬完成 ===", "SUCCESS")
-        self.log(f"總共建立了 {len(self.test_users)} 個測試用戶", "INFO")
+        self.log(f"總共建立了 {len(self.test_users)} 個測試使用者", "INFO")
         self.log("可以在 http://localhost:8000/docs 查看 API 文件", "INFO")
         self.log("可以在 http://localhost:8000/api/leaderboard 查看即時排行榜", "INFO")
 
@@ -522,7 +522,7 @@ async def main():
         async with MarketSimulator() as simulator:
             await simulator.run_full_simulation()
     except KeyboardInterrupt:
-        print("\n⏹️ 模擬被用戶中斷")
+        print("\n⏹️ 模擬被使用者中斷")
     except Exception as e:
         print(f"\n❌ 模擬過程中發生錯誤: {e}")
         import traceback

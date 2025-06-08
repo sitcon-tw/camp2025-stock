@@ -747,10 +747,10 @@ class UserService:
             logger.error(f"Failed to get user stock orders: {e}")
             return []
     
-    # ========== BOT 專用方法 - 基於用戶名查詢 ==========
+    # ========== BOT 專用方法 - 基於使用者名查詢 ==========
     
     async def _get_user_(self, username: str):
-        """根據用戶名或ID查詢使用者"""
+        """根據使用者名或ID查詢使用者"""
         # Special handling for numeric lookups (likely Telegram user IDs)
         if username.isdigit():
             # For numeric values, first try telegram_id field specifically
@@ -772,7 +772,7 @@ class UserService:
         
         if not all_matches:
             logger.error(f"User lookup failed: no matches found for username '{username}'")
-            raise HTTPException(status_code=404, detail=f"用戶不存在：找不到用戶名 '{username}'")
+            raise HTTPException(status_code=404, detail=f"使用者不存在：找不到使用者名 '{username}'")
         
         # Log all matches for debugging
         if len(all_matches) > 1:
@@ -875,7 +875,7 @@ class UserService:
             return {"error": str(e)}
     
     async def get_user_portfolio_by_username(self, username: str) -> UserPortfolio:
-        """根據用戶名查詢使用者投資組合"""
+        """根據使用者名查詢使用者投資組合"""
         try:
             user = await self._get_user_(username)
             logger.info(f"PORTFOLIO: Using user {user.get('id')} (ObjectId: {user['_id']}) for portfolio query. Points: {user.get('points')}")
@@ -885,7 +885,7 @@ class UserService:
             raise
     
     async def place_stock_order_by_username(self, username: str, request: StockOrderRequest) -> StockOrderResponse:
-        """根據用戶名下股票訂單"""
+        """根據使用者名下股票訂單"""
         try:
             user = await self._get_user_(username)
             logger.info(f"STOCK ORDER: Using user {user.get('id')} (ObjectId: {user['_id']}) for order placement. Points: {user.get('points')}")
@@ -895,7 +895,7 @@ class UserService:
             raise
     
     async def transfer_points_by_username(self, from_username: str, request: TransferRequest) -> TransferResponse:
-        """根據用戶名轉帳點數"""
+        """根據使用者名轉帳點數"""
         try:
             user = await self._get_user_(from_username)
             return await self.transfer_points(str(user["_id"]), request)
@@ -904,7 +904,7 @@ class UserService:
             raise
     
     async def get_user_point_logs_by_username(self, username: str, limit: int = 50) -> List[UserPointLog]:
-        """根據用戶名查詢使用者點數記錄"""
+        """根據使用者名查詢使用者點數記錄"""
         try:
             user = await self._get_user_(username)
             return await self.get_user_point_logs(str(user["_id"]), limit)
@@ -913,7 +913,7 @@ class UserService:
             raise
     
     async def get_user_stock_orders_by_username(self, username: str, limit: int = 50) -> List[UserStockOrder]:
-        """根據用戶名查詢使用者股票訂單記錄"""
+        """根據使用者名查詢使用者股票訂單記錄"""
         try:
             user = await self._get_user_(username)
             return await self.get_user_stock_orders(str(user["_id"]), limit)
@@ -922,7 +922,7 @@ class UserService:
             raise
     
     async def get_user_profile_by_id(self, username: str) -> dict:
-        """根據用戶名查詢使用者基本資料"""
+        """根據使用者名查詢使用者基本資料"""
         try:
             user = await self._get_user_(username)
             
@@ -1480,10 +1480,10 @@ class UserService:
                 "created_at": order_doc["filled_at"]
             }, session=session)
 
-            # 更新用戶資產
+            # 更新使用者資產
             logger.info(f"Updating user assets: user_id={user_oid}, deducting {trade_amount} points, adding {quantity} stocks")
             
-            # 安全扣除用戶點數
+            # 安全扣除使用者點數
             deduction_result = await self._safe_deduct_points(
                 user_id=user_oid,
                 amount=trade_amount,
@@ -2004,7 +2004,7 @@ class UserService:
                 }
             )
             
-            # 更新用戶資產 - 買方：安全扣除點數
+            # 更新使用者資產 - 買方：安全扣除點數
             deduction_result = await self._safe_deduct_points(
                 user_id=buy_order["user_id"],
                 amount=trade_amount,
@@ -2016,7 +2016,7 @@ class UserService:
                 buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]})
                 buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
                 logger.error(f"Auction trade point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
-                raise Exception(f"拍賣成交失敗 - 買方點數不足：用戶 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
+                raise Exception(f"拍賣成交失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
             await self.db[Collections.STOCKS].update_one(
                 {"user_id": buy_order["user_id"]},
                 {"$inc": {"stock_amount": trade_volume}},
@@ -2044,7 +2044,7 @@ class UserService:
                 sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]})
                 sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
                 logger.error(f"Auction trade stock deduction failed for user {sell_username} (ID: {sell_order['user_id']}): insufficient shares, quantity {trade_volume}, current: {current_stocks}")
-                raise Exception(f"拍賣成交失敗 - 賣方股票不足：用戶 {sell_username} 需要賣出 {trade_volume} 股，實際持有 {current_stocks} 股")
+                raise Exception(f"拍賣成交失敗 - 賣方股票不足：使用者 {sell_username} 需要賣出 {trade_volume} 股，實際持有 {current_stocks} 股")
             
             # 記錄交易
             await self.db[Collections.TRADES].insert_one({
@@ -2148,7 +2148,7 @@ class UserService:
                 buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
                 buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
                 logger.error(f"Buy order atomic update failed for user {buy_username} (ID: {buy_order['user_id']}): needed {trade_quantity}, current quantity: {current_quantity}")
-                raise Exception(f"訂單撮合失敗 - 買方訂單數量不足：用戶 {buy_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
+                raise Exception(f"訂單撮合失敗 - 買方訂單數量不足：使用者 {buy_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
             
             # 更新賣方訂單或系統庫存 (資料庫)
             if not is_system_sale:
@@ -2172,7 +2172,7 @@ class UserService:
                     sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
                     sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
                     logger.error(f"Sell order atomic update failed for user {sell_username} (ID: {sell_order['user_id']}): needed {trade_quantity}, current quantity: {current_quantity}")
-                    raise Exception(f"訂單撮合失敗 - 賣方訂單數量不足：用戶 {sell_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
+                    raise Exception(f"訂單撮合失敗 - 賣方訂單數量不足：使用者 {sell_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
             else:
                 # 更新系統 IPO 庫存 - 使用原子操作確保不會減成負數
                 ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
@@ -2210,7 +2210,7 @@ class UserService:
                 buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
                 buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
                 logger.error(f"Order matching point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
-                raise Exception(f"訂單撮合失敗 - 買方點數不足：用戶 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
+                raise Exception(f"訂單撮合失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
             await self.db[Collections.STOCKS].update_one(
                 {"user_id": buy_order["user_id"]},
                 {"$inc": {"stock_amount": trade_quantity}},
@@ -2243,7 +2243,7 @@ class UserService:
                     sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
                     sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
                     logger.error(f"Order matching stock deduction failed for user {sell_username} (ID: {sell_order['user_id']}): insufficient shares, quantity {trade_quantity}, current: {current_stocks}")
-                    raise Exception(f"訂單撮合失敗 - 賣方股票不足：用戶 {sell_username} 需要賣出 {trade_quantity} 股，實際持有 {current_stocks} 股")
+                    raise Exception(f"訂單撮合失敗 - 賣方股票不足：使用者 {sell_username} 需要賣出 {trade_quantity} 股，實際持有 {current_stocks} 股")
             else:
                 # 系統IPO交易，系統不需要更新點數和持股
                 logger.info(f"System IPO sale: {trade_quantity} shares @ {trade_price} to user {buy_order['user_id']}")
@@ -2559,7 +2559,7 @@ class UserService:
             logger.error(f"Error in batch update students: {e}")
             return {
                 "success": False,
-                "message": f"批量更新用戶狀態失敗: {str(e)}",
+                "message": f"批量更新使用者狀態失敗: {str(e)}",
                 "students": [],
                 "updated_count": 0,
                 "errors": [str(e)]
@@ -2714,7 +2714,7 @@ class UserService:
             if not user:
                 return PVPResponse(
                     success=False,
-                    message="用戶不存在，請先註冊"
+                    message="使用者不存在，請先註冊"
                 )
             
             if user.get("points", 0) < amount:
@@ -2758,7 +2758,7 @@ class UserService:
             challenge_doc = {
                 "_id": challenge_oid,
                 "challenger": from_user,
-                "challenger_name": user.get("name", "未知用戶"),
+                "challenger_name": user.get("name", "未知使用者"),
                 "amount": amount,
                 "chat_id": chat_id,
                 "status": "pending",
@@ -2770,7 +2770,7 @@ class UserService:
             
             return PVPResponse(
                 success=True,
-                message=f"🎯 {user.get('name', '未知用戶')} 發起了 {amount} 點的猜拳挑戰！\n傳送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
+                message=f"🎯 {user.get('name', '未知使用者')} 發起了 {amount} 點的猜拳挑戰！\n傳送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
                 challenge_id=str(challenge_oid),
                 amount=amount
             )
@@ -2908,7 +2908,7 @@ class UserService:
             if not accepter:
                 return PVPResponse(
                     success=False,
-                    message="用戶不存在，請先註冊"
+                    message="使用者不存在，請先註冊"
                 )
             
             amount = challenge["amount"]
@@ -2930,7 +2930,7 @@ class UserService:
                 {
                     "$set": {
                         "accepter": from_user,
-                        "accepter_name": accepter.get("name", "未知用戶"),
+                        "accepter_name": accepter.get("name", "未知使用者"),
                         "accepter_choice": choice,
                         "result": result,
                         "status": "completed",
@@ -2945,7 +2945,7 @@ class UserService:
             if result == "challenger_wins":
                 # 發起者勝利
                 winner_name = challenge["challenger_name"]
-                loser_name = accepter.get("name", "未知用戶")
+                loser_name = accepter.get("name", "未知使用者")
                 
                 # 轉移點數
                 await self.db[Collections.USERS].update_one(
@@ -2981,7 +2981,7 @@ class UserService:
                 
             elif result == "accepter_wins":
                 # 接受者勝利
-                winner_name = accepter.get("name", "未知用戶")
+                winner_name = accepter.get("name", "未知使用者")
                 loser_name = challenge["challenger_name"]
                 
                 # 轉移點數
@@ -3019,7 +3019,7 @@ class UserService:
             else:  # tie
                 return PVPResponse(
                     success=True,
-                    message=f"🤝 平手！\n{self._get_choice_emoji(challenger_choice)} {challenge['challenger_name']} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {accepter.get('name', '未知用戶')} 出 {self._get_choice_name(choice)}\n\n沒有點數變動！",
+                    message=f"🤝 平手！\n{self._get_choice_emoji(challenger_choice)} {challenge['challenger_name']} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {accepter.get('name', '未知使用者')} 出 {self._get_choice_name(choice)}\n\n沒有點數變動！",
                     amount=0
                 )
                 
@@ -3069,7 +3069,7 @@ class UserService:
         修復負股票持有量
         
         Args:
-            cancel_pending_orders: 是否同時取消相關用戶的待成交賣單
+            cancel_pending_orders: 是否同時取消相關使用者的待成交賣單
             
         Returns:
             dict: 修復結果
@@ -3090,13 +3090,13 @@ class UserService:
             
             logger.info(f"找到 {len(negative_stocks)} 個負股票持有記錄")
             
-            # 記錄負股票用戶詳情
+            # 記錄負股票使用者詳情
             negative_users = []
             for stock in negative_stocks:
                 user_id = stock.get("user_id")
                 amount = stock.get("stock_amount", 0)
                 
-                # 獲取用戶信息
+                # 獲取使用者訊息
                 user = await self.db[Collections.USERS].find_one({"_id": user_id})
                 username = user.get("name", "Unknown") if user else "Unknown"
                 
@@ -3105,12 +3105,12 @@ class UserService:
                     "username": username,
                     "negative_amount": amount
                 })
-                logger.warning(f"用戶 {username} (ID: {user_id}) 持有 {amount} 股")
+                logger.warning(f"使用者 {username} (ID: {user_id}) 持有 {amount} 股")
             
             cancelled_orders_count = 0
             
             if cancel_pending_orders:
-                # 取消相關用戶的待成交賣單
+                # 取消相關使用者的待成交賣單
                 negative_user_ids = [stock["user_id"] for stock in negative_stocks]
                 
                 cancel_result = await self.db[Collections.STOCK_ORDERS].update_many(

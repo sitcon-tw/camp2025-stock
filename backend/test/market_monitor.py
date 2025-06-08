@@ -181,7 +181,7 @@ class MarketMonitor:
             return
         
         print(f"\n🏆 === 排行榜前 {len(leaderboard)} 名 ===")
-        print(f"{'排名':<4} {'用戶':<12} {'隊伍':<8} {'總資產':<8}")
+        print(f"{'排名':<4} {'使用者':<12} {'隊伍':<8} {'總資產':<8}")
         print("-" * 40)
         
         for i, entry in enumerate(leaderboard, 1):
@@ -281,7 +281,7 @@ async def main():
         async with MarketMonitor() as monitor:
             await monitor.monitor_loop(refresh_interval)
     except KeyboardInterrupt:
-        print("\n⏹️ 監控被用戶中斷")
+        print("\n⏹️ 監控被使用者中斷")
     except Exception as e:
         print(f"\n❌ 監控過程中發生錯誤: {e}")
 

@@ -115,7 +115,7 @@ class TradingSimulator:
                         data = await resp.json()
                         if data.get("success"):
                             self.user_tokens[player["username"]] = data["token"]
-                            # 確保 user_stats 有資料（處理已存在用戶的情況）
+                            # 確保 user_stats 有資料（處理已存在使用者的情況）
                             if player["username"] not in self.user_stats:
                                 self.user_stats[player["username"]] = {
                                     "team": player["team"],
@@ -253,7 +253,7 @@ class TradingSimulator:
         await self.log("   每人都有 100 點")
         await self.log("   系統發行股票，初始價格 20 點/股")
         
-        # 顯示幾個用戶的初始狀態
+        # 顯示幾個使用者的初始狀態
         for username in ["小明", "小華", "小李"]:
             await self.show_user_status(username)
         
@@ -468,7 +468,7 @@ async def main():
         async with TradingSimulator() as simulator:
             await simulator.run_simulation()
     except KeyboardInterrupt:
-        print("\n⏹️  模擬被用戶中斷")
+        print("\n⏹️  模擬被使用者中斷")
     except Exception as e:
         print(f"\n❌ 模擬過程中發生錯誤: {e}")
 

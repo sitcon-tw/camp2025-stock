@@ -33,7 +33,7 @@ class ServiceContainer:
     # Repository 層
     @property
     def user_repository(self) -> MongoUserRepository:
-        """用戶資料存取層 - 懶加載"""
+        """使用者資料存取層 - 懶加載"""
         if 'user' not in self._repositories:
             self._repositories['user'] = MongoUserRepository(self._db)
         return self._repositories['user']
@@ -69,7 +69,7 @@ class ServiceContainer:
     # Domain Service 層
     @property
     def user_domain_service(self) -> UserDomainService:
-        """用戶領域服務 - 依賴注入"""
+        """使用者領域服務 - 依賴注入"""
         if 'user' not in self._domain_services:
             self._domain_services['user'] = UserDomainService(self.user_repository)
         return self._domain_services['user']
@@ -110,7 +110,7 @@ class ServiceContainer:
     # Application Service 層
     @property
     def user_application_service(self) -> UserApplicationService:
-        """用戶應用服務 - 依賴注入"""
+        """使用者應用服務 - 依賴注入"""
         if 'user' not in self._application_services:
             self._application_services['user'] = UserApplicationService(
                 self.user_domain_service
@@ -161,7 +161,7 @@ def get_service_container() -> ServiceContainer:
 
 # FastAPI 依賴注入函數
 def get_user_application_service() -> UserApplicationService:
-    """DIP 原則：通過依賴注入提供用戶應用服務"""
+    """DIP 原則：通過依賴注入提供使用者應用服務"""
     return get_service_container().user_application_service
 
 

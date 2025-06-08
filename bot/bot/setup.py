@@ -58,7 +58,11 @@ async def error_handler(update: Optional[object], context: CallbackContext) -> N
 
 
 async def initialize():
-    logger.info("🤖 正在初始化 SITCON Camp 2025 喵券機...")
+    # 顯示啟動 banner
+    logger.info("=" * 60)
+    logger.info("🐱 SITCON Camp 2025 喵券機 正在啟動...")
+    logger.info("🚀 Bot 初始化中...")
+    logger.info("=" * 60)
     
     # 測試與後端的連線狀態
     from utils.api_helper import test_backend_connection
@@ -91,4 +95,7 @@ async def initialize():
         ("transfer", "轉帳給別人，小心 1% 手續費！")
     ])
     
+    logger.info("=" * 60)
     logger.info("✅ SITCON Camp 2025 喵券機初始化完成！")
+    logger.info("🎉 準備開始服務使用者...")
+    logger.info("=" * 60)
