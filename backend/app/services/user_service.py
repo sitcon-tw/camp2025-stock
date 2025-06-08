@@ -419,6 +419,13 @@ class UserService:
                             message=f"持股不足，需要 {request.quantity} 股，僅有 {current_stocks} 股"
                         )
             
+            # 額外的運行時驗證
+            if request.quantity <= 0:
+                return StockOrderResponse(
+                    success=False,
+                    message="訂單數量必須大於 0"
+                )
+            
             # 建立訂單
             order_doc = {
                 "user_id": user_oid,
@@ -727,7 +734,7 @@ class UserService:
                     order_id=str(order["_id"]),
                     order_type=order.get("order_type", "unknown"),
                     side=order.get("side", "unknown"),
-                    quantity=abs(order.get("stock_amount", 0)),
+                    quantity=order.get("quantity", 0),
                     price=order.get("price"),
                     status=order.get("status", "unknown"),
                     created_at=order.get("created_at", datetime.now(timezone.utc)).isoformat(),
@@ -1628,11 +1635,16 @@ class UserService:
                 buy_order = buy_book[buy_idx]
                 sell_order = sell_book[sell_idx]
 
-                # 確保訂單仍有數量
-                if buy_order.get("quantity", 0) <= 0:
+                # 確保訂單仍有數量且有效
+                buy_quantity = buy_order.get("quantity", 0)
+                sell_quantity = sell_order.get("quantity", 0)
+                
+                if buy_quantity <= 0:
+                    logger.warning(f"Skipping buy order with invalid quantity: {buy_quantity}, order_id: {buy_order.get('_id')}")
                     buy_idx += 1
                     continue
-                if sell_order.get("quantity", 0) <= 0:
+                if sell_quantity <= 0:
+                    logger.warning(f"Skipping sell order with invalid quantity: {sell_quantity}, order_id: {sell_order.get('_id')}")
                     sell_idx += 1
                     continue
 
@@ -2114,46 +2126,53 @@ class UserService:
             
             is_system_sale = sell_order.get("is_system_order", False)
 
-            # 更新訂單狀態和剩餘數量 (在記憶體中，供撮合循環使用)
-            buy_order["quantity"] -= trade_quantity
-            sell_order["quantity"] -= trade_quantity
-            
-            buy_order["status"] = "filled" if buy_order["quantity"] == 0 else "partial"
-            if not is_system_sale:
-                sell_order["status"] = "filled" if sell_order["quantity"] == 0 else "partial"
-            
-            # 更新買方訂單 (資料庫)
-            await self.db[Collections.STOCK_ORDERS].update_one(
-                {"_id": buy_order["_id"]},
+            # 使用原子操作更新買方訂單 (資料庫)
+            buy_update_result = await self.db[Collections.STOCK_ORDERS].update_one(
+                {"_id": buy_order["_id"], "quantity": {"$gte": trade_quantity}},
                 {
+                    "$inc": {"quantity": -trade_quantity, "filled_quantity": trade_quantity},
                     "$set": {
-                        "quantity": buy_order["quantity"], 
-                        "status": buy_order["status"], 
                         "filled_at": now,
                         "price": trade_price  # 確保 price 欄位也被更新為最新成交價
                     },
-                    "$inc": {"filled_quantity": trade_quantity},
                     "$max": {"filled_price": trade_price} # 記錄最高的成交價
                 },
                 session=session
             )
             
+            # 驗證買方訂單更新是否成功
+            if buy_update_result.modified_count == 0:
+                # 買方訂單更新失敗，可能是並發問題或數量不足
+                current_buy_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": buy_order["_id"]}, session=session)
+                current_quantity = current_buy_order.get("quantity", 0) if current_buy_order else 0
+                buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
+                buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
+                logger.error(f"Buy order atomic update failed for user {buy_username} (ID: {buy_order['user_id']}): needed {trade_quantity}, current quantity: {current_quantity}")
+                raise Exception(f"訂單撮合失敗 - 買方訂單數量不足：用戶 {buy_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
+            
             # 更新賣方訂單或系統庫存 (資料庫)
             if not is_system_sale:
-                await self.db[Collections.STOCK_ORDERS].update_one(
-                    {"_id": sell_order["_id"]},
+                sell_update_result = await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": sell_order["_id"], "quantity": {"$gte": trade_quantity}},
                     {
+                        "$inc": {"quantity": -trade_quantity, "filled_quantity": trade_quantity},
                         "$set": {
-                            "quantity": sell_order["quantity"], 
-                            "status": sell_order["status"], 
                             "filled_at": now,
                             "price": trade_price  # 確保 price 欄位也被更新為最新成交價
                         },
-                        "$inc": {"filled_quantity": trade_quantity},
                         "$max": {"filled_price": trade_price} # 記錄最高的成交價
                     },
                     session=session
                 )
+                
+                # 驗證賣方訂單更新是否成功
+                if sell_update_result.modified_count == 0:
+                    current_sell_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": sell_order["_id"]}, session=session)
+                    current_quantity = current_sell_order.get("quantity", 0) if current_sell_order else 0
+                    sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
+                    sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
+                    logger.error(f"Sell order atomic update failed for user {sell_username} (ID: {sell_order['user_id']}): needed {trade_quantity}, current quantity: {current_quantity}")
+                    raise Exception(f"訂單撮合失敗 - 賣方訂單數量不足：用戶 {sell_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
             else:
                 # 更新系統 IPO 庫存 - 使用原子操作確保不會減成負數
                 ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
@@ -2240,6 +2259,28 @@ class UserService:
                 "amount": trade_amount,
                 "created_at": now
             }, session=session)
+            
+            # 更新內存中的訂單數量和狀態（供撮合循環使用）
+            buy_order["quantity"] -= trade_quantity
+            buy_order["status"] = "filled" if buy_order["quantity"] == 0 else "partial"
+            
+            if not is_system_sale:
+                sell_order["quantity"] -= trade_quantity
+                sell_order["status"] = "filled" if sell_order["quantity"] == 0 else "partial"
+            
+            # 更新訂單狀態為 filled（僅在數量為 0 時）
+            if buy_order["quantity"] == 0:
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": buy_order["_id"]},
+                    {"$set": {"status": "filled"}},
+                    session=session
+                )
+            if not is_system_sale and sell_order["quantity"] == 0:
+                await self.db[Collections.STOCK_ORDERS].update_one(
+                    {"_id": sell_order["_id"]},
+                    {"$set": {"status": "filled"}},
+                    session=session
+                )
             
             logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
             
@@ -3022,3 +3063,193 @@ class UserService:
             "scissors": "剪刀"
         }
         return names.get(choice, "未知")
+    
+    async def fix_negative_stocks(self, cancel_pending_orders: bool = True) -> dict:
+        """
+        修復負股票持有量
+        
+        Args:
+            cancel_pending_orders: 是否同時取消相關用戶的待成交賣單
+            
+        Returns:
+            dict: 修復結果
+        """
+        try:
+            # 查找所有負股票持有量的記錄
+            negative_stocks_cursor = self.db[Collections.STOCKS].find({"stock_amount": {"$lt": 0}})
+            negative_stocks = await negative_stocks_cursor.to_list(length=None)
+            
+            if not negative_stocks:
+                logger.info("沒有發現負股票持有量，無需修復")
+                return {
+                    "success": True,
+                    "message": "沒有發現負股票持有量，無需修復",
+                    "fixed_count": 0,
+                    "cancelled_orders": 0
+                }
+            
+            logger.info(f"找到 {len(negative_stocks)} 個負股票持有記錄")
+            
+            # 記錄負股票用戶詳情
+            negative_users = []
+            for stock in negative_stocks:
+                user_id = stock.get("user_id")
+                amount = stock.get("stock_amount", 0)
+                
+                # 獲取用戶信息
+                user = await self.db[Collections.USERS].find_one({"_id": user_id})
+                username = user.get("name", "Unknown") if user else "Unknown"
+                
+                negative_users.append({
+                    "user_id": str(user_id),
+                    "username": username,
+                    "negative_amount": amount
+                })
+                logger.warning(f"用戶 {username} (ID: {user_id}) 持有 {amount} 股")
+            
+            cancelled_orders_count = 0
+            
+            if cancel_pending_orders:
+                # 取消相關用戶的待成交賣單
+                negative_user_ids = [stock["user_id"] for stock in negative_stocks]
+                
+                cancel_result = await self.db[Collections.STOCK_ORDERS].update_many(
+                    {
+                        "user_id": {"$in": negative_user_ids},
+                        "side": "sell",
+                        "status": {"$in": ["pending", "pending_limit", "partial"]}
+                    },
+                    {
+                        "$set": {
+                            "status": "cancelled",
+                            "cancelled_at": datetime.now(timezone.utc),
+                            "cancel_reason": "系統修復：負股票持有量"
+                        }
+                    }
+                )
+                cancelled_orders_count = cancel_result.modified_count
+                logger.info(f"已取消 {cancelled_orders_count} 個待成交賣單")
+            
+            # 將負股票設為 0
+            fix_result = await self.db[Collections.STOCKS].update_many(
+                {"stock_amount": {"$lt": 0}},
+                {"$set": {"stock_amount": 0}}
+            )
+            fixed_count = fix_result.modified_count
+            logger.info(f"已修復 {fixed_count} 個負股票記錄，全部設為 0 股")
+            
+            # 驗證修復結果
+            remaining_negative = await self.db[Collections.STOCKS].count_documents({"stock_amount": {"$lt": 0}})
+            
+            if remaining_negative == 0:
+                logger.info("✅ 修復完成，所有負股票問題已解決")
+                return {
+                    "success": True,
+                    "message": "修復完成，所有負股票問題已解決",
+                    "fixed_count": fixed_count,
+                    "cancelled_orders": cancelled_orders_count,
+                    "negative_users": negative_users
+                }
+            else:
+                logger.warning(f"⚠️ 仍有 {remaining_negative} 個負股票記錄")
+                return {
+                    "success": False,
+                    "message": f"修復部分完成，仍有 {remaining_negative} 個負股票記錄",
+                    "fixed_count": fixed_count,
+                    "cancelled_orders": cancelled_orders_count,
+                    "remaining_negative": remaining_negative,
+                    "negative_users": negative_users
+                }
+                
+        except Exception as e:
+            logger.error(f"修復負股票過程中發生錯誤: {e}")
+            return {
+                "success": False,
+                "message": f"修復過程中發生錯誤: {str(e)}",
+                "fixed_count": 0,
+                "cancelled_orders": 0
+            }
+    
+    async def fix_invalid_orders(self) -> dict:
+        """
+        修復無效的訂單（quantity <= 0 但不是 filled 狀態）
+        
+        Returns:
+            dict: 修復結果
+        """
+        try:
+            # 查找無效的訂單（quantity <= 0 但狀態不是 filled）
+            invalid_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
+                "$and": [
+                    {"quantity": {"$lte": 0}},
+                    {"status": {"$nin": ["filled", "cancelled"]}}
+                ]
+            })
+            invalid_orders = await invalid_orders_cursor.to_list(length=None)
+            
+            if not invalid_orders:
+                logger.info("沒有發現無效訂單，無需修復")
+                return {
+                    "success": True,
+                    "message": "沒有發現無效訂單，無需修復",
+                    "fixed_count": 0,
+                    "invalid_orders": []
+                }
+            
+            logger.warning(f"找到 {len(invalid_orders)} 個無效訂單")
+            
+            # 記錄無效訂單詳情
+            invalid_order_details = []
+            for order in invalid_orders:
+                user_id = order.get("user_id")
+                user = await self.db[Collections.USERS].find_one({"_id": user_id})
+                username = user.get("name", "Unknown") if user else "Unknown"
+                
+                invalid_order_details.append({
+                    "order_id": str(order["_id"]),
+                    "user_id": str(user_id),
+                    "username": username,
+                    "quantity": order.get("quantity", 0),
+                    "side": order.get("side", "unknown"),
+                    "status": order.get("status", "unknown"),
+                    "created_at": order.get("created_at"),
+                    "filled_quantity": order.get("filled_quantity", 0)
+                })
+                
+                logger.warning(f"無效訂單: {username} (ID: {user_id}) - Order {order['_id']}: quantity={order.get('quantity', 0)}, status={order.get('status', 'unknown')}")
+            
+            # 修復策略：將這些訂單標記為已取消
+            fix_result = await self.db[Collections.STOCK_ORDERS].update_many(
+                {
+                    "$and": [
+                        {"quantity": {"$lte": 0}},
+                        {"status": {"$nin": ["filled", "cancelled"]}}
+                    ]
+                },
+                {
+                    "$set": {
+                        "status": "cancelled",
+                        "cancelled_at": datetime.now(timezone.utc),
+                        "cancel_reason": "系統修復：無效數量訂單（quantity <= 0）"
+                    }
+                }
+            )
+            
+            fixed_count = fix_result.modified_count
+            logger.info(f"已修復 {fixed_count} 個無效訂單，標記為已取消")
+            
+            return {
+                "success": True,
+                "message": f"修復完成，已取消 {fixed_count} 個無效訂單",
+                "fixed_count": fixed_count,
+                "invalid_orders": invalid_order_details
+            }
+                
+        except Exception as e:
+            logger.error(f"修復無效訂單過程中發生錯誤: {e}")
+            return {
+                "success": False,
+                "message": f"修復過程中發生錯誤: {str(e)}",
+                "fixed_count": 0,
+                "invalid_orders": []
+            }

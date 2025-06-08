@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.admin_service import AdminService, get_admin_service
+from app.services.user_service import UserService, get_user_service
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
@@ -1379,4 +1380,80 @@ async def update_transfer_fee_config(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="更新手續費設定失敗"
+        )
+
+
+@router.post(
+    "/fix-negative-stocks",
+    summary="修復負股票持有量",
+    description="修復系統中的負股票持有量問題，可選擇是否同時取消相關用戶的待成交賣單"
+)
+async def fix_negative_stocks(
+    cancel_pending_orders: bool = True,
+    current_admin: dict = Depends(get_current_admin),
+    user_service: UserService = Depends(get_user_service)
+):
+    """
+    修復負股票持有量
+    
+    Args:
+        cancel_pending_orders: 是否同時取消相關用戶的待成交賣單（預設為 True）
+        
+    Returns:
+        修復結果，包含修復的記錄數量和取消的訂單數量
+    """
+    try:
+        logger.info(f"Admin {current_admin.get('username')} initiated negative stock fix, cancel_orders={cancel_pending_orders}")
+        
+        result = await user_service.fix_negative_stocks(cancel_pending_orders)
+        
+        if result["success"]:
+            logger.info(f"Negative stock fix completed: {result['fixed_count']} stocks fixed, {result['cancelled_orders']} orders cancelled")
+        else:
+            logger.warning(f"Negative stock fix partially completed: {result.get('message')}")
+            
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to fix negative stocks: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"修復負股票失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/fix-invalid-orders",
+    summary="修復無效訂單",
+    description="修復系統中的無效訂單（quantity <= 0 但狀態不是 filled）"
+)
+async def fix_invalid_orders(
+    current_admin: dict = Depends(get_current_admin),
+    user_service: UserService = Depends(get_user_service)
+):
+    """
+    修復無效訂單
+    
+    查找並修復 quantity <= 0 但狀態不是 filled 的異常訂單
+    
+    Returns:
+        修復結果，包含修復的訂單數量和詳細信息
+    """
+    try:
+        logger.info(f"Admin {current_admin.get('username')} initiated invalid orders fix")
+        
+        result = await user_service.fix_invalid_orders()
+        
+        if result["success"]:
+            logger.info(f"Invalid orders fix completed: {result['fixed_count']} orders fixed")
+        else:
+            logger.warning(f"Invalid orders fix failed: {result.get('message')}")
+            
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to fix invalid orders: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"修復無效訂單失敗: {str(e)}"
         )
