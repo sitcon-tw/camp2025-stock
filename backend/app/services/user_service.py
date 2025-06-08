@@ -2337,7 +2337,7 @@ class UserService:
                         # 為新學員初始化股票持有記錄，給予5股初始股票
                         await self.db[Collections.STOCKS].insert_one({
                             "user_id": result.upserted_id,
-                            "stock_amount": 5000,  # 5股 = 5000股數
+                            "stock_amount": 10, # 10 股
                             "updated_at": datetime.now(timezone.utc)
                         })
                         
