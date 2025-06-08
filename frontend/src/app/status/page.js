@@ -23,6 +23,7 @@ export default function Status() {
 		total_amount: 0
 	});
 
+
 	const [error, setError] = useState(null);
 
 	const fetchData = async () => {
@@ -77,9 +78,19 @@ export default function Status() {
 				/>
 			</div>
 
-			{/* 開盤價 今日最低 今日最高 */}
+			{/* 價格資訊 */}
 			<div>
 				<div className="grid grid-cols-3 gap-4 text-center">
+					<div className="bg-[#1A325F] p-2 rounded-lg">
+						<h5 className="text-sm text-white">現價</h5>
+						<p className="text-2xl font-bold">{Math.round(stockData.lastPrice)}</p>
+						<p className="text-xs text-gray-300">最新成交</p>
+					</div>
+					<div className="bg-[#1A325F] p-2 rounded-lg">
+						<h5 className="text-sm text-white">平均價</h5>
+						<p className="text-2xl font-bold">{Math.round(stockData.averagePrice || stockData.lastPrice)}</p>
+						<p className="text-xs text-gray-300">近5筆平均</p>
+					</div>
 					<div className="bg-[#1A325F] p-2 rounded-lg">
 						<h5 className="text-sm text-white">開盤價</h5>
 						<p className="text-2xl font-bold">{Math.round(stockData.open)}</p>

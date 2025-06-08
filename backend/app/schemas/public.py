@@ -9,6 +9,7 @@ from datetime import datetime
 # 股票價格摘要
 class PriceSummary(BaseModel):
     last_price: int = Field(..., description="最後成交價（元）", alias="lastPrice")
+    average_price: int = Field(..., description="近5筆平均價（元）", alias="averagePrice")
     change: str = Field(..., description="漲跌幅度")
     change_percent: str = Field(..., description="漲跌百分比", alias="changePercent")
     high: int = Field(..., description="最高價（元）")

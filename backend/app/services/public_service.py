@@ -29,8 +29,24 @@ class PublicService:
     # 取得股票價格摘要
     async def get_price_summary(self) -> PriceSummary:
         try:
-            # 取得目前股價（近5筆平均值）
-            current_price = await self._get_current_stock_price()
+            # 取得近5筆平均價格
+            average_price = await self._get_current_stock_price()
+            
+            # 取得最後一筆成交的即時價格（按成交時間排序）
+            latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
+                {"status": "filled"},
+                sort=[("filled_at", -1), ("created_at", -1)]
+            )
+            
+            # 即時價格 = 最後一筆成交價，優先使用 price，如果沒有則使用 filled_price
+            if latest_trade:
+                last_price = latest_trade.get("price")
+                if last_price is None:
+                    last_price = latest_trade.get("filled_price", average_price)
+                logger.debug(f"Latest trade: price={latest_trade.get('price')}, filled_price={latest_trade.get('filled_price')}, final_last_price={last_price}")
+            else:
+                last_price = average_price
+                logger.debug(f"No latest trade found, using average_price={average_price}")
             
             # 取得今日所有成交記錄來計算統計資料
             today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -43,14 +59,15 @@ class PublicService:
             trades = await trades_cursor.to_list(length=None)
             
             if not trades:
-                # 沒有交易記錄，回傳初始值（使用目前股價）
+                # 沒有交易記錄，回傳初始值
                 return PriceSummary(
-                    lastPrice=current_price,
+                    lastPrice=last_price,
+                    averagePrice=average_price,
                     change="+0",
                     changePercent="+0.0%",
-                    high=current_price,
-                    low=current_price,
-                    open=current_price,
+                    high=last_price,
+                    low=last_price,
+                    open=last_price,
                     volume=0,
                     limitPercent=2000  # 20% = 2000 basis points
                 )
@@ -59,14 +76,12 @@ class PublicService:
             prices = [trade.get("price", 20) for trade in trades if trade.get("price") is not None]
             volumes = [abs(trade.get("stock_amount", 0)) for trade in trades]
             
-            # 使用計算出的平均價格作為當前價格
-            last_price = current_price
             open_price = next((trade.get("price", 20) for trade in trades if trade.get("price") is not None), 20)
-            high_price = max(prices) if prices else current_price
-            low_price = min(prices) if prices else current_price
+            high_price = max(prices) if prices else last_price
+            low_price = min(prices) if prices else last_price
             total_volume = sum(volumes)
             
-            # 計算漲跌
+            # 計算漲跌（基於即時價格和開盤價）
             change = last_price - open_price
             change_percent = (change / open_price * 100) if open_price > 0 else 0
             
@@ -78,6 +93,7 @@ class PublicService:
             
             return PriceSummary(
                 lastPrice=last_price,
+                averagePrice=average_price,
                 change=f"{'+' if change >= 0 else ''}{change}",
                 changePercent=f"{'+' if change_percent >= 0 else ''}{change_percent:.1f}%",
                 high=high_price,
