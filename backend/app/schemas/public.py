@@ -157,7 +157,7 @@ class MarketUpdateResponse(BaseModel):
 
 # 漲跌限制設定請求
 class MarketLimitRequest(BaseModel):
-    limit_percent: int = Field(..., ge=0, le=100, description="漲跌限制（百分比，例如 10 代表 10%）", alias="limitPercent")
+    limit_percent: int = Field(..., ge=0, description="漲跌限制（百分比，例如 10 代表 10%）", alias="limitPercent")
     
     class Config:
         populate_by_name = True
