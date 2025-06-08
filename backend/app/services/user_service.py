@@ -881,6 +881,12 @@ class UserService:
         """根據用戶名查詢使用者基本資料"""
         try:
             user = await self._get_user_(username)
+            
+            # 從 stocks collection 讀取正確的股票持有量
+            stock_holding = await self.db[Collections.STOCKS].find_one(
+                {"user_id": user["_id"]}
+            ) or {"stock_amount": 0}
+            
             return {
                 "id": user.get("id"),
                 "name": user.get("name"),
@@ -889,7 +895,7 @@ class UserService:
                 "telegram_nickname": user.get("telegram_nickname"),
                 "enabled": user.get("enabled", False),
                 "points": user.get("points", 0),
-                "stock_amount": user.get("stock_amount", 0),
+                "stock_amount": stock_holding.get("stock_amount", 0),
                 "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
             }
         except Exception as e:
