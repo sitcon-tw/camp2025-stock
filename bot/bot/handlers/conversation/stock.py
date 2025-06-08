@@ -59,7 +59,7 @@ async def choose_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     action = query.data.split(":")[1]
     context.user_data["action"] = action
 
-    buttons = [[InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]]
+    buttons = [[InlineKeyboardButton(f"❌ 我不要{"買" if action == "buy" else "賣"}了！", callback_data="stock:cancel")]]
 
     await query.edit_message_text(
         f"🎫 請輸入你要{"買" if action == "buy" else "賣"}的數量（1 ~ 30）：",
@@ -85,7 +85,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🏦 市價單", callback_data="order:market"),
          InlineKeyboardButton("🖊️ 限價單", callback_data="order:limit")],
-        [InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]
+        [InlineKeyboardButton(f"❌ 我不要{"買" if context.user_data["action"] == "buy" else "賣"}了！", callback_data="stock:cancel")]
     ]
     await update.message.reply_text(
         "🧾 請選擇下單方式",
@@ -101,7 +101,7 @@ async def choose_order_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     order_type = query.data.split(":")[1]
     context.user_data["order_type"] = order_type
 
-    buttons = [[InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")]]
+    buttons = [[InlineKeyboardButton(f"❌ 我不要{"買" if context.user_data["action"] == "buy" else "賣"}了！", callback_data="stock:cancel")]]
 
     if order_type == "limit":
         await query.edit_message_text("💰 請輸入限價價格（1~1000）：", reply_markup=InlineKeyboardMarkup(buttons))
@@ -138,7 +138,7 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     buttons = [[
         InlineKeyboardButton("✅ 確認送出", callback_data="stock:confirm"),
-        InlineKeyboardButton("❌ 我不要買了！", callback_data="stock:cancel")
+        InlineKeyboardButton(f"❌ 我不要{action}了！", callback_data="stock:cancel")
     ]]
 
     msg = (f"😺 請確認以下訂單\n"
