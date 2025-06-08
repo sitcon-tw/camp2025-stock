@@ -301,6 +301,38 @@ export async function getAdminMarketStatus(token) {
     });
 }
 
+// 轉點數手續費設定
+// 查詢手續費設定
+export async function getTransferFeeConfig(token) {
+    return apiRequest('/api/admin/transfer/fee-config', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+// 更新手續費設定
+export async function updateTransferFeeConfig(token, feeRate, minFee) {
+    const params = new URLSearchParams();
+    if (feeRate !== null && feeRate !== undefined) {
+        params.append('fee_rate', feeRate);
+    }
+    if (minFee !== null && minFee !== undefined) {
+        params.append('min_fee', minFee);
+    }
+    
+    return apiRequest('/api/admin/transfer/fee-config', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params,
+    });
+}
+
 // 查詢市場價格資訊 (公開API)
 export async function getMarketPriceInfo() {
     return apiRequest('/api/market/price-info', {

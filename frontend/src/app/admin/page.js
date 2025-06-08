@@ -23,7 +23,9 @@ import {
     updateIpoDefaults,
     openMarket,
     closeMarket,
-    getAdminMarketStatus
+    getAdminMarketStatus,
+    getTransferFeeConfig,
+    updateTransferFeeConfig
 } from '@/lib/api';
 
 export default function AdminPage() {
@@ -96,6 +98,15 @@ export default function AdminPage() {
 
     // 市場開關控制狀態
     const [marketControlLoading, setMarketControlLoading] = useState(false);
+
+    // 轉點數手續費設定狀態
+    const [transferFeeConfig, setTransferFeeConfig] = useState(null);
+    const [transferFeeLoading, setTransferFeeLoading] = useState(false);
+    const [showTransferFeeModal, setShowTransferFeeModal] = useState(false);
+    const [transferFeeForm, setTransferFeeForm] = useState({
+        feeRate: '',
+        minFee: ''
+    });
 
     // 新增時間 Modal
     const [showAddTimeModal, setShowAddTimeModal] = useState(false);
@@ -325,6 +336,19 @@ export default function AdminPage() {
         }
     };
 
+    // 撈轉點數手續費設定
+    const fetchTransferFeeConfig = async (token) => {
+        try {
+            setTransferFeeLoading(true);
+            const data = await getTransferFeeConfig(token);
+            setTransferFeeConfig(data);
+        } catch (error) {
+            handleApiError(error, '獲取轉點數手續費設定');
+        } finally {
+            setTransferFeeLoading(false);
+        }
+    };
+
     // 更新IPO
     const handleIpoUpdate = async () => {
         try {
@@ -382,6 +406,29 @@ export default function AdminPage() {
             handleApiError(error, 'IPO預設設定更新');
         } finally {
             setIpoDefaultsLoading(false);
+        }
+    };
+
+    // 更新轉點數手續費設定
+    const handleTransferFeeUpdate = async () => {
+        try {
+            setTransferFeeLoading(true);
+
+            const feeRate = transferFeeForm.feeRate !== '' ? parseFloat(transferFeeForm.feeRate) : null;
+            const minFee = transferFeeForm.minFee !== '' ? parseFloat(transferFeeForm.minFee) : null;
+
+            const result = await updateTransferFeeConfig(adminToken, feeRate, minFee);
+
+            showNotification(result.message, 'success');
+            setShowTransferFeeModal(false);
+            setTransferFeeForm({ feeRate: '', minFee: '' });
+
+            // 重新取得手續費設定
+            await fetchTransferFeeConfig(adminToken);
+        } catch (error) {
+            handleApiError(error, '轉點數手續費設定更新');
+        } finally {
+            setTransferFeeLoading(false);
         }
     };
 
@@ -1233,6 +1280,59 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            {/* 轉點數手續費設定 */}
+            <div className="max-w-4xl mx-auto px-4 mt-8">
+                <div className="bg-[#1A325F] rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-white">轉點數手續費設定</h2>
+                        <button
+                            onClick={() => fetchTransferFeeConfig(adminToken)}
+                            disabled={transferFeeLoading}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white px-3 py-1 rounded-lg text-sm"
+                        >
+                            {transferFeeLoading ? '載入中...' : '重新整理'}
+                        </button>
+                    </div>
+
+                    {transferFeeConfig ? (
+                        <div className="space-y-4">
+                            {/* 手續費配置顯示 */}
+                            <div className="grid grid-cols-2 gap-4 bg-[#0f203e] p-4 rounded-xl">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-white">{transferFeeConfig.feeRate.toFixed(1)}%</div>
+                                    <div className="text-gray-400 text-sm">手續費率</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-orange-400">{transferFeeConfig.minFee}</div>
+                                    <div className="text-gray-400 text-sm">最低手續費 (點)</div>
+                                </div>
+                            </div>
+
+                            {/* 操作按鈕 */}
+                            <div className="grid grid-cols-1 gap-3">
+                                <button
+                                    onClick={() => {
+                                        setTransferFeeForm({
+                                            feeRate: transferFeeConfig.feeRate.toString(),
+                                            minFee: transferFeeConfig.minFee.toString()
+                                        });
+                                        setShowTransferFeeModal(true);
+                                    }}
+                                    disabled={transferFeeLoading}
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                                >
+                                    修改設定
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center text-gray-400 py-4">
+                            {transferFeeLoading ? '載入手續費設定中...' : '無法載入手續費設定'}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* 市場開關控制 */}
             <div className="max-w-4xl mx-auto px-4 mt-8">
                 <div className="bg-[#1A325F] rounded-xl p-6">
@@ -1819,6 +1919,85 @@ export default function AdminPage() {
                                     className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
                                 >
                                     {ipoDefaultsLoading ? '更新中...' : '更新設定'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 轉點數手續費設定 Modal */}
+            {showTransferFeeModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A325F] rounded-xl p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-[#7BC2E6]">轉點數手續費設定</h3>
+                            <button
+                                onClick={() => setShowTransferFeeModal(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                    手續費率 (%) (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="100"
+                                    value={transferFeeForm.feeRate}
+                                    onChange={(e) => setTransferFeeForm({ ...transferFeeForm, feeRate: e.target.value })}
+                                    placeholder="例如: 10"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">
+                                    目前: {transferFeeConfig ? transferFeeConfig.feeRate.toFixed(1) : 0}%
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                    最低手續費 (點) (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={transferFeeForm.minFee}
+                                    onChange={(e) => setTransferFeeForm({ ...transferFeeForm, minFee: e.target.value })}
+                                    placeholder="例如: 1"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">
+                                    目前: {transferFeeConfig?.minFee || 0} 點
+                                </p>
+                            </div>
+
+                            <div className="bg-blue-900 border border-blue-600 rounded-lg p-3">
+                                <p className="text-blue-200 text-sm">
+                                    💡 提示：手續費 = max(轉帳金額 × 手續費率, 最低手續費)
+                                </p>
+                            </div>
+
+                            <div className="flex space-x-3 mt-6">
+                                <button
+                                    onClick={() => setShowTransferFeeModal(false)}
+                                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleTransferFeeUpdate}
+                                    disabled={transferFeeLoading}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-[#2d3748] text-white py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    {transferFeeLoading ? '更新中...' : '更新設定'}
                                 </button>
                             </div>
                         </div>
