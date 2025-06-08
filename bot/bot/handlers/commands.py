@@ -215,23 +215,59 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """查看自己的掛單清單"""
+    """查看自己的掛單清單 - 支援分頁顯示"""
     logger.info(f"/orders triggered by {update.effective_user.id}")
+    
+    # 獲取頁碼參數，預設為第1頁
+    page = 1
+    if context.args and context.args[0].isdigit():
+        page = max(1, int(context.args[0]))
+    
+    await show_orders_page(update, str(update.effective_user.id), page)
 
-    # 調用後端 API 獲取用戶的股票訂單
+
+async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_message: bool = False):
+    """顯示指定頁面的訂單清單"""
+    ORDERS_PER_PAGE = 8  # 每頁顯示的訂單數量
+    
+    # 調用後端 API 獲取用戶的所有股票訂單
     response = api_helper.post("/api/bot/stock/orders", protected_route=True, json={
-        "from_user": str(update.effective_user.id),
-        "limit": 20  # 顯示最近 20 筆訂單
+        "from_user": user_id,
+        "limit": 100  # 獲取更多訂單用於分頁
     })
 
-    if await verify_existing_user(response, update):
-        return
+    if hasattr(update_or_query, 'message'):
+        # 來自 callback query
+        update = update_or_query
+        user_name = update.from_user.full_name
+        if await verify_existing_user(response, update, is_callback=True):
+            return
+    else:
+        # 來自普通訊息
+        update = update_or_query
+        user_name = update.effective_user.full_name
+        if await verify_existing_user(response, update):
+            return
 
     if not response:
-        await update.message.reply_text(
-            "📋 你目前沒有任何股票訂單記錄",
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
+        message_text = "📋 你目前沒有任何股票訂單記錄"
+        
+        if edit_message and hasattr(update_or_query, 'edit_message_text'):
+            await update_or_query.edit_message_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+        else:
+            if hasattr(update_or_query, 'message'):
+                await update_or_query.message.reply_text(
+                    message_text,
+                    parse_mode=ParseMode.MARKDOWN_V2
+                )
+            else:
+                await update_or_query.message.reply_text(
+                    message_text,
+                    parse_mode=ParseMode.MARKDOWN_V2
+                )
         return
 
     # 分別處理進行中和已完成的訂單
@@ -245,70 +281,167 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         quantity = order.get('quantity', 0)
         price = order.get('price', 0)
-        order_info = f"{side_emoji} {side_text} {quantity} 股 @ {price} 元"
+        order_type = order.get('order_type', 'unknown')
+        order_type_text = "市價" if order_type == 'market' else "限價"
+        
+        # 基本訂單資訊
+        order_info = f"{side_emoji} {side_text} {quantity} 股"
+        if order_type == 'limit' and price:
+            order_info += f" @ {price} 元 ({order_type_text})"
+        else:
+            order_info += f" ({order_type_text})"
+        
+        # 添加時間資訊
+        time_str = ""
+        if order.get('created_at'):
+            try:
+                time = datetime.fromisoformat(order['created_at']).replace(
+                    tzinfo=ZoneInfo("UTC")
+                ).astimezone(ZoneInfo("Asia/Taipei")).strftime("%m/%d %H:%M")
+                time_str = f" `{time}`"
+            except:
+                pass
         
         if status in ['pending', 'partial', 'pending_limit']:
             # 進行中的訂單
             filled_qty = order.get('filled_quantity', 0)
-            remaining_qty = quantity - filled_qty
             
             if status == 'partial':
-                # 部分成交：顯示詳細信息
                 filled_price = order.get('filled_price', price)
-                status_text = f"部分成交 ({filled_qty}/{quantity} 股已成交@{filled_price}元，剩餘{remaining_qty}股等待)"
+                status_text = f"部分成交 ({filled_qty}/{quantity}@{filled_price}元)"
             elif status == 'pending':
                 if filled_qty > 0:
                     filled_price = order.get('filled_price', price)
-                    status_text = f"等待成交 (已成交{filled_qty}股@{filled_price}元，剩餘{remaining_qty}股)"
+                    status_text = f"等待中 (已成交{filled_qty}股@{filled_price}元)"
                 else:
                     status_text = '等待成交'
             elif status == 'pending_limit':
-                status_text = '等待(超出限制)'
+                status_text = '等待中(限制)'
             else:
                 status_text = status
             
-            pending_orders.append(f"• {escape_markdown(order_info, 2)} \\- {escape_markdown(status_text, 2)}")
+            pending_orders.append({
+                'text': f"• {escape_markdown(order_info, 2)}{escape_markdown(time_str, 2)}\n  *{escape_markdown(status_text, 2)}*",
+                'created_at': order.get('created_at', '')
+            })
             
         elif status in ['filled', 'cancelled']:
             # 已完成的訂單
-            status_text = "已成交" if status == 'filled' else "已取消"
+            status_text = "✅ 已成交" if status == 'filled' else "❌ 已取消"
             filled_price = order.get('filled_price')
-            if filled_price:
-                order_info += f" → 成交價: {filled_price} 元"
+            if filled_price and status == 'filled':
+                order_info += f" → {filled_price}元"
             
-            # 添加時間
-            if order.get('created_at'):
-                try:
-                    time = datetime.fromisoformat(order['created_at']).replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Taipei")).strftime("%m-%d %H:%M")
-                    order_info += f" ({time})"
-                except:
-                    pass
+            completed_orders.append({
+                'text': f"• {escape_markdown(order_info, 2)}{escape_markdown(time_str, 2)}\n  {escape_markdown(status_text, 2)}",
+                'created_at': order.get('created_at', '')
+            })
+
+    # 合併所有訂單並按時間排序（最新的在前）
+    all_orders = []
+    
+    # 進行中的訂單優先顯示
+    for order in sorted(pending_orders, key=lambda x: x['created_at'], reverse=True):
+        all_orders.append(('pending', order['text']))
+    
+    # 然後是已完成的訂單
+    for order in sorted(completed_orders, key=lambda x: x['created_at'], reverse=True):
+        all_orders.append(('completed', order['text']))
+
+    # 計算分頁資訊
+    total_orders = len(all_orders)
+    total_pages = max(1, (total_orders + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE)
+    page = max(1, min(page, total_pages))
+    
+    # 獲取當前頁的訂單
+    start_idx = (page - 1) * ORDERS_PER_PAGE
+    end_idx = start_idx + ORDERS_PER_PAGE
+    current_page_orders = all_orders[start_idx:end_idx]
+
+    # 構建訊息內容
+    if not current_page_orders:
+        lines = ["📋 目前沒有訂單記錄"]
+    else:
+        lines = []
+        current_section = None
+        
+        for order_type, order_text in current_page_orders:
+            if order_type != current_section:
+                if lines:  # 如果不是第一個區段，添加空行
+                    lines.append("")
+                
+                if order_type == 'pending':
+                    lines.append("*🔄 進行中的訂單：*")
+                else:
+                    lines.append("*📈 歷史訂單：*")
+                current_section = order_type
             
-            completed_orders.append(f"• {escape_markdown(order_info, 2)} \\- {escape_markdown(status_text, 2)}")
+            lines.append(order_text)
 
-    # 構建回復訊息
-    lines = []
-    
-    if pending_orders:
-        lines.append("*進行中的訂單：*")
-        lines.extend(pending_orders[:10])  # 最多顯示 10 筆進行中訂單
-        if len(pending_orders) > 10:
-            lines.append(f"\\.\\.\\. 還有 {len(pending_orders) - 10} 筆訂單")
-    
-    if completed_orders:
-        if lines:  # 如果已有進行中訂單，添加分隔
-            lines.append("")
-        lines.append("*最近完成的訂單：*")
-        lines.extend(completed_orders[:5])  # 最多顯示 5 筆已完成訂單
-        if len(completed_orders) > 5:
-            lines.append(f"\\.\\.\\. 還有 {len(completed_orders) - 5} 筆歷史訂單")
+    # 頁面資訊
+    page_info = f"第 {page}/{total_pages} 頁 \\(共 {total_orders} 筆訂單\\)"
+    message_text = f"📊 *{escape_markdown(user_name)} 的股票訂單*\n\n" + "\n".join(lines) + f"\n\n{escape_markdown(page_info, 2)}"
 
-    if not lines:
-        lines.append("📋 目前沒有訂單記錄")
-
-    message_text = f"📊 *{escape_markdown(update.effective_user.full_name)} 的股票訂單*\n\n" + "\n".join(lines)
+    # 創建分頁按鈕
+    keyboard = []
+    nav_buttons = []
     
-    await update.message.reply_text(
-        message_text,
-        parse_mode=ParseMode.MARKDOWN_V2
-    )
+    if page > 1:
+        nav_buttons.append(InlineKeyboardButton("⬅️ 上一頁", callback_data=f"orders_page_{page-1}"))
+    
+    nav_buttons.append(InlineKeyboardButton(f"📄 {page}/{total_pages}", callback_data="orders_refresh"))
+    
+    if page < total_pages:
+        nav_buttons.append(InlineKeyboardButton("➡️ 下一頁", callback_data=f"orders_page_{page+1}"))
+    
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    
+    # 功能按鈕
+    function_buttons = []
+    if total_pages > 1:
+        function_buttons.append(InlineKeyboardButton("🔄 重新整理", callback_data="orders_refresh"))
+    if page != 1:
+        function_buttons.append(InlineKeyboardButton("📋 第一頁", callback_data="orders_page_1"))
+    if page != total_pages and total_pages > 1:
+        function_buttons.append(InlineKeyboardButton("📑 最後一頁", callback_data=f"orders_page_{total_pages}"))
+    
+    if function_buttons:
+        # 將功能按鈕分成兩行
+        if len(function_buttons) > 2:
+            keyboard.append(function_buttons[:2])
+            keyboard.append(function_buttons[2:])
+        else:
+            keyboard.append(function_buttons)
+
+    reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+
+    # 發送或編輯訊息
+    if edit_message and hasattr(update_or_query, 'edit_message_text'):
+        try:
+            await update_or_query.edit_message_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            logger.warning(f"Failed to edit message: {e}")
+            # 如果編輯失敗，發送新訊息
+            await update_or_query.message.reply_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
+            )
+    else:
+        if hasattr(update_or_query, 'message'):
+            await update_or_query.message.reply_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
+            )
+        else:
+            await update_or_query.message.reply_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
+            )

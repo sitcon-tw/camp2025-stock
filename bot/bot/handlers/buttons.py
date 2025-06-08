@@ -109,3 +109,32 @@ async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     except Exception as e:
         await query.answer("處理挑戰時發生錯誤", show_alert=True)
+
+
+async def handle_orders_pagination(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """處理訂單清單的分頁按鈕"""
+    query = update.callback_query
+    await query.answer()
+    
+    try:
+        # 動態導入以避免循環導入
+        from bot.handlers.commands import show_orders_page
+        
+        callback_data = query.data
+        user_id = str(query.from_user.id)
+        
+        if callback_data == "orders_refresh":
+            # 重新整理當前頁面 - 預設第1頁
+            await show_orders_page(query, user_id, 1, edit_message=True)
+        elif callback_data.startswith("orders_page_"):
+            # 切換到指定頁面
+            try:
+                page = int(callback_data.split("_")[-1])
+                await show_orders_page(query, user_id, page, edit_message=True)
+            except (ValueError, IndexError):
+                await query.answer("無效的頁面", show_alert=True)
+        else:
+            await query.answer("未知的操作", show_alert=True)
+            
+    except Exception as e:
+        await query.answer("操作失敗，請稍後再試", show_alert=True)
