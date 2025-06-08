@@ -26,7 +26,11 @@ def get(path, protected_route=False, **kwargs) -> Dict:
     response = httpx.get(f"{BACKEND_URL}{path}", headers=headers, **kwargs)
     _log_api_error(response, path)
 
-    return response.json()
+    try:
+        return response.json()
+    except Exception:
+        # Return a standardized error response for non-JSON responses
+        return {"detail": "error", "status_code": response.status_code}
 
 
 def post(path, protected_route=False, **kwargs) -> Dict:
@@ -39,7 +43,11 @@ def post(path, protected_route=False, **kwargs) -> Dict:
     response = httpx.post(f"{BACKEND_URL}{path}", headers=headers, **kwargs)
     _log_api_error(response, path)
 
-    return response.json()
+    try:
+        return response.json()
+    except Exception:
+        # Return a standardized error response for non-JSON responses
+        return {"detail": "error", "status_code": response.status_code}
 
 
 def put(path, protected_route=False, **kwargs) -> Dict:
@@ -52,7 +60,11 @@ def put(path, protected_route=False, **kwargs) -> Dict:
     response = httpx.put(f"{BACKEND_URL}{path}", headers=headers, **kwargs)
     _log_api_error(response, path)
 
-    return response.json()
+    try:
+        return response.json()
+    except Exception:
+        # Return a standardized error response for non-JSON responses
+        return {"detail": "error", "status_code": response.status_code}
 
 
 def delete(path, protected_route=False, **kwargs) -> Dict:
@@ -65,7 +77,11 @@ def delete(path, protected_route=False, **kwargs) -> Dict:
     response = httpx.delete(f"{BACKEND_URL}{path}", headers=headers, **kwargs)
     _log_api_error(response, path)
 
-    return response.json()
+    try:
+        return response.json()
+    except Exception:
+        # Return a standardized error response for non-JSON responses
+        return {"detail": "error", "status_code": response.status_code}
 
 
 def _log_api_error(response: httpx.Response, path):

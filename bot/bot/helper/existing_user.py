@@ -44,4 +44,23 @@ async def verify_existing_user(response, update: Update, is_callback: bool = Fal
             )
         return True
     
+    # Check for API error responses (404, connection errors, etc.)
+    if (response.get("detail") == "error" and 
+        response.get("status_code") in [404, 500, 503]):
+        message_text = (
+            f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n"
+            f"系統目前無法連接到後端服務，請稍後再試或聯繫管理員！"
+        )
+        
+        if is_callback:
+            # 對於 callback query，使用 answer 顯示彈出訊息
+            await update.answer("系統目前無法連接，請稍後再試！", show_alert=True)
+        else:
+            # 對於普通訊息，回覆文字訊息
+            await update.message.reply_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+        return True
+    
     return False
