@@ -377,11 +377,46 @@ class UserService:
                 )
                 current_stocks = stock_holding.get("stock_amount", 0) if stock_holding else 0
                 
-                if current_stocks < request.quantity:
+                # 檢查目前有多少股票正在待售（pending sell orders）
+                pending_sell_pipeline = [
+                    {
+                        "$match": {
+                            "user_id": user_oid,
+                            "side": "sell",
+                            "status": {"$in": ["pending", "pending_limit", "partial"]}
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": None,
+                            "total_pending": {"$sum": "$quantity"}
+                        }
+                    }
+                ]
+                
+                pending_result = await self.db[Collections.STOCK_ORDERS].aggregate(pending_sell_pipeline).to_list(1)
+                total_pending_sells = pending_result[0]["total_pending"] if pending_result else 0
+                
+                if current_stocks < 0:
+                    logger.error(f"User {user_oid} has negative stock amount: {current_stocks}")
                     return StockOrderResponse(
                         success=False,
-                        message="持股不足"
+                        message=f"帳戶異常：股票持有量為負數 ({current_stocks} 股)，請聯繫管理員處理"
                     )
+                
+                # 檢查新訂單加上現有待售訂單是否超過持股
+                total_sell_requirement = request.quantity + total_pending_sells
+                if current_stocks < total_sell_requirement:
+                    if total_pending_sells > 0:
+                        return StockOrderResponse(
+                            success=False,
+                            message=f"持股不足：您已有 {total_pending_sells} 股待賣訂單，加上本次 {request.quantity} 股，總計 {total_sell_requirement} 股超過您的持股 {current_stocks} 股"
+                        )
+                    else:
+                        return StockOrderResponse(
+                            success=False,
+                            message=f"持股不足，需要 {request.quantity} 股，僅有 {current_stocks} 股"
+                        )
             
             # 建立訂單
             order_doc = {
@@ -1395,7 +1430,17 @@ class UserService:
                 stock_holding = await self.db[Collections.STOCKS].find_one({"user_id": user_oid}, session=session)
                 current_stocks = stock_holding.get("stock_amount", 0) if stock_holding else 0
                 if current_stocks < quantity:
-                    return StockOrderResponse(success=False, message=f"持股不足，僅有 {current_stocks} 股")
+                    if current_stocks < 0:
+                        logger.error(f"User {user_oid} has negative stock amount: {current_stocks}")
+                        return StockOrderResponse(
+                            success=False, 
+                            message=f"帳戶異常：股票持有量為負數 ({current_stocks} 股)，請聯繫管理員處理"
+                        )
+                    else:
+                        return StockOrderResponse(
+                            success=False, 
+                            message=f"持股不足，需要 {quantity} 股，僅有 {current_stocks} 股"
+                        )
                 
                 # 賣單總是按市價執行
                 message = f"市價賣單已成交，價格: {price} 元/股"
