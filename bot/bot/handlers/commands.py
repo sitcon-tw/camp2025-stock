@@ -456,18 +456,21 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
 
     # 建立分頁按鈕
     keyboard = []
-    nav_buttons = []
     
-    if page > 1:
-        nav_buttons.append(InlineKeyboardButton("⬅️ 上一頁", callback_data=f"orders_page_{page-1}"))
-    
-    nav_buttons.append(InlineKeyboardButton(f"📄 {page}/{total_pages}", callback_data="orders_refresh"))
-    
-    if page < total_pages:
-        nav_buttons.append(InlineKeyboardButton("➡️ 下一頁", callback_data=f"orders_page_{page+1}"))
-    
-    if nav_buttons:
-        keyboard.append(nav_buttons)
+    # 只有在多於一頁時才顯示導航按鈕
+    if total_pages > 1:
+        nav_buttons = []
+        
+        if page > 1:
+            nav_buttons.append(InlineKeyboardButton("⬅️ 上一頁", callback_data=f"orders_page_{page-1}"))
+        
+        nav_buttons.append(InlineKeyboardButton(f"📄 {page}/{total_pages}", callback_data="orders_refresh"))
+        
+        if page < total_pages:
+            nav_buttons.append(InlineKeyboardButton("➡️ 下一頁", callback_data=f"orders_page_{page+1}"))
+        
+        if nav_buttons:
+            keyboard.append(nav_buttons)
     
     # 功能按鈕
     function_buttons = []
