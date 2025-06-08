@@ -66,6 +66,7 @@ async def initialize():
     bot.add_handler(CommandHandler("log", commands.log))
     bot.add_handler(CommandHandler("orders", commands.orders))
     bot.add_handler(CommandHandler("pvp", commands.pvp))
+    bot.add_handler(CallbackQueryHandler(buttons.handle_pvp_creator_choice, pattern=r"^pvp_creator_"))
     bot.add_handler(CallbackQueryHandler(buttons.handle_pvp_accept, pattern=r"^pvp_accept_"))
     bot.add_handler(CallbackQueryHandler(buttons.handle_zombie_clicks))
     bot.add_handler(ChatMemberHandler(welcome.welcome_member, ChatMemberHandler.CHAT_MEMBER))

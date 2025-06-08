@@ -2556,8 +2556,8 @@ class UserService:
                 message="建立挑戰失敗，請稍後再試"
             )
     
-    async def accept_pvp_challenge(self, from_user: str, challenge_id: str, choice: str):
-        """接受 PVP 挑戰並進行猜拳遊戲"""
+    async def set_pvp_creator_choice(self, from_user: str, challenge_id: str, choice: str):
+        """設定 PVP 發起人的選擇"""
         from app.schemas.bot import PVPResponse
         
         try:
@@ -2571,6 +2571,71 @@ class UserService:
                 return PVPResponse(
                     success=False,
                     message="挑戰不存在或已結束"
+                )
+            
+            # 檢查是否為發起者本人
+            if challenge["challenger"] != from_user:
+                return PVPResponse(
+                    success=False,
+                    message="只有發起者可以設定選擇！"
+                )
+            
+            # 檢查是否已設定過選擇
+            if challenge.get("challenger_choice"):
+                return PVPResponse(
+                    success=False,
+                    message="你已經設定過選擇了！"
+                )
+            
+            # 更新挑戰，設定發起人選擇
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_id},
+                {
+                    "$set": {
+                        "challenger_choice": choice,
+                        "status": "waiting_accepter"
+                    }
+                }
+            )
+            
+            # 返回成功訊息，包含挑戰資訊供前端顯示
+            challenger_name = challenge["challenger_name"]
+            amount = challenge["amount"]
+            
+            return PVPResponse(
+                success=True,
+                message=f"🎯 {challenger_name} 發起了 {amount} 點的 PVP 挑戰！\n\n誰敢來接受挑戰？選擇你的猜拳："
+            )
+            
+        except Exception as e:
+            logger.error(f"Error setting PVP creator choice: {e}")
+            return PVPResponse(
+                success=False,
+                message="設定選擇失敗，請稍後再試"
+            )
+
+    async def accept_pvp_challenge(self, from_user: str, challenge_id: str, choice: str):
+        """接受 PVP 挑戰並進行猜拳遊戲"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_id,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在或已結束"
+                )
+            
+            # 檢查發起人是否已選擇
+            if not challenge.get("challenger_choice"):
+                return PVPResponse(
+                    success=False,
+                    message="發起人尚未選擇猜拳，請稍後再試"
                 )
             
             # 檢查是否過期
@@ -2606,9 +2671,8 @@ class UserService:
                     message=f"點數不足！你的點數：{accepter.get('points', 0)}，需要：{amount}"
                 )
             
-            # 生成發起者的隨機選擇
-            choices = ["rock", "paper", "scissors"]
-            challenger_choice = random.choice(choices)
+            # 使用發起者預先選擇的猜拳
+            challenger_choice = challenge["challenger_choice"]
             
             # 判斷勝負
             result = self._determine_winner(challenger_choice, choice)
@@ -2620,7 +2684,6 @@ class UserService:
                     "$set": {
                         "accepter": from_user,
                         "accepter_name": accepter.get("name", "未知用戶"),
-                        "challenger_choice": challenger_choice,
                         "accepter_choice": choice,
                         "result": result,
                         "status": "completed",

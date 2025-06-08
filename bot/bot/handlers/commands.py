@@ -189,20 +189,22 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if response.get("success"):
         challenge_id = response.get("challenge_id")
-        message_text = escape_markdown(response.get("message"), 2)
         
-        # 建立內聯鍵盤
+        # 發起人先選擇猜拳
+        message_text = f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n\n請先選擇你的猜拳："
+        
+        # 建立發起人選擇的內聯鍵盤
         keyboard = [
             [
-                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_accept_{challenge_id}_rock"),
-                InlineKeyboardButton("📄 布", callback_data=f"pvp_accept_{challenge_id}_paper"),
-                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_accept_{challenge_id}_scissors")
+                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
+                InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
+                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            message_text,
+            escape_markdown(message_text, 2),
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=reply_markup
         )

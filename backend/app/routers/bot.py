@@ -321,6 +321,30 @@ async def bot_create_pvp_challenge(
 
 
 @router.post(
+    "/pvp/creator-choice",
+    response_model=PVPResponse,
+    summary="BOT 設定 PVP 發起人選擇",
+    description="透過 BOT 設定 PVP 發起人的猜拳選擇"
+)
+async def bot_set_pvp_creator_choice(
+    request: PVPAcceptRequest,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+) -> PVPResponse:
+    """
+    BOT 設定 PVP 發起人選擇
+    
+    Args:
+        request: PVP 選擇請求，包含發起者、挑戰 ID、出拳選擇
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        設定結果
+    """
+    return await user_service.set_pvp_creator_choice(request.from_user, request.challenge_id, request.choice)
+
+
+@router.post(
     "/pvp/accept",
     response_model=PVPResponse,
     summary="BOT 接受 PVP 挑戰",
