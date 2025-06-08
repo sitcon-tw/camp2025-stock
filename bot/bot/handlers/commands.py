@@ -451,7 +451,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
             lines.append(order_text)
 
     # 頁面資訊
-    page_info = f"第 {page}/{total_pages} 頁 \\(共 {total_orders} 筆訂單\\)"
+    page_info = f"第 {page}/{total_pages} 頁 (共 {total_orders} 筆訂單)"
     message_text = f"📊 *{escape_markdown(user_name)} 的股票訂單*\n\n" + "\n".join(lines) + f"\n\n{escape_markdown(page_info, 2)}"
 
     # 建立分頁按鈕
