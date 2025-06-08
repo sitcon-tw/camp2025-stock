@@ -2581,9 +2581,9 @@ class UserService:
                         )
             
             # 建立挑戰記錄
-            challenge_id = str(uuid.uuid4())
+            challenge_oid = ObjectId()
             challenge_doc = {
-                "_id": challenge_id,
+                "_id": challenge_oid,
                 "challenger": from_user,
                 "challenger_name": user.get("name", "未知用戶"),
                 "amount": amount,
@@ -2598,7 +2598,7 @@ class UserService:
             return PVPResponse(
                 success=True,
                 message=f"🎯 {user.get('name', '未知用戶')} 發起了 {amount} 點的猜拳挑戰！\n傳送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
-                challenge_id=challenge_id,
+                challenge_id=str(challenge_oid),
                 amount=amount
             )
             
@@ -2614,9 +2614,18 @@ class UserService:
         from app.schemas.bot import PVPResponse
         
         try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
             # 查找挑戰
             challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
-                "_id": challenge_id,
+                "_id": challenge_oid,
                 "status": "pending"
             })
             
@@ -2642,7 +2651,7 @@ class UserService:
             
             # 更新挑戰，設定發起人選擇
             await self.db[Collections.PVP_CHALLENGES].update_one(
-                {"_id": challenge_id},
+                {"_id": challenge_oid},
                 {
                     "$set": {
                         "challenger_choice": choice,
@@ -2672,9 +2681,18 @@ class UserService:
         from app.schemas.bot import PVPResponse
         
         try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
             # 查找挑戰
             challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
-                "_id": challenge_id,
+                "_id": challenge_oid,
                 "status": {"$in": ["pending", "waiting_accepter"]}
             })
             
@@ -2697,7 +2715,7 @@ class UserService:
                 expires_at = expires_at.replace(tzinfo=timezone.utc)
             if datetime.now(timezone.utc) > expires_at:
                 await self.db[Collections.PVP_CHALLENGES].update_one(
-                    {"_id": challenge_id},
+                    {"_id": challenge_oid},
                     {"$set": {"status": "expired"}}
                 )
                 return PVPResponse(
@@ -2735,7 +2753,7 @@ class UserService:
             
             # 更新挑戰狀態
             await self.db[Collections.PVP_CHALLENGES].update_one(
-                {"_id": challenge_id},
+                {"_id": challenge_oid},
                 {
                     "$set": {
                         "accepter": from_user,
