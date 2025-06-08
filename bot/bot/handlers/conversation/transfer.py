@@ -42,7 +42,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return INPUT_AMOUNT
 
     amount = int(update.message.text)
-    transfer_fee = max(1, int(amount * 0.1))
+    transfer_fee = max(1, int(amount * 0.5))
     total_fee = amount + transfer_fee
 
     context.user_data["amount"] = amount
