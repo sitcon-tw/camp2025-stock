@@ -38,7 +38,7 @@ class UserService:
     async def _get_or_initialize_ipo_config(self, session=None) -> dict:
         """
         從資料庫獲取 IPO 設定，如果不存在則從環境變數初始化。
-        環境變數: IPO_INITIAL_SHARES, IPO_INITIAL_PRICE
+        環境變數: CAMP_IPO_INITIAL_SHARES, CAMP_IPO_INITIAL_PRICE
         """
         # 首先嘗試直接獲取
         ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
@@ -50,8 +50,8 @@ class UserService:
             
         # 如果不存在，則從環境變數讀取設定並以原子操作寫入
         try:
-            initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
-            initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+            initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
+            initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
         except (ValueError, TypeError):
             logger.error("無效的 IPO 環境變數，使用預設值。")
             initial_shares = 1000000
@@ -2285,7 +2285,7 @@ class UserService:
                             "$setOnInsert": {
                                 "enabled": False,  # 新學員預設未啟用
                                 "points": 100,     # 初始點數
-                                "stock_amount": 5000,  # 5張 = 5000股數
+                                "stock_amount": 10,  # 10 股
                                 "created_at": datetime.now(timezone.utc)
                             }
                         },

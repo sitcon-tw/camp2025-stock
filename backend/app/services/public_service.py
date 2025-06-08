@@ -524,8 +524,8 @@ class PublicService:
                 # IPO還未初始化，返回預設值
                 import os
                 try:
-                    initial_shares = int(os.getenv("IPO_INITIAL_SHARES", "1000000"))
-                    initial_price = int(os.getenv("IPO_INITIAL_PRICE", "20"))
+                    initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "100"))
+                    initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "10"))
                 except (ValueError, TypeError):
                     initial_shares = 1000000
                     initial_price = 20
