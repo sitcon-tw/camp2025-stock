@@ -2,9 +2,13 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
+from datetime import datetime, timedelta
 
 from utils import api_helper
+from utils.logger import setup_logger
 from bot.helper.existing_user import verify_existing_user
+
+logger = setup_logger(__name__)
 
 
 async def handle_zombie_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -35,6 +39,14 @@ async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAUL
         
         if response and isinstance(response, dict):
             if response.get("success"):
+                # 發起人已選擇，更新 PVP 管理器中的狀態
+                try:
+                    from bot.handlers.pvp_manager import get_pvp_manager
+                    pvp_manager = get_pvp_manager()
+                    pvp_manager.update_challenge_status(challenge_id, "waiting_accepter")
+                except Exception as e:
+                    logger.error(f"❌ 更新 PVP 挑戰狀態失敗: {e}")
+                
                 # 發起人已選擇，現在顯示給其他人接受挑戰的按鈕
                 challenge_message = escape_markdown(response.get("message"), 2)
                 
@@ -190,28 +202,58 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
             
             if challenge_info:
                 amount = challenge_info["amount"]
+                status = challenge_info.get("status", "waiting_creator")
                 
-                # 顯示舊挑戰的選擇按鈕
-                message_text = (
-                    f"📋 **繼續現有挑戰**\n\n"
-                    f"🎯 你的 {amount} 點 PVP 挑戰！\n"
-                    f"請選擇你的猜拳："
-                )
-                
-                keyboard = [
-                    [
-                        InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
-                        InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
-                        InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
+                if status == "waiting_creator":
+                    # 發起人還沒選擇猜拳，顯示選擇按鈕
+                    message_text = (
+                        f"📋 **繼續現有挑戰**\n\n"
+                        f"🎯 你的 {amount} 點 PVP 挑戰！\n"
+                        f"請選擇你的猜拳："
+                    )
+                    
+                    keyboard = [
+                        [
+                            InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
+                            InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
+                            InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
+                        ]
                     ]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await query.edit_message_text(
-                    message_text,
-                    parse_mode=ParseMode.MARKDOWN_V2,
-                    reply_markup=reply_markup
-                )
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    
+                    await query.edit_message_text(
+                        message_text,
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        reply_markup=reply_markup
+                    )
+                    
+                elif status == "waiting_accepter":
+                    # 發起人已選擇，等待其他人接受
+                    # 計算剩餘時間
+                    elapsed = datetime.now() - challenge_info['created_at']
+                    remaining = timedelta(minutes=3) - elapsed
+                    
+                    if remaining.total_seconds() > 0:
+                        minutes = int(remaining.total_seconds()) // 60
+                        seconds = int(remaining.total_seconds()) % 60
+                        time_str = f"{minutes}分{seconds}秒" if minutes > 0 else f"{seconds}秒"
+                        
+                        message_text = (
+                            f"📋 **繼續現有挑戰**\n\n"
+                            f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n"
+                            f"⏰ 剩餘時間：{time_str}\n\n"
+                            f"✅ 你已經選擇好猜拳了\n"
+                            f"🔄 等待其他玩家接受挑戰..."
+                        )
+                        
+                        await query.edit_message_text(
+                            message_text,
+                            parse_mode=ParseMode.MARKDOWN_V2
+                        )
+                    else:
+                        await query.edit_message_text("❌ 挑戰已超時")
+                else:
+                    await query.edit_message_text("❌ 挑戰狀態異常")
             else:
                 await query.edit_message_text("❌ 找不到該挑戰，可能已超時或被取消")
         

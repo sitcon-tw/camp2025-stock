@@ -180,6 +180,12 @@ class PVPManager:
         """獲取挑戰資訊"""
         return self.active_challenges.get(challenge_id)
     
+    def update_challenge_status(self, challenge_id: str, status: str):
+        """更新挑戰狀態"""
+        if challenge_id in self.active_challenges:
+            self.active_challenges[challenge_id]["status"] = status
+            logger.info(f"🔄 PVP 挑戰 {challenge_id} 狀態更新為: {status}")
+    
     def get_user_challenge(self, user_id: str) -> Optional[str]:
         """獲取用戶當前的挑戰 ID"""
         return self.user_challenges.get(user_id)
