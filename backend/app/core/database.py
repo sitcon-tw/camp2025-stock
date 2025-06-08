@@ -2,6 +2,11 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.config import settings
 import logging
 
+# 設定 pymongo 日誌等級為 WARNING 以減少 heartbeat 輸出
+logging.getLogger("pymongo.topology").setLevel(logging.WARNING)
+logging.getLogger("pymongo.connection").setLevel(logging.WARNING)
+logging.getLogger("pymongo.heartbeat").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 class Database:
