@@ -248,15 +248,23 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         if status in ['pending', 'partial', 'pending_limit']:
             # 進行中的訂單
-            status_text = {
-                'pending': '等待成交',
-                'partial': '部分成交',
-                'pending_limit': '等待(超出限制)'
-            }.get(status, status)
-            
             filled_qty = order.get('filled_quantity', 0)
-            if filled_qty > 0:
-                order_info += f" (已成交: {filled_qty})"
+            remaining_qty = quantity - filled_qty
+            
+            if status == 'partial':
+                # 部分成交：顯示詳細信息
+                filled_price = order.get('filled_price', price)
+                status_text = f"部分成交 ({filled_qty}/{quantity} 股已成交@{filled_price}元，剩餘{remaining_qty}股等待)"
+            elif status == 'pending':
+                if filled_qty > 0:
+                    filled_price = order.get('filled_price', price)
+                    status_text = f"等待成交 (已成交{filled_qty}股@{filled_price}元，剩餘{remaining_qty}股)"
+                else:
+                    status_text = '等待成交'
+            elif status == 'pending_limit':
+                status_text = '等待(超出限制)'
+            else:
+                status_text = status
             
             pending_orders.append(f"• {escape_markdown(order_info, 2)} \\- {escape_markdown(status_text, 2)}")
             
