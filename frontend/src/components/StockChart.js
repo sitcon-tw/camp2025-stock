@@ -63,7 +63,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         if (displayMode === 'candlestick') {
             setZoomLevel(1);
         } else {
-            setZoomLevel(3);
+            setZoomLevel(1);
         }
     }, [displayMode]); useEffect(() => {
         let isMounted = true;
