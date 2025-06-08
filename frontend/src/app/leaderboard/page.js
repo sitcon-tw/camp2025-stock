@@ -52,7 +52,6 @@ function RankingItem({ rank, user, isGroup = false }) {
                 </h3>
                 {isGroup ? (
                     <div className="text-sm text-gray-300">
-                        <div>總價值: {formatNumber(user.totalValue || 0)}</div>
                         <div className="text-xs text-gray-400">
                             成員數: {user.memberCount || 0}
                         </div>
