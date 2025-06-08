@@ -5,6 +5,7 @@ from fastapi import APIRouter, status, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from telegram.constants import ParseMode
+from telegram.helpers import escape_markdown
 
 from bot.instance import bot
 from utils.logger import setup_logger
@@ -36,9 +37,9 @@ async def broadcast(request: Broadcast, token: Annotated[str | None, Header()] =
     for channel in BROADCAST_CHANNELS:
         try:
             await bot.bot.send_message(f"-{channel}", f"""
-📢 *{request.title}*
+📢 *{escape_markdown(request.title)}*
 
-{request.message}
+{escape_markdown(request.message)}
 """, parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as e:
             logger.error(f"Error broadcasting message: {e}")
