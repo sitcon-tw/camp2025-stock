@@ -146,7 +146,7 @@ async def confirm_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
            f"💵 你想要*{action}* `{amount}` 張 SITC\n"
            f"📜 訂單是*{order_type}*")
 
-    if price:
+    if data["order_type"] == "limit":
         msg += f"，{action}{direction}價格為 `{price}` 點"
     else:
         msg += "\n>⚠️ 你下的是市價單，將會立即使用目前市價下單"
