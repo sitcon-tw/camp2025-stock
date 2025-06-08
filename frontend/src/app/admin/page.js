@@ -920,12 +920,11 @@ export default function AdminPage() {
                                 <input
                                     type="number"
                                     min="0"
-                                    max="100"
-                                    step="0.1"
+                                    step="10"
                                     value={tradingLimitPercent}
                                     onChange={(e) => {
                                         const value = e.target.value;
-                                        if (value === '' || (!isNaN(value) && parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                        if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
                                             setTradingLimitPercent(value);
                                         }
                                     }}
@@ -1704,7 +1703,7 @@ export default function AdminPage() {
 
                             <div className="bg-blue-900 border border-blue-600 rounded-lg p-3">
                                 <p className="text-blue-200 text-sm">
-                                    💡 提示：設定剩餘股數為 0 可以強制市價單使用限價單撮合，實作價格發現機制
+                                    💡 提示：設定剩餘股數為 0 可以強制市價單使用限價單撮合，實現價格發現機制
                                 </p>
                             </div>
 
