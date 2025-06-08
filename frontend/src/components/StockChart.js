@@ -47,7 +47,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [displayMode, setDisplayMode] = useState('real');
-    const [zoomLevel, setZoomLevel] = useState(3);
+    const [zoomLevel, setZoomLevel] = useState(1);
     const [panOffset, setPanOffset] = useState(0);
     const chartRef = useRef(null);
     const isDragging = useRef(false);
