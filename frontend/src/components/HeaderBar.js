@@ -22,6 +22,7 @@ export default function HeaderBar() {
 
                 setPriceData({
                     currentPrice: data.lastPrice || 0,
+                    averagePrice: data.averagePrice || 0,
                     changePercent: changePercentNum,
                     loading: false
                 });
@@ -69,7 +70,7 @@ export default function HeaderBar() {
         };
     }, []);
 
-    const { currentPrice, changePercent, loading } = priceData;
+    const { currentPrice, changePercent, loading, averagePrice } = priceData;
     const isPositive = changePercent > 0;
     const isNegative = changePercent < 0;
 
@@ -93,9 +94,20 @@ export default function HeaderBar() {
                     </div>
                 ) : (
                     <>
-                        <h1 className="text-[#82bee2] text-3xl font-bold">
-                            {Math.round(currentPrice)}
-                        </h1>
+                        <div className="flex items-end gap-2">
+                            <h1 className="text-[#82bee2] text-sm font-bold ">
+                                目前
+                            </h1>
+                            <h1 className="text-[#82bee2] text-3xl font-bold">
+                                {Math.round(currentPrice)}
+                            </h1>
+                            <h1 className="text-[#82bee2] text-sm font-bold">
+                                平均
+                            </h1>
+                            <h1 className="text-[#82bee2] text-3xl font-bold">
+                                {Math.round(averagePrice)}
+                            </h1>
+                        </div>
                         <h1 className={`mt-1 font-semibold ${isPositive
                             ? "text-[#D55E74]"
                             : isNegative
