@@ -186,12 +186,12 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             status_text = {
                 'pending': '等待成交',
                 'partial': '部分成交',
-                'pending_limit': '等待\\(超出限制\\)'
+                'pending_limit': '等待(超出限制)'
             }.get(status, status)
             
             filled_qty = order.get('filled_quantity', 0)
             if filled_qty > 0:
-                order_info += f" \\(已成交: {filled_qty}\\)"
+                order_info += f" (已成交: {filled_qty})"
             
             pending_orders.append(f"• {escape_markdown(order_info, 2)} \\- {escape_markdown(status_text, 2)}")
             
@@ -205,8 +205,8 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             # 添加時間
             if order.get('created_at'):
                 try:
-                    time = datetime.fromisoformat(order['created_at'].replace('Z', '+00:00')).strftime("%m\\-%d %H:%M")
-                    order_info += f" \\({time}\\)"
+                    time = datetime.fromisoformat(order['created_at'].replace('Z', '+00:00')).strftime("%m-%d %H:%M")
+                    order_info += f" ({time})"
                 except:
                     pass
             
