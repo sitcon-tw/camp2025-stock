@@ -1,4 +1,5 @@
 import os
+from datetime import timezone, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,6 +30,9 @@ class Settings:
     # 環境設定
     CAMP_ENVIRONMENT: str = os.getenv("CAMP_ENVIRONMENT", "development")
     CAMP_DEBUG: bool = os.getenv("CAMP_DEBUG", "True").lower() == "true"
+    
+    # 時區設定 (Asia/Taipei UTC+8)
+    timezone = timezone(timedelta(hours=8))
     
     @property
     def is_development(self) -> bool:
