@@ -29,11 +29,8 @@ class PublicService:
     # 取得股票價格摘要
     async def get_price_summary(self) -> PriceSummary:
         try:
-            # 取得最新成交價格
-            latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
-                {"status": "filled"},
-                sort=[("created_at", -1)]
-            )
+            # 取得目前股價（近5筆平均值）
+            current_price = await self._get_current_stock_price()
             
             # 取得今日所有成交記錄來計算統計資料
             today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -46,14 +43,14 @@ class PublicService:
             trades = await trades_cursor.to_list(length=None)
             
             if not trades:
-                # 沒有交易記錄，回傳初始值（20 元）
+                # 沒有交易記錄，回傳初始值（使用目前股價）
                 return PriceSummary(
-                    lastPrice=20,
+                    lastPrice=current_price,
                     change="+0",
                     changePercent="+0.0%",
-                    high=20,
-                    low=20,
-                    open=20,
+                    high=current_price,
+                    low=current_price,
+                    open=current_price,
                     volume=0,
                     limitPercent=2000  # 20% = 2000 basis points
                 )
@@ -62,10 +59,11 @@ class PublicService:
             prices = [trade.get("price", 20) for trade in trades if trade.get("price") is not None]
             volumes = [abs(trade.get("stock_amount", 0)) for trade in trades]
             
-            last_price = latest_trade.get("price", 20) if latest_trade and latest_trade.get("price") is not None else 20
+            # 使用計算出的平均價格作為當前價格
+            last_price = current_price
             open_price = next((trade.get("price", 20) for trade in trades if trade.get("price") is not None), 20)
-            high_price = max(prices) if prices else 20
-            low_price = min(prices) if prices else 20
+            high_price = max(prices) if prices else current_price
+            low_price = min(prices) if prices else current_price
             total_volume = sum(volumes)
             
             # 計算漲跌
@@ -281,24 +279,33 @@ class PublicService:
                 detail="Failed to retrieve market status"
             )
     
-    # 取得目前股票價格（單位：元）
+    # 取得目前股票價格（近5筆成交均價，單位：元）
     async def _get_current_stock_price(self) -> int:
         try:
-            # 從最近的成交記錄取得價格
-            latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
+            # 從最近5筆成交記錄計算平均價格
+            recent_trades_cursor = self.db[Collections.STOCK_ORDERS].find(
                 {"status": "filled"},
                 sort=[("created_at", -1)]
-            )
+            ).limit(5)
             
-            if latest_trade:
-                price = latest_trade.get("price")
-                # 檢查價格是否有效（不為 None 且大於 0）
-                if price is not None and price > 0:
-                    return price
-                # 如果 price 欄位為 None，嘗試使用 filled_price
-                filled_price = latest_trade.get("filled_price")
-                if filled_price is not None and filled_price > 0:
-                    return filled_price
+            recent_trades = await recent_trades_cursor.to_list(5)
+            
+            if recent_trades:
+                valid_prices = []
+                for trade in recent_trades:
+                    price = trade.get("price")
+                    if price is not None and price > 0:
+                        valid_prices.append(price)
+                    else:
+                        # 如果 price 欄位為 None，嘗試使用 filled_price
+                        filled_price = trade.get("filled_price")
+                        if filled_price is not None and filled_price > 0:
+                            valid_prices.append(filled_price)
+                
+                if valid_prices:
+                    # 計算平均價格（四捨五入到整數）
+                    average_price = sum(valid_prices) / len(valid_prices)
+                    return round(average_price)
             
             # 如果沒有成交記錄，從市場設定取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(

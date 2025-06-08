@@ -1061,24 +1061,33 @@ class UserService:
         except Exception as e:
             logger.error(f"Failed to validate transaction integrity: {e}")
     
-    # 取得目前股票價格（單位：元）
+    # 取得目前股票價格（近5筆成交均價，單位：元）
     async def _get_current_stock_price(self) -> int:
         try:
-            # 從最近的成交記錄取得價格
-            latest_trade = await self.db[Collections.STOCK_ORDERS].find_one(
+            # 從最近5筆成交記錄計算平均價格
+            recent_trades_cursor = self.db[Collections.STOCK_ORDERS].find(
                 {"status": "filled"},
                 sort=[("created_at", -1)]
-            )
+            ).limit(5)
             
-            if latest_trade:
-                price = latest_trade.get("price")
-                # 檢查價格是否有效（不為 None 且大於 0）
-                if price is not None and price > 0:
-                    return price
-                # 如果 price 欄位為 None，嘗試使用 filled_price
-                filled_price = latest_trade.get("filled_price")
-                if filled_price is not None and filled_price > 0:
-                    return filled_price
+            recent_trades = await recent_trades_cursor.to_list(5)
+            
+            if recent_trades:
+                valid_prices = []
+                for trade in recent_trades:
+                    price = trade.get("price")
+                    if price is not None and price > 0:
+                        valid_prices.append(price)
+                    else:
+                        # 如果 price 欄位為 None，嘗試使用 filled_price
+                        filled_price = trade.get("filled_price")
+                        if filled_price is not None and filled_price > 0:
+                            valid_prices.append(filled_price)
+                
+                if valid_prices:
+                    # 計算平均價格（四捨五入到整數）
+                    average_price = sum(valid_prices) / len(valid_prices)
+                    return round(average_price)
             
             # 如果沒有成交記錄，從市場配置取得
             price_config = await self.db[Collections.MARKET_CONFIG].find_one(
