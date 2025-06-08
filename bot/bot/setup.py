@@ -78,19 +78,25 @@ async def initialize():
     bot.add_handler(CommandHandler("pvp", commands.pvp))
     bot.add_handler(CallbackQueryHandler(buttons.handle_pvp_creator_choice, pattern=r"^pvp_creator_"))
     bot.add_handler(CallbackQueryHandler(buttons.handle_pvp_accept, pattern=r"^pvp_accept_"))
+    bot.add_handler(CallbackQueryHandler(buttons.handle_pvp_conflict, pattern=r"^pvp_conflict_"))
     bot.add_handler(CallbackQueryHandler(buttons.handle_orders_pagination, pattern=r"^orders_"))
     bot.add_handler(CallbackQueryHandler(buttons.handle_zombie_clicks))
     bot.add_handler(ChatMemberHandler(welcome.welcome_member, ChatMemberHandler.CHAT_MEMBER))
     bot.add_error_handler(error_handler)
 
     await bot.initialize()
+    
+    # 初始化 PVP 管理器
+    from bot.handlers.pvp_manager import init_pvp_manager
+    init_pvp_manager(bot.bot)
+    
     await bot.bot.set_my_commands([
         ("start", "顯示你的個人資訊，喵喵"),
         ("register", "註冊你的 Telegram 帳號"),
         ("point", "查看小隊們與自己的點數"),
         ("stock", "買賣點數"),
         ("orders", "查看自己的股票掛單清單"),
-        ("pvp", "發起猜拳挑戰 (僅限群組)"),
+        ("pvp", "發起猜拳挑戰 (僅限群組，3分鐘倒數)"),
         ("log", "查看自己的點數交易紀錄"),
         ("transfer", "轉帳給別人，小心 1% 手續費！")
     ])

@@ -82,7 +82,7 @@ class SystemAPITester:
     def test_invalid_token(self):
         """測試無效 token"""
         try:
-            # 創建一個使用無效 token 的 session
+            # 建立一個使用無效 token 的 session
             invalid_session = requests.Session()
             invalid_session.headers.update({
                 "Content-Type": "application/json",
@@ -107,7 +107,7 @@ class SystemAPITester:
     def test_missing_token(self):
         """測試缺少 token"""
         try:
-            # 創建一個沒有 token 的 session
+            # 建立一個沒有 token 的 session
             no_token_session = requests.Session()
             no_token_session.headers.update({"Content-Type": "application/json"})
             

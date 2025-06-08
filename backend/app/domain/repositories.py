@@ -31,7 +31,7 @@ class UserRepository(ABC):
     
     @abstractmethod
     async def create(self, user: User) -> str:
-        """創建新使用者，返回 user_id"""
+        """建立新使用者，返回 user_id"""
         pass
     
     @abstractmethod
@@ -70,7 +70,7 @@ class StockOrderRepository(ABC):
     
     @abstractmethod
     async def create(self, order: StockOrder) -> str:
-        """創建新訂單"""
+        """建立新訂單"""
         pass
     
     @abstractmethod
@@ -102,7 +102,7 @@ class TransferRepository(ABC):
     
     @abstractmethod
     async def create(self, transfer: Transfer) -> str:
-        """創建轉帳記錄"""
+        """建立轉帳記錄"""
         pass
     
     @abstractmethod

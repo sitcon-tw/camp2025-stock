@@ -25,7 +25,7 @@ class DatabaseConfig:
     
     @classmethod
     def from_env(cls) -> 'DatabaseConfig':
-        """從環境變數創建配置"""
+        """從環境變數建立配置"""
         return cls(
             mongo_uri=os.getenv("CAMP_MONGO_URI", "mongodb://localhost:27017"),
             database_name=os.getenv("CAMP_DATABASE_NAME", "sitcon_camp_2025"),
@@ -46,7 +46,7 @@ class JWTConfig:
     
     @classmethod
     def from_env(cls) -> 'JWTConfig':
-        """從環境變數創建配置"""
+        """從環境變數建立配置"""
         return cls(
             secret_key=os.getenv("CAMP_JWT_SECRET", "your-secret-key"),
             algorithm=os.getenv("CAMP_JWT_ALGORITHM", "HS256"),
@@ -67,7 +67,7 @@ class SecurityConfig:
     
     @classmethod
     def from_env(cls) -> 'SecurityConfig':
-        """從環境變數創建配置"""
+        """從環境變數建立配置"""
         allowed_hosts = os.getenv("CAMP_ALLOWED_HOSTS", "*").split(",")
         cors_origins = os.getenv("CAMP_CORS_ORIGINS", "*").split(",")
         
@@ -97,7 +97,7 @@ class TradingConfig:
     
     @classmethod
     def from_env(cls) -> 'TradingConfig':
-        """從環境變數創建配置"""
+        """從環境變數建立配置"""
         return cls(
             ipo_initial_shares=int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000")),
             ipo_initial_price=int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20")),
@@ -121,7 +121,7 @@ class ExternalServiceConfig:
     
     @classmethod
     def from_env(cls) -> 'ExternalServiceConfig':
-        """從環境變數創建配置"""
+        """從環境變數建立配置"""
         return cls(
             telegram_bot_api_url=os.getenv(
                 "CAMP_TELEGRAM_BOT_API_URL", 

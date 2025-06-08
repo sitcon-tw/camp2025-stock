@@ -459,7 +459,7 @@ async def reset_ipo(
                     except (ValueError, TypeError):
                         initial_price = 20
         
-        # 重置或創建IPO狀態
+        # 重置或建立IPO狀態
         await db[Collections.MARKET_CONFIG].update_one(
             {"type": "ipo_status"},
             {
@@ -549,7 +549,7 @@ async def update_ipo(
         )
         
         if result.matched_count == 0:
-            # IPO配置不存在，創建新的
+            # IPO配置不存在，建立新的
             await db[Collections.MARKET_CONFIG].insert_one({
                 "type": "ipo_status",
                 "initial_shares": 1000000,
@@ -677,7 +677,7 @@ async def reset_all_data(
             initial_shares = 1000000
             initial_price = 20
         
-        # 創建初始IPO配置
+        # 建立初始IPO配置
         await db[Collections.MARKET_CONFIG].insert_one({
             "type": "ipo_status",
             "initial_shares": initial_shares,
@@ -686,7 +686,7 @@ async def reset_all_data(
             "updated_at": datetime.now(timezone.utc)
         })
         
-        # 創建預設市場開放時間 (9:00-17:00 UTC)
+        # 建立預設市場開放時間 (9:00-17:00 UTC)
         current_time = datetime.now(timezone.utc)
         start_time = int(current_time.replace(hour=9, minute=0, second=0).timestamp())
         end_time = int(current_time.replace(hour=17, minute=0, second=0).timestamp())
@@ -699,7 +699,7 @@ async def reset_all_data(
             "updated_at": datetime.now(timezone.utc)
         })
         
-        # 創建預設漲跌限制 (20%)
+        # 建立預設漲跌限制 (20%)
         await db[Collections.MARKET_CONFIG].insert_one({
             "type": "trading_limit",
             "limitPercent": 2000,  # 20% = 2000 basis points

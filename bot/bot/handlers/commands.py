@@ -189,40 +189,92 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    # 調用後端 API 建立 PVP 挑戰
-    response = api_helper.post("/api/bot/pvp/create", protected_route=True, json={
-        "from_user": str(update.effective_user.id),
-        "amount": amount,
-        "chat_id": str(update.message.chat.id)
-    })
-
-    if await verify_existing_user(response, update):
-        return
-
-    if response.get("success"):
-        challenge_id = response.get("challenge_id")
-        
-        # 發起人先選擇猜拳
-        message_text = f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n\n請先選擇你的猜拳："
-        
-        # 建立發起人選擇的內聯鍵盤
-        keyboard = [
-            [
-                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
-                InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
-                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(
-            escape_markdown(message_text, 2),
-            parse_mode=ParseMode.MARKDOWN_V2,
-            reply_markup=reply_markup
+    # 使用 PVP 管理器建立挑戰
+    from bot.handlers.pvp_manager import get_pvp_manager
+    
+    try:
+        pvp_manager = get_pvp_manager()
+        result = await pvp_manager.create_challenge(
+            user_id=str(update.effective_user.id),
+            username=update.effective_user.full_name,
+            amount=amount,
+            chat_id=str(update.message.chat.id)
         )
-    else:
+        
+        if result.get("conflict"):
+            # 有衝突，顯示選擇按鈕
+            existing_challenge = result["existing_challenge"]
+            remaining_time = result["remaining_time"]
+            
+            minutes = remaining_time // 60
+            seconds = remaining_time % 60
+            time_str = f"{minutes}分{seconds}秒" if minutes > 0 else f"{seconds}秒"
+            
+            conflict_message = (
+                f"⚠️ **你已有進行中的 PVP 挑戰！**\n\n"
+                f"**目前挑戰金額**: {existing_challenge['amount']} 點\n"
+                f"**剩餘時間**: {time_str}\n\n"
+                f"**新挑戰金額**: {amount} 點\n\n"
+                f"請選擇你要："
+            )
+            
+            keyboard = [
+                [
+                    InlineKeyboardButton("🔄 取消舊的，開始新的", 
+                                       callback_data=f"pvp_conflict_new_{amount}_{update.message.chat.id}"),
+                    InlineKeyboardButton("📋 繼續舊的挑戰", 
+                                       callback_data=f"pvp_conflict_continue_{existing_challenge['challenge_id']}")
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                conflict_message,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
+            )
+            
+        elif result.get("error"):
+            # API 錯誤
+            response = result["response"]
+            if await verify_existing_user(response, update):
+                return
+            
+            await update.message.reply_text(
+                escape_markdown(response.get("message", "建立挑戰失敗"), 2),
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+        else:
+            # 成功建立挑戰
+            challenge_id = result["challenge_id"]
+            
+            # 發起人先選擇猜拳
+            message_text = (
+                f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
+                f"⏰ 挑戰將在 3 分鐘後自動取消\n\n"
+                f"請先選擇你的猜拳："
+            )
+            
+            # 建立發起人選擇的內聯鍵盤
+            keyboard = [
+                [
+                    InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
+                    InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
+                    InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                escape_markdown(message_text, 2),
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=reply_markup
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ PVP 挑戰建立失敗: {e}")
         await update.message.reply_text(
-            escape_markdown(response.get("message", "建立挑戰失敗"), 2),
+            "😿 建立 PVP 挑戰時發生錯誤，請稍後再試",
             parse_mode=ParseMode.MARKDOWN_V2
         )
 
@@ -253,7 +305,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
         # 來自 callback query（CallbackQuery 對象）
         query = update_or_query
         user_name = query.from_user.full_name
-        # 創建一個模擬的 Update 對象來檢查使用者狀態
+        # 建立一個模擬的 Update 對象來檢查使用者狀態
         class MockUpdate:
             def __init__(self, query):
                 self.effective_user = query.from_user
@@ -402,7 +454,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
     page_info = f"第 {page}/{total_pages} 頁 \\(共 {total_orders} 筆訂單\\)"
     message_text = f"📊 *{escape_markdown(user_name)} 的股票訂單*\n\n" + "\n".join(lines) + f"\n\n{escape_markdown(page_info, 2)}"
 
-    # 創建分頁按鈕
+    # 建立分頁按鈕
     keyboard = []
     nav_buttons = []
     

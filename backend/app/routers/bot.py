@@ -367,4 +367,37 @@ async def bot_accept_pvp_challenge(
     """
     return await user_service.accept_pvp_challenge(request.from_user, request.challenge_id, request.choice)
 
+
+@router.post(
+    "/pvp/cancel",
+    response_model=PVPResponse,
+    summary="BOT 取消 PVP 挑戰",
+    description="透過 BOT 取消進行中的 PVP 猜拳挑戰"
+)
+async def bot_cancel_pvp_challenge(
+    request: dict,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+) -> PVPResponse:
+    """
+    BOT 取消 PVP 挑戰
+    
+    Args:
+        request: 取消請求，包含挑戰 ID 和用戶 ID
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        取消結果
+    """
+    challenge_id = request.get("challenge_id")
+    user_id = request.get("user_id")
+    
+    if not challenge_id or not user_id:
+        return PVPResponse(
+            success=False,
+            message="缺少必要參數：challenge_id 或 user_id"
+        )
+    
+    return await user_service.cancel_pvp_challenge(user_id, challenge_id)
+
     

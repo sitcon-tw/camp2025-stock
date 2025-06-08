@@ -883,9 +883,9 @@ class CampTradingSimulator:
             self.log(f"檢查掛單異常: {e}", "WARNING")
 
     def create_manual_trades(self) -> None:
-        """手動創建一些對向交易來測試撮合"""
+        """手動建立一些對向交易來測試撮合"""
         try:
-            self.log("🧪 創建測試對向交易...")
+            self.log("🧪 建立測試對向交易...")
             
             active_students = self.get_active_students()
             if len(active_students) < 2:

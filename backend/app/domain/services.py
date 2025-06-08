@@ -60,7 +60,7 @@ class UserDomainService:
         if existing_user:
             raise ValueError("user_already_exists")
         
-        # 創建新使用者實體
+        # 建立新使用者實體
         user = User(
             user_id=str(uuid.uuid4()),
             username=username,
@@ -175,7 +175,7 @@ class StockTradingService:
                     user.user_id, stock.quantity, float(stock.avg_cost)
                 )
             else:
-                # 創建新的股票持倉
+                # 建立新的股票持倉
                 new_stock = Stock(
                     user_id=user.user_id,
                     quantity=order.quantity,
@@ -245,7 +245,7 @@ class TransferService:
         # OCP 原則：使用策略模式計算手續費
         fee = self.fee_strategy.calculate_fee(amount, "regular")  # 可根據使用者類型調整
         
-        # 創建轉帳實體
+        # 建立轉帳實體
         transfer = Transfer(
             transfer_id=str(uuid.uuid4()),
             from_user_id=from_user_id,

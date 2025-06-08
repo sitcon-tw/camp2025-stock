@@ -3064,6 +3064,59 @@ class UserService:
         }
         return names.get(choice, "未知")
     
+    async def cancel_pvp_challenge(self, user_id: str, challenge_id: str):
+        """取消 PVP 挑戰"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_oid,
+                "challenger": user_id,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在、已結束或你不是發起者"
+                )
+            
+            # 更新挑戰狀態為取消
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_oid},
+                {
+                    "$set": {
+                        "status": "cancelled",
+                        "cancelled_at": datetime.now(timezone.utc),
+                        "cancel_reason": "使用者主動取消"
+                    }
+                }
+            )
+            
+            logger.info(f"PVP 挑戰 {challenge_id} 已被使用者 {user_id} 取消")
+            
+            return PVPResponse(
+                success=True,
+                message="PVP 挑戰已成功取消"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error cancelling PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="取消挑戰失敗，請稍後再試"
+            )
+    
     async def fix_negative_stocks(self, cancel_pending_orders: bool = True) -> dict:
         """
         修復負股票持有量

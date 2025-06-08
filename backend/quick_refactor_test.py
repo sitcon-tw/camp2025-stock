@@ -48,7 +48,7 @@ async def test_module_imports():
         return False
 
 async def test_entity_creation():
-    """測試領域實體的創建和方法"""
+    """測試領域實體的建立和方法"""
     print("\n🧪 測試領域實體...")
     
     try:
@@ -124,7 +124,7 @@ async def test_strategy_pattern():
         from datetime import datetime
         import uuid
         
-        # 創建測試訂單
+        # 建立測試訂單
         market_order = StockOrder(
             order_id=str(uuid.uuid4()),
             user_id=str(uuid.uuid4()),

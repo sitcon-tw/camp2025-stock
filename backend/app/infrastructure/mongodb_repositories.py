@@ -62,7 +62,7 @@ class MongoUserRepository(UserRepository):
             raise
     
     async def create(self, user: User) -> str:
-        """創建新使用者，返回 user_id"""
+        """建立新使用者，返回 user_id"""
         try:
             doc = self._entity_to_document(user)
             await self.collection.insert_one(doc)
@@ -190,7 +190,7 @@ class MongoStockOrderRepository(StockOrderRepository):
         self.collection = db[Collections.STOCK_ORDERS]
     
     async def create(self, order: StockOrder) -> str:
-        """創建新訂單"""
+        """建立新訂單"""
         try:
             doc = self._entity_to_document(order)
             await self.collection.insert_one(doc)
@@ -293,7 +293,7 @@ class MongoTransferRepository(TransferRepository):
         self.collection = db[Collections.POINT_LOGS]  # 使用 point_logs 集合
     
     async def create(self, transfer: Transfer) -> str:
-        """創建轉帳記錄"""
+        """建立轉帳記錄"""
         try:
             doc = self._entity_to_document(transfer)
             await self.collection.insert_one(doc)
