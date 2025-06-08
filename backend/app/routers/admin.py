@@ -645,16 +645,7 @@ async def reset_all_data(
         logger.warning("Starting complete database reset - this will delete ALL data")
         
         # 記錄重置前的統計
-        collections_to_reset = [
-            Collections.USERS,
-            Collections.GROUPS, 
-            Collections.STOCKS,
-            Collections.STOCK_ORDERS,
-            Collections.TRADES,
-            Collections.POINT_LOGS,
-            Collections.ANNOUNCEMENTS,
-            Collections.MARKET_CONFIG
-        ]
+        collections_to_reset = Collections.all_collections()
         
         reset_stats = {}
         for collection_name in collections_to_reset:
