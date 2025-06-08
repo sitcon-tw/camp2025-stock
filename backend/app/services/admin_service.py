@@ -485,13 +485,28 @@ class AdminService:
 
                     updated_users += 1
 
-            message = f"Final settlement complete for {updated_users} users"
+            # 清除所有進行中的掛單
+            cancelled_orders_result = await self.db[Collections.STOCK_ORDERS].update_many(
+                {"status": {"$in": ["pending", "partial", "pending_limit"]}},
+                {
+                    "$set": {
+                        "status": "cancelled",
+                        "cancelled_at": datetime.now(timezone.utc),
+                        "cancellation_reason": "final_settlement"
+                    }
+                }
+            )
+            
+            cancelled_orders_count = cancelled_orders_result.modified_count
+            logger.info(f"Cancelled {cancelled_orders_count} pending orders during final settlement")
+
+            message = f"Final settlement complete for {updated_users} users, cancelled {cancelled_orders_count} pending orders"
             logger.info(message)
             
             # 發送系統公告到 Telegram Bot
             await self._send_system_announcement(
                 title="📊 強制結算完成",
-                message=f"系統已完成強制結算作業，共處理 {updated_users} 位使用者的持股。所有股票已按固定價格 {final_price} 元轉換為點數。"
+                message=f"系統已完成強制結算作業，共處理 {updated_users} 位使用者的持股，取消 {cancelled_orders_count} 筆進行中的掛單。所有股票已按固定價格 {final_price} 元轉換為點數。"
             )
             
             return GivePointsResponse(ok=True, message=message)
