@@ -25,6 +25,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "from_user": str(update.effective_user.id)
     })
 
+    # 除錯：記錄 API 回應內容
+    logger.info(f"📊 Portfolio API 回應內容: {response}")
+    
     if await verify_existing_user(response, update):
         return
 
@@ -32,11 +35,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://camp.sitcon.party/")]
     ]
 
+    # 處理可能為 None 的值，提供預設值
+    points = response.get("points") if response.get("points") is not None else 0
+    stocks = response.get("stocks") if response.get("stocks") is not None else 0
+    total_value = response.get("totalValue") if response.get("totalValue") is not None else 0
+    
     await update.message.reply_text(
         f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n\n"
-        f"🤑┃目前點數 *{escape_markdown(str(response.get("points")), 2)}*\n"
-        f"🏛️┃目前持有股票股數 *{escape_markdown(str(response.get("stocks")), 2)}*，要不要來點新鮮的股票？\n"
-        f"💵┃總資產共 {escape_markdown(str(response.get("totalValue")), 2)}",
+        f"🤑┃目前點數 *{escape_markdown(str(points), 2)}*\n"
+        f"🏛️┃目前持有股票股數 *{escape_markdown(str(stocks), 2)}*，要不要來點新鮮的股票？\n"
+        f"💵┃總資產共 {escape_markdown(str(total_value), 2)}",
         parse_mode=ParseMode.MARKDOWN_V2, reply_markup=InlineKeyboardMarkup(buttons))
 
 

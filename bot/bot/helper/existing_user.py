@@ -44,6 +44,25 @@ async def verify_existing_user(response, update: Update, is_callback: bool = Fal
             )
         return True
     
+    # Check for backend portfolio API user not found response
+    if (response.get("detail") and 
+        response.get("detail").startswith("使用者不存在")):
+        message_text = (
+            f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n"
+            f"你還沒完成註冊程序，請輸入 /register 來看看怎麼註冊！"
+        )
+        
+        if is_callback:
+            # 對於 callback query，使用 answer 顯示彈出訊息
+            await update.answer("你還沒完成註冊程序，請輸入 /register <code> 來註冊！", show_alert=True)
+        else:
+            # 對於普通訊息，回覆文字訊息
+            await update.message.reply_text(
+                message_text,
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+        return True
+    
     # Check for API error responses (404, connection errors, etc.)
     if (response.get("detail") == "error" and 
         response.get("status_code") in [404, 500, 503]):
