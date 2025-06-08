@@ -522,6 +522,31 @@ class UserService:
         """不使用事務進行轉帳（適用於 standalone MongoDB）"""
         return await self._execute_transfer(from_user_id, request, None)
 
+    async def _get_transfer_fee_config(self):
+        """獲取轉點數手續費設定"""
+        try:
+            fee_config = await self.db[Collections.MARKET_CONFIG].find_one({
+                "type": "transfer_fee"
+            })
+            
+            if fee_config:
+                return {
+                    "fee_rate": fee_config.get("fee_rate", 10.0),  # 預設 10%
+                    "min_fee": fee_config.get("min_fee", 1)       # 預設最少 1 點
+                }
+            else:
+                # 如果沒有設定，使用預設值
+                return {
+                    "fee_rate": 10.0,  # 10%
+                    "min_fee": 1       # 最少 1 點
+                }
+        except Exception as e:
+            logger.error(f"Error getting transfer fee config: {e}")
+            return {
+                "fee_rate": 10.0,  # 預設 10%
+                "min_fee": 1       # 預設最少 1 點
+            }
+
     async def _execute_transfer(self, from_user_id: str, request: TransferRequest, session=None) -> TransferResponse:
         """執行轉帳邏輯"""
         # 取得傳送方使用者
@@ -554,8 +579,9 @@ class UserService:
                 message="無法轉帳給自己"
             )
         
-        # 計算手續費 (10% 或至少 1 點)
-        fee = max(1, int(request.amount * 0.1))
+        # 計算手續費 (動態設定)
+        fee_config = await self._get_transfer_fee_config()
+        fee = max(fee_config["min_fee"], int(request.amount * fee_config["fee_rate"] / 100.0))
         total_deduct = request.amount + fee
         
         # 檢查餘額

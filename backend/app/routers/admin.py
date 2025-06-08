@@ -1214,3 +1214,169 @@ async def cleanup_pvp_challenges(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"清理 PVP 挑戰失敗: {str(e)}"
         )
+
+
+# ========== 轉點數手續費設定 ==========
+
+@router.get(
+    "/transfer/fee-config",
+    responses={
+        200: {"description": "手續費設定查詢成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="查詢轉點數手續費設定",
+    description="查詢當前轉點數的手續費率和最低手續費設定"
+)
+async def get_transfer_fee_config(
+    current_admin=Depends(get_current_admin)
+):
+    """查詢轉點數手續費設定"""
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        
+        # 查詢手續費設定
+        fee_config = await db[Collections.MARKET_CONFIG].find_one({
+            "type": "transfer_fee"
+        })
+        
+        if fee_config:
+            return {
+                "ok": True,
+                "feeRate": fee_config.get("fee_rate", 10.0),
+                "minFee": fee_config.get("min_fee", 1),
+                "updatedAt": fee_config.get("updated_at").isoformat() if fee_config.get("updated_at") else None
+            }
+        else:
+            # 如果沒有設定，回傳預設值
+            return {
+                "ok": True,
+                "feeRate": 10.0,
+                "minFee": 1,
+                "updatedAt": None,
+                "note": "使用預設設定（未在資料庫中設定）"
+            }
+        
+    except Exception as e:
+        logger.error(f"Failed to get transfer fee config: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="查詢手續費設定失敗"
+        )
+
+
+@router.post(
+    "/transfer/fee-config",
+    responses={
+        200: {"description": "手續費設定更新成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="更新轉點數手續費設定",
+    description="更新轉點數的手續費率和最低手續費設定"
+)
+async def update_transfer_fee_config(
+    fee_rate: float = None,
+    min_fee: int = None,
+    current_admin=Depends(get_current_admin)
+):
+    """更新轉點數手續費設定"""
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        
+        db = get_database()
+        
+        # 驗證參數
+        if fee_rate is not None and (fee_rate < 0 or fee_rate > 100):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="手續費率必須在 0-100% 之間"
+            )
+        
+        if min_fee is not None and min_fee < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="最低手續費不能小於 0"
+            )
+        
+        # 構建更新字段
+        update_fields = {"updated_at": datetime.now(timezone.utc)}
+        
+        if fee_rate is not None:
+            update_fields["fee_rate"] = fee_rate
+        
+        if min_fee is not None:
+            update_fields["min_fee"] = min_fee
+        
+        if len(update_fields) == 1:  # 只有 updated_at 字段
+            return {
+                "ok": False,
+                "message": "沒有提供任何要更新的參數"
+            }
+        
+        # 更新手續費設定
+        result = await db[Collections.MARKET_CONFIG].update_one(
+            {"type": "transfer_fee"},
+            {
+                "$set": update_fields,
+                "$setOnInsert": {
+                    "type": "transfer_fee"
+                }
+            },
+            upsert=True
+        )
+        
+        # 取得更新後的設定
+        updated_config = await db[Collections.MARKET_CONFIG].find_one(
+            {"type": "transfer_fee"}
+        )
+        
+        message_parts = []
+        if fee_rate is not None:
+            message_parts.append(f"手續費率: {fee_rate}%")
+        if min_fee is not None:
+            message_parts.append(f"最低手續費: {min_fee} 點")
+        
+        message = f"轉點數手續費設定已更新：{', '.join(message_parts)}" if message_parts else "轉點數手續費設定已更新"
+        
+        logger.info(f"Transfer fee config updated: {message}")
+        
+        # 發送系統公告到 Telegram Bot
+        try:
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            
+            # 構建詳細的公告訊息
+            announcement_parts = []
+            if fee_rate is not None:
+                announcement_parts.append(f"手續費率已調整為 {fee_rate}%")
+            if min_fee is not None:
+                announcement_parts.append(f"最低手續費已調整為 {min_fee} 點")
+            
+            detailed_message = f"管理員已更新轉點數手續費設定：{', '.join(announcement_parts)}。新的手續費將立即生效。"
+            
+            await admin_service._send_system_announcement(
+                title="💰 轉點數手續費更新",
+                message=detailed_message
+            )
+        except Exception as e:
+            logger.error(f"Failed to send transfer fee update announcement: {e}")
+        
+        return {
+            "ok": True,
+            "message": message,
+            "feeRate": updated_config.get("fee_rate", 10.0),
+            "minFee": updated_config.get("min_fee", 1)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update transfer fee config: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新手續費設定失敗"
+        )
