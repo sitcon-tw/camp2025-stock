@@ -47,7 +47,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="zh-TW">
+        <html data-theme="dark" lang="zh-TW">
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
                 <link rel="manifest" href="/manifest.json" />
