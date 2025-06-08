@@ -223,7 +223,8 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     };
 
     const resetZoomPan = () => {
-        const defaultZoom = displayMode === 'candlestick' ? 1 : 3;
+        // const defaultZoom = displayMode === 'candlestick' ? 1 : 3;
+        const defaultZoom = 1;
         setZoomLevel(defaultZoom);
 
         if (candlestickData.length > 0) {
