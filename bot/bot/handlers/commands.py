@@ -78,7 +78,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if response.get("ok"):
         name = response.get("message").split(":")[1]
         await update.message.reply_text(
-            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，原來你就是 *{name}* 啊！\n\n"
+            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，原來你就是 *{escape_markdown(name)}* 啊！\n\n"
             f"很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友\n"
             f"我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！"
             , parse_mode=ParseMode.MARKDOWN_V2)
