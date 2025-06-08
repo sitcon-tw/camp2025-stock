@@ -324,13 +324,12 @@ export async function updateTransferFeeConfig(token, feeRate, minFee) {
         params.append('min_fee', minFee);
     }
     
-    return apiRequest('/api/admin/transfer/fee-config', {
+    return apiRequest(`/api/admin/transfer/fee-config?${params.toString()}`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
-        body: params,
     });
 }
 
