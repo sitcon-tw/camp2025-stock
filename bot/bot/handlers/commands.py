@@ -28,7 +28,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     buttons = [
-        [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://w.wolf-yuan.dev/youtube")]
+        [InlineKeyboardButton(text="📈 開啟喵券機系統", url="https://camp.sitcon.party/")]
     ]
 
     await update.message.reply_text(
