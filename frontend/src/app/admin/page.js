@@ -63,7 +63,7 @@ export default function AdminPage() {
     });
 
     // 學員跟小隊列表
-    const [students, setStudents] = useState([]); 
+    const [students, setStudents] = useState([]);
     const [teams, setTeams] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -175,7 +175,7 @@ export default function AdminPage() {
                 // Token 有效，設置狀態並初始化數據
                 setAdminToken(token);
                 setIsLoggedIn(true);
-                
+
                 if (isMounted) {
                     // 確保按順序執行，避免並行執行造成的問題
                     await fetchSystemStats(token);
@@ -546,9 +546,9 @@ export default function AdminPage() {
             console.log('搜尋學生:', value, '學生列表長度:', students.length); // 調試用
             if (Array.isArray(students)) {
                 filteredSuggestions = students
-                    .filter(student => 
-                        student && 
-                        typeof student.username === 'string' && 
+                    .filter(student =>
+                        student &&
+                        typeof student.username === 'string' &&
                         student.username.toLowerCase().includes(value.toLowerCase())
                     )
                     .map(student => ({
@@ -565,8 +565,8 @@ export default function AdminPage() {
             if (Array.isArray(teams)) {
                 filteredSuggestions = teams
                     .filter(team =>
-                        team && 
-                        typeof team.name === 'string' && 
+                        team &&
+                        typeof team.name === 'string' &&
                         team.name.toLowerCase().includes(value.toLowerCase())
                     )
                     .map(team => ({
@@ -618,32 +618,32 @@ export default function AdminPage() {
         setGivePointsLoading(true);
         try {
             const amount = parseInt(givePointsForm.amount);
-            
+
             if (givePointsForm.type === 'all_users') {
                 // 發放給全部使用者
-                const promises = students.map(student => 
+                const promises = students.map(student =>
                     givePoints(adminToken, student.username, 'user', amount)
                 );
                 await Promise.all(promises);
                 showNotification(`成功發放 ${amount} 點給 ${students.length} 位使用者！`, 'success');
-                
+
             } else if (givePointsForm.type === 'all_groups') {
-                // 發放給全部團隊
-                const promises = teams.map(team => 
+                // 發放給全部團隊全部團隊
+                const promises = teams.map(team =>
                     givePoints(adminToken, team.name, 'group', amount)
                 );
                 await Promise.all(promises);
                 showNotification(`成功發放 ${amount} 點給 ${teams.length} 個團隊！`, 'success');
-                
+
             } else if (givePointsForm.type === 'multi_users' || givePointsForm.type === 'multi_groups') {
                 // 多選模式
                 const targetType = givePointsForm.type === 'multi_users' ? 'user' : 'group';
-                const promises = givePointsForm.multiTargets.map(target => 
+                const promises = givePointsForm.multiTargets.map(target =>
                     givePoints(adminToken, target.value, targetType, amount)
                 );
                 await Promise.all(promises);
                 showNotification(`成功發放 ${amount} 點給 ${givePointsForm.multiTargets.length} 個目標！`, 'success');
-                
+
             } else {
                 // 單一目標模式
                 await givePoints(
@@ -654,7 +654,7 @@ export default function AdminPage() {
                 );
                 showNotification('點數發放成功！', 'success');
             }
-            
+
             await fetchSystemStats(adminToken);
             setGivePointsForm({
                 type: givePointsForm.type,
@@ -871,27 +871,24 @@ export default function AdminPage() {
                             {/* 發放模式選擇 */}
                             <div className="space-y-4">
                                 <label className="block text-[#7BC2E6] text-sm font-medium">發放模式</label>
-                                
+
                                 {/* 個人/團隊切換 */}
                                 <div className="flex items-center space-x-4">
                                     <span className="text-[#7BC2E6]">個人</span>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups' || givePointsForm.type === 'all_groups'}
+                                            checked={givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups'}
                                             onChange={(e) => {
                                                 const isMulti = givePointsForm.type.startsWith('multi_');
-                                                const isAll = givePointsForm.type.startsWith('all_');
                                                 let newType;
-                                                
-                                                if (isAll) {
-                                                    newType = e.target.checked ? 'all_groups' : 'all_users';
-                                                } else if (isMulti) {
+
+                                                if (isMulti) {
                                                     newType = e.target.checked ? 'multi_groups' : 'multi_users';
                                                 } else {
                                                     newType = e.target.checked ? 'group' : 'user';
                                                 }
-                                                
+
                                                 setGivePointsForm({
                                                     ...givePointsForm,
                                                     type: newType,
@@ -916,11 +913,11 @@ export default function AdminPage() {
                                             type="checkbox"
                                             checked={givePointsForm.type.startsWith('multi_')}
                                             onChange={(e) => {
-                                                const isGroup = givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups' || givePointsForm.type === 'all_groups';
-                                                const newType = e.target.checked 
+                                                const isGroup = givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups';
+                                                const newType = e.target.checked
                                                     ? (isGroup ? 'multi_groups' : 'multi_users')
                                                     : (isGroup ? 'group' : 'user');
-                                                
+
                                                 setGivePointsForm({
                                                     ...givePointsForm,
                                                     type: newType,
@@ -937,33 +934,55 @@ export default function AdminPage() {
                                     <span className="text-[#7BC2E6]">多選</span>
                                 </div>
 
-                                {/* 全部選項 */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setGivePointsForm({...givePointsForm, type: 'all_users', username: '', multiTargets: []})}
-                                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                                            givePointsForm.type === 'all_users' 
-                                                ? 'bg-[#7BC2E6] text-black' 
-                                                : 'bg-[#0f203e] text-[#7BC2E6] border border-[#469FD2]'
-                                        }`}
-                                    >
-                                        全部個人
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setGivePointsForm({...givePointsForm, type: 'all_groups', username: '', multiTargets: []})}
-                                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
-                                            givePointsForm.type === 'all_groups' 
-                                                ? 'bg-[#7BC2E6] text-black' 
-                                                : 'bg-[#0f203e] text-[#7BC2E6] border border-[#469FD2]'
-                                        }`}
-                                    >
-                                        全部團隊
-                                    </button>
-                                </div>
-                            </div>                            {/* 條件顯示搜尋框 */}
-                            {!['all_users', 'all_groups'].includes(givePointsForm.type) && (
+                                {/* 全選按鈕 - 只在多選模式下顯示 */}
+                                {givePointsForm.type.startsWith('multi_') && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const targetList = givePointsForm.type === 'multi_users' ? students : teams;
+                                                const allTargets = targetList.map(item => ({
+                                                    value: givePointsForm.type === 'multi_users' ? item.username : item.name,
+                                                    label: givePointsForm.type === 'multi_users'
+                                                        ? `${item.username}${item.team ? ` (${item.team})` : ''}`
+                                                        : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ''}`,
+                                                    type: givePointsForm.type === 'multi_users' ? 'user' : 'group'
+                                                }));
+
+                                                setGivePointsForm({
+                                                    ...givePointsForm,
+                                                    multiTargets: allTargets,
+                                                    username: ''
+                                                });
+                                                setShowSuggestions(false);
+                                                setSuggestions([]);
+                                            }}
+                                            className="px-4 py-2 rounded-lg text-sm transition-colors bg-[#7BC2E6] text-black hover:bg-[#6bb0d4]"
+                                        >
+                                            全選 {givePointsForm.type === 'multi_users' ? `所有個人 (${students.length})` : `所有團隊 (${teams.length})`}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setGivePointsForm({
+                                                    ...givePointsForm,
+                                                    multiTargets: [],
+                                                    username: ''
+                                                });
+                                                setShowSuggestions(false);
+                                                setSuggestions([]);
+                                            }}
+                                            disabled={givePointsForm.multiTargets.length === 0}
+                                            className="px-4 py-2 rounded-lg text-sm transition-colors bg-red-700/80 hover:bg-red-700/70 disabled:bg-gray-600 disabled:cursor-not-allowed text-white"
+                                        >
+                                            全部移除 ({givePointsForm.multiTargets.length})
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 條件顯示搜尋框 */}
+                            {givePointsForm.type.startsWith('multi_') || ['user', 'group'].includes(givePointsForm.type) ? (
                                 <div className="relative">
                                     <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
                                         {givePointsForm.type.startsWith('multi_') ? '添加目標（搜尋選擇）' : '給誰（搜尋選擇）'}
@@ -985,9 +1004,9 @@ export default function AdminPage() {
                                         disabled={studentsLoading}
                                         className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#0f203e] disabled:cursor-not-allowed disabled:opacity-50"
                                         placeholder={
-                                            studentsLoading 
-                                                ? '正在載入使用者資料...' 
-                                                : (givePointsForm.type === 'user' || givePointsForm.type === 'multi_users' 
+                                            studentsLoading
+                                                ? '正在載入使用者資料...'
+                                                : (givePointsForm.type === 'user' || givePointsForm.type === 'multi_users'
                                                     ? '搜尋學生姓名...' : '搜尋團隊名稱...')
                                         }
                                     />
@@ -1019,7 +1038,7 @@ export default function AdminPage() {
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            ) : null}
 
                             {/* 多選模式的已選目標列表 */}
                             {givePointsForm.type.startsWith('multi_') && givePointsForm.multiTargets.length > 0 && (
@@ -1048,7 +1067,7 @@ export default function AdminPage() {
                             {['all_users', 'all_groups'].includes(givePointsForm.type) && (
                                 <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-3">
                                     <p className="text-[#7BC2E6] text-sm">
-                                        {givePointsForm.type === 'all_users' 
+                                        {givePointsForm.type === 'all_users'
                                             ? `將發放給所有 ${students.length} 位使用者`
                                             : `將發放給所有 ${teams.length} 個團隊`
                                         }
@@ -1075,7 +1094,7 @@ export default function AdminPage() {
                                 <button
                                     onClick={handleGivePoints}
                                     disabled={
-                                        givePointsLoading || 
+                                        givePointsLoading ||
                                         !givePointsForm.amount ||
                                         (
                                             ['user', 'group'].includes(givePointsForm.type) && !givePointsForm.username
@@ -1907,7 +1926,7 @@ export default function AdminPage() {
                 </div>
             )}
 
-           
+
             {/* 集合競價結果 Modal */}
             {showCallAuctionModal && callAuctionResult && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
