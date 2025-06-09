@@ -45,8 +45,10 @@ export default function AdminPage() {
     const [forceSettlementLoading, setForceSettlementLoading] = useState(false);
 
     const [givePointsForm, setGivePointsForm] = useState({
-        type: 'user',
-        username: ''
+        type: 'user', // 'user', 'group', 'all_users', 'all_groups', 'multi_users', 'multi_groups'
+        username: '',
+        amount: '',
+        multiTargets: [] // 多選目標列表
     });
 
     const [tradingLimitPercent, setTradingLimitPercent] = useState(10);
@@ -539,7 +541,7 @@ export default function AdminPage() {
 
         let filteredSuggestions = [];
 
-        if (givePointsForm.type === 'user') {
+        if (givePointsForm.type === 'user' || givePointsForm.type === 'multi_users') {
             // 查學員 - 加強錯誤檢查
             console.log('搜尋學生:', value, '學生列表長度:', students.length); // 調試用
             if (Array.isArray(students)) {
@@ -557,7 +559,7 @@ export default function AdminPage() {
             } else {
                 console.warn('學生資料不是陣列:', students);
             }
-        } else {
+        } else if (givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups') {
             // 查小隊 - 加強錯誤檢查
             console.log('搜尋團隊:', value, '團隊列表長度:', teams.length); // 調試用
             if (Array.isArray(teams)) {
@@ -589,21 +591,76 @@ export default function AdminPage() {
         });
         setShowSuggestions(false);
         setSuggestions([]);
-    }; const handleGivePoints = async () => {
+    };
+
+    // 多選功能：添加目標到列表
+    const addMultiTarget = (suggestion) => {
+        if (!givePointsForm.multiTargets.find(target => target.value === suggestion.value)) {
+            setGivePointsForm({
+                ...givePointsForm,
+                multiTargets: [...givePointsForm.multiTargets, suggestion],
+                username: ''
+            });
+        }
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
+
+    // 多選功能：從列表移除目標
+    const removeMultiTarget = (targetValue) => {
+        setGivePointsForm({
+            ...givePointsForm,
+            multiTargets: givePointsForm.multiTargets.filter(target => target.value !== targetValue)
+        });
+    };
+
+    const handleGivePoints = async () => {
         setGivePointsLoading(true);
         try {
-            await givePoints(
-                adminToken,
-                givePointsForm.username,
-                givePointsForm.type,
-                parseInt(givePointsForm.amount)
-            );
-            showNotification('點數發放成功！', 'success');
+            const amount = parseInt(givePointsForm.amount);
+            
+            if (givePointsForm.type === 'all_users') {
+                // 發放給全部使用者
+                const promises = students.map(student => 
+                    givePoints(adminToken, student.username, 'user', amount)
+                );
+                await Promise.all(promises);
+                showNotification(`成功發放 ${amount} 點給 ${students.length} 位使用者！`, 'success');
+                
+            } else if (givePointsForm.type === 'all_groups') {
+                // 發放給全部團隊
+                const promises = teams.map(team => 
+                    givePoints(adminToken, team.name, 'group', amount)
+                );
+                await Promise.all(promises);
+                showNotification(`成功發放 ${amount} 點給 ${teams.length} 個團隊！`, 'success');
+                
+            } else if (givePointsForm.type === 'multi_users' || givePointsForm.type === 'multi_groups') {
+                // 多選模式
+                const targetType = givePointsForm.type === 'multi_users' ? 'user' : 'group';
+                const promises = givePointsForm.multiTargets.map(target => 
+                    givePoints(adminToken, target.value, targetType, amount)
+                );
+                await Promise.all(promises);
+                showNotification(`成功發放 ${amount} 點給 ${givePointsForm.multiTargets.length} 個目標！`, 'success');
+                
+            } else {
+                // 單一目標模式
+                await givePoints(
+                    adminToken,
+                    givePointsForm.username,
+                    givePointsForm.type,
+                    amount
+                );
+                showNotification('點數發放成功！', 'success');
+            }
+            
             await fetchSystemStats(adminToken);
             setGivePointsForm({
                 type: givePointsForm.type,
                 username: '',
-                amount: ''
+                amount: '',
+                multiTargets: []
             });
 
             setSuggestions([]);
@@ -811,79 +868,193 @@ export default function AdminPage() {
                     {/* 發點數 */}
                     <div className="bg-[#1A325F] rounded-xl p-6">
                         <div className="space-y-4">
-                            {/* 學員 / 小隊切換 */}
-                            <div className="flex space-x-4">
-                                <span className="text-[#7BC2E6]">個人</span>
-                                <label className="relative inline-flex items-center cursor-pointer">                                    <input
-                                    type="checkbox"
-                                    checked={givePointsForm.type === 'group'}
-                                    onChange={(e) => {
-                                        const newType = e.target.checked ? 'group' : 'user';
-                                        setGivePointsForm({
-                                            ...givePointsForm,
-                                            type: newType,
-                                            username: ''
-                                        });
+                            {/* 發放模式選擇 */}
+                            <div className="space-y-4">
+                                <label className="block text-[#7BC2E6] text-sm font-medium">發放模式</label>
+                                
+                                {/* 個人/團隊切換 */}
+                                <div className="flex items-center space-x-4">
+                                    <span className="text-[#7BC2E6]">個人</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups' || givePointsForm.type === 'all_groups'}
+                                            onChange={(e) => {
+                                                const isMulti = givePointsForm.type.startsWith('multi_');
+                                                const isAll = givePointsForm.type.startsWith('all_');
+                                                let newType;
+                                                
+                                                if (isAll) {
+                                                    newType = e.target.checked ? 'all_groups' : 'all_users';
+                                                } else if (isMulti) {
+                                                    newType = e.target.checked ? 'multi_groups' : 'multi_users';
+                                                } else {
+                                                    newType = e.target.checked ? 'group' : 'user';
+                                                }
+                                                
+                                                setGivePointsForm({
+                                                    ...givePointsForm,
+                                                    type: newType,
+                                                    username: '',
+                                                    multiTargets: []
+                                                });
+                                                setShowSuggestions(false);
+                                                setSuggestions([]);
+                                            }}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-[#0f203e] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7BC2E6] border border-gray-600"></div>
+                                    </label>
+                                    <span className="text-[#7BC2E6]">團隊</span>
+                                </div>
 
-                                        setShowSuggestions(false);
-                                        setSuggestions([]);
-                                    }}
-                                    className="sr-only peer"
-                                />
-                                    <div className="w-11 h-6 bg-[#0f203e] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7BC2E6] border border-gray-600"></div>
-                                </label>
-                                <span className="text-[#7BC2E6]">群組</span>
-                            </div>                            <div className="relative">
-                                <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
-                                    給誰（搜尋選擇）
-                                </label>
-                                <input
-                                    type="text"
-                                    value={givePointsForm.username}
-                                    onChange={(e) => handleUsernameChange(e.target.value)}
-                                    onFocus={() => {
-                                        // 重新觸發搜尋以顯示建議
-                                        if (givePointsForm.username.trim() !== '') {
-                                            handleUsernameChange(givePointsForm.username);
+                                {/* 多選開關 */}
+                                <div className="flex items-center space-x-4">
+                                    <span className="text-[#7BC2E6]">單選</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={givePointsForm.type.startsWith('multi_')}
+                                            onChange={(e) => {
+                                                const isGroup = givePointsForm.type === 'group' || givePointsForm.type === 'multi_groups' || givePointsForm.type === 'all_groups';
+                                                const newType = e.target.checked 
+                                                    ? (isGroup ? 'multi_groups' : 'multi_users')
+                                                    : (isGroup ? 'group' : 'user');
+                                                
+                                                setGivePointsForm({
+                                                    ...givePointsForm,
+                                                    type: newType,
+                                                    username: '',
+                                                    multiTargets: []
+                                                });
+                                                setShowSuggestions(false);
+                                                setSuggestions([]);
+                                            }}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-[#0f203e] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7BC2E6] border border-gray-600"></div>
+                                    </label>
+                                    <span className="text-[#7BC2E6]">多選</span>
+                                </div>
+
+                                {/* 全部選項 */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setGivePointsForm({...givePointsForm, type: 'all_users', username: '', multiTargets: []})}
+                                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                                            givePointsForm.type === 'all_users' 
+                                                ? 'bg-[#7BC2E6] text-black' 
+                                                : 'bg-[#0f203e] text-[#7BC2E6] border border-[#469FD2]'
+                                        }`}
+                                    >
+                                        全部個人
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setGivePointsForm({...givePointsForm, type: 'all_groups', username: '', multiTargets: []})}
+                                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                                            givePointsForm.type === 'all_groups' 
+                                                ? 'bg-[#7BC2E6] text-black' 
+                                                : 'bg-[#0f203e] text-[#7BC2E6] border border-[#469FD2]'
+                                        }`}
+                                    >
+                                        全部團隊
+                                    </button>
+                                </div>
+                            </div>                            {/* 條件顯示搜尋框 */}
+                            {!['all_users', 'all_groups'].includes(givePointsForm.type) && (
+                                <div className="relative">
+                                    <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                        {givePointsForm.type.startsWith('multi_') ? '添加目標（搜尋選擇）' : '給誰（搜尋選擇）'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={givePointsForm.username}
+                                        onChange={(e) => handleUsernameChange(e.target.value)}
+                                        onFocus={() => {
+                                            // 重新觸發搜尋以顯示建議
+                                            if (givePointsForm.username.trim() !== '') {
+                                                handleUsernameChange(givePointsForm.username);
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            // 延遲隱藏建議，讓點擊事件能夠觸發
+                                            setTimeout(() => setShowSuggestions(false), 200);
+                                        }}
+                                        disabled={studentsLoading}
+                                        className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#0f203e] disabled:cursor-not-allowed disabled:opacity-50"
+                                        placeholder={
+                                            studentsLoading 
+                                                ? '正在載入使用者資料...' 
+                                                : (givePointsForm.type === 'user' || givePointsForm.type === 'multi_users' 
+                                                    ? '搜尋學生姓名...' : '搜尋團隊名稱...')
                                         }
-                                    }}
-                                    onBlur={(e) => {
-                                        // 延遲隱藏建議，讓點擊事件能夠觸發
-                                        setTimeout(() => setShowSuggestions(false), 200);
-                                    }}
-                                    disabled={studentsLoading}
-                                    className="w-full px-3 py-2 bg-[#1A325F] border border-[#469FD2] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#0f203e] disabled:cursor-not-allowed disabled:opacity-50"
-                                    placeholder={
-                                        studentsLoading 
-                                            ? '正在載入使用者資料...' 
-                                            : (givePointsForm.type === 'user' ? '搜尋學生姓名...' : '搜尋團隊名稱...')
-                                    }
-                                />
+                                    />
 
-                                {/* 搜尋建議下拉 */}
-                                {showSuggestions && suggestions.length > 0 && (
-                                    <div className="absolute z-10 w-full mt-1 bg-[#0f203e] border border-[#469FD2] rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                                        {suggestions.map((suggestion, index) => (
-                                            <div
-                                                key={index}
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault(); // 防止blur事件影響點擊
-                                                    selectSuggestion(suggestion);
-                                                }}
-                                                className="px-3 py-2 hover:bg-[#1A325F] cursor-pointer text-white text-sm transition-colors border-b border-[#469FD2] last:border-b-0"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span>{suggestion.label}</span>
-                                                    <span className="text-xs text-gray-400">
-                                                        {suggestion.type === 'user' ? '個人' : '團隊'}
-                                                    </span>
+                                    {/* 搜尋建議下拉 */}
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <div className="absolute z-10 w-full mt-1 bg-[#0f203e] border border-[#469FD2] rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                            {suggestions.map((suggestion, index) => (
+                                                <div
+                                                    key={index}
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault(); // 防止blur事件影響點擊
+                                                        if (givePointsForm.type.startsWith('multi_')) {
+                                                            addMultiTarget(suggestion);
+                                                        } else {
+                                                            selectSuggestion(suggestion);
+                                                        }
+                                                    }}
+                                                    className="px-3 py-2 hover:bg-[#1A325F] cursor-pointer text-white text-sm transition-colors border-b border-[#469FD2] last:border-b-0"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span>{suggestion.label}</span>
+                                                        <span className="text-xs text-gray-400">
+                                                            {suggestion.type === 'user' ? '個人' : '團隊'}
+                                                        </span>
+                                                    </div>
                                                 </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 多選模式的已選目標列表 */}
+                            {givePointsForm.type.startsWith('multi_') && givePointsForm.multiTargets.length > 0 && (
+                                <div>
+                                    <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
+                                        已選擇的目標 ({givePointsForm.multiTargets.length})
+                                    </label>
+                                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                                        {givePointsForm.multiTargets.map((target, index) => (
+                                            <div key={index} className="flex items-center justify-between bg-[#0f203e] px-3 py-2 rounded-lg">
+                                                <span className="text-white text-sm">{target.label}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeMultiTarget(target.value)}
+                                                    className="text-red-400 hover:text-red-300 text-sm"
+                                                >
+                                                    移除
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
-                                )}
-                            
-                            </div>
+                                </div>
+                            )}
+
+                            {/* 全部模式的說明 */}
+                            {['all_users', 'all_groups'].includes(givePointsForm.type) && (
+                                <div className="bg-[#0f203e] border border-[#469FD2] rounded-lg p-3">
+                                    <p className="text-[#7BC2E6] text-sm">
+                                        {givePointsForm.type === 'all_users' 
+                                            ? `將發放給所有 ${students.length} 位使用者`
+                                            : `將發放給所有 ${teams.length} 個團隊`
+                                        }
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-[#7BC2E6] text-sm font-medium mb-2">
@@ -903,7 +1074,16 @@ export default function AdminPage() {
                             <div className='w-full items-center flex justify-center'>
                                 <button
                                     onClick={handleGivePoints}
-                                    disabled={givePointsLoading || !givePointsForm.username}
+                                    disabled={
+                                        givePointsLoading || 
+                                        !givePointsForm.amount ||
+                                        (
+                                            ['user', 'group'].includes(givePointsForm.type) && !givePointsForm.username
+                                        ) ||
+                                        (
+                                            givePointsForm.type.startsWith('multi_') && givePointsForm.multiTargets.length === 0
+                                        )
+                                    }
                                     className="mx-auto bg-[#7BC2E6] hover:bg-[#6bb0d4] disabled:bg-[#4a5568] disabled:hover:bg-[#4a5568] disabled:cursor-not-allowed text-black disabled:text-[#a0aec0] font-medium py-2 px-4 rounded-lg transition-colors"
                                 >
                                     {givePointsLoading ? '發放中...' : '發點數'}
