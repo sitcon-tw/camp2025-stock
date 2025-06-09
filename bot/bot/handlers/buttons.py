@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
+from telegram.error import BadRequest
 from datetime import datetime, timedelta
 
 from utils import api_helper
@@ -12,7 +13,15 @@ logger = setup_logger(__name__)
 
 
 async def handle_zombie_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer("⚠️ 此按鈕無效，請重新輸入指令來開始新的操作", show_alert=True)
+    try:
+        await update.callback_query.answer("⚠️ 此按鈕無效，請重新輸入指令來開始新的操作", show_alert=True)
+    except BadRequest as e:
+        if "too old" in str(e) or "expired" in str(e) or "invalid" in str(e):
+            logger.warning(f"Callback query expired or invalid: {e}")
+        else:
+            logger.error(f"BadRequest in handle_zombie_clicks: {e}")
+    except Exception as e:
+        logger.error(f"Error in handle_zombie_clicks: {e}")
 
 
 async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
