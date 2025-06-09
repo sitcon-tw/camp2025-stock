@@ -9,9 +9,7 @@ import {
     setTradingLimit,
     updateMarketTimes,
     createAnnouncement,
-    getStudents,
     getTeams,
-    getMarketStatus,
     getTradingHours,
     resetAllData,
     forceSettlement,
@@ -177,16 +175,30 @@ export default function AdminPage() {
                 setIsLoggedIn(true);
 
                 if (isMounted) {
-                    // 確保按順序執行，避免並行執行造成的問題
-                    await fetchSystemStats(token);
-                    await fetchStudents(token);
-                    await fetchTeams(token);
-                    await fetchUserAssets(token);
-                    await fetchMarketStatus(token);
-                    await fetchTradingHours();
-                    await fetchIpoStatus(token);
-                    await fetchIpoDefaults(token);
-                    await fetchTeamNumber(token);
+                    // 並行執行不相依的 API 調用，避免重複調用
+                    await Promise.all([
+                        fetchSystemStats(token),
+                        fetchTradingHours(),
+                        fetchIpoStatus(token),
+                        fetchIpoDefaults(token),
+                        fetchMarketStatus(token)
+                    ]);
+
+                    // 獲取使用者資料（包含學生列表）
+                    const userData = await getUserAssets(token);
+                    if (isMounted && Array.isArray(userData)) {
+                        setStudents(userData);
+                        setUserAssets(userData);
+                        setStudentsLoading(false);
+                        setUserAssetsLoading(false);
+                    }
+
+                    // 獲取團隊資料
+                    const teamData = await getTeams(token);
+                    if (isMounted && Array.isArray(teamData)) {
+                        setTeams(teamData);
+                        setTeamNumber(teamData.length);
+                    }
                 }
             } catch (error) {
                 if (error.status === 401) {
@@ -223,6 +235,11 @@ export default function AdminPage() {
             setUserAssetsLoading(true);
             const data = await getUserAssets(token, searchUser);
             setUserAssets(data);
+            // 如果沒有搜尋條件，同時更新學生列表
+            if (!searchUser && Array.isArray(data)) {
+                setStudents(data);
+                setStudentsLoading(false);
+            }
         } catch (error) {
             handleApiError(error, '獲取使用者資產');
         } finally {
@@ -240,15 +257,22 @@ export default function AdminPage() {
         }
     };
 
-    // 撈學員列表 - 使用 /api/admin/user 獲取完整使用者資料
+    // 撈學員列表 - 移除重複調用，改為使用已有的資料
     const fetchStudents = async (token) => {
         try {
             setStudentsLoading(true);
-            const data = await getUserAssets(token); // 使用 getUserAssets 而不是 getStudents
-            console.log('學生資料:', data); // 調試用
-            // 確保資料格式正確
+            // 檢查是否已經有資料，避免重複調用
+            if (students.length > 0) {
+                setStudentsLoading(false);
+                return;
+            }
+
+            const data = await getUserAssets(token);
+            console.log('學生資料:', data);
             if (Array.isArray(data)) {
                 setStudents(data);
+                // 同時更新使用者資產，避免重複調用
+                setUserAssets(data);
             } else {
                 console.error('學生資料格式錯誤:', data);
                 setStudents([]);
@@ -259,35 +283,6 @@ export default function AdminPage() {
             handleApiError(error, '獲取學生列表');
         } finally {
             setStudentsLoading(false);
-        }
-    };
-
-    // 撈隊伍列表，並計算出隊伍數量
-    const fetchTeamNumber = async (token) => {
-        try {
-            const data = await getTeams(token);
-            setTeamNumber(data.length);
-        } catch (error) {
-            handleApiError(error, '獲取隊伍列表');
-        }
-    };
-
-    // 撈小隊列表
-    const fetchTeams = async (token) => {
-        try {
-            const data = await getTeams(token);
-            console.log('團隊資料:', data); // 調試用
-            // 確保資料格式正確
-            if (Array.isArray(data)) {
-                setTeams(data);
-            } else {
-                console.error('團隊資料格式錯誤:', data);
-                setTeams([]);
-            }
-        } catch (error) {
-            console.error('獲取團隊列表錯誤:', error);
-            setTeams([]);
-            handleApiError(error, '獲取團隊列表');
         }
     };
 
@@ -2006,7 +2001,8 @@ export default function AdminPage() {
                                             </div>
                                         ) : (
                                             <p className="text-gray-400 text-sm">無買單</p>
-                                        )}
+                                        )
+                                        }
                                     </div>
 
                                     {/* 賣單列表 */}
