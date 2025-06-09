@@ -16,7 +16,7 @@ export default function Login() {
             if (isAdmin === 'true' && token) {
                 // 看 token 有沒有效
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://camp.sitcon.party'}/api/admin/stats`, {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/admin/stats`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',

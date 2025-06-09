@@ -1,5 +1,5 @@
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://camp.sitcon.party';
-const API_BASE_URL = 'https://camp.sitcon.party';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// const API_BASE_URL = 'https://camp.sitcon.party';
 
 // API 請求通用函數
 async function apiRequest(endpoint, options = {}) {
