@@ -433,7 +433,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
     total_pages = max(1, (total_orders + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE)
     page = max(1, min(page, total_pages))
     
-    # 獲取當前頁的訂單
+    # 獲取目前頁的訂單
     start_idx = (page - 1) * ORDERS_PER_PAGE
     end_idx = start_idx + ORDERS_PER_PAGE
     current_page_orders = all_orders[start_idx:end_idx]

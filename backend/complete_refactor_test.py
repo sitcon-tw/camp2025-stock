@@ -6,7 +6,7 @@ import sys
 import os
 from unittest.mock import AsyncMock, MagicMock
 
-# 添加當前路徑
+# 添加目前路徑
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 class MockDatabase:

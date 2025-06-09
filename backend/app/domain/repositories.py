@@ -134,5 +134,5 @@ class MarketConfigRepository(ABC):
     
     @abstractmethod
     async def get_market_price(self) -> Optional[float]:
-        """獲取當前市場價格"""
+        """獲取目前市場價格"""
         pass

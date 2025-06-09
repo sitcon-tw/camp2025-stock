@@ -37,7 +37,7 @@ class MarketOrderStrategy(OrderExecutionStrategy):
         return order.order_type == "market" and order.status == "pending"
     
     async def calculate_execution_price(self, order: StockOrder, market_data: dict) -> Decimal:
-        """使用當前市場價格執行"""
+        """使用目前市場價格執行"""
         current_price = market_data.get("current_price")
         if not current_price:
             raise ValueError("market_price_not_available")

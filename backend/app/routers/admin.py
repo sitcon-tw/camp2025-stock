@@ -343,7 +343,7 @@ async def final_settlement(
         500: {"model": ErrorResponse, "description": "系統錯誤"}
     },
     summary="查詢IPO狀態",
-    description="查詢當前IPO狀態資訊"
+    description="查詢目前IPO狀態資訊"
 )
 async def get_ipo_status(
     current_admin=Depends(get_current_admin)
@@ -706,7 +706,7 @@ async def reset_all_data(
             "updated_at": datetime.now(timezone.utc)
         })
         
-        # 重置當前價格為 IPO 初始價格
+        # 重置目前價格為 IPO 初始價格
         await db[Collections.MARKET_CONFIG].insert_one({
             "type": "current_price",
             "price": initial_price,
@@ -1043,7 +1043,7 @@ async def close_market(
         500: {"model": ErrorResponse, "description": "系統錯誤"}
     },
     summary="查詢市場狀態",
-    description="查詢當前市場開閉狀態"
+    description="查詢目前市場開閉狀態"
 )
 async def get_market_status(
     current_admin=Depends(get_current_admin),
@@ -1218,7 +1218,7 @@ async def cleanup_pvp_challenges(
         500: {"model": ErrorResponse, "description": "系統錯誤"}
     },
     summary="查詢轉點數手續費設定",
-    description="查詢當前轉點數的手續費率和最低手續費設定"
+    description="查詢目前轉點數的手續費率和最低手續費設定"
 )
 async def get_transfer_fee_config(
     current_admin=Depends(get_current_admin)

@@ -187,7 +187,7 @@ class PVPManager:
             logger.info(f"🔄 PVP 挑戰 {challenge_id} 狀態更新為: {status}")
     
     def get_user_challenge(self, user_id: str) -> Optional[str]:
-        """獲取用戶當前的挑戰 ID"""
+        """獲取用戶目前的挑戰 ID"""
         return self.user_challenges.get(user_id)
 
 # 全域 PVP 管理器實例

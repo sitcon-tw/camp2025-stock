@@ -383,7 +383,7 @@ class MongoMarketConfigRepository(MarketConfigRepository):
             raise
     
     async def get_market_price(self) -> Optional[float]:
-        """獲取當前市場價格"""
+        """獲取目前市場價格"""
         try:
             config = await self.collection.find_one({"type": "market_price"})
             return config.get("price") if config else None

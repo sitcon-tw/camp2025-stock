@@ -283,7 +283,7 @@ async def handle_orders_pagination(update: Update, context: ContextTypes.DEFAULT
         user_id = str(query.from_user.id)
         
         if callback_data == "orders_refresh":
-            # 重新整理當前頁面 - 預設第1頁
+            # 重新整理目前頁面 - 預設第1頁
             await show_orders_page(query, user_id, 1, edit_message=True)
         elif callback_data.startswith("orders_page_"):
             # 切換到指定頁面

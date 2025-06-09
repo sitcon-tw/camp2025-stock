@@ -998,7 +998,7 @@ class UserService:
             )
             
             if update_result.modified_count == 0:
-                # 扣除失敗，檢查使用者當前餘額
+                # 扣除失敗，檢查使用者目前餘額
                 user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
                 current_balance = user.get("points", 0) if user else 0
                 

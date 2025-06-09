@@ -167,7 +167,7 @@ class TradingApplicationService(BaseApplicationService):
             stock = await self.stock_repo.get_by_user_id(user_id)
             
             if stock:
-                # 假設當前市價為平均成本（實際應該從市場價格服務獲取）
+                # 假設目前市價為平均成本（實際應該從市場價格服務獲取）
                 current_price = float(stock.avg_cost)
                 stock_value = int(stock.quantity * current_price)
                 total_value = user.points + stock_value
