@@ -1652,7 +1652,7 @@ class UserService:
                 sell_price = sell_order.get("price", float('inf'))
                 
                 if buy_price >= sell_price:
-                    # 價格匹配，進行交易
+                    # 價格符合，進行交易
                     is_system_sale = sell_order.get("is_system_order", False)
                     logger.info(f"Matching orders: Buy {buy_order.get('quantity')} @ {buy_price} vs Sell {sell_order.get('quantity')} @ {sell_price} {'(SYSTEM IPO)' if is_system_sale else ''}")
                     

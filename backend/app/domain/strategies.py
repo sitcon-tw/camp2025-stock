@@ -209,7 +209,7 @@ class FIFOMatchingStrategy(OrderMatchingStrategy):
             buy_order = buy_orders[i]
             sell_order = sell_orders[j]
             
-            # 檢查價格是否匹配
+            # 檢查價格是否符合
             if buy_order.price and sell_order.price and buy_order.price >= sell_order.price:
                 # 計算撮合數量（取較小值）
                 match_quantity = min(buy_order.quantity, sell_order.quantity)

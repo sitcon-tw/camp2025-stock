@@ -42,7 +42,7 @@ class UserDomainService:
             logger.warning(f"Authentication failed for user: {username}")
             return None
         
-        # 如果提供了 telegram_id，需要驗證匹配
+        # 如果提供了 telegram_id，需要驗證符合
         if telegram_id and user.telegram_id != telegram_id:
             logger.warning(f"Telegram ID mismatch for user: {username}")
             return None
