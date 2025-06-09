@@ -11,9 +11,9 @@ export default function Navbar() {
     };
     return (
         <div
-            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] gap-8
-                        bg-[#0f203e] py-4 px-8 flex items-center border-2 border-[#4f6f97] 
-                         z-40 rounded-full shadow-lg overflow-scroll"
+            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] gap-12
+                        bg-[#0f203e] py-4 px-10 flex items-center border-2 border-[#4f6f97] 
+                         z-40 rounded-full shadow-lg"
         >
             {" "}
             <Link href="/" className={getIconColor("/")}>
