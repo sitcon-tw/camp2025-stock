@@ -117,14 +117,14 @@ export default function Status() {
 				</div>
 
 				{/* 右半邊：五檔報價 + 交易紀錄 (桌面版專用) */}
-				<div className="hidden lg:block w-full lg:w-2/5 xl:w-1/3">
+				<div className="hidden lg:flex lg:flex-col w-full lg:w-2/5 xl:w-1/3">
 					{/* 五檔報價 */}
-					<div className="mt-3 mb-4">
+					<div className="mt-3 mb-4 flex-shrink-0">
 						<TradingTabs activeTab="orderbook" currentPrice={currentPrice} />
 					</div>
 
 					{/* 交易紀錄 */}
-					<div>
+					<div className="flex-1 min-h-0">
 						<TradingTabs activeTab="history" currentPrice={currentPrice} />
 					</div>
 				</div>

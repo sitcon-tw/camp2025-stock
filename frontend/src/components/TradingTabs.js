@@ -197,7 +197,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
     const isFixedMode = propActiveTab !== undefined;
 
     return (
-        <div className={`flex flex-col ${isFixedMode ? 'h-[220px]' : 'h-[310px]'}`}>
+        <div className={`flex flex-col ${isFixedMode ? (activeTab === 'orderbook' ? 'h-[250px]' : 'h-full') : 'h-[310px]'}`}>
             {/* 標籤頁 - 只在非固定模式顯示 */}
             {!isFixedMode && (
                 <div className="flex relative z-10">
@@ -232,7 +232,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
             )}
 
             {/* 內容區 */}
-            <div className={`bg-[#1a325f] p-2 flex-1 overflow-y-auto ${isFixedMode ? 'rounded-b-2xl rounded-t-none' : 'rounded-b-2xl rounded-tr-none'}`}>
+            <div className={`bg-[#1a325f] p-2 flex-1 ${isFixedMode && activeTab === 'orderbook' ? 'overflow-hidden' : 'overflow-y-auto'} ${isFixedMode ? 'rounded-b-2xl rounded-t-none' : 'rounded-b-2xl rounded-tr-none'}`}>
                 {activeTab === 'orderbook' ? <OrderBookTab /> : <TradeHistoryTab />}
             </div>
         </div>
