@@ -29,7 +29,7 @@ class PVPManager:
             
             # 計算剩餘時間
             elapsed = datetime.now() - existing_challenge['created_at']
-            remaining = timedelta(minutes=3) - elapsed
+            remaining = timedelta(hours=3) - elapsed
             
             if remaining.total_seconds() > 0:
                 # 有衝突，返回衝突資訊
@@ -63,11 +63,11 @@ class PVPManager:
             self.active_challenges[challenge_id] = challenge_info
             self.user_challenges[user_id] = challenge_id
             
-            # 啟動 3 分鐘倒數計時
+            # 啟動 3 小時倒數計時
             timeout_task = asyncio.create_task(self._timeout_challenge(challenge_id))
             self.timeout_tasks[challenge_id] = timeout_task
             
-            logger.info(f"⏰ PVP 挑戰 {challenge_id} 已建立，將在 3 分鐘後超時")
+            logger.info(f"⏰ PVP 挑戰 {challenge_id} 已建立，將在 3 小時後超時")
             
             return {
                 "conflict": False,
@@ -84,9 +84,12 @@ class PVPManager:
     async def cancel_existing_challenge(self, user_id: str) -> bool:
         """取消用戶現有的挑戰"""
         existing_challenge_id = self.user_challenges.get(user_id)
-        if existing_challenge_id:
+        if existing_challenge_id and existing_challenge_id in self.active_challenges:
+            # 記錄取消前的狀態
+            challenge_existed = True
             await self._cancel_challenge(existing_challenge_id, "用戶主動取消")
-            return True
+            # 檢查是否真的被清理了
+            return existing_challenge_id not in self.active_challenges
         return False
     
     async def _timeout_challenge(self, challenge_id: str):
@@ -116,6 +119,8 @@ class PVPManager:
         chat_id = challenge_info["chat_id"]
         amount = challenge_info["amount"]
         
+        api_cancel_success = False
+        
         try:
             # 嘗試調用後端 API 取消挑戰
             try:
@@ -124,34 +129,40 @@ class PVPManager:
                     "user_id": user_id
                 })
                 
-                if not cancel_response.get("success"):
+                if cancel_response.get("success"):
+                    api_cancel_success = True
+                    logger.info(f"✅ 後端成功取消 PVP 挑戰 {challenge_id}")
+                else:
                     logger.warning(f"⚠️ 後端取消 PVP 挑戰失敗: {cancel_response.get('message', 'Unknown error')}")
                     
             except Exception as api_error:
                 logger.warning(f"⚠️ 無法調用後端取消 API: {api_error}")
             
-            # 發送取消訊息到群組
-            cancel_message = (
-                f"⏰ **PVP 挑戰已取消**\n\n"
-                f"**發起者**: {escape_markdown(username, 2)}\n"
-                f"**金額**: {amount} 點\n"
-                f"**原因**: {escape_markdown(reason, 2)}"
-            )
-            
-            await self.bot.send_message(
-                chat_id=chat_id,
-                text=cancel_message,
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
-            
-            logger.info(f"🚫 PVP 挑戰 {challenge_id} 已取消: {reason}")
+            # 只有在後端成功取消或者是超時取消的情況下才發送訊息和清理資源
+            if api_cancel_success or reason == "超時自動取消":
+                # 發送取消訊息到群組
+                cancel_message = (
+                    f"⏰ **PVP 挑戰已取消**\n\n"
+                    f"**發起者**: {escape_markdown(username, 2)}\n"
+                    f"**金額**: {amount} 點\n"
+                    f"**原因**: {escape_markdown(reason, 2)}"
+                )
+                
+                await self.bot.send_message(
+                    chat_id=chat_id,
+                    text=cancel_message,
+                    parse_mode=ParseMode.MARKDOWN_V2
+                )
+                
+                logger.info(f"🚫 PVP 挑戰 {challenge_id} 已取消: {reason}")
+                
+                # 清理資源
+                self._cleanup_challenge(challenge_id)
+            else:
+                logger.error(f"❌ 無法取消 PVP 挑戰 {challenge_id}，後端取消失敗")
             
         except Exception as e:
             logger.error(f"❌ 取消 PVP 挑戰 {challenge_id} 時出錯: {e}")
-        
-        finally:
-            # 清理資源
-            self._cleanup_challenge(challenge_id)
     
     def _cleanup_challenge(self, challenge_id: str):
         """清理挑戰相關資源"""

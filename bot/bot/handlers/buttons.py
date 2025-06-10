@@ -179,7 +179,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                         message_text = (
                             f"🔄 **已取消舊挑戰，建立新挑戰！**\n\n"
                             f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
-                            f"⏰ 挑戰將在 3 分鐘後自動取消\n\n"
+                            f"⏰ 挑戰將在 3 小時後自動取消\n\n"
                             f"請先選擇你的猜拳："
                         )
                         
@@ -240,7 +240,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     # 發起人已選擇，等待其他人接受
                     # 計算剩餘時間
                     elapsed = datetime.now() - challenge_info['created_at']
-                    remaining = timedelta(minutes=3) - elapsed
+                    remaining = timedelta(hours=3) - elapsed
                     
                     if remaining.total_seconds() > 0:
                         minutes = int(remaining.total_seconds()) // 60

@@ -259,7 +259,7 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             # 發起人先選擇猜拳
             message_text = (
                 f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
-                f"⏰ 挑戰將在 3 分鐘後自動取消\n\n"
+                f"⏰ 挑戰將在 3 小時後自動取消\n\n"
                 f"請先選擇你的猜拳："
             )
             
