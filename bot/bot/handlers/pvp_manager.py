@@ -92,8 +92,8 @@ class PVPManager:
     async def _timeout_challenge(self, challenge_id: str):
         """3 分鐘倒數計時，時間到自動取消挑戰"""
         try:
-            # 等待 3 分鐘
-            await asyncio.sleep(180)  # 3 minutes = 180 seconds
+            # 等待 3 小時
+            await asyncio.sleep(10800)  # 3 hours = 10800 seconds
             
             # 檢查挑戰是否仍然存在
             if challenge_id in self.active_challenges:
