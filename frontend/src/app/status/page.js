@@ -88,14 +88,17 @@ export default function Status() {
 							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
 								<h5 className="text-xs lg:text-sm xl:text-base text-white">開盤價</h5>
 								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{Math.round(stockData.open)}</p>
+								<p className="text-xs lg:text-sm xl:text-base text-white">點</p>
 							</div>
 							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
 								<h5 className="text-xs lg:text-sm xl:text-base text-white">今日最低</h5>
 								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{Math.round(stockData.low)}</p>
+								<p className="text-xs lg:text-sm xl:text-base text-white">點</p>
 							</div>
 							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
 								<h5 className="text-xs lg:text-sm xl:text-base text-white">今日最高</h5>
 								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{Math.round(stockData.high)}</p>
+								<p className="text-xs lg:text-sm xl:text-base text-white">點</p>
 							</div>
 							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
 								<h5 className="text-xs lg:text-sm xl:text-base text-white">今日成交量</h5>
