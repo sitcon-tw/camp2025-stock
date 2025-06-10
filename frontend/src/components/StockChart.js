@@ -395,8 +395,8 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     };
 
     return (
-        <div className="relative w-full bg-[#0f203e] rounded-lg">
-            <div className="flex justify-end mb-2 w-full">
+        <div className="relative w-full h-full bg-[#0f203e] rounded-lg flex flex-col">
+            <div className="flex justify-end mb-2 w-full flex-shrink-0">
                 <button
                     onClick={() => setModalOpen(true)}
                     className="px-3 py-1 bg-[#1A325F] text-[#AFE1F5] rounded-2xl text-xs font-medium hover:bg-[#2A4F7F] transition-colors ml-auto"
@@ -405,7 +405,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 </button>
             </div>
             <div className="w-full h-full flex flex-col justify-center items-center rounded-lg overflow-hidden">
-                <div className="h-48 md:h-52 mb-2 w-full">
+                <div className="flex-1 mb-2 w-full min-h-[200px]">
                     {displayMode === 'candlestick' ? (
                         <div
                             className="h-full cursor-move select-none"
@@ -444,7 +444,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         </div>
                     )}
                 </div>
-                <div className="flex flex-col space-y-2 pb-2">
+                <div className="flex flex-col space-y-2 pb-2 flex-shrink-0">
                     <div className="flex justify-center items-center space-x-2">
                         <span className="text-[#82bee2] text-xs">縮放：</span>
                         <button

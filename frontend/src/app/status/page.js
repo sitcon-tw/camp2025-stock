@@ -73,9 +73,9 @@ export default function Status() {
 			{/* 響應式布局：手機版垂直，桌面版左右分欄 */}
 			<div className="flex flex-col lg:flex-row lg:gap-8 xl:gap-12 lg:h-[calc(100vh-12rem)]">
 				{/* 左半邊：圖表 + 價格資訊 */}
-				<div className="w-full lg:w-3/5 xl:w-2/3">
+				<div className="w-full lg:w-3/5 xl:w-2/3 flex flex-col">
 					{/* 股市趨勢圖 */}
-					<div className="mt-3 mb-2 w-full">
+					<div className="mt-3 mb-2 w-full flex-1 min-h-0">
 						<StockChart
 							currentPrice={currentPrice}
 							changePercent={changePercent}
@@ -83,7 +83,7 @@ export default function Status() {
 					</div>
 
 					{/* 價格資訊 */}
-					<div className="mb-4">
+					<div className="mb-4 flex-shrink-0">
 						<div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 lg:gap-4 xl:gap-6 text-center">
 							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
 								<h5 className="text-xs lg:text-sm xl:text-base text-white">開盤價</h5>
