@@ -11,7 +11,7 @@ export default function Navbar() {
     };
     return (
         <div
-            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] gap-12
+            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] w-full justify-between
                         bg-[#0f203e]/20 backdrop-blur-md py-4 px-10 flex items-center border-2 border-[#4f6f97]/20 
                          z-40 rounded-full shadow-lg shadow-black/40"
         >
