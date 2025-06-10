@@ -71,7 +71,7 @@ export default function Status() {
 			)}
 
 			{/* 響應式布局：手機版垂直，桌面版左右分欄 */}
-			<div className="flex flex-col lg:flex-row lg:gap-8 xl:gap-12">
+			<div className="flex flex-col lg:flex-row lg:gap-8 xl:gap-12 lg:h-[calc(100vh-12rem)]">
 				{/* 左半邊：圖表 + 價格資訊 */}
 				<div className="w-full lg:w-3/5 xl:w-2/3">
 					{/* 股市趨勢圖 */}
@@ -124,7 +124,7 @@ export default function Status() {
 					</div>
 
 					{/* 交易紀錄 */}
-					<div className="flex-1 min-h-0">
+					<div className="flex-1 min-h-0 flex flex-col">
 						<TradingTabs activeTab="history" currentPrice={currentPrice} />
 					</div>
 				</div>

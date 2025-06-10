@@ -141,7 +141,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
         };
 
         return (
-            <div className="space-y-1">
+            <div className={`space-y-1 ${isFixedMode ? 'h-full flex flex-col' : ''}`}>
                 {loading && (
                     <div className="text-center text-[#82bee2] py-8">載入中...</div>
                 )}
@@ -153,7 +153,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                 {!loading && (
                     <>
                         {/* 表頭 */}
-                        <div className="grid grid-cols-5 gap-1 text-md text-white pb-1 border-b border-[#469FD2]">
+                        <div className="grid grid-cols-5 gap-1 text-md text-white pb-1 border-b border-[#469FD2] flex-shrink-0">
                             <div className="text-center col-span-2">時間</div>
                             <div className="text-center">價格</div>
                             <div className="text-center">數量</div>
@@ -161,7 +161,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                         </div>
 
                         {/* 交易記錄 */}
-                        <div className="space-y-0">
+                        <div className={`space-y-0 ${isFixedMode ? 'flex-1 overflow-y-auto' : ''}`}>
                             {tradeHistory.map((trade, index) => {
                                 const change = calculateChange(trade.price, index);
                                 return (
@@ -197,7 +197,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
     const isFixedMode = propActiveTab !== undefined;
 
     return (
-        <div className={`flex flex-col ${isFixedMode ? (activeTab === 'orderbook' ? 'h-[250px]' : 'h-full') : 'h-[310px]'}`}>
+        <div className={`flex flex-col ${isFixedMode ? (activeTab === 'orderbook' ? 'h-[250px]' : 'h-full flex-1') : 'h-[310px]'}`}>
             {/* 標籤頁 - 只在非固定模式顯示 */}
             {!isFixedMode && (
                 <div className="flex relative z-10">
