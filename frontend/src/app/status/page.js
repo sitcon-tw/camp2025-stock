@@ -59,8 +59,8 @@ export default function Status() {
 	const currentPrice = stockData.lastPrice;
 	const changePercent = parseFloat(stockData.changePercent) || 0;
 
-	return (<div className="bg-[#0f203e] min-h-screen pb-28">
-		<div className="flex flex-col px-8">
+	return (<div className="bg-[#0f203e] min-h-screen pb-28 w-full">
+		<div className="flex flex-col px-4 lg:px-8 w-full max-w-none">
 			<HeaderBar />
 
 			{/* 錯誤狀態 */}
@@ -70,49 +70,68 @@ export default function Status() {
 				</div>
 			)}
 
-			{/* 股市趨勢圖 */}
-			<div className="mt-3 mb-2 w-full">
-				<StockChart
-					currentPrice={currentPrice}
-					changePercent={changePercent}
-				/>
-			</div>
+			{/* 響應式布局：手機版垂直，桌面版左右分欄 */}
+			<div className="flex flex-col lg:flex-row lg:gap-8 xl:gap-12">
+				{/* 左半邊：圖表 + 價格資訊 */}
+				<div className="w-full lg:w-3/5 xl:w-2/3">
+					{/* 股市趨勢圖 */}
+					<div className="mt-3 mb-2 w-full">
+						<StockChart
+							currentPrice={currentPrice}
+							changePercent={changePercent}
+						/>
+					</div>
 
-			{/* 價格資訊 */}
-			<div>
-				<div className="grid grid-cols-3 gap-4 text-center">
-					<div className="bg-[#1A325F] p-2 rounded-lg">
-						<h5 className="text-sm text-white">開盤價</h5>
-						<p className="text-2xl font-bold">{Math.round(stockData.open)}</p>
+					{/* 價格資訊 */}
+					<div className="mb-4">
+						<div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 lg:gap-4 xl:gap-6 text-center">
+							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
+								<h5 className="text-xs lg:text-sm xl:text-base text-white">開盤價</h5>
+								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{Math.round(stockData.open)}</p>
+							</div>
+							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
+								<h5 className="text-xs lg:text-sm xl:text-base text-white">今日最低</h5>
+								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{Math.round(stockData.low)}</p>
+							</div>
+							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
+								<h5 className="text-xs lg:text-sm xl:text-base text-white">今日最高</h5>
+								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{Math.round(stockData.high)}</p>
+							</div>
+							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
+								<h5 className="text-xs lg:text-sm xl:text-base text-white">今日成交量</h5>
+								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{tradingStats.total_volume.toLocaleString()}</p>
+								<p className="text-xs lg:text-sm xl:text-base text-white">股</p>
+							</div>
+							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
+								<h5 className="text-xs lg:text-sm xl:text-base text-white">成交額</h5>
+								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{tradingStats.total_amount.toLocaleString()}</p>
+								<p className="text-xs lg:text-sm xl:text-base text-white">點</p>
+							</div>
+							<div className="bg-[#1A325F] p-3 xl:p-4 rounded-lg">
+								<h5 className="text-xs lg:text-sm xl:text-base text-white">成交筆數</h5>
+								<p className="text-lg lg:text-2xl xl:text-3xl font-bold">{tradingStats.total_trades.toLocaleString()}</p>
+								<p className="text-xs lg:text-sm xl:text-base text-white">筆</p>
+							</div>
+						</div>
 					</div>
-					<div className="bg-[#1A325F] p-2 rounded-lg">
-						<h5 className="text-sm text-white">今日最低</h5>
-						<p className="text-2xl font-bold">{Math.round(stockData.low)}</p>
+				</div>
+
+				{/* 右半邊：五檔報價 + 交易紀錄 (桌面版專用) */}
+				<div className="hidden lg:block w-full lg:w-2/5 xl:w-1/3">
+					{/* 五檔報價 */}
+					<div className="mt-3 mb-4">
+						<TradingTabs activeTab="orderbook" currentPrice={currentPrice} />
 					</div>
-					<div className="bg-[#1A325F] p-2 rounded-lg">
-						<h5 className="text-sm text-white">今日最高</h5>
-						<p className="text-2xl font-bold">{Math.round(stockData.high)}</p>
-					</div>
-					<div className="bg-[#1A325F] p-2 rounded-lg">
-						<h5 className="text-sm text-white">今日成交量</h5>
-						<p className="text-2xl font-bold">{tradingStats.total_volume.toLocaleString()}</p>
-						<p className="text-sm text-white">股</p>
-					</div>
-					<div className="bg-[#1A325F] p-2 rounded-lg">
-						<h5 className="text-sm text-white">成交額</h5>
-						<p className="text-2xl font-bold">{tradingStats.total_amount.toLocaleString()}</p>
-						<p className="text-sm text-white">點</p>
-					</div>
-					<div className="bg-[#1A325F] p-2 rounded-lg">
-						<h5 className="text-sm text-white">成交筆數</h5>
-						<p className="text-2xl font-bold">{tradingStats.total_trades.toLocaleString()}</p>
-						<p className="text-sm text-white">筆</p>
+
+					{/* 交易紀錄 */}
+					<div>
+						<TradingTabs activeTab="history" currentPrice={currentPrice} />
 					</div>
 				</div>
 			</div>
 
-			{/* 五檔股價 和 交易紀錄 的 TAB */}
-			<div className="mt-3">
+			{/* 手機版的切換式 TAB */}
+			<div className="lg:hidden mt-3">
 				<TradingTabs currentPrice={currentPrice} />
 			</div>
 		</div>

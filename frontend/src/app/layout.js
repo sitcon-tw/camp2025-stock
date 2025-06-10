@@ -64,7 +64,7 @@ export default function RootLayout({ children }) {
             </head>
             <body className={`${geistSans.variable} ${geistMono.variable} bg-[#0f203e] min-h-screen`}>
                 <DataCacheProvider>
-                    <div className="bg-[#0f203e] max-w-[650px] mx-auto">
+                    <div className="bg-[#0f203e] w-full">
                         {children}
                     </div>
                     <Navbar />

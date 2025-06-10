@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 
-const TradingTabs = () => {
-    const [activeTab, setActiveTab] = useState('orderbook');
+const TradingTabs = ({ activeTab: propActiveTab }) => {
+    const [activeTab, setActiveTab] = useState(propActiveTab || 'orderbook');
     const [orderbookData, setOrderbookData] = useState({
         sells: [],
         buys: []
@@ -193,32 +193,46 @@ const TradingTabs = () => {
         );
     };
 
+    // 判斷是否為固定模式（桌面版使用）
+    const isFixedMode = propActiveTab !== undefined;
+
     return (
-        <div className="h-[310px] flex flex-col">
-            {/* 標籤頁 */}
-            <div className="flex relative z-10">
-                <button
-                    onClick={() => setActiveTab('orderbook')}
-                    className={`w-1/2 px-6 py-2 text-[#AFE1F5] text-sm font-medium relative rounded-t-2xl ${activeTab === 'orderbook'
-                        ? 'bg-[#1a325f]'
-                        : 'bg-[#14274b]'
-                        }`}
-                >
-                    五檔報價
-                </button>
-                <button
-                    onClick={() => setActiveTab('history')}
-                    className={`w-1/2 px-6 py-2 text-[#AFE1F5] text-sm font-medium relative rounded-t-2xl ${activeTab === 'history'
-                        ? 'bg-[#1a325f]'
-                        : 'bg-[#14274b]'
-                        }`}
-                >
-                    交易紀錄
-                </button>
-            </div>
+        <div className={`flex flex-col ${isFixedMode ? 'h-[220px]' : 'h-[310px]'}`}>
+            {/* 標籤頁 - 只在非固定模式顯示 */}
+            {!isFixedMode && (
+                <div className="flex relative z-10">
+                    <button
+                        onClick={() => setActiveTab('orderbook')}
+                        className={`w-1/2 px-6 py-2 text-[#AFE1F5] text-sm font-medium relative rounded-t-2xl ${activeTab === 'orderbook'
+                            ? 'bg-[#1a325f]'
+                            : 'bg-[#14274b]'
+                            }`}
+                    >
+                        五檔報價
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`w-1/2 px-6 py-2 text-[#AFE1F5] text-sm font-medium relative rounded-t-2xl ${activeTab === 'history'
+                            ? 'bg-[#1a325f]'
+                            : 'bg-[#14274b]'
+                            }`}
+                    >
+                        交易紀錄
+                    </button>
+                </div>
+            )}
+
+            {/* 固定模式的標題 */}
+            {isFixedMode && (
+                <div className="flex relative z-10">
+                    <div className="w-full px-6 py-2 text-[#AFE1F5] text-sm font-medium relative rounded-t-2xl bg-[#1a325f]">
+                        {activeTab === 'orderbook' ? '五檔報價' : '交易紀錄'}
+                    </div>
+                </div>
+            )}
 
             {/* 內容區 */}
-            <div className="bg-[#1a325f] p-2 rounded-b-2xl rounded-tr-none flex-1 overflow-y-auto">
+            <div className={`bg-[#1a325f] p-2 flex-1 overflow-y-auto ${isFixedMode ? 'rounded-b-2xl rounded-t-none' : 'rounded-b-2xl rounded-tr-none'}`}>
                 {activeTab === 'orderbook' ? <OrderBookTab /> : <TradeHistoryTab />}
             </div>
         </div>
