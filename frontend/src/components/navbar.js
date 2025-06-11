@@ -11,9 +11,15 @@ export default function Navbar() {
     };
     return (
         <div
-            className="fixed bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] w-full justify-between
-                        bg-[#0f203e]/20 backdrop-blur-md py-4 px-10 flex items-center border-2 border-[#4f6f97]/20 
-                         z-40 rounded-full shadow-lg shadow-black/40"
+            className="fixed 
+                       /* Mobile: bottom navbar */
+                       bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] w-full justify-between
+                       py-4 px-10 flex items-center rounded-full
+                       /* Desktop: left sidebar */
+                       md:left-4 md:top-1/2 md:-translate-y-1/2 md:translate-x-0 md:w-auto md:max-w-none
+                       md:flex-col md:py-6 md:px-4 md:h-auto md:space-y-6
+                       bg-[#0f203e]/20 backdrop-blur-md border-2 border-[#4f6f97]/20 
+                       z-40 shadow-lg shadow-black/40 md:rounded-full"
         >
             {" "}
             <Link href="/" className={getIconColor("/")}>
