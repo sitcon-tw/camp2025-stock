@@ -187,7 +187,7 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("💰 金額不能超過 10000 點！")
         return
 
-    from bot.handlers.pvp_manager import get_pvp_manager
+    from bot.pvp_manager import get_pvp_manager
 
     try:
         pvp_manager = get_pvp_manager()

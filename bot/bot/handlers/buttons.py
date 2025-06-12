@@ -50,7 +50,7 @@ async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAUL
             if response.get("success"):
                 # 發起人已選擇，更新 PVP 管理器中的狀態
                 try:
-                    from bot.handlers.pvp_manager import get_pvp_manager
+                    from bot.pvp_manager import get_pvp_manager
                     pvp_manager = get_pvp_manager()
                     pvp_manager.update_challenge_status(challenge_id, "waiting_accepter")
                 except Exception as e:
@@ -121,7 +121,7 @@ async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
                 # 通知 PVP 管理器挑戰已完成
                 try:
-                    from bot.handlers.pvp_manager import get_pvp_manager
+                    from bot.pvp_manager import get_pvp_manager
                     pvp_manager = get_pvp_manager()
                     await pvp_manager.complete_challenge(challenge_id)
                 except Exception as e:
@@ -147,7 +147,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.answer()
     
     try:
-        from bot.handlers.pvp_manager import get_pvp_manager
+        from bot.pvp_manager import get_pvp_manager
         
         callback_data = query.data
         user_id = str(query.from_user.id)
