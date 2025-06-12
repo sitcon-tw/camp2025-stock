@@ -27,7 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # 除錯：記錄 API 回應內容
     logger.info(f"📊 Portfolio API 回應內容: {response}")
-    
+
     if await verify_existing_user(response, update):
         return
 
@@ -39,7 +39,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     points = response.get("points") if response.get("points") is not None else 0
     stocks = response.get("stocks") if response.get("stocks") is not None else 0
     total_value = response.get("totalValue") if response.get("totalValue") is not None else 0
-    
+
     await update.message.reply_text(
         f"😺 *早安 {escape_markdown(update.effective_user.full_name, 2)}*\n\n"
         f"🤑┃目前點數 *{escape_markdown(str(points), 2)}*\n"
@@ -56,15 +56,15 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Check if user doesn't exist (either old format or new format)
     detail = portfolio_response.get("detail", "")
     logger.info(f"📊 Portfolio API 回應: {detail}")
-    
+
     user_not_exists = (
-        detail == "noexist" or
-        detail.startswith("使用者不存在") or
-        (detail == "error" and portfolio_response.get("status_code") == 404)
+            detail == "noexist" or
+            detail.startswith("使用者不存在") or
+            (detail == "error" and portfolio_response.get("status_code") == 404)
     )
-    
+
     logger.info(f"👤 使用者狀態檢查: {'使用者不存在' if user_not_exists else '使用者已存在'}")
-    
+
     if not user_not_exists:
         await update.message.reply_text(
             f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*",
@@ -145,7 +145,8 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     lines = []
     for item in response:
-        time = datetime.fromisoformat(item['created_at']).replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M")
+        time = datetime.fromisoformat(item['created_at']).replace(tzinfo=ZoneInfo("UTC")).astimezone(
+            ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M")
 
         line = f"`{escape_markdown(time, 2)}`： *{escape_markdown(item['note'], 2)}* {escape_markdown(str(item['amount']), 2)} 點，餘額 *{escape_markdown(str(item['balance_after']), 2)}* 點".strip()
         lines.append(line)
@@ -158,48 +159,36 @@ async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """PVP 猜拳挑戰"""
-    logger.info(f"🎯 使用者 {update.effective_user.full_name} 發起 PVP 挑戰")
-    
+    logger.info(f"User {update.effective_user.id} started a PVP request")
+
     # 檢查是否在群組中
     if update.message.chat.type == 'private':
-        await update.message.reply_text(
-            "🚫 PVP 挑戰只能在群組中使用！",
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
+        await update.message.reply_text("🚫 PVP 挑戰只能在群組中使用！")
         return
-    
+
     # 檢查是否提供了金額參數
     if not context.args:
         await update.message.reply_text(
-            "🎯 使用方法：`/pvp <金額>`\n例如：`/pvp 100`",
+            f"🎯 使用方法：`/pvp <金額>`\n"
+            f"例如：`/pvp 100`",
             parse_mode=ParseMode.MARKDOWN_V2
         )
         return
 
-    try:
-        amount = int(context.args[0])
-        if amount <= 0:
-            await update.message.reply_text(
-                "💰 金額必須大於 0！",
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
-            return
-        if amount > 10000:
-            await update.message.reply_text(
-                "💰 金額不能超過 10000 點！",
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
-            return
-    except ValueError:
-        await update.message.reply_text(
-            "🔢 請輸入有效的數字！",
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
+    if not context.args[0].isdigit():
+        await update.message.reply_text("🔢 請輸入有效的數字！")
         return
 
-    # 使用 PVP 管理器建立挑戰
+    amount = int(context.args[0])
+    if amount <= 0:
+        await update.message.reply_text("💰 金額必須大於 0！")
+        return
+    if amount > 10000:
+        await update.message.reply_text("💰 金額不能超過 10000 點！")
+        return
+
     from bot.handlers.pvp_manager import get_pvp_manager
-    
+
     try:
         pvp_manager = get_pvp_manager()
         result = await pvp_manager.create_challenge(
@@ -208,16 +197,16 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             amount=amount,
             chat_id=str(update.message.chat.id)
         )
-        
+
         if result.get("conflict"):
             # 有衝突，顯示選擇按鈕
             existing_challenge = result["existing_challenge"]
             remaining_time = result["remaining_time"]
-            
+
             minutes = remaining_time // 60
             seconds = remaining_time % 60
             time_str = f"{minutes}分{seconds}秒" if minutes > 0 else f"{seconds}秒"
-            
+
             conflict_message = (
                 f"⚠️ **你已有進行中的 PVP 挑戰！**\n\n"
                 f"**目前挑戰金額**: {existing_challenge['amount']} 點\n"
@@ -225,29 +214,30 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 f"**新挑戰金額**: {amount} 點\n\n"
                 f"請選擇你要："
             )
-            
-            keyboard = [
-                [
-                    InlineKeyboardButton("🔄 取消舊的，開始新的", 
-                                       callback_data=f"pvp_conflict_new_{amount}_{update.message.chat.id}"),
-                    InlineKeyboardButton("📋 繼續舊的挑戰", 
-                                       callback_data=f"pvp_conflict_continue_{existing_challenge['challenge_id']}")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
+
+            keyboard = [[
+                InlineKeyboardButton(
+                    "🔄 取消舊的，開始新的",
+                    callback_data=f"pvp_conflict_new_{amount}_{update.message.chat.id}"
+                ),
+                InlineKeyboardButton(
+                    "📋 繼續舊的挑戰",
+                    callback_data=f"pvp_conflict_continue_{existing_challenge['challenge_id']}"
+                )
+            ]]
+
             await update.message.reply_text(
                 conflict_message,
                 parse_mode=ParseMode.MARKDOWN_V2,
-                reply_markup=reply_markup
+                reply_markup=InlineKeyboardMarkup(keyboard)
             )
-            
+
         elif result.get("error"):
             # API 錯誤
             response = result["response"]
             if await verify_existing_user(response, update):
                 return
-            
+
             await update.message.reply_text(
                 escape_markdown(response.get("message", "建立挑戰失敗"), 2),
                 parse_mode=ParseMode.MARKDOWN_V2
@@ -255,32 +245,29 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             # 成功建立挑戰
             challenge_id = result["challenge_id"]
-            
+
             # 發起人先選擇猜拳
             message_text = (
                 f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
                 f"⏰ 挑戰將在 3 小時後自動取消\n\n"
                 f"請先選擇你的猜拳："
             )
-            
+
             # 建立發起人選擇的內聯鍵盤
-            keyboard = [
-                [
-                    InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
-                    InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
-                    InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
+            keyboard = [[
+                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
+                InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
+                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
+            ]]
+
             await update.message.reply_text(
                 escape_markdown(message_text, 2),
                 parse_mode=ParseMode.MARKDOWN_V2,
-                reply_markup=reply_markup
+                reply_markup=InlineKeyboardMarkup(keyboard)
             )
-            
+
     except Exception as e:
-        logger.error(f"❌ PVP 挑戰建立失敗: {e}")
+        logger.error(f"Failed to create pvp instance: {e}")
         await update.message.reply_text(
             "😿 建立 PVP 挑戰時發生錯誤，請稍後再試",
             parse_mode=ParseMode.MARKDOWN_V2
@@ -290,19 +277,19 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """查看自己的掛單清單 - 支援分頁顯示"""
     logger.info(f"📋 使用者 {update.effective_user.full_name} 查看訂單清單")
-    
+
     # 獲取頁碼參數，預設為第1頁
     page = 1
     if context.args and context.args[0].isdigit():
         page = max(1, int(context.args[0]))
-    
+
     await show_orders_page(update, str(update.effective_user.id), page)
 
 
 async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_message: bool = False):
     """顯示指定頁面的訂單清單"""
     ORDERS_PER_PAGE = 8  # 每頁顯示的訂單數量
-    
+
     # 調用後端 API 獲取使用者的所有股票訂單
     response = api_helper.post("/api/bot/stock/orders", protected_route=True, json={
         "from_user": user_id,
@@ -313,12 +300,13 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
         # 來自 callback query（CallbackQuery 對象）
         query = update_or_query
         user_name = query.from_user.full_name
+
         # 建立一個模擬的 Update 對象來檢查使用者狀態
         class MockUpdate:
             def __init__(self, query):
                 self.effective_user = query.from_user
                 self.answer = query.answer
-        
+
         mock_update = MockUpdate(query)
         if await verify_existing_user(response, mock_update, is_callback=True):
             return
@@ -331,7 +319,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
 
     if not response:
         message_text = "📋 你目前沒有任何股票訂單記錄"
-        
+
         if edit_message and hasattr(update_or_query, 'edit_message_text'):
             await update_or_query.edit_message_text(
                 message_text,
@@ -353,24 +341,24 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
     # 分別處理進行中和已完成的訂單
     pending_orders = []
     completed_orders = []
-    
+
     for order in response:
         status = order.get('status', 'unknown')
         side_emoji = "🟢" if order.get('side') == 'buy' else "🔴"
         side_text = "買入" if order.get('side') == 'buy' else "賣出"
-        
+
         quantity = order.get('quantity', 0)
         price = order.get('price', 0)
         order_type = order.get('order_type', 'unknown')
         order_type_text = "市價" if order_type == 'market' else "限價"
-        
+
         # 基本訂單資訊
         order_info = f"{side_emoji} {side_text} {quantity} 股"
         if order_type == 'limit' and price:
             order_info += f" @ {price} 元 ({order_type_text})"
         else:
             order_info += f" ({order_type_text})"
-        
+
         # 添加時間資訊
         time_str = ""
         if order.get('created_at'):
@@ -381,11 +369,11 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
                 time_str = f" `{time}`"
             except:
                 pass
-        
+
         if status in ['pending', 'partial', 'pending_limit']:
             # 進行中的訂單
             filled_qty = order.get('filled_quantity', 0)
-            
+
             if status == 'partial':
                 filled_price = order.get('filled_price', price)
                 status_text = f"部分成交 ({filled_qty}/{quantity}@{filled_price}元)"
@@ -399,19 +387,19 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
                 status_text = '等待中(限制)'
             else:
                 status_text = status
-            
+
             pending_orders.append({
                 'text': f"• {escape_markdown(order_info, 2)}{escape_markdown(time_str, 2)}\n  *{escape_markdown(status_text, 2)}*",
                 'created_at': order.get('created_at', '')
             })
-            
+
         elif status in ['filled', 'cancelled']:
             # 已完成的訂單
             status_text = "✅ 已成交" if status == 'filled' else "❌ 已取消"
             filled_price = order.get('filled_price')
             if filled_price and status == 'filled':
                 order_info += f" → {filled_price}元"
-            
+
             completed_orders.append({
                 'text': f"• {escape_markdown(order_info, 2)}{escape_markdown(time_str, 2)}\n  {escape_markdown(status_text, 2)}",
                 'created_at': order.get('created_at', '')
@@ -419,11 +407,11 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
 
     # 合併所有訂單並按時間排序（最新的在前）
     all_orders = []
-    
+
     # 進行中的訂單優先顯示
     for order in sorted(pending_orders, key=lambda x: x['created_at'], reverse=True):
         all_orders.append(('pending', order['text']))
-    
+
     # 然後是已完成的訂單
     for order in sorted(completed_orders, key=lambda x: x['created_at'], reverse=True):
         all_orders.append(('completed', order['text']))
@@ -432,7 +420,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
     total_orders = len(all_orders)
     total_pages = max(1, (total_orders + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE)
     page = max(1, min(page, total_pages))
-    
+
     # 獲取目前頁的訂單
     start_idx = (page - 1) * ORDERS_PER_PAGE
     end_idx = start_idx + ORDERS_PER_PAGE
@@ -444,42 +432,43 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
     else:
         lines = []
         current_section = None
-        
+
         for order_type, order_text in current_page_orders:
             if order_type != current_section:
                 if lines:  # 如果不是第一個區段，添加空行
                     lines.append("")
-                
+
                 if order_type == 'pending':
                     lines.append("*🔄 進行中的訂單：*")
                 else:
                     lines.append("*📈 歷史訂單：*")
                 current_section = order_type
-            
+
             lines.append(order_text)
 
     # 頁面資訊
     page_info = f"第 {page}/{total_pages} 頁 (共 {total_orders} 筆訂單)"
-    message_text = f"📊 *{escape_markdown(user_name)} 的股票訂單*\n\n" + "\n".join(lines) + f"\n\n{escape_markdown(page_info, 2)}"
+    message_text = f"📊 *{escape_markdown(user_name)} 的股票訂單*\n\n" + "\n".join(
+        lines) + f"\n\n{escape_markdown(page_info, 2)}"
 
     # 建立分頁按鈕
     keyboard = []
-    
+
     # 只有在多於一頁時才顯示導航按鈕
     if total_pages > 1:
         nav_buttons = []
-        
+
         if page > 1:
-            nav_buttons.append(InlineKeyboardButton("⬅️ 上一頁", callback_data=f"orders_page_{page-1}"))
-        
+            nav_buttons.append(InlineKeyboardButton("⬅️ 上一頁", callback_data=f"orders_page_{page - 1}"))
+
         nav_buttons.append(InlineKeyboardButton(f"📄 {page}/{total_pages}", callback_data="orders_refresh"))
-        
+
         if page < total_pages:
-            nav_buttons.append(InlineKeyboardButton("➡️ 下一頁", callback_data=f"orders_page_{page+1}"))
-        
+            nav_buttons.append(InlineKeyboardButton("➡️ 下一頁", callback_data=f"orders_page_{page + 1}"))
+
         if nav_buttons:
             keyboard.append(nav_buttons)
-    
+
     # 功能按鈕
     function_buttons = []
     if total_pages > 1:
@@ -488,7 +477,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
         function_buttons.append(InlineKeyboardButton("📋 第一頁", callback_data="orders_page_1"))
     if page != total_pages and total_pages > 1:
         function_buttons.append(InlineKeyboardButton("📑 最後一頁", callback_data=f"orders_page_{total_pages}"))
-    
+
     if function_buttons:
         # 將功能按鈕分成兩行
         if len(function_buttons) > 2:
