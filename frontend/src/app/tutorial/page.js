@@ -27,57 +27,57 @@ export default function TutorialPage() {
                     🧩 基本玩法總覽
                 </h2>
                 <div className="mb-8 overflow-x-auto">
-                    <table className="w-full border-collapse overflow-hidden rounded-xl border border-[#82bee2] bg-[#1a2e4a]">
-                        <thead>
-                            <tr className="bg-[#19325e]">
-                                <th className="border border-[#82bee2] px-4 py-2 text-left text-[#82bee2]">
+                    <table className="w-full overflow-hidden">
+                        <thead className="border-b border-[#82bee2] [&>tr>th]:bg-[#19325e] [&>tr>th:not(:last-child)]:border-r [&>tr>th:not(:last-child)]:border-[#82bee2]">
+                            <tr>
+                                <th className="rounded-tl-xl px-4 py-2 text-left text-[#82bee2]">
                                     項目
                                 </th>
-                                <th className="border border-[#82bee2] px-4 py-2 text-left text-[#82bee2]">
+                                <th className="rounded-tr-xl px-4 py-2 text-left text-[#82bee2]">
                                     說明
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="[&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-[#82bee2] [&>tr>td]:bg-[#1a2e4a] [&>tr>td:not(:last-child)]:border-r [&>tr>td:not(:last-child)]:border-[#82bee2]">
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     交易單位
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     使用「營隊點數」購買或賣出「SITC
                                     股票」
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     操作方式
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     所有買賣都用 Telegram bot
                                     下指令完成
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     資訊查詢
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     用網頁查詢目前價格、交易紀錄等資訊
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     交易時間
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     只在指定時段能交易（如活動時可能會禁止）
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="rounded-bl-xl px-4 py-2 text-white">
                                     點數排行榜
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="rounded-br-xl px-4 py-2 text-white">
                                     以組別或個人為單位，可將股票換算點數
                                 </td>
                             </tr>
@@ -268,55 +268,55 @@ export default function TutorialPage() {
                 </h2>
                 <p className="mb-4 text-white">網頁會顯示：</p>
                 <div className="mb-8 overflow-x-auto">
-                    <table className="w-full border-collapse overflow-hidden rounded-xl border border-[#82bee2] bg-[#1a2e4a]">
-                        <thead>
-                            <tr className="bg-[#19325e]">
-                                <th className="border border-[#82bee2] px-4 py-2 text-left text-[#82bee2]">
+                    <table className="w-full overflow-hidden">
+                        <thead className="border-b border-[#82bee2] [&>tr>th]:bg-[#19325e] [&>tr>th:not(:last-child)]:border-r [&>tr>th:not(:last-child)]:border-[#82bee2]">
+                            <tr>
+                                <th className="rounded-tl-xl px-4 py-2 text-left text-[#82bee2]">
                                     項目
                                 </th>
-                                <th className="border border-[#82bee2] px-4 py-2 text-left text-[#82bee2]">
+                                <th className="rounded-tr-xl px-4 py-2 text-left text-[#82bee2]">
                                     說明
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="[&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-[#82bee2] [&>tr>td]:bg-[#1a2e4a] [&>tr>td:not(:last-child)]:border-r [&>tr>td:not(:last-child)]:border-[#82bee2]">
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     買一價 / 賣一價
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     市場目前最高買價 / 最低賣價
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     即時價格
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     近五筆成交平均價格
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     今日漲跌
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     與開盤價相比的變動
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     今日最低 / 最高
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     單日內波動範圍
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="rounded-bl-xl px-4 py-2 text-white">
                                     最近成交紀錄
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="rounded-br-xl px-4 py-2 text-white">
                                     顯示價格與成交時間
                                 </td>
                             </tr>
@@ -342,31 +342,31 @@ export default function TutorialPage() {
                     排行榜會顯示兩種資產總值：
                 </h3>
                 <div className="mb-8 overflow-x-auto">
-                    <table className="w-full border-collapse overflow-hidden rounded-xl border border-[#82bee2] bg-[#1a2e4a]">
-                        <thead>
-                            <tr className="bg-[#19325e]">
-                                <th className="border border-[#82bee2] px-4 py-2 text-left text-[#82bee2]">
+                    <table className="w-full overflow-hidden">
+                        <thead className="border-b border-[#82bee2] [&>tr>th]:bg-[#19325e] [&>tr>th:not(:last-child)]:border-r [&>tr>th:not(:last-child)]:border-[#82bee2]">
+                            <tr>
+                                <th className="rounded-tl-xl px-4 py-2 text-left text-[#82bee2]">
                                     類型
                                 </th>
-                                <th className="border border-[#82bee2] px-4 py-2 text-left text-[#82bee2]">
+                                <th className="rounded-tr-xl px-4 py-2 text-left text-[#82bee2]">
                                     說明
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="[&>tr:not(:last-child)>td]:border-b [&>tr:not(:last-child)>td]:border-[#82bee2] [&>tr>td]:bg-[#1a2e4a] [&>tr>td:not(:last-child)]:border-r [&>tr>td:not(:last-child)]:border-[#82bee2]">
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     評價資產
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="px-4 py-2 text-white">
                                     點數 + 股票市值（用當下價格估算）
                                 </td>
                             </tr>
                             <tr>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="rounded-bl-xl px-4 py-2 text-white">
                                     現金資產
                                 </td>
-                                <td className="border border-[#82bee2] px-4 py-2 text-white">
+                                <td className="rounded-br-xl px-4 py-2 text-white">
                                     只看實際點數（未賣股票不算）
                                 </td>
                             </tr>
