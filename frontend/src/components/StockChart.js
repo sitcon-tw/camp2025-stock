@@ -344,17 +344,15 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
     if (loading) {
         return (
-            <div className="relative w-full bg-[#0f203e] rounded-lg">
+            <div className="w-full h-full flex flex-col bg-[#0f203e] rounded-lg">
                 <div className="flex justify-end mb-2 w-full">
                     <div className="px-3 py-1 bg-[#1A325F]/50 rounded-2xl text-xs">
                         <div className="w-8 h-3 bg-[#82bee2]/20 rounded animate-pulse"></div>
                     </div>
                 </div>
-                <div className="w-full h-full flex flex-col justify-center items-center rounded-lg overflow-hidden">
-                    <div className="h-48 md:h-52 mb-2 w-full flex items-center justify-center bg-[#0f203e] rounded-lg">
-                        <div className="flex flex-col items-center space-y-3">
-                            <div className="text-[#82bee2] text-sm">載入圖表中...</div>
-                        </div>
+                <div className="w-full grow flex flex-col justify-center items-center overflow-hidden">
+                    <div className="grow mb-2 w-full flex items-center justify-center bg-[#0f203e] rounded-lg">
+                        <div className="text-[#82bee2] text-sm">載入圖表中...</div>
                     </div>
                     <div className="flex flex-col space-y-2 pb-2">
                         <div className="flex justify-center items-center space-x-2">
@@ -405,7 +403,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 </button>
             </div>
             <div className="w-full h-full flex flex-col justify-center items-center rounded-lg overflow-hidden">
-                <div className="flex-1 mb-2 w-full min-h-[200px]">
+                <div className="flex-1 mb-2 w-full min-h-[400px] md:min-h-none">
                     {displayMode === 'candlestick' ? (
                         <div
                             className="h-full cursor-move select-none"
@@ -421,7 +419,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             <CandlestickChart
                                 data={candlestickData}
                                 width={1200}
-                                height={200}
+                                height={400}
                                 zoomLevel={zoomLevel}
                                 panOffset={panOffset}
                                 changePercent={changePercent}
