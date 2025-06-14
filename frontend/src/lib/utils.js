@@ -1,6 +1,6 @@
 // 格式化價格顯示
 export const formatPrice = (price) => {
-    return new Intl.NumberFormat('zh-TW', {
+    return new Intl.NumberFormat("zh-TW", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }).format(Math.round(price));
@@ -9,49 +9,54 @@ export const formatPrice = (price) => {
 // 格式化百分比
 export const formatPercent = (percent) => {
     const numPercent = parseFloat(percent) || 0;
-    const sign = numPercent >= 0 ? '+' : '';
+    const sign = numPercent >= 0 ? "+" : "";
     return `${sign}${numPercent.toFixed(1)}%`;
 };
 
 // 格式化時間
 export const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleString('zh-TW', {
-        month: 'numeric',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
+    return date.toLocaleString("zh-TW", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
     });
 };
 
 // 格式化數量
 export const formatQuantity = (quantity) => {
-    return new Intl.NumberFormat('zh-TW').format(quantity);
+    return new Intl.NumberFormat("zh-TW").format(quantity);
 };
 
 // 獲取價格變動的顏色類別
 export const getPriceColorClass = (change) => {
-    if (change > 0) return 'text-green-400';
-    if (change < 0) return 'text-red-400';
-    return 'text-gray-300';
+    if (change > 0) return "text-green-400";
+    if (change < 0) return "text-red-400";
+    return "text-gray-300";
 };
 
 // 獲取價格變動的背景顏色類別
 export const getPriceBgColorClass = (change) => {
-    if (change > 0) return 'bg-green-900/30';
-    if (change < 0) return 'bg-red-900/30';
-    return 'bg-gray-800';
+    if (change > 0) return "bg-green-900/30";
+    if (change < 0) return "bg-red-900/30";
+    return "bg-gray-800";
 };
 
 // 判斷價格是否低於百分比閾值
-export const isPriceBelowThreshold = (currentPrice, dataRange, thresholdPercent = 30) => {
+export const isPriceBelowThreshold = (
+    currentPrice,
+    dataRange,
+    thresholdPercent = 30,
+) => {
     if (!dataRange || dataRange.length === 0) return false;
 
     const maxPrice = Math.max(...dataRange);
     const minPrice = Math.min(...dataRange);
     const priceRange = maxPrice - minPrice;
-    const threshold = maxPrice - (priceRange * thresholdPercent / 100);
+    const threshold =
+        maxPrice - (priceRange * thresholdPercent) / 100;
 
     return currentPrice <= threshold;
 };
@@ -65,20 +70,25 @@ export const generateId = () => {
 export const validateForm = (data, rules) => {
     const errors = {};
 
-    Object.keys(rules).forEach(field => {
+    Object.keys(rules).forEach((field) => {
         const rule = rules[field];
         const value = data[field];
 
-        if (rule.required && (!value || value.toString().trim() === '')) {
+        if (
+            rule.required &&
+            (!value || value.toString().trim() === "")
+        ) {
             errors[field] = `${rule.label || field} 為必填項目`;
         }
 
         if (rule.min && value < rule.min) {
-            errors[field] = `${rule.label || field} 不能小於 ${rule.min}`;
+            errors[field] =
+                `${rule.label || field} 不能小於 ${rule.min}`;
         }
 
         if (rule.max && value > rule.max) {
-            errors[field] = `${rule.label || field} 不能大於 ${rule.max}`;
+            errors[field] =
+                `${rule.label || field} 不能大於 ${rule.max}`;
         }
 
         if (rule.pattern && !rule.pattern.test(value)) {
@@ -88,7 +98,7 @@ export const validateForm = (data, rules) => {
 
     return {
         isValid: Object.keys(errors).length === 0,
-        errors
+        errors,
     };
 };
 
@@ -119,7 +129,7 @@ export const throttle = (func, limit) => {
         if (!inThrottle) {
             func.apply(context, args);
             inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+            setTimeout(() => (inThrottle = false), limit);
         }
     };
 };

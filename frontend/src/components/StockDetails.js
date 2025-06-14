@@ -1,6 +1,4 @@
-'use client';
-
-import React from 'react';
+"use client";
 
 const StockDetails = ({ stockData = {} }) => {
     const {
@@ -16,36 +14,51 @@ const StockDetails = ({ stockData = {} }) => {
         peRatio = 15.8,
         pbRatio = 2.1,
         eps = 4.43,
-        dividend = 1.20,
+        dividend = 1.2,
         dividendYield = 1.71,
         previousClose = 58.33,
-        weekHigh52 = 82.50,
-        weekLow52 = 35.20,
+        weekHigh52 = 82.5,
+        weekLow52 = 35.2,
         avgVolume = 980000,
         beta = 1.15,
         rsi = 65.4,
-        macd = 2.35
+        macd = 2.35,
     } = stockData;
 
     const isPositive = changePercent > 0;
 
     const formatNumber = (num) => {
-        if (num >= 1e9) return Math.round(num / 1e9) + 'B';
-        if (num >= 1e6) return Math.round(num / 1e6) + 'M';
-        if (num >= 1e3) return Math.round(num / 1e3) + 'K';
+        if (num >= 1e9) return Math.round(num / 1e9) + "B";
+        if (num >= 1e6) return Math.round(num / 1e6) + "M";
+        if (num >= 1e3) return Math.round(num / 1e3) + "K";
         return Math.round(num).toLocaleString();
     };
 
-    const DetailCard = ({ title, value, subValue, isPrice = false, isChange = false }) => (
-        <div className="bg-[#1a2e4a] rounded-lg p-4 border border-[#82bee2]/10">
-            <h3 className="text-[#82bee2] text-sm mb-2">{title}</h3>
+    const DetailCard = ({
+        title,
+        value,
+        subValue,
+        isPrice = false,
+        isChange = false,
+    }) => (
+        <div className="rounded-lg border border-[#82bee2]/10 bg-[#1a2e4a] p-4">
+            <h3 className="mb-2 text-sm text-[#82bee2]">{title}</h3>
             <div className="flex flex-col">
-                <span className={`text-lg font-bold ${isChange ? (isPositive ? 'text-red-400' : 'text-green-400') : 'text-white'
-                    }`}>
+                <span
+                    className={`text-lg font-bold ${
+                        isChange
+                            ? isPositive
+                                ? "text-red-400"
+                                : "text-green-400"
+                            : "text-white"
+                    }`}
+                >
                     {value}
                 </span>
                 {subValue && (
-                    <span className="text-gray-400 text-sm">{subValue}</span>
+                    <span className="text-sm text-gray-400">
+                        {subValue}
+                    </span>
                 )}
             </div>
         </div>
@@ -55,8 +68,10 @@ const StockDetails = ({ stockData = {} }) => {
         <div className="space-y-6">
             {/* 價格概覽 */}
             <div>
-                <h2 className="text-[#82bee2] text-xl font-bold mb-4">價格資訊</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <h2 className="mb-4 text-xl font-bold text-[#82bee2]">
+                    價格資訊
+                </h2>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <DetailCard
                         title="目前價格"
                         value={Math.round(currentPrice)}
@@ -64,8 +79,8 @@ const StockDetails = ({ stockData = {} }) => {
                     />
                     <DetailCard
                         title="漲跌幅"
-                        value={`${isPositive ? '+' : ''}${changePercent.toFixed(1)}%`}
-                        subValue={`${isPositive ? '+' : ''}${Math.round(changeAmount)}`}
+                        value={`${isPositive ? "+" : ""}${changePercent.toFixed(1)}%`}
+                        subValue={`${isPositive ? "+" : ""}${Math.round(changeAmount)}`}
                         isChange={true}
                     />
                     <DetailCard
@@ -83,8 +98,10 @@ const StockDetails = ({ stockData = {} }) => {
 
             {/* 價格區間 */}
             <div>
-                <h2 className="text-[#82bee2] text-xl font-bold mb-4">價格區間</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <h2 className="mb-4 text-xl font-bold text-[#82bee2]">
+                    價格區間
+                </h2>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <DetailCard
                         title="最高價"
                         value={Math.round(highPrice)}
@@ -110,8 +127,10 @@ const StockDetails = ({ stockData = {} }) => {
 
             {/* 成交資訊 */}
             <div>
-                <h2 className="text-[#82bee2] text-xl font-bold mb-4">成交資訊</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <h2 className="mb-4 text-xl font-bold text-[#82bee2]">
+                    成交資訊
+                </h2>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <DetailCard
                         title="成交金額"
                         value={formatNumber(turnover)}
@@ -121,7 +140,8 @@ const StockDetails = ({ stockData = {} }) => {
                         title="平均成交量"
                         value={formatNumber(avgVolume)}
                         subValue="股"
-                    />          <DetailCard
+                    />{" "}
+                    <DetailCard
                         title="前收盤價"
                         value={Math.round(previousClose)}
                         isPrice={true}
@@ -131,8 +151,10 @@ const StockDetails = ({ stockData = {} }) => {
 
             {/* 財務指標 */}
             <div>
-                <h2 className="text-[#82bee2] text-xl font-bold mb-4">財務指標</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <h2 className="mb-4 text-xl font-bold text-[#82bee2]">
+                    財務指標
+                </h2>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
                     <DetailCard
                         title="市值"
                         value={formatNumber(marketCap)}
@@ -147,7 +169,8 @@ const StockDetails = ({ stockData = {} }) => {
                         title="股價淨值比"
                         value={pbRatio.toFixed(1)}
                         subValue="倍"
-                    />          <DetailCard
+                    />{" "}
+                    <DetailCard
                         title="每股盈餘"
                         value={eps.toFixed(1)}
                         subValue="元"
@@ -156,7 +179,8 @@ const StockDetails = ({ stockData = {} }) => {
                         title="股利"
                         value={dividend.toFixed(1)}
                         subValue="元"
-                    />          <DetailCard
+                    />{" "}
+                    <DetailCard
                         title="殖利率"
                         value={`${dividendYield.toFixed(1)}%`}
                     />
@@ -165,8 +189,10 @@ const StockDetails = ({ stockData = {} }) => {
 
             {/* 技術指標 */}
             <div>
-                <h2 className="text-[#82bee2] text-xl font-bold mb-4">技術分析</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <h2 className="mb-4 text-xl font-bold text-[#82bee2]">
+                    技術分析
+                </h2>
+                <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <DetailCard
                         title="5日均線"
                         value={Math.round(currentPrice * 0.98)}
@@ -188,12 +214,19 @@ const StockDetails = ({ stockData = {} }) => {
                         isPrice={true}
                     />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <DetailCard
                         title="RSI (14天)"
                         value={rsi.toFixed(1)}
-                        subValue={rsi > 70 ? "超買" : rsi < 30 ? "超賣" : "中性"}
-                    />          <DetailCard
+                        subValue={
+                            rsi > 70
+                                ? "超買"
+                                : rsi < 30
+                                  ? "超賣"
+                                  : "中性"
+                        }
+                    />{" "}
+                    <DetailCard
                         title="MACD"
                         value={macd.toFixed(1)}
                         subValue={macd > 0 ? "多頭" : "空頭"}

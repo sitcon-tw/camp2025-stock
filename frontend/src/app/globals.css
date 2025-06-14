@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @plugin "daisyui";
 
 /* 全域背景色設定 - 強制所有元素使用統一背景色 */
@@ -42,6 +43,6 @@ main,
     background-color: #0f203e !important;
 }
 
-button{
+button {
     cursor: pointer;
 }

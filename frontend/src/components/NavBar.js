@@ -6,19 +6,13 @@ import { usePathname } from "next/navigation";
 export default function NavBar() {
     const pathname = usePathname();
 
-    const getIconColor = path => {
-        return pathname === path ? "text-[#4b87cc]" : "text-[#82bee2]";
+    const getIconColor = (path) => {
+        return pathname === path
+            ? "text-[#4b87cc]"
+            : "text-[#82bee2]";
     };
     return (
-        <div
-            className="fixed
-                       bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] w-full justify-between
-                       py-4 px-10 flex items-center rounded-full
-                       md:left-4 md:top-1/2 md:-translate-y-1/2 md:translate-x-0 md:w-auto md:max-w-none
-                       md:flex-col md:py-6 md:px-4 md:h-auto md:space-y-6
-                       bg-[#0f203e]/20 backdrop-blur-md border-2 border-[#4f6f97]/20 
-                       z-40 shadow-lg shadow-black/40 md:rounded-full"
-        >
+        <div className="fixed bottom-4 left-1/2 z-40 flex w-full max-w-[calc(100%-2rem)] -translate-x-1/2 transform items-center justify-between rounded-full border-2 border-[#4f6f97]/20 bg-[#0f203e]/20 px-10 py-4 shadow-lg shadow-black/40 backdrop-blur-md md:top-1/2 md:left-4 md:h-auto md:w-auto md:max-w-none md:translate-x-0 md:-translate-y-1/2 md:flex-col md:space-y-6 md:rounded-full md:px-4 md:py-6">
             <Link href="/" className={getIconColor("/")}>
                 <svg
                     width="22"
@@ -55,7 +49,7 @@ export default function NavBar() {
                 href="https://t.me/SITCONCamp2025Bot"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white bg-[#3681c3] p-[10px] rounded-lg"
+                className="rounded-lg bg-[#3681c3] p-[10px] text-white"
             >
                 <svg
                     width="18"
@@ -72,7 +66,10 @@ export default function NavBar() {
                     />
                 </svg>
             </a>
-            <Link href="/leaderboard" className={getIconColor("/leaderboard")}>
+            <Link
+                href="/leaderboard"
+                className={getIconColor("/leaderboard")}
+            >
                 <svg
                     width="25"
                     height="23"
@@ -88,7 +85,10 @@ export default function NavBar() {
                     />
                 </svg>
             </Link>
-            <Link href="/tutorial" className={getIconColor("/tutorial")}>
+            <Link
+                href="/tutorial"
+                className={getIconColor("/tutorial")}
+            >
                 <svg
                     width="23"
                     height="23"

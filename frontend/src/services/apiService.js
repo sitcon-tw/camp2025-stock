@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
 import {
-    getPriceSummary,
-    getMarketStatus,
-    getPriceDepth,
-    getRecentTrades,
     getHistoricalPrices,
     getLeaderboard,
-    getTradingStats
-} from '@/lib/api';
+    getMarketStatus,
+    getPriceDepth,
+    getPriceSummary,
+    getRecentTrades,
+    getTradingStats,
+} from "@/lib/api";
 
 class ApiService {
     constructor() {
@@ -17,7 +17,11 @@ class ApiService {
         this.defaultCacheTime = 5000;
     }
 
-    async request(key, apiFunction, cacheTime = this.defaultCacheTime) {
+    async request(
+        key,
+        apiFunction,
+        cacheTime = this.defaultCacheTime,
+    ) {
         const cached = this.cache.get(key);
         if (cached && Date.now() - cached.timestamp < cacheTime) {
             return cached.data;
@@ -41,7 +45,7 @@ class ApiService {
             // 緩存結果
             this.cache.set(key, {
                 data,
-                timestamp: Date.now()
+                timestamp: Date.now(),
             });
 
             return data;
@@ -63,31 +67,39 @@ class ApiService {
 
     // 具體的API方法
     async getPriceData() {
-        return this.request('price-summary', getPriceSummary, 10000);
+        return this.request("price-summary", getPriceSummary, 10000);
     }
 
     async getMarketData() {
-        return this.request('market-status', getMarketStatus, 15000);
+        return this.request("market-status", getMarketStatus, 15000);
     }
 
     async getOrderBookData() {
-        return this.request('price-depth', getPriceDepth, 5000);
+        return this.request("price-depth", getPriceDepth, 5000);
     }
 
     async getTradeHistory(limit = 20) {
-        return this.request(`trades-${limit}`, () => getRecentTrades(limit), 5000);
+        return this.request(
+            `trades-${limit}`,
+            () => getRecentTrades(limit),
+            5000,
+        );
     }
 
     async getHistoricalData(hours = 24) {
-        return this.request(`historical-${hours}`, () => getHistoricalPrices(hours), 30000);
+        return this.request(
+            `historical-${hours}`,
+            () => getHistoricalPrices(hours),
+            30000,
+        );
     }
 
     async getLeaderboardData() {
-        return this.request('leaderboard', getLeaderboard, 15000);
+        return this.request("leaderboard", getLeaderboard, 15000);
     }
 
     async getTradingStatsData() {
-        return this.request('trading-stats', getTradingStats, 10000);
+        return this.request("trading-stats", getTradingStats, 10000);
     }
 }
 
