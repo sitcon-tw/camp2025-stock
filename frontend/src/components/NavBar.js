@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { twMerge } from "tailwind-merge";
 
 export default function NavBar() {
     const pathname = usePathname();
@@ -12,8 +13,16 @@ export default function NavBar() {
             : "text-[#82bee2]";
     };
     return (
-        <div className="fixed bottom-4 left-1/2 z-40 flex w-full max-w-[calc(100%-2rem)] -translate-x-1/2 transform items-center justify-between rounded-full border-2 border-[#4f6f97]/20 bg-[#0f203e]/20 px-10 py-4 shadow-lg shadow-black/40 backdrop-blur-md md:top-1/2 md:left-4 md:h-auto md:w-auto md:max-w-none md:translate-x-0 md:-translate-y-1/2 md:flex-col md:space-y-6 md:rounded-full md:px-4 md:py-6">
-            <Link href="/" className={getIconColor("/")}>
+        <div
+            className={twMerge(
+                "fixed bottom-4 left-1/2 z-40 flex w-full max-w-[calc(100%-2rem)] -translate-x-1/2 transform items-center justify-between rounded-full border-2 border-[#4f6f97]/20 bg-[#0f203e]/20 px-10 py-4 shadow-lg shadow-black/40 backdrop-blur-md",
+                "md:top-1/2 md:left-4 md:h-auto md:w-auto md:max-w-none md:translate-x-0 md:-translate-y-1/2 md:flex-col md:space-y-6 md:rounded-full md:px-4 md:py-6",
+            )}
+        >
+            <Link
+                href="/"
+                className={twMerge("h-6 w-6", getIconColor("/"))}
+            >
                 <svg
                     width="22"
                     height="23"
@@ -29,7 +38,13 @@ export default function NavBar() {
                     />
                 </svg>
             </Link>
-            <Link href="/status" className={getIconColor("/status")}>
+            <Link
+                href="/status"
+                className={twMerge(
+                    "h-6 w-6",
+                    getIconColor("/status"),
+                )}
+            >
                 <svg
                     width="20"
                     height="23"
@@ -49,7 +64,7 @@ export default function NavBar() {
                 href="https://t.me/SITCONCamp2025Bot"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg bg-[#3681c3] p-[10px] text-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-[#3681c3] text-white"
             >
                 <svg
                     width="18"
@@ -68,7 +83,10 @@ export default function NavBar() {
             </a>
             <Link
                 href="/leaderboard"
-                className={getIconColor("/leaderboard")}
+                className={twMerge(
+                    "h-6 w-6",
+                    getIconColor("/leaderboard"),
+                )}
             >
                 <svg
                     width="25"
@@ -87,7 +105,10 @@ export default function NavBar() {
             </Link>
             <Link
                 href="/tutorial"
-                className={getIconColor("/tutorial")}
+                className={twMerge(
+                    "h-6 w-6",
+                    getIconColor("/tutorial"),
+                )}
             >
                 <svg
                     width="23"
