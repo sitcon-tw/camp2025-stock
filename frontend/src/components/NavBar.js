@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Navbar() {
+export default function NavBar() {
     const pathname = usePathname();
 
     const getIconColor = path => {
@@ -11,17 +11,14 @@ export default function Navbar() {
     };
     return (
         <div
-            className="fixed 
-                       /* Mobile: bottom navbar */
+            className="fixed
                        bottom-4 left-1/2 transform -translate-x-1/2 max-w-[calc(100%-2rem)] w-full justify-between
                        py-4 px-10 flex items-center rounded-full
-                       /* Desktop: left sidebar */
                        md:left-4 md:top-1/2 md:-translate-y-1/2 md:translate-x-0 md:w-auto md:max-w-none
                        md:flex-col md:py-6 md:px-4 md:h-auto md:space-y-6
                        bg-[#0f203e]/20 backdrop-blur-md border-2 border-[#4f6f97]/20 
                        z-40 shadow-lg shadow-black/40 md:rounded-full"
         >
-            {" "}
             <Link href="/" className={getIconColor("/")}>
                 <svg
                     width="22"
@@ -37,7 +34,7 @@ export default function Navbar() {
                         fill="currentColor"
                     />
                 </svg>
-            </Link>{" "}
+            </Link>
             <Link href="/status" className={getIconColor("/status")}>
                 <svg
                     width="20"
@@ -53,7 +50,7 @@ export default function Navbar() {
                         fill="currentColor"
                     />
                 </svg>
-            </Link>{" "}
+            </Link>
             <a
                 href="https://t.me/SITCONCamp2025Bot"
                 target="_blank"
@@ -74,7 +71,7 @@ export default function Navbar() {
                         fill="#D9F0FA"
                     />
                 </svg>
-            </a>{" "}
+            </a>
             <Link href="/leaderboard" className={getIconColor("/leaderboard")}>
                 <svg
                     width="25"

@@ -1,7 +1,7 @@
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
-import Navbar from "@/components/navbar";
+import NavBar from "@/components/NavBar";
 import { DataCacheProvider } from "@/contexts/DataCacheContext";
 
 const inter = Inter({
@@ -60,7 +60,7 @@ export default function RootLayout({ children }) {
                     <div className="bg-[#0f203e] w-full">
                         {children}
                     </div>
-                    <Navbar />
+                    <NavBar />
                 </DataCacheProvider>
             </body>
         </html>
