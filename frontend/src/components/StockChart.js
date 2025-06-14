@@ -350,7 +350,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         <div className="w-8 h-3 bg-[#82bee2]/20 rounded animate-pulse"></div>
                     </div>
                 </div>
-                <div className="w-full grow flex flex-col justify-center items-center overflow-hidden">
+                <div className="w-full grow min-h-[400px] flex flex-col justify-center items-center overflow-hidden">
                     <div className="grow mb-2 w-full flex items-center justify-center bg-[#0f203e] rounded-lg">
                         <div className="text-[#82bee2] text-sm">載入圖表中...</div>
                     </div>
