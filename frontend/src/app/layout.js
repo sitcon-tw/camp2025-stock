@@ -23,16 +23,6 @@ export const metadata = {
         statusBarStyle: "default",
         title: "SITCON Camp 2025 點數系統",
     },
-    icons: {
-        icon: [
-            { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-            { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-        ],
-        apple: [
-            { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
-            { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-        ],
-    },
     other: {
         "mobile-web-app-capable": "yes",
         "apple-mobile-web-app-capable": "yes",
@@ -49,6 +39,8 @@ export default function RootLayout({ children }) {
     return (
         <html data-theme="dark" lang="zh-TW">
             <head>
+                <title>SITCON Camp 2025 點數系統</title>
+
                 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
                 <link rel="manifest" href="/manifest.json" />
                 <meta name="theme-color" content="#0f203e" />
