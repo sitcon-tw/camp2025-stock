@@ -3,6 +3,7 @@ import "./globals.css";
 
 import NavBar from "@/components/NavBar";
 import { DataCacheProvider } from "@/contexts/DataCacheContext";
+import { twMerge } from "tailwind-merge";
 
 const inter = Inter({
     variable: "--font-inter",
@@ -90,7 +91,11 @@ export default function RootLayout({ children }) {
                 />
             </head>
             <body
-                className={`${inter.variable} ${robotoMono.variable} min-h-screen bg-[#0f203e]`}
+                className={twMerge(
+                    inter.variable,
+                    robotoMono.variable,
+                    "min-h-screen bg-[#0f203e]",
+                )}
             >
                 <DataCacheProvider>
                     <div className="w-full bg-[#0f203e]">

@@ -1,5 +1,6 @@
 import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function HeaderBar() {
     const [priceData, setPriceData] = useState({
@@ -119,13 +120,14 @@ export default function HeaderBar() {
                             </h1>
                         </div>
                         <h1
-                            className={`mt-1 font-semibold ${
+                            className={twMerge(
+                                "mt-1 font-semibold",
                                 isPositive
                                     ? "text-[#D55E74]"
                                     : isNegative
                                       ? "text-green-500"
-                                      : "text-gray-500"
-                            }`}
+                                      : "text-gray-500",
+                            )}
                         >
                             <span className="text-xs">
                                 {isPositive
@@ -149,10 +151,20 @@ export default function HeaderBar() {
                     ) : (
                         <>
                             <div
-                                className={`h-2 w-2 rounded-full ${marketStatus.isOpen ? "bg-green-400" : "bg-red-400"}`}
+                                className={twMerge(
+                                    "h-2 w-2 rounded-full",
+                                    marketStatus.isOpen
+                                        ? "bg-green-400"
+                                        : "bg-red-400",
+                                )}
                             ></div>
                             <h1
-                                className={`text-md font-bold ${marketStatus.isOpen ? "text-green-400" : "text-red-400"}`}
+                                className={twMerge(
+                                    "text-md font-bold",
+                                    marketStatus.isOpen
+                                        ? "text-green-400"
+                                        : "text-red-400",
+                                )}
                             >
                                 {marketStatus.isOpen
                                     ? "開放交易"

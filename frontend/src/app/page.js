@@ -3,6 +3,7 @@
 import { getAnnouncements } from "@/lib/api";
 import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function Home() {
     const [marketStatus, setMarketStatus] = useState(null);
@@ -209,11 +210,21 @@ export default function Home() {
             {/* Modal */}
             {isModalOpen && (
                 <div
-                    className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 ${isModalClosing ? "animate-modal-close-bg" : "animate-modal-open-bg"}`}
+                    className={twMerge(
+                        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
+                        isModalClosing
+                            ? "animate-modal-close-bg"
+                            : "animate-modal-open-bg",
+                    )}
                     onClick={handleCloseModal}
                 >
                     <div
-                        className={`flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-[#1A325F] p-6 ${isModalClosing ? "animate-modal-close" : "animate-modal-open"}`}
+                        className={twMerge(
+                            "flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-[#1A325F] p-6",
+                            isModalClosing
+                                ? "animate-modal-close"
+                                : "animate-modal-open",
+                        )}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="mb-4 flex items-center justify-between">

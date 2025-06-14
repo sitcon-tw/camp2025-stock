@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import { useEffect, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
+import { twMerge } from "tailwind-merge";
 import CandlestickChart from "./CandlestickChart";
 
 ChartJS.register(
@@ -556,11 +557,21 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
             {modalOpen && (
                 <div
-                    className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs ${isModalClosing ? "animate-modal-close-bg" : "animate-modal-open-bg"}`}
+                    className={twMerge(
+                        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs",
+                        isModalClosing
+                            ? "animate-modal-close-bg"
+                            : "animate-modal-open-bg",
+                    )}
                     onClick={handleCloseModal}
                 >
                     <div
-                        className={`relative w-72 rounded-lg bg-[#1A325F] p-4 ${isModalClosing ? "animate-modal-close" : "animate-modal-open"}`}
+                        className={twMerge(
+                            "relative w-72 rounded-lg bg-[#1A325F] p-4",
+                            isModalClosing
+                                ? "animate-modal-close"
+                                : "animate-modal-open",
+                        )}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <h3 className="mb-3 text-xl font-semibold text-[#82bee2]">
@@ -572,7 +583,12 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                                     onClick={() =>
                                         handleModeSelect("real")
                                     }
-                                    className={`text-md w-full rounded-md px-3 py-2 text-left transition-colors ${displayMode === "real" ? "bg-[#82bee2] text-[#0f203e]" : "text-[#82bee2]"} text-[#0f203e] hover:bg-[#82bee2]/70`}
+                                    className={twMerge(
+                                        "text-md w-full rounded-md px-3 py-2 text-left text-[#0f203e] transition-colors hover:bg-[#82bee2]/70",
+                                        displayMode === "real"
+                                            ? "bg-[#82bee2] text-[#0f203e]"
+                                            : "text-[#82bee2]",
+                                    )}
                                 >
                                     真實價
                                 </button>
@@ -582,7 +598,12 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                                     onClick={() =>
                                         handleModeSelect("average")
                                     }
-                                    className={`text-md w-full rounded-md px-3 py-2 text-left transition-colors ${displayMode === "average" ? "bg-[#82bee2] text-[#0f203e]" : "text-[#82bee2]"} text-[#0f203e] hover:bg-[#82bee2]/70`}
+                                    className={twMerge(
+                                        "text-md w-full rounded-md px-3 py-2 text-left text-[#0f203e] transition-colors hover:bg-[#82bee2]/70",
+                                        displayMode === "average"
+                                            ? "bg-[#82bee2] text-[#0f203e]"
+                                            : "text-[#82bee2]",
+                                    )}
                                 >
                                     平均價
                                 </button>
@@ -594,7 +615,12 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                                             "candlestick",
                                         )
                                     }
-                                    className={`text-md w-full rounded-md px-3 py-2 text-left transition-colors ${displayMode === "candlestick" ? "bg-[#82bee2] text-[#0f203e]" : "text-[#82bee2]"} text-[#0f203e] hover:bg-[#82bee2]/70`}
+                                    className={twMerge(
+                                        "text-md w-full rounded-md px-3 py-2 text-left text-[#0f203e] transition-colors hover:bg-[#82bee2]/70",
+                                        displayMode === "candlestick"
+                                            ? "bg-[#82bee2] text-[#0f203e]"
+                                            : "text-[#82bee2]",
+                                    )}
                                 >
                                     K 線
                                 </button>

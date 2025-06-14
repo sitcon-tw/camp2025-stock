@@ -25,6 +25,7 @@ import {
 } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function AdminPage() {
     const router = useRouter();
@@ -1000,13 +1001,14 @@ export default function AdminPage() {
             {/* 通知彈窗 */}
             {notification.show && (
                 <div
-                    className={`fixed top-4 right-4 left-4 z-50 rounded-xl px-4 py-3 shadow-lg transition-all duration-300 ${
+                    className={twMerge(
+                        "fixed top-4 right-4 left-4 z-50 rounded-xl px-4 py-3 shadow-lg transition-all duration-300",
                         notification.type === "success"
                             ? "bg-green-600 text-white"
                             : notification.type === "error"
                               ? "bg-red-600 text-white"
-                              : "bg-blue-600 text-white"
-                    }`}
+                              : "bg-blue-600 text-white",
+                    )}
                 >
                     <div className="flex items-center space-x-2">
                         {notification.type === "success" && (
@@ -2090,11 +2092,12 @@ export default function AdminPage() {
                                     市場狀態:
                                 </span>
                                 <span
-                                    className={`rounded-full px-3 py-1 text-sm font-medium ${
+                                    className={twMerge(
+                                        "rounded-full px-3 py-1 text-sm font-medium",
                                         marketStatus.is_open
                                             ? "bg-green-600 text-green-100"
-                                            : "bg-red-600 text-red-100"
-                                    }`}
+                                            : "bg-red-600 text-red-100",
+                                    )}
                                 >
                                     {marketStatus.is_open
                                         ? "開盤中"
@@ -2696,17 +2699,32 @@ export default function AdminPage() {
                         <div className="space-y-4">
                             {/* 結果總結 */}
                             <div
-                                className={`rounded-lg p-4 ${callAuctionResult.success ? "border border-green-600 bg-green-900" : "border border-red-600 bg-red-900"}`}
+                                className={twMerge(
+                                    "rounded-lg p-4",
+                                    callAuctionResult.success
+                                        ? "border border-green-600 bg-green-900"
+                                        : "border border-red-600 bg-red-900",
+                                )}
                             >
                                 <h4
-                                    className={`mb-2 font-medium ${callAuctionResult.success ? "text-green-200" : "text-red-200"}`}
+                                    className={twMerge(
+                                        "mb-2 font-medium",
+                                        callAuctionResult.success
+                                            ? "text-green-200"
+                                            : "text-red-200",
+                                    )}
                                 >
                                     {callAuctionResult.success
                                         ? "✅ 集合競價成功"
                                         : "❌ 集合競價失敗"}
                                 </h4>
                                 <p
-                                    className={`text-sm ${callAuctionResult.success ? "text-green-300" : "text-red-300"}`}
+                                    className={twMerge(
+                                        "text-sm",
+                                        callAuctionResult.success
+                                            ? "text-green-300"
+                                            : "text-red-300",
+                                    )}
                                 >
                                     {callAuctionResult.message}
                                 </p>
@@ -2834,7 +2852,13 @@ export default function AdminPage() {
                                                                     }
                                                                 </span>
                                                                 <span
-                                                                    className={`ml-2 rounded px-2 py-1 text-xs ${order.status === "pending" ? "bg-yellow-600 text-yellow-100" : "bg-orange-600 text-orange-100"}`}
+                                                                    className={twMerge(
+                                                                        "ml-2 rounded px-2 py-1 text-xs",
+                                                                        order.status ===
+                                                                            "pending"
+                                                                            ? "bg-yellow-600 text-yellow-100"
+                                                                            : "bg-orange-600 text-orange-100",
+                                                                    )}
                                                                 >
                                                                     {order.status ===
                                                                     "pending"
@@ -2903,7 +2927,13 @@ export default function AdminPage() {
                                                                     }
                                                                 </span>
                                                                 <span
-                                                                    className={`ml-2 rounded px-2 py-1 text-xs ${order.status === "pending" ? "bg-yellow-600 text-yellow-100" : "bg-orange-600 text-orange-100"}`}
+                                                                    className={twMerge(
+                                                                        "ml-2 rounded px-2 py-1 text-xs",
+                                                                        order.status ===
+                                                                            "pending"
+                                                                            ? "bg-yellow-600 text-yellow-100"
+                                                                            : "bg-orange-600 text-orange-100",
+                                                                    )}
                                                                 >
                                                                     {order.status ===
                                                                     "pending"

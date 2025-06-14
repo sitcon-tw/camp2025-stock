@@ -2,6 +2,7 @@
 
 import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 const TradingTabs = ({ activeTab: propActiveTab }) => {
     const [activeTab, setActiveTab] = useState(
@@ -193,7 +194,10 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
         return (
             <div
-                className={`space-y-1 ${isFixedMode ? "flex h-full flex-col" : ""}`}
+                className={twMerge(
+                    "space-y-1",
+                    isFixedMode && "flex h-full flex-col",
+                )}
             >
                 {loading && (
                     <div className="py-8 text-center text-[#82bee2]">
@@ -221,7 +225,11 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
                         {/* 交易記錄 */}
                         <div
-                            className={`space-y-0 ${isFixedMode ? "flex-1 overflow-y-auto" : ""}`}
+                            className={twMerge(
+                                "space-y-0",
+                                isFixedMode &&
+                                    "flex-1 overflow-y-auto",
+                            )}
                         >
                             {tradeHistory.map((trade, index) => {
                                 const change = calculateChange(
@@ -248,7 +256,14 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                                                 {trade.quantity.toLocaleString()}
                                             </div>
                                             <div
-                                                className={`text-center font-mono font-semibold ${change > 0 ? "text-red-400" : change < 0 ? "text-green-400" : "text-gray-400"}`}
+                                                className={twMerge(
+                                                    "text-center font-mono font-semibold",
+                                                    change > 0
+                                                        ? "text-red-400"
+                                                        : change < 0
+                                                          ? "text-green-400"
+                                                          : "text-gray-400",
+                                                )}
                                             >
                                                 {change > 0
                                                     ? "+"
@@ -281,28 +296,37 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
     return (
         <div
-            className={`flex flex-col ${isFixedMode ? (activeTab === "orderbook" ? "h-[250px]" : "h-full flex-1") : "h-[310px]"}`}
+            className={twMerge(
+                "flex flex-col",
+                isFixedMode
+                    ? activeTab === "orderbook"
+                        ? "h-[250px]"
+                        : "h-full flex-1"
+                    : "h-[310px]",
+            )}
         >
             {/* 標籤頁 - 只在非固定模式顯示 */}
             {!isFixedMode && (
                 <div className="relative z-10 flex">
                     <button
                         onClick={() => setActiveTab("orderbook")}
-                        className={`relative w-1/2 rounded-t-2xl px-6 py-2 text-sm font-medium text-[#AFE1F5] ${
+                        className={twMerge(
+                            "relative w-1/2 rounded-t-2xl px-6 py-2 text-sm font-medium text-[#AFE1F5]",
                             activeTab === "orderbook"
                                 ? "bg-[#1a325f]"
-                                : "bg-[#14274b]"
-                        }`}
+                                : "bg-[#14274b]",
+                        )}
                     >
                         五檔報價
                     </button>
                     <button
                         onClick={() => setActiveTab("history")}
-                        className={`relative w-1/2 rounded-t-2xl px-6 py-2 text-sm font-medium text-[#AFE1F5] ${
+                        className={twMerge(
+                            "relative w-1/2 rounded-t-2xl px-6 py-2 text-sm font-medium text-[#AFE1F5]",
                             activeTab === "history"
                                 ? "bg-[#1a325f]"
-                                : "bg-[#14274b]"
-                        }`}
+                                : "bg-[#14274b]",
+                        )}
                     >
                         交易紀錄
                     </button>
@@ -322,7 +346,15 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
             {/* 內容區 */}
             <div
-                className={`flex-1 bg-[#1a325f] p-2 ${isFixedMode && activeTab === "orderbook" ? "overflow-hidden" : "overflow-y-auto"} ${isFixedMode ? "rounded-t-none rounded-b-2xl" : "rounded-tr-none rounded-b-2xl"}`}
+                className={twMerge(
+                    "flex-1 bg-[#1a325f] p-2",
+                    isFixedMode && activeTab === "orderbook"
+                        ? "overflow-hidden"
+                        : "overflow-y-auto",
+                    isFixedMode
+                        ? "rounded-t-none rounded-b-2xl"
+                        : "rounded-tr-none rounded-b-2xl",
+                )}
             >
                 {activeTab === "orderbook" ? (
                     <OrderBookTab />
