@@ -211,7 +211,7 @@ export default function Home() {
             {isModalOpen && (
                 <div
                     className={twMerge(
-                        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
+                        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs",
                         isModalClosing
                             ? "animate-modal-close-bg"
                             : "animate-modal-open-bg",
@@ -303,18 +303,22 @@ export default function Home() {
                 @keyframes modal-open-bg {
                     from {
                         opacity: 0;
+                        backdrop-filter: blur(0px);
                     }
                     to {
                         opacity: 1;
+                        backdrop-filter: blur(4px);
                     }
                 }
 
                 @keyframes modal-close-bg {
                     from {
                         opacity: 1;
+                        backdrop-filter: blur(4px);
                     }
                     to {
                         opacity: 0;
+                        backdrop-filter: blur(0px);
                     }
                 }
 
