@@ -1,16 +1,17 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
 import Navbar from "@/components/navbar";
 import { DataCacheProvider } from "@/contexts/DataCacheContext";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
+const inter = Inter({
+    variable: "--font-inter",
     subsets: ["latin"],
+    fallback: ["LiHei Pro", "黑體-繁", "微軟正黑體"]
 });
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
+const robotoMono = Roboto_Mono({
+    variable: "--font-roboto-mono",
     subsets: ["latin"],
 });
 
@@ -54,7 +55,7 @@ export default function RootLayout({ children }) {
                 <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
                 <meta name="msapplication-TileColor" content="#0f203e" />
             </head>
-            <body className={`${geistSans.variable} ${geistMono.variable} bg-[#0f203e] min-h-screen`}>
+            <body className={`${inter.variable} ${robotoMono.variable} bg-[#0f203e] min-h-screen`}>
                 <DataCacheProvider>
                     <div className="bg-[#0f203e] w-full">
                         {children}
