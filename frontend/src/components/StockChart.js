@@ -475,7 +475,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
             {modalOpen && (
                 <div
-                    className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 ${isModalClosing ? 'animate-modal-close-bg' : 'animate-modal-open-bg'}`}
+                    className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs ${isModalClosing ? 'animate-modal-close-bg' : 'animate-modal-open-bg'}`}
                     onClick={handleCloseModal}
                 >
                     <div
@@ -487,7 +487,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             <li>
                                 <button
                                     onClick={() => handleModeSelect('real')}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'real' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'}`}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'real' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'} hover:bg-[#82bee2]/70 text-[#0f203e]`}
                                 >
                                     真實價
                                 </button>
@@ -495,7 +495,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             <li>
                                 <button
                                     onClick={() => handleModeSelect('average')}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'average' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'}`}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'average' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'} hover:bg-[#82bee2]/70 text-[#0f203e]`}
                                 >
                                     平均價
                                 </button>
@@ -503,7 +503,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             <li>
                                 <button
                                     onClick={() => handleModeSelect('candlestick')}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'candlestick' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'}`}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-md transition-colors ${displayMode === 'candlestick' ? 'bg-[#82bee2] text-[#0f203e]' : 'text-[#82bee2]'} hover:bg-[#82bee2]/70 text-[#0f203e]`}
                                 >
                                     K 線
                                 </button>
@@ -539,18 +539,22 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 @keyframes modal-open-bg {
                     from {
                         opacity: 0;
+                        backdrop-filter: blur(0px);
                     }
                     to {
                         opacity: 1;
+                        backdrop-filter: blur(4px);
                     }
                 }
                 
                 @keyframes modal-close-bg {
                     from {
                         opacity: 1;
+                        backdrop-filter: blur(4px);
                     }
                     to {
                         opacity: 0;
+                        backdrop-filter: blur(0px);
                     }
                 }
                 
