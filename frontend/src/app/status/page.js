@@ -59,7 +59,7 @@ export default function Status() {
 	const currentPrice = stockData.lastPrice;
 	const changePercent = parseFloat(stockData.changePercent) || 0;
 
-	return (<div className="bg-[#0f203e] min-h-screen pb-28 w-full">
+	return (<div className="bg-[#0f203e] min-h-screen pb-28 md:pb-0 w-full">
 		<div className="flex flex-col px-4 lg:px-8 w-full max-w-none">
 			<HeaderBar />
 
