@@ -21,7 +21,10 @@ export default function NavBar() {
         >
             <Link
                 href="/"
-                className={twMerge("h-6 w-6", getIconColor("/"))}
+                className={twMerge(
+                    "h-6 w-6 transition-colors",
+                    getIconColor("/"),
+                )}
             >
                 <svg
                     width="22"
@@ -41,7 +44,7 @@ export default function NavBar() {
             <Link
                 href="/status"
                 className={twMerge(
-                    "h-6 w-6",
+                    "h-6 w-6 transition-colors",
                     getIconColor("/status"),
                 )}
             >
@@ -84,7 +87,7 @@ export default function NavBar() {
             <Link
                 href="/leaderboard"
                 className={twMerge(
-                    "h-6 w-6",
+                    "h-6 w-6 transition-colors",
                     getIconColor("/leaderboard"),
                 )}
             >
@@ -106,7 +109,7 @@ export default function NavBar() {
             <Link
                 href="/tutorial"
                 className={twMerge(
-                    "h-6 w-6",
+                    "h-6 w-6 transition-colors",
                     getIconColor("/tutorial"),
                 )}
             >
