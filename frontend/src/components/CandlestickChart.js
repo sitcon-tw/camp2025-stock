@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-const CandlestickChart = ({ data, width = 1000, height = 200, zoomLevel = 1, panOffset = 0 }) => {
+const CandlestickChart = ({ data, width = 1000, height = 400, zoomLevel = 1, panOffset = 0 }) => {
     if (!data || data.length === 0) {
         return (
             <div

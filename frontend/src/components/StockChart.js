@@ -438,13 +438,12 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             onTouchEnd={handleTouchEnd}
                             style={{ touchAction: 'pan-x pan-y' }}
                         >
-                            <Line options={options} data={data} ref={chartRef} />
+                            <Line options={options} data={data} ref={chartRef} height={400} />
                         </div>
                     )}
                 </div>
                 <div className="flex flex-col space-y-2 pb-2 flex-shrink-0">
                     <div className="flex justify-center items-center space-x-2">
-                        <span className="text-[#82bee2] text-xs">縮放：</span>
                         <button
                             onClick={() => setZoomLevel(prev => Math.max(0.5, prev * 0.8))}
                             className="w-6 h-6 bg-[#1A325F] text-[#82bee2] rounded-full transition flex items-center justify-center"
@@ -452,8 +451,8 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         >
                             –
                         </button>
-                        <div className="px-1 py-1 bg-[#1A325F] text-[#82bee2] text-xs rounded min-w-[40px] text-center">
-                            {zoomLevel.toFixed(1)}x
+                        <div className="px-1 py-1  text-[#82bee2] text-xs rounded min-w-[40px] text-center">
+                            {Math.round(zoomLevel.toFixed(1)*100)}%
                         </div>
                         <button
                             onClick={() => setZoomLevel(prev => Math.min(10, prev * 1.2))}
