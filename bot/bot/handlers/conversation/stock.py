@@ -7,6 +7,7 @@ from telegram.ext import ConversationHandler, CallbackQueryHandler, MessageHandl
 from telegram.helpers import escape_markdown
 from telegram.warnings import PTBUserWarning
 
+from bot.helper.chat_ids import MAIN_GROUP
 from bot.helper.existing_user import verify_existing_user
 from utils import api_helper
 
@@ -20,6 +21,10 @@ from utils import api_helper
 
 
 async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat_id == MAIN_GROUP:
+        await update.message.reply_text("🚫 不能在大群交易股票！")
+        return ConversationHandler.END
+
     response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
         "from_user": str(update.effective_user.id)
     })

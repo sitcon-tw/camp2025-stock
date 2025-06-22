@@ -8,6 +8,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from telegram.helpers import escape_markdown
 
+from bot.helper.chat_ids import MAIN_GROUP, STUDENT_GROUPS
 from bot.helper.existing_user import verify_existing_user
 from utils import api_helper
 from utils.logger import setup_logger
@@ -123,13 +124,16 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # TODO: Team to chat ID mapping
+    if not update.message.chat_id in STUDENT_GROUPS.values():
+        await update.message.reply_text("🚫 只能在小隊群組裡面查詢該小隊的點數")
+
     response = api_helper.get("/api/bot/teams", protected_route=True)
 
-    result = next((item for item in response if item["name"] == "第一組"), None)
+    team_name = list(STUDENT_GROUPS.keys())[list(STUDENT_GROUPS.values()).index(update.message.chat_id)]
+    result = next((item for item in response if item["name"] == team_name), None)
 
     await update.message.reply_text(
-        f"👥 小隊 __*3*__ 目前的點數共：*{result.get("total_points")}* 點", parse_mode=ParseMode.MARKDOWN_V2)
+        f"👥{team_name} 目前的點數共：*{result.get("total_points")}* 點", parse_mode=ParseMode.MARKDOWN_V2)
 
 
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -162,8 +166,11 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"User {update.effective_user.id} started a PVP request")
 
     # 檢查是否在群組中
-    if update.message.chat.type == 'private':
+    if update.message.chat.type == "private":
         await update.message.reply_text("🚫 PVP 挑戰只能在群組中使用！")
+        return
+    if update.message.chat_id != MAIN_GROUP:
+        await update.message.reply_text("🚫 PVP 挑戰只能在 Camp 大群中使用！")
         return
 
     # 檢查是否提供了金額參數
