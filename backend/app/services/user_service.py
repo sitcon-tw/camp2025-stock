@@ -2839,7 +2839,7 @@ class UserService:
             
             return PVPResponse(
                 success=True,
-                message=f"🎯 {challenger_name} 發起了 {amount} 點的 PVP 挑戰！\n\n誰敢來接受挑戰？選擇你的猜拳："
+                message=f"🎯 {challenger_name} 發起了 {amount} 點的 PVP 挑戰！\n\n發起者已經選擇了他出的拳，有誰想來挑戰嗎？選擇你出的拳吧："
             )
             
         except Exception as e:
