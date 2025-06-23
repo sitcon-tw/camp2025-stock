@@ -6,7 +6,7 @@ import sys
 import os
 from unittest.mock import AsyncMock, MagicMock
 
-# 添加目前路徑
+# 新增目前路徑
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 class MockDatabase:
@@ -92,7 +92,7 @@ async def test_solid_principles():
         print("  📋 測試 OCP (開放封閉原則)...")
         market_strategy = MarketOrderStrategy()
         limit_strategy = LimitOrderStrategy()
-        # 可以添加新策略而不修改現有程式碼
+        # 可以新增新策略而不修改現有程式碼
         assert hasattr(market_strategy, 'can_execute')
         assert hasattr(limit_strategy, 'can_execute')
         print("    ✅ OCP 實現正確 - 策略模式支援擴展")

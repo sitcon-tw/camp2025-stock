@@ -215,7 +215,7 @@ class TradingTestRunner:
         await self.place_order("player_02", "limit", "buy", 1, 20)   # B 買
         await asyncio.sleep(2)
         
-        # 添加一些其他玩家的交易來創造市場活力
+        # 新增一些其他玩家的交易來創造市場活力
         await self.log("📖 場景4: 其他玩家加入交易")
         await self.place_order("player_03", "limit", "buy", 2, 22)   # C 買22元
         await asyncio.sleep(0.5)

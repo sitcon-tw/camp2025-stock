@@ -6,7 +6,7 @@ import asyncio
 import sys
 import os
 
-# 添加目前路徑到 Python 路徑
+# 新增目前路徑到 Python 路徑
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 async def check_dependencies():

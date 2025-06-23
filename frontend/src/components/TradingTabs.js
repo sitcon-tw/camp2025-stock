@@ -14,7 +14,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
     });
     const [tradeHistory, setTradeHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null); // 添加請求控制
+    const [error, setError] = useState(null); // 新增請求控制
 
     const fetchData = async () => {
         try {

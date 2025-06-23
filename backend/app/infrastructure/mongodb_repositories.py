@@ -39,6 +39,15 @@ class MongoUserRepository(UserRepository):
             logger.error(f"Error getting user by username {username}: {e}")
             return None
     
+    async def get_by_telegram_id(self, telegram_id: int) -> Optional[User]:
+        """根據 Telegram ID 獲取使用者"""
+        try:
+            doc = await self.collection.find_one({"telegram_id": telegram_id})
+            return self._document_to_entity(doc) if doc else None
+        except Exception as e:
+            logger.error(f"Error getting user by telegram_id {telegram_id}: {e}")
+            return None
+    
     async def get_by_id(self, user_id: str) -> Optional[User]:
         """根據ID獲取使用者"""
         try:

@@ -366,7 +366,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
         else:
             order_info += f" ({order_type_text})"
 
-        # 添加時間資訊
+        # 新增時間資訊
         time_str = ""
         if order.get('created_at'):
             try:
@@ -447,7 +447,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
 
         for order_type, order_text in current_page_orders:
             if order_type != current_section:
-                if lines:  # 如果不是第一個區段，添加空行
+                if lines:  # 如果不是第一個區段，新增空行
                     lines.append("")
 
                 if order_type == 'pending':

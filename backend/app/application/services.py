@@ -6,7 +6,8 @@ from typing import Optional, List, Tuple
 from decimal import Decimal
 
 from app.domain.services import (
-    UserDomainService, StockTradingService, TransferService, IPOService
+    UserDomainService, StockTradingService, TransferService, IPOService,
+    AuthenticationDomainService
 )
 from app.core.base_classes import BaseApplicationService
 from app.domain.repositories import (
@@ -309,3 +310,66 @@ class IPOApplicationService(BaseApplicationService):
         except Exception as e:
             logger.error(f"IPO purchase failed for user {user_id}: {e}")
             return StockOrderResponse(success=False, order_id=None, message="IPO 購買失敗")
+
+
+class AuthenticationApplicationService(BaseApplicationService):
+    """
+    認證應用服務
+    SRP 原則：專注於認證相關的用例編排
+    Clean Architecture 原則：協調領域服務和外部介面
+    """
+    
+    def __init__(
+        self, 
+        auth_domain_service: AuthenticationDomainService,
+        user_repo: UserRepository
+    ):
+        super().__init__("AuthenticationApplicationService")
+        self.auth_domain_service = auth_domain_service
+        self.user_repo = user_repo
+    
+    async def telegram_oauth_login(
+        self, 
+        auth_data: dict, 
+        bot_token: str
+    ) -> Tuple[bool, Optional[dict], str]:
+        """
+        Telegram OAuth 登入用例
+        協調認證驗證、使用者查找和資格檢查
+        
+        Returns:
+            (success, user_data, message)
+        """
+        try:
+            # 1. 驗證 Telegram OAuth 數據
+            if not self.auth_domain_service.verify_telegram_oauth(auth_data.copy(), bot_token):
+                logger.warning(f"Invalid Telegram auth data for user {auth_data.get('id')}")
+                return False, None, "Invalid Telegram authentication data"
+            
+            # 2. 查找使用者
+            telegram_id = auth_data.get('id')
+            if not telegram_id:
+                return False, None, "缺少 Telegram ID"
+            
+            user = await self.user_repo.get_by_telegram_id(telegram_id)
+            
+            # 3. 驗證使用者資格
+            is_eligible, message = self.auth_domain_service.validate_user_eligibility(user)
+            if not is_eligible:
+                return False, None, message
+            
+            # 4. 準備使用者資訊（移除敏感資料）
+            user_info = {
+                "id": user.user_id,
+                "name": user.username,
+                "team": user.team,
+                "points": user.points,
+                "telegram_id": user.telegram_id
+            }
+            
+            logger.info(f"Successful Telegram OAuth login for user: {user.user_id}")
+            return True, user_info, "登入成功"
+            
+        except Exception as e:
+            logger.error(f"Telegram OAuth error: {e}")
+            return False, None, "認證過程發生錯誤"

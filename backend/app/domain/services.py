@@ -17,8 +17,54 @@ from .strategies import (
     OrderExecutionStrategy, MarketOrderStrategy, LimitOrderStrategy,
     FeeCalculationStrategy, PercentageFeeStrategy
 )
+import hashlib
+import hmac
 
 logger = logging.getLogger(__name__)
+
+
+class AuthenticationDomainService:
+    """
+    認證領域服務
+    SRP 原則：專注於認證相關的業務邏輯
+    包含 Telegram OAuth 驗證等認證規則
+    """
+    
+    def verify_telegram_oauth(self, auth_data: dict, bot_token: str) -> bool:
+        """
+        驗證 Telegram OAuth 認證數據
+        領域邏輯：按照 Telegram 官方規範驗證數據完整性
+        """
+        # 取得 hash 值
+        received_hash = auth_data.pop('hash', None)
+        if not received_hash:
+            return False
+        
+        # 準備驗證字串
+        auth_data_items = []
+        for key, value in sorted(auth_data.items()):
+            auth_data_items.append(f"{key}={value}")
+        
+        data_check_string = '\n'.join(auth_data_items)
+        
+        # 計算預期的 hash
+        secret_key = hashlib.sha256(bot_token.encode()).digest()
+        expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+        
+        return hmac.compare_digest(received_hash, expected_hash)
+    
+    def validate_user_eligibility(self, user: Optional[User]) -> Tuple[bool, str]:
+        """
+        驗證使用者登入資格
+        領域規則：檢查使用者是否存在且已啟用
+        """
+        if not user:
+            return False, "使用者未註冊，請先透過 Telegram Bot 進行註冊"
+        
+        if not user.is_active:
+            return False, "使用者帳號已被停用"
+        
+        return True, "驗證成功"
 
 
 class UserDomainService:

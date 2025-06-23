@@ -5,7 +5,8 @@
 from functools import lru_cache
 from app.core.database import get_database
 from app.domain.services import (
-    UserDomainService, StockTradingService, TransferService, IPOService
+    UserDomainService, StockTradingService, TransferService, IPOService,
+    AuthenticationDomainService
 )
 from app.infrastructure.mongodb_repositories import (
     MongoUserRepository, MongoStockRepository, MongoStockOrderRepository,
@@ -13,7 +14,8 @@ from app.infrastructure.mongodb_repositories import (
 )
 from app.application.services import (
     UserApplicationService, TradingApplicationService, 
-    TransferApplicationService, IPOApplicationService
+    TransferApplicationService, IPOApplicationService,
+    AuthenticationApplicationService
 )
 
 
@@ -107,6 +109,13 @@ class ServiceContainer:
             )
         return self._domain_services['ipo']
     
+    @property
+    def authentication_domain_service(self) -> AuthenticationDomainService:
+        """認證領域服務 - 依賴注入"""
+        if 'authentication' not in self._domain_services:
+            self._domain_services['authentication'] = AuthenticationDomainService()
+        return self._domain_services['authentication']
+    
     # Application Service 層
     @property
     def user_application_service(self) -> UserApplicationService:
@@ -147,6 +156,16 @@ class ServiceContainer:
                 self.ipo_service
             )
         return self._application_services['ipo']
+    
+    @property
+    def authentication_application_service(self) -> AuthenticationApplicationService:
+        """認證應用服務 - 依賴注入"""
+        if 'authentication' not in self._application_services:
+            self._application_services['authentication'] = AuthenticationApplicationService(
+                self.authentication_domain_service,
+                self.user_repository
+            )
+        return self._application_services['authentication']
 
 
 # 全域服務容器實例
@@ -178,3 +197,8 @@ def get_transfer_application_service() -> TransferApplicationService:
 def get_ipo_application_service() -> IPOApplicationService:
     """DIP 原則：通過依賴注入提供 IPO 應用服務"""
     return get_service_container().ipo_application_service
+
+
+def get_authentication_application_service() -> AuthenticationApplicationService:
+    """DIP 原則：通過依賴注入提供認證應用服務"""
+    return get_service_container().authentication_application_service

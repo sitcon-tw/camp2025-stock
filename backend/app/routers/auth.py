@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.services.user_service import UserService, get_user_service
+from app.application.services import AuthenticationApplicationService
+from app.application.dependencies import get_authentication_application_service
 from app.schemas.user import TelegramOAuthRequest, TelegramOAuthResponse
-from app.core.security import verify_telegram_auth, create_user_token
+from app.core.security import create_user_token
 from app.config import settings
 import logging
 
@@ -18,22 +19,21 @@ router = APIRouter()
 )
 async def telegram_oauth(
     auth_request: TelegramOAuthRequest,
-    user_service: UserService = Depends(get_user_service)
+    auth_service: AuthenticationApplicationService = Depends(get_authentication_application_service)
 ) -> TelegramOAuthResponse:
     """
     Telegram OAuth 認證端點
+    Clean Architecture 原則：控制器只負責 HTTP 處理，業務邏輯委託給應用服務
     
     Args:
         auth_request: Telegram OAuth 認證資料
-        user_service: 使用者服務（自動注入）
+        auth_service: 認證應用服務（自動注入）
         
     Returns:
         認證結果和 JWT Token
     """
     try:
-        # 驗證 Telegram 認證資料
-        auth_data = auth_request.dict()
-        
+        # 驗證設定
         if not settings.CAMP_TELEGRAM_BOT_TOKEN:
             logger.error("Telegram bot token not configured")
             raise HTTPException(
@@ -41,51 +41,27 @@ async def telegram_oauth(
                 detail="Telegram authentication not configured"
             )
         
-        # 驗證 Telegram OAuth 數據
-        if not verify_telegram_auth(auth_data.copy(), settings.CAMP_TELEGRAM_BOT_TOKEN):
-            logger.warning(f"Invalid Telegram auth data for user {auth_request.id}")
+        # 委託給應用服務處理業務邏輯
+        auth_data = auth_request.dict()
+        success, user_info, message = await auth_service.telegram_oauth_login(
+            auth_data, 
+            settings.CAMP_TELEGRAM_BOT_TOKEN
+        )
+        
+        if not success:
             return TelegramOAuthResponse(
                 success=False,
-                message="Invalid Telegram authentication data"
+                message=message
             )
         
-        # 查找使用者
-        user = await user_service.get_user_by_telegram_id(auth_request.id)
-        
-        if not user:
-            logger.warning(f"User not found for Telegram ID: {auth_request.id}")
-            return TelegramOAuthResponse(
-                success=False,
-                message="使用者未註冊，請先透過 Telegram Bot 進行註冊"
-            )
-        
-        # 檢查使用者是否已啟用
-        if not user.get("enabled", True):
-            logger.warning(f"Disabled user attempted login: {user.get('id')}")
-            return TelegramOAuthResponse(
-                success=False,
-                message="使用者帳號已被停用"
-            )
-        
-        # 建立 JWT Token
-        token = create_user_token(user["id"], auth_request.id)
-        
-        # 準備使用者資訊（移除敏感資料）
-        user_info = {
-            "id": user["id"],
-            "name": user.get("name"),
-            "team": user.get("team"),
-            "points": user.get("points", 0),
-            "telegram_id": user.get("telegram_id")
-        }
-        
-        logger.info(f"Successful Telegram OAuth login for user: {user['id']}")
+        # 創建 JWT Token
+        token = create_user_token(user_info["id"], auth_request.id)
         
         return TelegramOAuthResponse(
             success=True,
             token=token,
             user=user_info,
-            message="登入成功"
+            message=message
         )
         
     except HTTPException:

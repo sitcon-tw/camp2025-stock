@@ -30,6 +30,11 @@ class UserRepository(ABC):
         pass
     
     @abstractmethod
+    async def get_by_telegram_id(self, telegram_id: int) -> Optional[User]:
+        """根據 Telegram ID 獲取使用者"""
+        pass
+    
+    @abstractmethod
     async def create(self, user: User) -> str:
         """建立新使用者，返回 user_id"""
         pass

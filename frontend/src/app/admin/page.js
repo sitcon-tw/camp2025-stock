@@ -513,7 +513,7 @@ export default function AdminPage() {
             if (result.success) {
                 let message = result.message;
 
-                // 如果有詳細統計，添加到通知中
+                // 如果有詳細統計，新增到通知中
                 if (result.order_stats) {
                     const stats = result.order_stats;
                     const totalBuy =
@@ -530,7 +530,7 @@ export default function AdminPage() {
                 let errorMessage =
                     result.message || "集合競價執行失敗";
 
-                // 如果有統計訊息，添加到錯誤消息中
+                // 如果有統計訊息，新增到錯誤消息中
                 if (result.order_stats) {
                     const stats = result.order_stats;
                     const totalPending =
@@ -705,7 +705,7 @@ export default function AdminPage() {
         setSuggestions([]);
     };
 
-    // 多選功能：添加目標到列表
+    // 多選功能：新增目標到列表
     const addMultiTarget = (suggestion) => {
         if (
             !givePointsForm.multiTargets.find(
@@ -1267,7 +1267,7 @@ export default function AdminPage() {
                                         {givePointsForm.type.startsWith(
                                             "multi_",
                                         )
-                                            ? "添加目標（搜尋選擇）"
+                                            ? "新增目標（搜尋選擇）"
                                             : "給誰（搜尋選擇）"}
                                     </label>
                                     <input
