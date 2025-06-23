@@ -124,6 +124,16 @@ class UserService:
                 message="登入失敗"
             )
     
+    # 根據 Telegram ID 查找使用者
+    async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[dict]:
+        """根據 Telegram ID 查找使用者"""
+        try:
+            user = await self.db[Collections.USERS].find_one({"telegram_id": telegram_id})
+            return user
+        except Exception as e:
+            logger.error(f"Failed to get user by Telegram ID {telegram_id}: {e}")
+            return None
+    
     # 取得使用者投資組合
     async def get_user_portfolio(self, user_id: str) -> UserPortfolio:
         try:

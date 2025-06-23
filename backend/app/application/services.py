@@ -51,7 +51,7 @@ class UserApplicationService(BaseApplicationService):
                     message="使用者不存在或未啟用"
                 )
             
-            # 生成 JWT Token
+            # 產生 JWT Token
             token = create_access_token(data={"sub": user.user_id})
             
             return UserLoginResponse(

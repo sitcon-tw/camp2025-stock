@@ -153,7 +153,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
         user_id = str(query.from_user.id)
         
         if callback_data.startswith("pvp_conflict_new_"):
-            # 用戶選擇取消舊的，開始新的
+            # 使用者選擇取消舊的，開始新的
             parts = callback_data.split("_")
             if len(parts) >= 5:
                 amount = int(parts[3])
@@ -203,7 +203,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     await query.edit_message_text("❌ 取消舊挑戰失敗，請稍後再試")
         
         elif callback_data.startswith("pvp_conflict_continue_"):
-            # 用戶選擇繼續舊的挑戰
+            # 使用者選擇繼續舊的挑戰
             challenge_id = callback_data.replace("pvp_conflict_continue_", "")
             
             pvp_manager = get_pvp_manager()

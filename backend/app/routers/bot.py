@@ -383,7 +383,7 @@ async def bot_cancel_pvp_challenge(
     BOT 取消 PVP 挑戰
     
     Args:
-        request: 取消請求，包含挑戰 ID 和用戶 ID
+        request: 取消請求，包含挑戰 ID 和使用者 ID
         token_verified: token 驗證結果（透過 header 傳入）
         
     Returns:

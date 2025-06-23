@@ -27,6 +27,9 @@ class Settings:
     # Telegram Bot API URL
     CAMP_TELEGRAM_BOT_API_URL: str = os.getenv("CAMP_TELEGRAM_BOT_API_URL", "https://camp.sitcon.party/bot/broadcast/")
     
+    # Telegram Bot Token for OAuth verification
+    CAMP_TELEGRAM_BOT_TOKEN: str = os.getenv("CAMP_TELEGRAM_BOT_TOKEN", "")
+    
     # 環境設定
     CAMP_ENVIRONMENT: str = os.getenv("CAMP_ENVIRONMENT", "development")
     CAMP_DEBUG: bool = os.getenv("CAMP_DEBUG", "True").lower() == "true"

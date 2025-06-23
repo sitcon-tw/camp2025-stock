@@ -2,10 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 export default function NavBar() {
     const pathname = usePathname();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        // 檢查登入狀態
+        const checkLoginStatus = () => {
+            const isUser = localStorage.getItem("isUser");
+            const userToken = localStorage.getItem("userToken");
+            setIsLoggedIn(isUser === "true" && !!userToken);
+        };
+
+        checkLoginStatus();
+        
+        // 監聽 storage 變化
+        window.addEventListener('storage', checkLoginStatus);
+        
+        return () => {
+            window.removeEventListener('storage', checkLoginStatus);
+        };
+    }, []);
 
     const getIconColor = (path) => {
         return pathname === path
@@ -126,6 +146,51 @@ export default function NavBar() {
                     />
                 </svg>
             </Link>
+            
+            {/* 登入/儀表板按鈕 */}
+            {isLoggedIn ? (
+                <Link
+                    href="/dashboard"
+                    className={twMerge(
+                        "h-6 w-6 transition-colors",
+                        getIconColor("/dashboard"),
+                    )}
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 12.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
+                            fill="currentColor"
+                        />
+                    </svg>
+                </Link>
+            ) : (
+                <Link
+                    href="/telegram-login"
+                    className={twMerge(
+                        "h-6 w-6 transition-colors",
+                        getIconColor("/telegram-login"),
+                    )}
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm5 9h-4v4h-2v-4H5V9h4V5h2v4h4v2z"
+                            fill="currentColor"
+                        />
+                    </svg>
+                </Link>
+            )}
         </div>
     );
 }

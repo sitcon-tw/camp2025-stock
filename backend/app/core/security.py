@@ -5,6 +5,8 @@ from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import settings
 import hashlib
+import hmac
+import urllib.parse
 
 # 密碼加密上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -110,3 +112,34 @@ def verify_bot_token(token: str = Header(..., alias="token")) -> bool:
             detail="Invalid token"
         )
     return True
+
+
+def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
+    """驗證 Telegram OAuth 認證數據"""
+    # 取得 hash 值
+    received_hash = auth_data.pop('hash', None)
+    if not received_hash:
+        return False
+    
+    # 準備驗證字串
+    auth_data_items = []
+    for key, value in sorted(auth_data.items()):
+        auth_data_items.append(f"{key}={value}")
+    
+    data_check_string = '\n'.join(auth_data_items)
+    
+    # 計算預期的 hash
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    
+    return hmac.compare_digest(received_hash, expected_hash)
+
+
+def create_user_token(user_id: str, telegram_id: int) -> str:
+    """為 Telegram 使用者建立 JWT Token"""
+    token_data = {
+        "sub": user_id,
+        "telegram_id": telegram_id,
+        "type": "user"
+    }
+    return create_access_token(token_data)

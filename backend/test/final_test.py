@@ -628,7 +628,7 @@ class CampTradingSimulator:
             sender, receiver = random.sample(active_students, 2)
             amount = random.randint(min_amount, max_amount)
             
-            # 生成隨機備註
+            # 產生隨機備註
             notes = [
                 "感謝幫忙！",
                 "請你喝飲料",

@@ -76,7 +76,7 @@ class TelegramWebhookRequest(BaseModel):
     """Telegram Webhook 請求模型"""
     update_id: int = Field(..., description="更新 ID")
     message: Optional[Dict[str, Any]] = Field(None, description="訊息內容")
-    callback_query: Optional[Dict[str, Any]] = Field(None, description="回調查詢")
+    callback_query: Optional[Dict[str, Any]] = Field(None, description="Callback查詢")
     # 可以根據需要添加更多 Telegram API 欄位
 
 

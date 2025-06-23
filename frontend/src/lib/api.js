@@ -381,4 +381,80 @@ export async function getMarketPriceInfo() {
     });
 }
 
+// ========== Telegram OAuth 認證 ==========
+
+// Telegram OAuth 登入
+export async function telegramOAuth(authData) {
+    return apiRequest("/api/auth/telegram", {
+        method: "POST",
+        body: JSON.stringify(authData),
+    });
+}
+
+// ========== Web API 功能 (需要 JWT Token) ==========
+
+// 查詢投資組合
+export async function getWebPortfolio(token) {
+    return apiRequest("/api/web/portfolio", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 查詢點數記錄
+export async function getWebPointHistory(token, limit = 50) {
+    return apiRequest(`/api/web/points/history?limit=${limit}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 下股票訂單
+export async function placeWebStockOrder(token, orderData) {
+    return apiRequest("/api/web/stock/order", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+    });
+}
+
+// 查詢股票訂單記錄
+export async function getWebStockOrders(token, limit = 50) {
+    return apiRequest(`/api/web/stock/orders?limit=${limit}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 點數轉帳
+export async function webTransferPoints(token, transferData) {
+    return apiRequest("/api/web/transfer", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(transferData),
+    });
+}
+
+// 查詢使用者資料
+export async function getWebUserProfile(token) {
+    return apiRequest("/api/web/profile", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 export { API_BASE_URL };

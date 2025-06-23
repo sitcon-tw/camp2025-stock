@@ -80,7 +80,7 @@ class PVPManager:
         if existing_challenge_id and existing_challenge_id in self.active_challenges:
             # 記錄取消前的狀態
             challenge_existed = True
-            await self._cancel_challenge(existing_challenge_id, "用戶主動取消")
+            await self._cancel_challenge(existing_challenge_id, "使用者主動取消")
             # 檢查是否真的被清理了
             return existing_challenge_id not in self.active_challenges
         return False

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import admin, public, user, bot, system
+from app.routers import admin, public, user, bot, system, auth, web
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.config import settings
 import logging
@@ -60,6 +60,18 @@ app.include_router(
     admin.router, 
     prefix="/api/admin", 
     tags=["Admin Management - 管理員後台"]
+)
+
+app.include_router(
+    auth.router, 
+    prefix="/api/auth", 
+    tags=["Authentication - 使用者認證"]
+)
+
+app.include_router(
+    web.router, 
+    prefix="/api/web", 
+    tags=["Web APIs - 網頁使用者功能"]
 )
 
 # 生命週期事件 (啟動事件)
