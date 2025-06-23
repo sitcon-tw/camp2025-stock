@@ -39,6 +39,14 @@ class PublicService:
             )
             
             # 即時價格 = 最後一筆成交價，優先使用 price，如果沒有則使用 filled_price
+            # 解釋：
+            # 如果沒有成交記錄，則使用平均價格作為即時價格
+            # 如果有成交記錄，則使用最後一筆成交的價格
+            # 如果沒有 price，則使用 filled_price，如果兩者都沒有，則使用 average_price
+            # filled_price: 是在成交時的價格，可能會有延遲
+            # average_price: 是近5筆成交的平均價格
+            
+            
             if latest_trade:
                 last_price = latest_trade.get("price")
                 if last_price is None:
