@@ -179,7 +179,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                         message_text = (
                             f"🔄 **已取消舊挑戰，建立新挑戰！**\n\n"
                             f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
-                            f"⏰ 挑戰將在 3 小時後自動取消\n\n"
+                            f"⏰ 如果 3 小時沒有回應，系統會重新提醒\n\n"
                             f"請先選擇你的猜拳："
                         )
                         

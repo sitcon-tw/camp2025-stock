@@ -90,10 +90,76 @@ class PVPManager:
             await asyncio.sleep(10800)  # 3 hours = 10800 seconds
 
             if challenge_id in self.active_challenges:
-                await self._cancel_challenge(challenge_id, "超時自動取消")
+                await self._resend_challenge_message(challenge_id)
 
         except asyncio.CancelledError:
             logger.info(f"Challenge {challenge_id} countdown is canceled")
+
+    async def _resend_challenge_message(self, challenge_id: str):
+        """3小時後重新發送挑戰訊息"""
+        if challenge_id not in self.active_challenges:
+            return
+            
+        challenge_info = self.active_challenges[challenge_id]
+        username = challenge_info["username"]
+        amount = challenge_info["amount"]
+        chat_id = challenge_info["chat_id"]
+        status = challenge_info.get("status", "waiting_creator")
+        
+        # 根據狀態發送不同的重發訊息
+        if status == "waiting_creator":
+            # 發起人還未選擇，重發選擇訊息
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+            
+            message_text = (
+                f"🔔 **PVP 挑戰提醒**\n\n"
+                f"**發起者**: {escape_markdown(username, 2)}\n"
+                f"**金額**: {escape_markdown(str(amount), 2)} 點\n"
+                f"⏰ 你的挑戰已經過了 3 小時，請盡快選擇你的猜拳！"
+            )
+            
+            keyboard = [[
+                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
+                InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
+                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
+            ]]
+            
+            await self.bot.send_message(
+                chat_id=chat_id,
+                text=message_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            
+        elif status == "waiting_accepter":
+            # 等待其他人接受挑戰，重發公開挑戰訊息
+            message_text = (
+                f"🔔 **PVP 挑戰提醒**\n\n"
+                f"**發起者**: {escape_markdown(username, 2)}\n"
+                f"**金額**: {escape_markdown(str(amount), 2)} 點\n"
+                f"⏰ 這個挑戰已經過了 3 小時，快來接受挑戰吧！"
+            )
+            
+            keyboard = [[
+                InlineKeyboardButton("⚔️ 接受挑戰", callback_data=f"pvp_accept_{challenge_id}")
+            ]]
+            
+            await self.bot.send_message(
+                chat_id=chat_id,
+                text=message_text,
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+        
+        # 重新設置3小時倒數計時
+        timeout_task = asyncio.create_task(self._timeout_challenge(challenge_id))
+        if challenge_id in self.timeout_tasks:
+            old_task = self.timeout_tasks[challenge_id]
+            if not old_task.done():
+                old_task.cancel()
+        self.timeout_tasks[challenge_id] = timeout_task
+        
+        logger.info(f"Resent challenge message for {challenge_id}, next timeout in 3 hours")
 
     async def _cancel_challenge(self, challenge_id: str, reason: str):
         if challenge_id not in self.active_challenges:
