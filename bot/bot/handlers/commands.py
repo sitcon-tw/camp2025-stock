@@ -382,12 +382,17 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
             filled_qty = order.get('filled_quantity', 0)
 
             if status == 'partial':
-                filled_price = order.get('filled_price', price)
-                status_text = f"部分成交 ({filled_qty}/{quantity}@{filled_price}元)"
+                if filled_qty > 0:
+                    filled_price = order.get('filled_price', price)
+                    remaining_qty = quantity - filled_qty
+                    status_text = f"部分成交 ({filled_qty}/{quantity} 股已成交@{filled_price}元，剩餘{remaining_qty}股等待)"
+                else:
+                    status_text = '等待成交'
             elif status == 'pending':
                 if filled_qty > 0:
                     filled_price = order.get('filled_price', price)
-                    status_text = f"等待中 (已成交{filled_qty}股@{filled_price}元)"
+                    remaining_qty = quantity - filled_qty
+                    status_text = f"部分成交 ({filled_qty}/{quantity} 股已成交@{filled_price}元，剩餘{remaining_qty}股等待)"
                 else:
                     status_text = '等待成交'
             elif status == 'pending_limit':
