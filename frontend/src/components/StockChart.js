@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { twMerge } from "tailwind-merge";
 import CandlestickChart from "./CandlestickChart";
+import Modal from "./Modal";
+import useModal from "@/hooks/useModal";
 
 ChartJS.register(
     CategoryScale,
@@ -60,8 +62,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     const isDragging = useRef(false);
     const lastMouseX = useRef(0);
 
-    const [modalOpen, setModalOpen] = useState(false);
-    const [isModalClosing, setIsModalClosing] = useState(false);
+    const chartModeModal = useModal();
 
     const fetchingRef = useRef(false);
     const lastFetchTimeRef = useRef(0);
@@ -444,27 +445,19 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         );
     }
 
-    const handleCloseModal = () => {
-        setIsModalClosing(true);
-        setTimeout(() => {
-            setModalOpen(false);
-            setIsModalClosing(false);
-        }, 200); // Match animation duration
-    };
-
     const handleModeSelect = (mode) => {
         setDisplayMode(mode);
         if (mode === "candlestick") {
             resetZoomPan();
         }
-        handleCloseModal();
+        chartModeModal.closeModal();
     };
 
     return (
         <div className="relative flex h-full w-full flex-col rounded-lg bg-[#0f203e]">
             <div className="mb-2 flex w-full flex-shrink-0 justify-end">
                 <button
-                    onClick={() => setModalOpen(true)}
+                    onClick={chartModeModal.openModal}
                     className="ml-auto rounded-2xl bg-[#1A325F] px-3 py-1 text-xs font-medium text-[#AFE1F5] transition-colors hover:bg-[#2A4F7F]"
                 >
                     檢視
@@ -555,142 +548,58 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 </div>
             </div>
 
-            {modalOpen && (
-                <div
-                    className={twMerge(
-                        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs",
-                        isModalClosing
-                            ? "animate-modal-close-bg"
-                            : "animate-modal-open-bg",
-                    )}
-                    onClick={handleCloseModal}
-                >
-                    <div
-                        className={twMerge(
-                            "relative w-72 rounded-lg bg-[#1A325F] p-4",
-                            isModalClosing
-                                ? "animate-modal-close"
-                                : "animate-modal-open",
-                        )}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h3 className="mb-3 text-xl font-semibold text-[#82bee2]">
-                            選擇圖表模式
-                        </h3>
-                        <ul className="space-y-2">
-                            <li>
-                                <button
-                                    onClick={() =>
-                                        handleModeSelect("real")
-                                    }
-                                    className={twMerge(
-                                        "text-md w-full rounded-md px-3 py-2 text-left text-[#0f203e] transition-colors hover:bg-[#82bee2]/70",
-                                        displayMode === "real"
-                                            ? "bg-[#82bee2] text-[#0f203e]"
-                                            : "text-[#82bee2]",
-                                    )}
-                                >
-                                    真實價
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() =>
-                                        handleModeSelect("average")
-                                    }
-                                    className={twMerge(
-                                        "text-md w-full rounded-md px-3 py-2 text-left text-[#0f203e] transition-colors hover:bg-[#82bee2]/70",
-                                        displayMode === "average"
-                                            ? "bg-[#82bee2] text-[#0f203e]"
-                                            : "text-[#82bee2]",
-                                    )}
-                                >
-                                    平均價
-                                </button>
-                            </li>
-                            <li>
-                                <button
-                                    onClick={() =>
-                                        handleModeSelect(
-                                            "candlestick",
-                                        )
-                                    }
-                                    className={twMerge(
-                                        "text-md w-full rounded-md px-3 py-2 text-left text-[#0f203e] transition-colors hover:bg-[#82bee2]/70",
-                                        displayMode === "candlestick"
-                                            ? "bg-[#82bee2] text-[#0f203e]"
-                                            : "text-[#82bee2]",
-                                    )}
-                                >
-                                    K 線
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            )}
+            {/* 圖表模式選擇 Modal */}
+            <Modal
+                isOpen={chartModeModal.isOpen}
+                isClosing={chartModeModal.isClosing}
+                onClose={chartModeModal.closeModal}
+                title="選擇圖表模式"
+                size="sm"
+                className="w-72"
+            >
+                <ul className="space-y-2">
+                    <li>
+                        <button
+                            onClick={() => handleModeSelect("real")}
+                            className={twMerge(
+                                "text-md w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-[#82bee2]/70",
+                                displayMode === "real"
+                                    ? "bg-[#82bee2] text-[#0f203e]"
+                                    : "text-[#82bee2]",
+                            )}
+                        >
+                            真實價
+                        </button>
+                    </li>
+                    <li>
+                        <button
+                            onClick={() => handleModeSelect("average")}
+                            className={twMerge(
+                                "text-md w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-[#82bee2]/70",
+                                displayMode === "average"
+                                    ? "bg-[#82bee2] text-[#0f203e]"
+                                    : "text-[#82bee2]",
+                            )}
+                        >
+                            平均價
+                        </button>
+                    </li>
+                    <li>
+                        <button
+                            onClick={() => handleModeSelect("candlestick")}
+                            className={twMerge(
+                                "text-md w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-[#82bee2]/70",
+                                displayMode === "candlestick"
+                                    ? "bg-[#82bee2] text-[#0f203e]"
+                                    : "text-[#82bee2]",
+                            )}
+                        >
+                            K 線
+                        </button>
+                    </li>
+                </ul>
+            </Modal>
 
-            <style jsx global>{`
-                @keyframes modal-open {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-
-                @keyframes modal-close {
-                    from {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                    to {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                }
-
-                @keyframes modal-open-bg {
-                    from {
-                        opacity: 0;
-                        backdrop-filter: blur(0px);
-                    }
-                    to {
-                        opacity: 1;
-                        backdrop-filter: blur(4px);
-                    }
-                }
-
-                @keyframes modal-close-bg {
-                    from {
-                        opacity: 1;
-                        backdrop-filter: blur(4px);
-                    }
-                    to {
-                        opacity: 0;
-                        backdrop-filter: blur(0px);
-                    }
-                }
-
-                .animate-modal-open {
-                    animation: modal-open 0.2s ease-out;
-                }
-
-                .animate-modal-close {
-                    animation: modal-close 0.2s ease-in;
-                }
-
-                .animate-modal-open-bg {
-                    animation: modal-open-bg 0.2s ease-out;
-                }
-
-                .animate-modal-close-bg {
-                    animation: modal-close-bg 0.2s ease-in;
-                }
-            `}</style>
         </div>
     );
 };
