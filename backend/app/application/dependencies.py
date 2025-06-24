@@ -35,35 +35,35 @@ class ServiceContainer:
     # Repository 層
     @property
     def user_repository(self) -> MongoUserRepository:
-        """使用者資料存取層 - 懶加載"""
+        """使用者資料存取層 - 懶載入"""
         if 'user' not in self._repositories:
             self._repositories['user'] = MongoUserRepository(self._db)
         return self._repositories['user']
     
     @property
     def stock_repository(self) -> MongoStockRepository:
-        """股票資料存取層 - 懶加載"""
+        """股票資料存取層 - 懶載入"""
         if 'stock' not in self._repositories:
             self._repositories['stock'] = MongoStockRepository(self._db)
         return self._repositories['stock']
     
     @property
     def stock_order_repository(self) -> MongoStockOrderRepository:
-        """訂單資料存取層 - 懶加載"""
+        """訂單資料存取層 - 懶載入"""
         if 'stock_order' not in self._repositories:
             self._repositories['stock_order'] = MongoStockOrderRepository(self._db)
         return self._repositories['stock_order']
     
     @property
     def transfer_repository(self) -> MongoTransferRepository:
-        """轉帳資料存取層 - 懶加載"""
+        """轉帳資料存取層 - 懶載入"""
         if 'transfer' not in self._repositories:
             self._repositories['transfer'] = MongoTransferRepository(self._db)
         return self._repositories['transfer']
     
     @property
     def market_config_repository(self) -> MongoMarketConfigRepository:
-        """市場設定資料存取層 - 懶加載"""
+        """市場設定資料存取層 - 懶載入"""
         if 'market_config' not in self._repositories:
             self._repositories['market_config'] = MongoMarketConfigRepository(self._db)
         return self._repositories['market_config']

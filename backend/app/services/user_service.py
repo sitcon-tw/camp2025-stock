@@ -94,7 +94,7 @@ class UserService:
             if not user:
                 return UserLoginResponse(
                     success=False,
-                    message="使用者不存在或未啟用"
+                    message="使用者不存在或帳號未啟用"
                 )
             
             # 建立使用者 Token

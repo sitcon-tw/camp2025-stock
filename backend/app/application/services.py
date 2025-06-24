@@ -49,7 +49,7 @@ class UserApplicationService(BaseApplicationService):
             if not user:
                 return UserLoginResponse(
                     success=False,
-                    message="使用者不存在或未啟用"
+                    message="使用者不存在或帳號未啟用"
                 )
             
             # 產生 JWT Token
@@ -341,7 +341,7 @@ class AuthenticationApplicationService(BaseApplicationService):
             (success, user_data, message)
         """
         try:
-            # 1. 驗證 Telegram OAuth 數據
+            # 1. 驗證 Telegram OAuth 資料
             if not self.auth_domain_service.verify_telegram_oauth(auth_data.copy(), bot_token):
                 logger.warning(f"Invalid Telegram auth data for user {auth_data.get('id')}")
                 return False, None, "Invalid Telegram authentication data"

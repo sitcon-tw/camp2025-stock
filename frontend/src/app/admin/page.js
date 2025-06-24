@@ -75,7 +75,7 @@ export default function AdminPage() {
     const [teams, setTeams] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const [studentsLoading, setStudentsLoading] = useState(true); // 新增學員數據加載狀態
+    const [studentsLoading, setStudentsLoading] = useState(true); // 新增學員資料載入狀態
 
     // 市場狀態
     const [marketStatus, setMarketStatus] = useState(null);
@@ -201,7 +201,7 @@ export default function AdminPage() {
                 // 先測試 token 是否有效
                 await getSystemStats(token);
 
-                // Token 有效，設置狀態並初始化數據
+                // Token 有效，設置狀態並初始化資料
                 setAdminToken(token);
                 setIsLoggedIn(true);
 
@@ -976,7 +976,7 @@ export default function AdminPage() {
             setShowSettlementResultModal(true);
             showNotification("強制結算完成！", "success");
 
-            // 重新獲取統計數據
+            // 重新獲取統計資料
             await fetchSystemStats(adminToken);
             await fetchUserAssets(adminToken);
         } catch (error) {

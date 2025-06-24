@@ -40,7 +40,7 @@ BASE_URL = "http://localhost:8000"  # 請根據實際情況修改
 ADMIN_PASSWORD = "admin123"
 BOT_TOKEN = "neverGonnaGiveYouUp"
 
-# 學員數據（從您提供的JSON文件）
+# 學員資料（從您提供的JSON文件）
 STUDENTS_DATA = [
     {"id": 6179851991, "name": "毛哥EM", "team": "第一組"},
     {"id": 1681526140, "name": "KoukeNeko", "team": "第一組測試更新"},

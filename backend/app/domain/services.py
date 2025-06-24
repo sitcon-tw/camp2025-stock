@@ -32,8 +32,8 @@ class AuthenticationDomainService:
     
     def verify_telegram_oauth(self, auth_data: dict, bot_token: str) -> bool:
         """
-        驗證 Telegram OAuth 認證數據
-        領域邏輯：按照 Telegram 官方規範驗證數據完整性
+        驗證 Telegram OAuth 認證資料
+        領域邏輯：按照 Telegram 官方規範驗證資料完整性
         """
         # 取得 hash 值
         received_hash = auth_data.pop('hash', None)
@@ -62,7 +62,7 @@ class AuthenticationDomainService:
             return False, "使用者未註冊，請先透過 Telegram Bot 進行註冊"
         
         if not user.is_active:
-            return False, "使用者帳號已被停用"
+            return False, "使用者帳號未啟用"
         
         return True, "驗證成功"
 

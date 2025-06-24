@@ -115,7 +115,7 @@ def verify_bot_token(token: str = Header(..., alias="token")) -> bool:
 
 
 def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
-    """驗證 Telegram OAuth 認證數據"""
+    """驗證 Telegram OAuth 認證資料"""
     # 取得 hash 值
     received_hash = auth_data.pop('hash', None)
     if not received_hash:
