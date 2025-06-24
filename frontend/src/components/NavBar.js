@@ -185,7 +185,7 @@ export default function NavBar() {
                         xmlns="http://www.w3.org/2000/svg"
                     >
                         <path
-                            d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm5 9h-4v4h-2v-4H5V9h4V5h2v4h4v2z"
+                            d="M10 2C7.79 2 6 3.79 6 6s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 12c-2.67 0-8 1.34-8 4v1c0 .55.45 1 1 1h14c.55 0 1-.45 1-1v-1c0-2.66-5.33-4-8-4z"
                             fill="currentColor"
                         />
                     </svg>
