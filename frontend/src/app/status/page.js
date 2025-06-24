@@ -5,6 +5,7 @@ import StockChart from "@/components/StockChart";
 import TradingTabs from "@/components/TradingTabs";
 import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function Status() {
     const [stockData, setStockData] = useState({
@@ -24,6 +25,11 @@ export default function Status() {
     });
 
     const [error, setError] = useState(null);
+    const [showTradeModal, setShowTradeModal] = useState(false);
+    const [tradeType, setTradeType] = useState("buy"); // "buy" or "sell"
+    const [isMarketPrice, setIsMarketPrice] = useState(true);
+    const [customPrice, setCustomPrice] = useState("");
+    const [isModalClosing, setIsModalClosing] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -58,6 +64,14 @@ export default function Status() {
     const currentPrice = stockData.lastPrice;
     const changePercent = parseFloat(stockData.changePercent) || 0;
 
+    const handleCloseTradeModal = () => {
+        setIsModalClosing(true);
+        setTimeout(() => {
+            setShowTradeModal(false);
+            setIsModalClosing(false);
+        }, 200); // Match animation duration
+    };
+
     return (
         <div className="min-h-screen w-full bg-[#0f203e] pb-28 md:pb-0">
             <div className="flex w-full max-w-none flex-col px-4 lg:px-8">
@@ -82,6 +96,32 @@ export default function Status() {
                                 currentPrice={currentPrice}
                                 changePercent={changePercent}
                             />
+                        </div>
+
+                        {/* 買賣按鈕 */}
+                        <div className="mb-4 grid grid-cols-2 gap-2 text-center">
+                            <button
+                                onClick={() => {
+                                    setTradeType("buy");
+                                    setShowTradeModal(true);
+                                }}
+                                className="rounded-lg bg-[#1B325E] hover:bg-[#2A4A7F] p-3 xl:p-4 transition-colors"
+                            >
+                                <p className="text-lg font-bold lg:text-2xl xl:text-3xl text-white">
+                                    買
+                                </p>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setTradeType("sell");
+                                    setShowTradeModal(true);
+                                }}
+                                className="rounded-lg bg-[#1B325E] hover:bg-[#2A4A7F] p-3 xl:p-4 transition-colors"
+                            >
+                                <p className="text-lg font-bold lg:text-2xl xl:text-3xl text-white">
+                                    賣
+                                </p>
+                            </button>
                         </div>
 
                         {/* 價格資訊 */}
@@ -182,6 +222,161 @@ export default function Status() {
                     <TradingTabs currentPrice={currentPrice} />
                 </div>
             </div>
+
+            {/* 交易 Modal */}
+            {showTradeModal && (
+                <div
+                    className={twMerge(
+                        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm",
+                        isModalClosing
+                            ? "animate-modal-close-bg"
+                            : "animate-modal-open-bg",
+                    )}
+                    onClick={handleCloseTradeModal}
+                >
+                    <div
+                        className={twMerge(
+                            "w-full max-w-md rounded-xl bg-[#1A325F] p-6 shadow-2xl",
+                            isModalClosing
+                                ? "animate-modal-close"
+                                : "animate-modal-open",
+                        )}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-[#AFE1F5]">
+                                {tradeType === "buy" ? "買入" : "賣出"}
+                            </h2>
+                            <button
+                                onClick={handleCloseTradeModal}
+                                className="text-xl font-bold text-[#AFE1F5] hover:text-[#7BC2E6]"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* 市價選項 */}
+                            <div className="flex items-center space-x-3">
+                                <input
+                                    type="checkbox"
+                                    id="marketPrice"
+                                    checked={isMarketPrice}
+                                    onChange={(e) => setIsMarketPrice(e.target.checked)}
+                                    className="h-4 w-4 rounded border-[#4f6f97] bg-[#0f203e] text-[#7BC2E6] focus:ring-[#7BC2E6]"
+                                />
+                                <label htmlFor="marketPrice" className="text-[#AFE1F5]">
+                                    市價 ({Math.round(currentPrice)})
+                                </label>
+                            </div>
+
+                            {/* 價格輸入 */}
+                            <div>
+                                <label className="block text-sm font-medium text-[#AFE1F5] mb-2">
+                                    價格
+                                </label>
+                                <input
+                                    type="number"
+                                    value={isMarketPrice ? Math.round(currentPrice) : customPrice}
+                                    onChange={(e) => setCustomPrice(e.target.value)}
+                                    disabled={isMarketPrice}
+                                    placeholder="請輸入價格"
+                                    className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:outline-none focus:ring-1 focus:ring-[#7BC2E6] disabled:bg-gray-700 disabled:text-gray-400"
+                                />
+                            </div>
+
+                            {/* 數量輸入 */}
+                            <div>
+                                <label className="block text-sm font-medium text-[#AFE1F5] mb-2">
+                                    數量
+                                </label>
+                                <input
+                                    type="number"
+                                    placeholder="請輸入數量"
+                                    className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:outline-none focus:ring-1 focus:ring-[#7BC2E6]"
+                                />
+                            </div>
+
+                            {/* 按鈕 */}
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={handleCloseTradeModal}
+                                    className="flex-1 rounded-lg border border-[#4f6f97] bg-transparent px-4 py-2 text-[#AFE1F5] hover:bg-[#4f6f97]/20"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    className="flex-1 rounded-lg px-4 py-2 text-black font-medium bg-[#7CBEE4] hover:bg-[#6AADD1]"
+                                >
+                                    確認{tradeType === "buy" ? "買入" : "賣出"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style jsx global>{`
+                @keyframes modal-open {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+
+                @keyframes modal-close {
+                    from {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                    to {
+                        opacity: 0;
+                        transform: scale(0.95);
+                    }
+                }
+
+                @keyframes modal-open-bg {
+                    from {
+                        opacity: 0;
+                        backdrop-filter: blur(0px);
+                    }
+                    to {
+                        opacity: 1;
+                        backdrop-filter: blur(4px);
+                    }
+                }
+
+                @keyframes modal-close-bg {
+                    from {
+                        opacity: 1;
+                        backdrop-filter: blur(4px);
+                    }
+                    to {
+                        opacity: 0;
+                        backdrop-filter: blur(0px);
+                    }
+                }
+
+                .animate-modal-open {
+                    animation: modal-open 0.2s ease-out;
+                }
+
+                .animate-modal-close {
+                    animation: modal-close 0.2s ease-in;
+                }
+
+                .animate-modal-open-bg {
+                    animation: modal-open-bg 0.2s ease-out;
+                }
+
+                .animate-modal-close-bg {
+                    animation: modal-close-bg 0.2s ease-in;
+                }
+            `}</style>
         </div>
     );
 }
