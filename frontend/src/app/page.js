@@ -136,7 +136,7 @@ export default function Home() {
                     點數系統
                 </h1>
 
-                <div className="mt-10 w-full max-w-lg rounded-xl bg-[#1A325F] p-6">
+                <div className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6">
                     <div className="mb-3 flex items-center justify-between">
                         <div className="w-20"></div>
                         <h2 className="text-center text-2xl font-semibold text-[#AFE1F5]">
@@ -174,7 +174,7 @@ export default function Home() {
                     )}
                 </div>
 
-                <div className="mt-10 w-full max-w-lg rounded-xl bg-[#1A325F] p-6">
+                <div className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-center text-2xl font-semibold text-[#AFE1F5]">
                         關閉交易時間
                     </h3>
