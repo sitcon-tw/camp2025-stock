@@ -76,11 +76,19 @@ class PVPManager:
             }
 
     async def cancel_existing_challenge(self, user_id: str) -> bool:
+        logger.info(f"cancel_existing_challenge called with user_id: {user_id}")
         existing_challenge_id = self.user_challenges.get(user_id)
+        logger.info(f"existing_challenge_id: {existing_challenge_id} (type: {type(existing_challenge_id)})")
+        
         if existing_challenge_id and existing_challenge_id in self.active_challenges:
+            logger.info("About to call _cancel_challenge")
             await self._cancel_challenge(existing_challenge_id, "使用者主動取消")
+            logger.info("_cancel_challenge completed")
             # 檢查是否真的被清理了
-            return existing_challenge_id not in self.active_challenges
+            result = existing_challenge_id not in self.active_challenges
+            logger.info(f"Challenge cleanup check result: {result}")
+            return result
+        logger.info("No existing challenge found")
         return False
 
     async def _timeout_challenge(self, challenge_id: str):
