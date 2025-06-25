@@ -177,6 +177,8 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     amount = int(parts[0])
                     chat_id = parts[1]
                     
+                    logger.info(f"Parsed data - Amount: {amount} (type: {type(amount)}), Chat ID: {chat_id} (type: {type(chat_id)})")
+                    
                     pvp_manager = get_pvp_manager()
                     
                     # 驗證使用者是否有現有挑戰
@@ -190,12 +192,14 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     
                     if cancelled:
                         # 建立新挑戰
+                        logger.info(f"About to create challenge with: user_id={user_id}, amount={amount}, chat_id='{chat_id}' (type: {type(chat_id)})")
                         result = await pvp_manager.create_challenge(
                             user_id=user_id,
                             username=query.from_user.full_name or "未知使用者",
                             amount=amount,
                             chat_id=str(chat_id)  
                         )
+                        logger.info(f"Create challenge result: {result}")
                         
                         if not result.get("conflict") and not result.get("error"):
                             challenge_id = result["challenge_id"]
@@ -238,7 +242,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     return
                 except Exception as e:
                     logger.error(f"Error processing pvp_conflict_new: {e}")
-                    logger.error(f"Callback data: {callback_data}, Amount: {amount}, Chat ID: {chat_id}")
+                    logger.error(f"Callback data: {callback_data}, Amount: {amount}, Chat ID: '{chat_id}' (type: {type(chat_id)})")
                     await query.edit_message_text("❌ 處理請求時發生錯誤")
                     return
             else:
