@@ -289,12 +289,15 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                                 seconds = int(remaining.total_seconds()) % 60
                                 time_str = f"{minutes}分{seconds}秒" if minutes > 0 else f"{seconds}秒"
                                 
+                                # 轉義Markdown V2特殊字元
+                                escaped_time = escape_markdown(time_str, 2)
+                                
                                 message_text = (
                                     f"📋 **繼續現有挑戰**\n\n"
                                     f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n"
-                                    f"⏰ 剩餘時間：{time_str}\n\n"
+                                    f"⏰ 剩餘時間：{escaped_time}\n\n"
                                     f"✅ 你已經選擇好猜拳了\n"
-                                    f"🔄 等待其他玩家接受挑戰..."
+                                    f"🔄 等待其他玩家接受挑戰\\.\\.\\."
                                 )
                                 
                                 await query.edit_message_text(
@@ -309,7 +312,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                                 f"📋 **繼續現有挑戰**\n\n"
                                 f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n\n"
                                 f"✅ 你已經選擇好猜拳了\n"
-                                f"🔄 等待其他玩家接受挑戰..."
+                                f"🔄 等待其他玩家接受挑戰\\.\\.\\."
                             )
                             
                             await query.edit_message_text(
@@ -323,7 +326,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                             f"📋 **繼續現有挑戰**\n\n"
                             f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n\n"
                             f"✅ 你已經選擇好猜拳了\n"
-                            f"🔄 等待其他玩家接受挑戰..."
+                            f"🔄 等待其他玩家接受挑戰\\.\\.\\."
                         )
                         
                         await query.edit_message_text(

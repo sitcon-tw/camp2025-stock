@@ -199,7 +199,7 @@ async def get_announcements(
         ).limit(limit)
         announcements = await announcements_cursor.to_list(length=None)
         
-        # 轉換 ObjectId 為字符串
+        # 轉換 ObjectId 為字元串
         for announcement in announcements:
             announcement["_id"] = str(announcement["_id"])
         
