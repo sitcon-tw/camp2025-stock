@@ -476,7 +476,7 @@ async def reset_ipo(
         
         logger.info(f"IPO reset: {initial_shares} shares @ {initial_price} points each")
         
-        # 發送系統公告到 Telegram Bot
+        # 傳送系統公告到 Telegram Bot
         try:
             from app.services.admin_service import AdminService
             admin_service = AdminService(db)
@@ -573,7 +573,7 @@ async def update_ipo(
         
         logger.info(f"IPO updated: {message}")
         
-        # 發送系統公告到 Telegram Bot
+        # 傳送系統公告到 Telegram Bot
         try:
             from app.services.admin_service import AdminService
             admin_service = AdminService(db)
@@ -715,9 +715,9 @@ async def reset_all_data(
         
         logger.warning(f"Database reset completed: {total_deleted} documents deleted")
         
-        # 發送系統公告到 Telegram Bot
+        # 傳送系統公告到 Telegram Bot
         try:
-            # 使用 admin_service 發送系統公告
+            # 使用 admin_service 傳送系統公告
             from app.services.admin_service import AdminService
             admin_service = AdminService(db)
             await admin_service._send_system_announcement(
@@ -772,14 +772,14 @@ async def test_announcement(
         
         return {
             "ok": True,
-            "message": "測試公告已發送"
+            "message": "測試公告已傳送"
         }
         
     except Exception as e:
         logger.error(f"Failed to send test announcement: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"發送測試公告失敗: {str(e)}"
+            detail=f"傳送測試公告失敗: {str(e)}"
         )
 
 
@@ -941,7 +941,7 @@ async def update_ipo_defaults(
         
         logger.info(f"IPO defaults updated: {message}")
         
-        # 發送系統公告到 Telegram Bot
+        # 傳送系統公告到 Telegram Bot
         try:
             from app.services.admin_service import AdminService
             admin_service = AdminService(db)
@@ -1125,7 +1125,7 @@ async def fix_negative_balances(
         500: {"model": ErrorResponse, "description": "系統錯誤"}
     },
     summary="觸發系統全面點數檢查",
-    description="對所有使用者進行全面的點數完整性檢查，如發現負點數會立即發送警報"
+    description="對所有使用者進行全面的點數完整性檢查，如發現負點數會立即傳送警報"
 )
 async def trigger_system_wide_balance_check(
     current_admin=Depends(get_current_admin),
@@ -1336,7 +1336,7 @@ async def update_transfer_fee_config(
         
         logger.info(f"Transfer fee config updated: {message}")
         
-        # 發送系統公告到 Telegram Bot
+        # 傳送系統公告到 Telegram Bot
         try:
             from app.services.admin_service import AdminService
             admin_service = AdminService(db)

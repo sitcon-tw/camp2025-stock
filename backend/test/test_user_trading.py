@@ -304,7 +304,7 @@ class TradingTestRunner:
                 else:
                     await self.log(f"❌ 最終結算失敗: {data}")
         except Exception as e:
-            await self.log(f"❌ 發送最終結算請求失敗: {e}")
+            await self.log(f"❌ 傳送最終結算請求失敗: {e}")
     
     async def show_final_results(self):
         """顯示最終結果"""

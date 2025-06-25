@@ -224,13 +224,13 @@ class NotificationProvider(ABC):
     @abstractmethod
     async def send_notification(self, recipient: str, message: str, 
                               notification_type: str = "info") -> bool:
-        """發送通知"""
+        """傳送通知"""
         pass
     
     @abstractmethod
     async def send_bulk_notification(self, recipients: List[str], 
                                    message: str, notification_type: str = "info") -> Dict[str, bool]:
-        """批量發送通知"""
+        """批量傳送通知"""
         pass
 
 

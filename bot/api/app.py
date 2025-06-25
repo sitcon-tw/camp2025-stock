@@ -4,7 +4,7 @@ from os import environ
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from api.routes import webhook, broadcast, health
+from api.routes import webhook, broadcast, health, notifications
 from bot.setup import initialize
 from utils.logger import setup_logger
 
@@ -28,3 +28,4 @@ server = FastAPI(lifespan=lifespan)
 server.include_router(webhook.router)
 server.include_router(broadcast.router)
 server.include_router(health.router)
+server.include_router(notifications.router, prefix="/notifications")

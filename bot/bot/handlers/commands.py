@@ -511,7 +511,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
 
     reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
 
-    # 發送或編輯訊息
+    # 傳送或編輯訊息
     if edit_message and hasattr(update_or_query, 'edit_message_text'):
         try:
             await update_or_query.edit_message_text(
@@ -521,7 +521,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
             )
         except Exception as e:
             logger.warning(f"Failed to edit message: {e}")
-            # 如果編輯失敗，發送新訊息
+            # 如果編輯失敗，傳送新訊息
             await update_or_query.message.reply_text(
                 message_text,
                 parse_mode=ParseMode.MARKDOWN_V2,

@@ -96,7 +96,7 @@ class PVPManager:
             logger.info(f"Challenge {challenge_id} countdown is canceled")
 
     async def _resend_challenge_message(self, challenge_id: str):
-        """3小時後重新發送挑戰訊息"""
+        """3小時後重新傳送挑戰訊息"""
         if challenge_id not in self.active_challenges:
             return
             
@@ -106,7 +106,7 @@ class PVPManager:
         chat_id = challenge_info["chat_id"]
         status = challenge_info.get("status", "waiting_creator")
         
-        # 根據狀態發送不同的重發訊息
+        # 根據狀態傳送不同的重發訊息
         if status == "waiting_creator":
             # 發起人還未選擇，重發選擇訊息
             from telegram import InlineKeyboardButton, InlineKeyboardMarkup
