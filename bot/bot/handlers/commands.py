@@ -221,9 +221,10 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             existing_challenge = result["existing_challenge"]
             remaining_time = result["remaining_time"]
 
-            minutes = remaining_time // 60
+            hours = remaining_time // 3600
+            minutes = (remaining_time % 3600) // 60
             seconds = remaining_time % 60
-            time_str = f"{minutes}分{seconds}秒" if minutes > 0 else f"{seconds}秒"
+            time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
 
             conflict_message = (
                 f"⚠️ **你已有進行中的 PVP 挑戰！**\n\n"
