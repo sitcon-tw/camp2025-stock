@@ -1208,6 +1208,61 @@ async def cleanup_pvp_challenges(
         )
 
 
+@router.delete(
+    "/pvp/all",
+    responses={
+        200: {"description": "所有 PVP 資料刪除成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="刪除所有 PVP 資料",
+    description="⚠️ 危險操作：刪除資料庫中所有的 PVP 挑戰記錄"
+)
+async def delete_all_pvp_data(
+    current_admin=Depends(get_current_admin)
+):
+    """刪除所有 PVP 資料"""
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        
+        # 獲取刪除前的統計資料
+        total_count = await db[Collections.PVP_CHALLENGES].count_documents({})
+        pending_count = await db[Collections.PVP_CHALLENGES].count_documents({
+            "status": {"$in": ["pending", "waiting_accepter", "waiting_creator"]}
+        })
+        completed_count = await db[Collections.PVP_CHALLENGES].count_documents({
+            "status": "completed"
+        })
+        expired_count = await db[Collections.PVP_CHALLENGES].count_documents({
+            "status": "expired"
+        })
+        
+        # 刪除所有PVP挑戰記錄
+        delete_result = await db[Collections.PVP_CHALLENGES].delete_many({})
+        
+        logger.warning(f"Admin {current_admin.get('username', 'unknown')} deleted all PVP data: {delete_result.deleted_count} records")
+        
+        return {
+            "ok": True,
+            "message": f"已刪除所有 PVP 資料，共 {delete_result.deleted_count} 筆記錄",
+            "deleted_stats": {
+                "total_deleted": delete_result.deleted_count,
+                "pending_deleted": pending_count,
+                "completed_deleted": completed_count,
+                "expired_deleted": expired_count
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to delete all PVP data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"刪除所有 PVP 資料失敗: {str(e)}"
+        )
+
+
 # ========== 轉點數手續費設定 ==========
 
 @router.get(
