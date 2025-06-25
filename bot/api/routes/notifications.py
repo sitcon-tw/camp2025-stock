@@ -1,20 +1,20 @@
 import logging
 
-from api.auth import verify_backend_token
-from bot.instance import bot
-from bot.services.notification_sender import NotificationSender
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
+from api.depends.auth import verify_backend_token
 from api.schemas.notifications import DMRequest, BulkDMRequest, NotificationRequest, TradeNotificationRequest, \
     TransferNotificationRequest, SystemNotificationRequest
+from bot.instance import bot
+from bot.services.notification_sender import NotificationSender
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.post("/dm/send")
-async def send_dm(request: DMRequest, ):
+@router.post("/bot/direct/send")
+async def send_dm(request: DMRequest, token: str = Depends(verify_backend_token)):
     """
     傳送私人訊息給指定使用者
     """
@@ -36,8 +36,8 @@ async def send_dm(request: DMRequest, ):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/dm/bulk")
-async def send_bulk_dm(request: BulkDMRequest, ):
+@router.post("/bot/direct/bulk")
+async def send_bulk_dm(request: BulkDMRequest, token: str = Depends(verify_backend_token)):
     """
     批量傳送私人訊息給多個使用者
     """
@@ -64,8 +64,8 @@ async def send_bulk_dm(request: BulkDMRequest, ):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/notification/send")
-async def send_notification(request: NotificationRequest, ):
+@router.post("/bot/notification/send")
+async def send_notification(request: NotificationRequest, token: str = Depends(verify_backend_token)):
     """
     傳送格式化的通知訊息
     """
@@ -89,8 +89,8 @@ async def send_notification(request: NotificationRequest, ):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/notification/trade")
-async def send_trade_notification(request: TradeNotificationRequest, ):
+@router.post("/bot/notification/trade")
+async def send_trade_notification(request: TradeNotificationRequest, token: str = Depends(verify_backend_token)):
     """
     傳送交易通知
     """
@@ -116,8 +116,8 @@ async def send_trade_notification(request: TradeNotificationRequest, ):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/notification/transfer")
-async def send_transfer_notification(request: TransferNotificationRequest, ):
+@router.post("/bot/notification/transfer")
+async def send_transfer_notification(request: TransferNotificationRequest, token: str = Depends(verify_backend_token)):
     """
     傳送轉帳通知
     """
@@ -141,8 +141,8 @@ async def send_transfer_notification(request: TransferNotificationRequest, ):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/notification/system")
-async def send_system_notification(request: SystemNotificationRequest, ):
+@router.post("/bot/notification/system")
+async def send_system_notification(request: SystemNotificationRequest, token: str = Depends(verify_backend_token)):
     """
     傳送系統通知
     """
@@ -163,11 +163,3 @@ async def send_system_notification(request: SystemNotificationRequest, ):
     except Exception as e:
         logger.error(f"Error sending system notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-@router.get("/health")
-async def health_check():
-    """
-    健康檢查端點
-    """
-    return {"status": "healthy", "service": "notification_service"}

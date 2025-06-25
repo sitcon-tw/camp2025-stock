@@ -1,36 +1,23 @@
 from os import environ
-from typing import Annotated
 
-from bot.instance import bot
-from fastapi import APIRouter, status, Header
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, status, Depends
 from telegram.helpers import escape_markdown
-from utils.logger import setup_logger
 
+from api.depends.auth import verify_backend_token
 from api.schemas.broadcast import Broadcast
+from bot.instance import bot
+from utils.logger import setup_logger
+from bot.helper.chat_ids import STUDENT_GROUPS
 
 router = APIRouter()
 logger = setup_logger(__name__)
-BROADCAST_CHANNELS = environ.get("BROADCAST_CHANNELS").split(",")
 BACKEND_TOKEN = environ.get("BACKEND_TOKEN")
 
 
 @router.post("/bot/broadcast/")
-async def broadcast(request: Broadcast, token: Annotated[str | None, Header()] = None):
-    if not token:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={
-            "ok": False,
-            "message": "token is not provided"
-        })
-
-    if not token == BACKEND_TOKEN:
-        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={
-            "ok": False,
-            "message": "token is incorrect :D"
-        })
-
+async def broadcast(request: Broadcast, token: str = Depends(verify_backend_token)):
     logger.info("[FastAPI] Selective broadcast endpoint hit.")
-    for channel in BROADCAST_CHANNELS:
+    for channel in list(STUDENT_GROUPS.values()):
         try:
             await bot.bot.send_message(
                 f"-{channel}",
