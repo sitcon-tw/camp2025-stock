@@ -188,14 +188,18 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                         return
                     
                     # 取消現有挑戰
+                    logger.info(f"About to cancel existing challenge for user {user_id}")
                     cancelled = await pvp_manager.cancel_existing_challenge(user_id)
+                    logger.info(f"Cancel result: {cancelled}")
                     
                     if cancelled:
                         # 建立新挑戰
-                        logger.info(f"About to create challenge with: user_id={user_id}, amount={amount}, chat_id='{chat_id}' (type: {type(chat_id)})")
+                        logger.info("About to create challenge...")
+                        username = query.from_user.full_name or "未知使用者"
+                        logger.info(f"Username: {username}")
                         result = await pvp_manager.create_challenge(
                             user_id=user_id,
-                            username=query.from_user.full_name or "未知使用者",
+                            username=username,
                             amount=amount,
                             chat_id=str(chat_id)  
                         )
