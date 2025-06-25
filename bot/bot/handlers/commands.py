@@ -278,11 +278,16 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
             ]]
 
-            await update.message.reply_text(
+            sent_message = await update.message.reply_text(
                 escape_markdown(message_text, 2),
                 parse_mode=ParseMode.MARKDOWN_V2,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
+            
+            # 將訊息ID儲存到PVP manager中
+            from bot.pvp_manager import get_pvp_manager
+            pvp_manager = get_pvp_manager()
+            pvp_manager.store_challenge_message(challenge_id, sent_message.message_id)
 
     except Exception as e:
         logger.error(f"Failed to create pvp instance: {e}")

@@ -17,6 +17,7 @@ class PVPManager:
         self.active_challenges: Dict[str, Dict] = {}  # challenge_id -> challenge_info
         self.user_challenges: Dict[str, str] = {}  # user_id -> challenge_id
         self.timeout_tasks: Dict[str, asyncio.Task] = {}  # challenge_id -> timeout_task
+        self.challenge_messages: Dict[str, Dict] = {}  # challenge_id -> {"chat_id": ..., "message_id": ...}
 
     async def create_challenge(self, user_id: str, username: str, amount: int, chat_id: str) -> Dict:
         existing_challenge_id = self.user_challenges.get(user_id)
@@ -140,6 +141,16 @@ class PVPManager:
 
             logger.info(f"Challenge {challenge_id} is canceled: {reason}")
 
+            # 編輯原始挑戰訊息，移除按鈕並顯示已取消狀態
+            await self.edit_challenge_message(
+                challenge_id,
+                f"❌ **PVP 挑戰已取消**\n\n"
+                f"**發起者**: {escape_markdown(username, 2)}\n"
+                f"**金額**: {escape_markdown(str(amount), 2)} 點\n"
+                f"**原因**: {escape_markdown(reason, 2)}\n\n"
+                f"此挑戰已失效，無法再進行操作\\."
+            )
+
             self._cleanup_challenge(challenge_id)
         else:
             logger.error(f"Cannot cancel challenge {challenge_id}, backend's fault!")
@@ -153,6 +164,10 @@ class PVPManager:
             del self.active_challenges[challenge_id]
             if user_id in self.user_challenges:
                 del self.user_challenges[user_id]
+
+            # 清理訊息記錄
+            if challenge_id in self.challenge_messages:
+                del self.challenge_messages[challenge_id]
 
             # 取消倒數計時任務
             if challenge_id in self.timeout_tasks:
@@ -175,6 +190,32 @@ class PVPManager:
 
     def get_user_challenge(self, user_id: str) -> Optional[str]:
         return self.user_challenges.get(user_id)
+    
+    def store_challenge_message(self, challenge_id: str, message_id: int):
+        """儲存挑戰訊息的ID，用於後續編輯或刪除"""
+        if challenge_id in self.active_challenges:
+            chat_id = self.active_challenges[challenge_id]["chat_id"]
+            self.challenge_messages[challenge_id] = {
+                "chat_id": chat_id,
+                "message_id": message_id
+            }
+            logger.info(f"Stored message {message_id} for challenge {challenge_id}")
+    
+    async def edit_challenge_message(self, challenge_id: str, new_text: str, reply_markup=None):
+        """編輯挑戰訊息"""
+        if challenge_id in self.challenge_messages:
+            message_info = self.challenge_messages[challenge_id]
+            try:
+                await self.bot.edit_message_text(
+                    text=new_text,
+                    chat_id=message_info["chat_id"],
+                    message_id=message_info["message_id"],
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                    reply_markup=reply_markup
+                )
+                logger.info(f"Edited message for challenge {challenge_id}")
+            except Exception as e:
+                logger.error(f"Failed to edit message for challenge {challenge_id}: {e}")
 
 
 pvp_manager: Optional[PVPManager] = None

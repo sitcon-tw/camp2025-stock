@@ -225,11 +225,14 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                             ]
                             reply_markup = InlineKeyboardMarkup(keyboard)
                             
-                            await query.edit_message_text(
+                            edited_message = await query.edit_message_text(
                                 message_text,
                                 parse_mode=ParseMode.MARKDOWN_V2,
                                 reply_markup=reply_markup
                             )
+                            
+                            # 儲存新挑戰的訊息ID
+                            pvp_manager.store_challenge_message(challenge_id, edited_message.message_id)
                         else:
                             # 安全處理錯誤訊息
                             response = result.get("response", {})
@@ -285,11 +288,15 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
                     
-                    await query.edit_message_text(
+                    edited_message = await query.edit_message_text(
                         message_text,
                         parse_mode=ParseMode.MARKDOWN_V2,
                         reply_markup=reply_markup
                     )
+                    
+                    # 儲存挑戰訊息ID
+                    pvp_manager = get_pvp_manager()
+                    pvp_manager.store_challenge_message(challenge_id, edited_message.message_id)
                     
                 elif status == "waiting_accepter":
                     # 發起人已選擇，等待其他人接受
