@@ -27,7 +27,6 @@ class NotificationRequest(BaseModel):
 class TradeNotificationRequest(BaseModel):
     user_id: int
     action: str  # "buy" or "sell"
-    stock_symbol: str = "SITC"
     quantity: int
     price: float
     total_amount: float

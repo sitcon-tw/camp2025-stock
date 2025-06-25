@@ -1,12 +1,13 @@
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
+from telegram.constants import ParseMode
+from telegram.error import TelegramError
 
 from api.depends.auth import verify_backend_token
 from api.schemas.notifications import DMRequest, BulkDMRequest, NotificationRequest, TradeNotificationRequest, \
     TransferNotificationRequest, SystemNotificationRequest
 from bot.instance import bot
-from bot.services.notification_sender import NotificationSender
 
 logger = logging.getLogger(__name__)
 
@@ -15,25 +16,16 @@ router = APIRouter()
 
 @router.post("/bot/direct/send")
 async def send_dm(request: DMRequest, token: str = Depends(verify_backend_token)):
-    """
-    傳送私人訊息給指定使用者
-    """
     try:
-        notification_sender = NotificationSender(bot)
-        success = await notification_sender.send_dm(
-            user_id=request.user_id,
-            message=request.message,
-            parse_mode=request.parse_mode
-        )
-
-        if success:
-            return {"status": "success", "message": "DM sent successfully"}
-        else:
-            raise HTTPException(status_code=400, detail="Failed to send DM")
-
+        await bot.bot.send_message(chat_id=request.user_id, text=request.message, parse_mode=request.parse_mode)
+    except TelegramError as e:
+        logger.error(f"Telegram error when sending direct to {request.user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Telegram server error")
     except Exception as e:
-        logger.error(f"Error sending DM: {e}")
+        logger.error(f"Unexpected error when sending direct to {request.user_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+    return {"ok": True}
 
 
 @router.post("/bot/direct/bulk")
@@ -41,52 +33,66 @@ async def send_bulk_dm(request: BulkDMRequest, token: str = Depends(verify_backe
     """
     批量傳送私人訊息給多個使用者
     """
-    try:
-        notification_sender = NotificationSender(bot)
-        result = await notification_sender.send_bulk_dm(
-            user_ids=request.user_ids,
-            message=request.message,
-            parse_mode=request.parse_mode,
-            delay_seconds=request.delay_seconds
-        )
+    sent_users = []
+    failed_users = []
 
-        return {
-            "status": "completed",
-            "total_users": len(request.user_ids),
-            "success_count": len(result["success"]),
-            "failed_count": len(result["failed"]),
-            "success_users": result["success"],
-            "failed_users": result["failed"]
-        }
+    # TODO: delay_seconds is discarded right now cuz library should have a feature to work around this
+    for user_id in request.user_ids:
+        try:
+            await bot.bot.send_message(chat_id=user_id, text=request.message, parse_mode=request.parse_mode)
+        except TelegramError as e:
+            logger.error(f"Telegram error when sending bulk direct to {user_id}: {e}")
+            failed_users.append(user_id)
+            continue
+        except Exception as e:
+            logger.error(f"Unexpected error when sending bulk direct to {user_id}: {e}")
+            failed_users.append(user_id)
+            continue
+        sent_users.append(user_id)
 
-    except Exception as e:
-        logger.error(f"Error sending bulk DM: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return {
+        "ok": True,
+        "total_users": len(request.user_ids),
+        "success_count": len(sent_users),
+        "failed_count": len(failed_users),
+        "success_users": sent_users,
+        "failed_users": failed_users
+    }
 
 
-@router.post("/bot/notification/send")
-async def send_notification(request: NotificationRequest, token: str = Depends(verify_backend_token)):
-    """
-    傳送格式化的通知訊息
-    """
-    try:
-        notification_sender = NotificationSender(bot)
-        success = await notification_sender.send_notification(
-            user_id=request.user_id,
-            notification_type=request.notification_type,
-            title=request.title,
-            content=request.content,
-            additional_data=request.additional_data
-        )
-
-        if success:
-            return {"status": "success", "message": "Notification sent successfully"}
-        else:
-            raise HTTPException(status_code=400, detail="Failed to send notification")
-
-    except Exception as e:
-        logger.error(f"Error sending notification: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+# Do we really need this endpoint?
+# Uncomment if you really need this
+#
+# @router.post("/bot/notification/send")
+# async def send_notification(request: NotificationRequest, token: str = Depends(verify_backend_token)):
+#     """
+#     傳送格式化的通知訊息
+#     """
+#     message_parts = [
+#         f"🔔 *{request.title}*",
+#         f"",
+#         f"{request.content}",
+#         f"",
+#         f"📅 時間: `{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}`",
+#         f"🏷️ 類型: `{request.notification_type}`"
+#     ]
+#
+#     if request.additional_data:
+#         message_parts.append("")
+#         message_parts.append("📋 *詳細資訊:*")
+#         for key, value in request.additional_data.items():
+#             message_parts.append(f"• {key}: `{value}`")
+#
+#     message = "\n".join(message_parts)
+#
+#     try:
+#         await bot.bot.send_message(chat_id=request.user_id, text=message, parse_mode=ParseMode.MARKDOWN_V2)
+#     except TelegramError as e:
+#         logger.error(f"Telegram error when sending notification to {request.user_id}: {e}")
+#         raise HTTPException(status_code=500, detail="Telegram server error")
+#     except Exception as e:
+#         logger.error(f"Unexpected error when sending notification to {request.user_id}: {e}")
+#         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/bot/notification/trade")
@@ -94,25 +100,22 @@ async def send_trade_notification(request: TradeNotificationRequest, token: str 
     """
     傳送交易通知
     """
+    message_parts = [
+        f"🔔 *您的 SITC {"買入" if request.action == "buy" else "賣出"}交易已完成！*",
+        f"",
+        *([f"• 訂單號碼：`{request.order_id}`"] if request.order_id else []),
+        f"• 數量：{request.quantity}",
+        f"• 價格：{request.price:.2f}",
+        f"• 總金額：{request.total_amount:.2f}"
+    ]
+
     try:
-        notification_sender = NotificationSender(bot)
-        success = await notification_sender.send_trade_notification(
-            user_id=request.user_id,
-            action=request.action,
-            stock_symbol=request.stock_symbol,
-            quantity=request.quantity,
-            price=request.price,
-            total_amount=request.total_amount,
-            order_id=request.order_id
-        )
-
-        if success:
-            return {"status": "success", "message": "Trade notification sent successfully"}
-        else:
-            raise HTTPException(status_code=400, detail="Failed to send trade notification")
-
+        await bot.bot.send_message(chat_id=request.user_id, text="\n".join(message_parts), parse_mode=ParseMode.MARKDOWN_V2)
+    except TelegramError as e:
+        logger.error(f"Telegram error when sending trade notification: {e}")
+        raise HTTPException(status_code=500, detail="Telegram server error")
     except Exception as e:
-        logger.error(f"Error sending trade notification: {e}")
+        logger.error(f"Unexpected error when sending trade notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -121,23 +124,20 @@ async def send_transfer_notification(request: TransferNotificationRequest, token
     """
     傳送轉帳通知
     """
+    message_parts = [
+        f"🔔 *成功{f"轉帳至 {request.other_user}" if request.transfer_type == "sent" else f"接受來自 {request.other_user} 的轉帳"}！*",
+        f"",
+        *([f"• 交易號碼：`{request.transfer_id}`"] if request.transfer_id else []),
+        f"• 轉帳總金額：{request.total_amount:.2f}"
+    ]
+
     try:
-        notification_sender = NotificationSender(bot)
-        success = await notification_sender.send_transfer_notification(
-            user_id=request.user_id,
-            transfer_type=request.transfer_type,
-            amount=request.amount,
-            other_user=request.other_user,
-            transfer_id=request.transfer_id
-        )
-
-        if success:
-            return {"status": "success", "message": "Transfer notification sent successfully"}
-        else:
-            raise HTTPException(status_code=400, detail="Failed to send transfer notification")
-
+        await bot.bot.send_message(chat_id=request.user_id, text="\n".join(message_parts), parse_mode=ParseMode.MARKDOWN_V2)
+    except TelegramError as e:
+        logger.error(f"Telegram error when sending transfer notification: {e}")
+        raise HTTPException(status_code=500, detail="Telegram server error")
     except Exception as e:
-        logger.error(f"Error sending transfer notification: {e}")
+        logger.error(f"Unexpected error when sending transfer notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -146,20 +146,25 @@ async def send_system_notification(request: SystemNotificationRequest, token: st
     """
     傳送系統通知
     """
+    priority_emojis = {
+        "low": "ℹ️",
+        "normal": "📢",
+        "high": "⚠️",
+        "urgent": "🚨"
+    }
+    emoji = priority_emojis.get(request.priority, "ℹ️")
+
+    message_parts = [
+        f"{emoji} *{request.title}*",
+        f"",
+        request.content
+    ]
+
     try:
-        notification_sender = NotificationSender(bot)
-        success = await notification_sender.send_system_notification(
-            user_id=request.user_id,
-            title=request.title,
-            content=request.content,
-            priority=request.priority
-        )
-
-        if success:
-            return {"status": "success", "message": "System notification sent successfully"}
-        else:
-            raise HTTPException(status_code=400, detail="Failed to send system notification")
-
+        await bot.bot.send_message(chat_id=request.user_id, text="\n".join(message_parts), parse_mode=ParseMode.MARKDOWN_V2)
+    except TelegramError as e:
+        logger.error(f"Telegram error when sending transfer notification: {e}")
+        raise HTTPException(status_code=500, detail="Telegram server error")
     except Exception as e:
-        logger.error(f"Error sending system notification: {e}")
+        logger.error(f"Unexpected error when sending transfer notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
