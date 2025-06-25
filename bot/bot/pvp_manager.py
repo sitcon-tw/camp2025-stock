@@ -132,7 +132,7 @@ class PVPManager:
             await self.bot.send_message(
                 text=f"⏰ **PVP 挑戰已取消**\n\n"
                      f"**發起者**: {escape_markdown(username, 2)}\n"
-                     f"**金額**: {escape_markdown(amount, 2)} 點\n"
+                     f"**金額**: {escape_markdown(str(amount), 2)} 點\n"
                      f"**原因**: {escape_markdown(reason, 2)}",
                 chat_id=chat_id,
                 parse_mode=ParseMode.MARKDOWN_V2
