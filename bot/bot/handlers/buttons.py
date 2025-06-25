@@ -190,7 +190,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     # 取消現有挑戰
                     logger.info(f"About to cancel existing challenge for user {user_id}")
                     cancelled = await pvp_manager.cancel_existing_challenge(user_id)
-                    logger.info("Cancel result: " + str(cancelled))
+                    # logger.info("Cancel result: " + str(cancelled))  # 暫時註解掉
                     
                     if cancelled:
                         # 建立新挑戰
