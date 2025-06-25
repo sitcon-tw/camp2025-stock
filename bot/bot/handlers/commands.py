@@ -17,6 +17,11 @@ logger = setup_logger(__name__)
 load_dotenv()
 
 BACKEND_URL = environ.get("BACKEND_URL")
+# 讀取 DEBUG 環境變數
+DEBUG = environ.get("DEBUG", "False").lower() == "true"
+
+if DEBUG:
+    logger.info("🐛 DEBUG 模式已啟用 - 將忽略群組 ID 限制")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -169,9 +174,15 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message.chat.type == "private":
         await update.message.reply_text("🚫 PVP 挑戰只能在群組中使用！")
         return
-    if update.message.chat_id != MAIN_GROUP:
+    
+    # 在 DEBUG 模式下忽略群組 ID 限制
+    if not DEBUG and update.message.chat_id != MAIN_GROUP:
         await update.message.reply_text("🚫 PVP 挑戰只能在 Camp 大群中使用！")
         return
+    
+    # DEBUG 模式日誌
+    if DEBUG and update.message.chat_id != MAIN_GROUP:
+        logger.info(f"🐛 DEBUG 模式：允許在非主群組 {update.message.chat_id} 中使用 PVP")
 
     # 檢查是否提供了金額參數
     if not context.args:

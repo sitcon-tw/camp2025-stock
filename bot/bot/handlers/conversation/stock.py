@@ -7,9 +7,16 @@ from telegram.ext import ConversationHandler, CallbackQueryHandler, MessageHandl
 from telegram.helpers import escape_markdown
 from telegram.warnings import PTBUserWarning
 
+from os import environ
+from dotenv import load_dotenv
+
 from bot.helper.chat_ids import MAIN_GROUP
 from bot.helper.existing_user import verify_existing_user
 from utils import api_helper
+
+load_dotenv()
+# 讀取 DEBUG 環境變數
+DEBUG = environ.get("DEBUG", "False").lower() == "true"
 
 (
     CHOOSE_ACTION,
@@ -21,7 +28,8 @@ from utils import api_helper
 
 
 async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat_id == MAIN_GROUP:
+    # 在 DEBUG 模式下忽略大群交易股票的限制
+    if not DEBUG and update.message.chat_id == MAIN_GROUP:
         await update.message.reply_text("🚫 不能在大群交易股票！")
         return ConversationHandler.END
 
