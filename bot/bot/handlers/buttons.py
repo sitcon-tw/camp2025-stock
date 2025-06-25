@@ -312,9 +312,10 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                             remaining = timedelta(hours=3) - elapsed
                             
                             if remaining.total_seconds() > 0:
-                                minutes = int(remaining.total_seconds()) // 60
+                                hours = int(remaining.total_seconds()) // 3600
+                                minutes = (int(remaining.total_seconds()) % 3600) // 60
                                 seconds = int(remaining.total_seconds()) % 60
-                                time_str = f"{minutes}分{seconds}秒" if minutes > 0 else f"{seconds}秒"
+                                time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
                                 
                                 # 轉義Markdown V2特殊字元
                                 escaped_time = escape_markdown(time_str, 2)
