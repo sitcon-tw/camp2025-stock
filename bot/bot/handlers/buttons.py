@@ -1,3 +1,4 @@
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
@@ -193,6 +194,9 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     # logger.info("Cancel result: " + str(cancelled))  # 暫時註解掉
                     
                     if cancelled:
+                        # 稍微延遲確保後端取消操作完全完成
+                        await asyncio.sleep(0.5)
+                        
                         # 建立新挑戰
                         logger.info("About to create challenge...")
                         username = query.from_user.full_name or "未知使用者"
