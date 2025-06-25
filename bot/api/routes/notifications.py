@@ -1,74 +1,20 @@
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
 import logging
 
+from api.auth import verify_backend_token
 from bot.instance import bot
 from bot.services.notification_sender import NotificationSender
-from api.auth import verify_backend_token
+from fastapi import APIRouter, HTTPException
+
+from api.schemas.notifications import DMRequest, BulkDMRequest, NotificationRequest, TradeNotificationRequest, \
+    TransferNotificationRequest, SystemNotificationRequest
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-class DMRequest(BaseModel):
-    """私人訊息請求模型"""
-    user_id: int
-    message: str
-    parse_mode: Optional[str] = "MarkdownV2"
-
-
-class BulkDMRequest(BaseModel):
-    """批量私人訊息請求模型"""
-    user_ids: List[int]
-    message: str
-    parse_mode: Optional[str] = "MarkdownV2"
-    delay_seconds: Optional[float] = 0.1
-
-
-class NotificationRequest(BaseModel):
-    """通知請求模型"""
-    user_id: int
-    notification_type: str
-    title: str
-    content: str
-    additional_data: Optional[Dict[str, Any]] = None
-
-
-class TradeNotificationRequest(BaseModel):
-    """交易通知請求模型"""
-    user_id: int
-    action: str  # "buy" or "sell"
-    stock_symbol: str = "SITC"  # 股票代號預設為 SITC，保留屬性供未來擴充
-    quantity: int
-    price: float
-    total_amount: float
-    order_id: Optional[str] = None
-
-
-class TransferNotificationRequest(BaseModel):
-    """轉帳通知請求模型"""
-    user_id: int
-    transfer_type: str  # "sent" or "received"
-    amount: float
-    other_user: str
-    transfer_id: Optional[str] = None
-
-
-class SystemNotificationRequest(BaseModel):
-    """系統通知請求模型"""
-    user_id: int
-    title: str
-    content: str
-    priority: Optional[str] = "normal"
-
-
 @router.post("/dm/send")
-async def send_dm(
-    request: DMRequest,
-    _: str = Depends(verify_backend_token)
-):
+async def send_dm(request: DMRequest, ):
     """
     傳送私人訊息給指定使用者
     """
@@ -79,22 +25,19 @@ async def send_dm(
             message=request.message,
             parse_mode=request.parse_mode
         )
-        
+
         if success:
             return {"status": "success", "message": "DM sent successfully"}
         else:
             raise HTTPException(status_code=400, detail="Failed to send DM")
-            
+
     except Exception as e:
         logger.error(f"Error sending DM: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/dm/bulk")
-async def send_bulk_dm(
-    request: BulkDMRequest,
-    _: str = Depends(verify_backend_token)
-):
+async def send_bulk_dm(request: BulkDMRequest, ):
     """
     批量傳送私人訊息給多個使用者
     """
@@ -106,7 +49,7 @@ async def send_bulk_dm(
             parse_mode=request.parse_mode,
             delay_seconds=request.delay_seconds
         )
-        
+
         return {
             "status": "completed",
             "total_users": len(request.user_ids),
@@ -115,17 +58,14 @@ async def send_bulk_dm(
             "success_users": result["success"],
             "failed_users": result["failed"]
         }
-        
+
     except Exception as e:
         logger.error(f"Error sending bulk DM: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/notification/send")
-async def send_notification(
-    request: NotificationRequest,
-    _: str = Depends(verify_backend_token)
-):
+async def send_notification(request: NotificationRequest, ):
     """
     傳送格式化的通知訊息
     """
@@ -138,22 +78,19 @@ async def send_notification(
             content=request.content,
             additional_data=request.additional_data
         )
-        
+
         if success:
             return {"status": "success", "message": "Notification sent successfully"}
         else:
             raise HTTPException(status_code=400, detail="Failed to send notification")
-            
+
     except Exception as e:
         logger.error(f"Error sending notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/notification/trade")
-async def send_trade_notification(
-    request: TradeNotificationRequest,
-    _: str = Depends(verify_backend_token)
-):
+async def send_trade_notification(request: TradeNotificationRequest, ):
     """
     傳送交易通知
     """
@@ -168,22 +105,19 @@ async def send_trade_notification(
             total_amount=request.total_amount,
             order_id=request.order_id
         )
-        
+
         if success:
             return {"status": "success", "message": "Trade notification sent successfully"}
         else:
             raise HTTPException(status_code=400, detail="Failed to send trade notification")
-            
+
     except Exception as e:
         logger.error(f"Error sending trade notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/notification/transfer")
-async def send_transfer_notification(
-    request: TransferNotificationRequest,
-    _: str = Depends(verify_backend_token)
-):
+async def send_transfer_notification(request: TransferNotificationRequest, ):
     """
     傳送轉帳通知
     """
@@ -196,22 +130,19 @@ async def send_transfer_notification(
             other_user=request.other_user,
             transfer_id=request.transfer_id
         )
-        
+
         if success:
             return {"status": "success", "message": "Transfer notification sent successfully"}
         else:
             raise HTTPException(status_code=400, detail="Failed to send transfer notification")
-            
+
     except Exception as e:
         logger.error(f"Error sending transfer notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/notification/system")
-async def send_system_notification(
-    request: SystemNotificationRequest,
-    _: str = Depends(verify_backend_token)
-):
+async def send_system_notification(request: SystemNotificationRequest, ):
     """
     傳送系統通知
     """
@@ -223,12 +154,12 @@ async def send_system_notification(
             content=request.content,
             priority=request.priority
         )
-        
+
         if success:
             return {"status": "success", "message": "System notification sent successfully"}
         else:
             raise HTTPException(status_code=400, detail="Failed to send system notification")
-            
+
     except Exception as e:
         logger.error(f"Error sending system notification: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

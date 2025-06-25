@@ -4,19 +4,15 @@ from typing import Annotated
 from bot.instance import bot
 from fastapi import APIRouter, status, Header
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from telegram.helpers import escape_markdown
 from utils.logger import setup_logger
+
+from api.schemas.broadcast import Broadcast
 
 router = APIRouter()
 logger = setup_logger(__name__)
 BROADCAST_CHANNELS = environ.get("BROADCAST_CHANNELS").split(",")
 BACKEND_TOKEN = environ.get("BACKEND_TOKEN")
-
-
-class Broadcast(BaseModel):
-    title: str
-    message: str
 
 
 @router.post("/bot/broadcast/")
