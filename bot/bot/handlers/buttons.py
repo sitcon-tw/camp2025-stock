@@ -171,6 +171,8 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
             data_part = callback_data[len(prefix):]
             parts = data_part.split("_", 1)  # 只分割一次，避免負數chat_id問題
             if len(parts) >= 2:
+                amount = None
+                chat_id = None
                 try:
                     amount = int(parts[0])
                     chat_id = parts[1]
@@ -190,9 +192,9 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                         # 建立新挑戰
                         result = await pvp_manager.create_challenge(
                             user_id=user_id,
-                            username=query.from_user.full_name,
+                            username=query.from_user.full_name or "未知使用者",
                             amount=amount,
-                            chat_id=chat_id
+                            chat_id=str(chat_id)  
                         )
                         
                         if not result.get("conflict") and not result.get("error"):
@@ -221,7 +223,12 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                                 reply_markup=reply_markup
                             )
                         else:
-                            error_msg = result.get("response", {}).get("message", "建立新挑戰失敗")
+                            # 安全處理錯誤訊息
+                            response = result.get("response", {})
+                            if isinstance(response, dict):
+                                error_msg = str(response.get("message", "建立新挑戰失敗"))
+                            else:
+                                error_msg = "建立新挑戰失敗"
                             await query.edit_message_text(f"❌ {error_msg}")
                     else:
                         await query.edit_message_text("❌ 取消舊挑戰失敗，請稍後再試")
@@ -231,6 +238,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     return
                 except Exception as e:
                     logger.error(f"Error processing pvp_conflict_new: {e}")
+                    logger.error(f"Callback data: {callback_data}, Amount: {amount}, Chat ID: {chat_id}")
                     await query.edit_message_text("❌ 處理請求時發生錯誤")
                     return
             else:
