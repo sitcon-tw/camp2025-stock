@@ -154,15 +154,32 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         if callback_data.startswith("pvp_conflict_new_"):
             # 使用者選擇取消舊的，開始新的
-            parts = callback_data.split("_")
-            if len(parts) >= 5:
-                amount = int(parts[3])
-                chat_id = parts[4]
-                
-                pvp_manager = get_pvp_manager()
-                
-                # 取消現有挑戰
-                cancelled = await pvp_manager.cancel_existing_challenge(user_id)
+            # 格式：pvp_conflict_new_{amount}_{chat_id}
+            prefix = "pvp_conflict_new_"
+            data_part = callback_data[len(prefix):]
+            parts = data_part.split("_", 1)  # 只分割一次，避免負數chat_id問題
+            if len(parts) >= 2:
+                try:
+                    amount = int(parts[0])
+                    chat_id = parts[1]
+                    
+                    pvp_manager = get_pvp_manager()
+                    
+                    # 驗證使用者是否有現有挑戰
+                    existing_challenge_id = pvp_manager.get_user_challenge(user_id)
+                    if not existing_challenge_id:
+                        await query.edit_message_text("❌ 沒有找到現有挑戰")
+                        return
+                    
+                    # 取消現有挑戰
+                    cancelled = await pvp_manager.cancel_existing_challenge(user_id)
+                except ValueError:
+                    await query.edit_message_text("❌ 無效的金額格式")
+                    return
+                except Exception as e:
+                    logger.error(f"Error processing pvp_conflict_new: {e}")
+                    await query.edit_message_text("❌ 處理請求時發生錯誤")
+                    return
                 if cancelled:
                     # 建立新挑戰
                     result = await pvp_manager.create_challenge(
@@ -198,9 +215,12 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                             reply_markup=reply_markup
                         )
                     else:
-                        await query.edit_message_text("❌ 建立新挑戰失敗，請稍後再試")
+                        error_msg = result.get("response", {}).get("message", "建立新挑戰失敗")
+                        await query.edit_message_text(f"❌ {error_msg}")
                 else:
                     await query.edit_message_text("❌ 取消舊挑戰失敗，請稍後再試")
+            else:
+                await query.edit_message_text("❌ 無效的callback數據格式")
         
         elif callback_data.startswith("pvp_conflict_continue_"):
             # 使用者選擇繼續舊的挑戰
@@ -208,6 +228,11 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
             
             pvp_manager = get_pvp_manager()
             challenge_info = pvp_manager.get_challenge_info(challenge_id)
+            
+            # 驗證使用者是否為挑戰的創建者
+            if challenge_info and challenge_info.get("user_id") != user_id:
+                await query.edit_message_text("❌ 你不是這個挑戰的創建者")
+                return
             
             if challenge_info:
                 amount = challenge_info["amount"]
@@ -267,7 +292,11 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                 await query.edit_message_text("❌ 找不到該挑戰，可能已超時或被取消")
         
     except Exception as e:
-        await query.answer("處理衝突選擇時發生錯誤", show_alert=True)
+        logger.error(f"Error in handle_pvp_conflict: {e}")
+        try:
+            await query.edit_message_text("❌ 處理衝突選擇時發生錯誤，請重試")
+        except:
+            await query.answer("處理衝突選擇時發生錯誤", show_alert=True)
 
 
 async def handle_orders_pagination(update: Update, context: ContextTypes.DEFAULT_TYPE):
