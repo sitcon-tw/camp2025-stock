@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.user_service import UserService, get_user_service
+from app.services.admin_service import AdminService, get_admin_service
 from app.schemas.user import (
     UserPortfolio, StockOrderRequest, StockOrderResponse,
     TransferRequest, TransferResponse, UserPointLog, UserStockOrder
 )
+from app.schemas.public import UserAssetDetail, ErrorResponse
 from app.core.security import get_current_user
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
@@ -302,6 +304,85 @@ async def get_user_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="無法取得使用者資料"
+        )
+
+
+# ========== 管理功能 ==========
+
+@router.get(
+    "/users",
+    response_model=List[UserAssetDetail],
+    responses={
+        401: {"model": ErrorResponse, "description": "未授權"},
+        404: {"model": ErrorResponse, "description": "使用者不存在"}
+    },
+    summary="查詢所有使用者資產明細",
+    description="查詢所有使用者或指定使用者的資產明細，包括點數、持股、總資產等"
+)
+async def get_users(
+    user: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> List[UserAssetDetail]:
+    """查詢使用者資產明細
+    
+    Args:
+        user: 可選，指定使用者id。如果不提供則回傳所有使用者
+        current_user: 目前使用者（自動注入）
+        admin_service: 管理員服務（自動注入）
+    
+    Returns:
+        使用者資產明細列表
+    """
+    try:
+        return await admin_service.get_user_details(user)
+    except Exception as e:
+        logger.error(f"Failed to get users for user {current_user.get('sub')}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="無法取得使用者資產明細"
+        )
+
+
+@router.get(
+    "/students",
+    summary="取得所有學員資料",
+    description="取得所有學員的基本資料，包括使用者id、所屬隊伍等"
+)
+async def get_students(
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """取得所有學員資料"""
+    try:
+        return await admin_service.list_all_users()
+        
+    except Exception as e:
+        logger.error(f"Failed to get students for user {current_user.get('sub')}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="無法取得學員資料"
+        )
+
+
+@router.get(
+    "/teams",
+    summary="取得所有隊伍資料",
+    description="取得所有隊伍的基本資料，包括隊伍名稱、成員數量等"
+)
+async def get_teams(
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+):
+    """取得所有隊伍資料"""
+    try:
+        return await admin_service.list_all_teams()
+        
+    except Exception as e:
+        logger.error(f"Failed to get teams for user {current_user.get('sub')}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="無法取得隊伍資料"
         )
 
 
