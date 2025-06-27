@@ -6,6 +6,7 @@ import StockChart from "@/components/StockChart";
 import TradingTabs from "@/components/TradingTabs";
 import useModal from "@/hooks/useModal";
 import { apiService } from "@/services/apiService";
+import { BanknoteArrowDown, BanknoteArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Status() {
@@ -92,28 +93,30 @@ export default function Status() {
                         </div>
 
                         {/* 買賣按鈕 */}
-                        <div className="mb-4 grid grid-cols-2 gap-2 text-center">
+                        <div className="mb-4 grid grid-cols-2 gap-2 text-center lg:gap-4">
                             <button
                                 onClick={() => {
                                     setTradeType("buy");
                                     tradeModal.openModal();
                                 }}
-                                className="rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F] xl:p-4"
+                                className="inline-flex items-center justify-center gap-3 rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F]"
                             >
-                                <p className="text-lg font-bold text-white lg:text-2xl xl:text-3xl">
+                                <p className="text-lg font-bold text-white lg:text-2xl">
                                     買
                                 </p>
+                                <BanknoteArrowDown />
                             </button>
                             <button
                                 onClick={() => {
                                     setTradeType("sell");
                                     tradeModal.openModal();
                                 }}
-                                className="rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F] xl:p-4"
+                                className="inline-flex items-center justify-center gap-3 rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F]"
                             >
-                                <p className="text-lg font-bold text-white lg:text-2xl xl:text-3xl">
+                                <p className="text-lg font-bold text-white lg:text-2xl">
                                     賣
                                 </p>
+                                <BanknoteArrowUp />
                             </button>
                         </div>
 
