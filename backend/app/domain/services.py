@@ -51,7 +51,12 @@ class AuthenticationDomainService:
         logger.debug(f"Data check string: {data_check_string}")
         
         # 計算預期的 hash
+        logger.debug(f"Bot token length: {len(bot_token)}")
+        logger.debug(f"Data check string bytes: {data_check_string.encode()}")
+        
         secret_key = hashlib.sha256(bot_token.encode()).digest()
+        logger.debug(f"Secret key (first 10 bytes): {secret_key[:10].hex()}")
+        
         expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
         logger.debug(f"Expected hash: {expected_hash}")
