@@ -41,10 +41,11 @@ class AuthenticationDomainService:
             logger.debug("No hash provided in auth data")
             return False
         
-        # 準備驗證字串
+        # 準備驗證字串 - 排除 None 值的欄位，測試
         auth_data_items = []
         for key, value in sorted(auth_data.items()):
-            auth_data_items.append(f"{key}={value}")
+            if value is not None:
+                auth_data_items.append(f"{key}={value}")
         
         data_check_string = '\n'.join(auth_data_items)
         logger.debug(f"Data check string: {data_check_string}")
