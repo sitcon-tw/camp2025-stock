@@ -1,9 +1,11 @@
 "use client";
 
+import botAvatar from "@/assets/uwu.svg";
 import Modal from "@/components/Modal";
 import useModal from "@/hooks/useModal";
 import { getAnnouncements } from "@/lib/api";
 import { apiService } from "@/services/apiService";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -127,12 +129,15 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen overflow-hidden bg-[#101f3e]">
-            <div className="flex h-screen flex-col items-center">
-                <h1 className="mt-14 text-center text-4xl font-bold text-[#7BC2E6]">
-                    SITCON Camp
-                    <br />
-                    點數系統
+        <div className="flex min-h-screen place-items-center justify-center overflow-hidden bg-[#101f3e]">
+            <div className="flex flex-col items-center">
+                <Image
+                    src={botAvatar}
+                    alt="喵券機頭貼"
+                    className="mb-6 aspect-auto h-56 bg-transparent"
+                />
+                <h1 className="text-center text-4xl font-bold text-[#7BC2E6]">
+                    SITCON Camp 喵券機
                 </h1>
 
                 <div className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6">
@@ -149,8 +154,8 @@ export default function Home() {
                         </button>
                     </div>
                     {loading ? (
-                        <div className="text-center text-[#AFE1F5]">
-                            載入中...
+                        <div>
+                            <div className="h-24 w-full animate-pulse rounded bg-[#7BC2E6]/50"></div>
                         </div>
                     ) : latestAnnouncement ? (
                         <div>
@@ -178,8 +183,8 @@ export default function Home() {
                         關閉交易時間
                     </h3>
                     {loading ? (
-                        <div className="text-center text-[#AFE1F5]">
-                            載入中...
+                        <div>
+                            <div className="h-8 w-full animate-pulse rounded bg-[#7BC2E6]/50"></div>
                         </div>
                     ) : (
                         <div className="space-y-1 text-center text-lg font-bold text-[#AFE1F5]">
