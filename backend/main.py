@@ -2,7 +2,7 @@
 # 這個文件用於開發環境啟動
 
 
-from app.main import app
+from app.main_refactored import app
 from os import environ
 
 CAMP_ENVIRONMENT = environ.get("CAMP_ENVIRONMENT", "development")
