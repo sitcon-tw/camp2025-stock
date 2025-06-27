@@ -342,6 +342,7 @@ class AuthenticationApplicationService(BaseApplicationService):
         """
         try:
             # 1. 驗證 Telegram OAuth 資料
+            logger.debug(f"Received auth data: {auth_data}")
             if not self.auth_domain_service.verify_telegram_oauth(auth_data.copy(), bot_token):
                 logger.warning(f"Invalid Telegram auth data for user {auth_data.get('id')}")
                 return False, None, "Invalid Telegram authentication data"

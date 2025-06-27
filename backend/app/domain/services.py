@@ -38,6 +38,7 @@ class AuthenticationDomainService:
         # 取得 hash 值
         received_hash = auth_data.pop('hash', None)
         if not received_hash:
+            logger.debug("No hash provided in auth data")
             return False
         
         # 準備驗證字串
@@ -46,12 +47,19 @@ class AuthenticationDomainService:
             auth_data_items.append(f"{key}={value}")
         
         data_check_string = '\n'.join(auth_data_items)
+        logger.debug(f"Data check string: {data_check_string}")
         
         # 計算預期的 hash
         secret_key = hashlib.sha256(bot_token.encode()).digest()
         expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
-        return hmac.compare_digest(received_hash, expected_hash)
+        logger.debug(f"Expected hash: {expected_hash}")
+        logger.debug(f"Received hash: {received_hash}")
+        
+        result = hmac.compare_digest(received_hash, expected_hash)
+        logger.debug(f"Hash verification result: {result}")
+        
+        return result
     
     def validate_user_eligibility(self, user: Optional[User]) -> Tuple[bool, str]:
         """
