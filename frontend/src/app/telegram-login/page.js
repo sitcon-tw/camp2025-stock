@@ -18,7 +18,6 @@ export default function TelegramLogin() {
 
             if (isUser === "true" && token) {
                 router.push("/dashboard");
-                return;
             }
         };
 
@@ -93,7 +92,7 @@ export default function TelegramLogin() {
         const telegramLoginWidget = document.createElement("script");
         telegramLoginWidget.id = "telegram-login-widget";
         telegramLoginWidget.src = "https://telegram.org/js/telegram-widget.js?22";
-        telegramLoginWidget.setAttribute("data-telegram-login", process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "YourBotUsername");
+        telegramLoginWidget.setAttribute("data-telegram-login", "sitconcamp2025bot");
         telegramLoginWidget.setAttribute("data-size", "large");
         telegramLoginWidget.setAttribute("data-auth-url", window.location.origin + "/telegram-login");
         telegramLoginWidget.setAttribute("data-request-access", "write");
