@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { 
-    getWebPortfolio, 
-    getWebPointHistory, 
-    getWebStockOrders,
+import {
+    getWebPortfolio,
+    getWebUserProfile,
     placeWebStockOrder,
-    webTransferPoints,
-    getWebUserProfile
 } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
@@ -40,10 +37,11 @@ export default function Dashboard() {
 
             try {
                 // 載入使用者資料
-                const [profileData, portfolioData] = await Promise.all([
-                    getWebUserProfile(token),
-                    getWebPortfolio(token)
-                ]);
+                const [profileData, portfolioData] =
+                    await Promise.all([
+                        getWebUserProfile(token),
+                        getWebPortfolio(token),
+                    ]);
 
                 setUser(profileData);
                 setPortfolio(portfolioData);
@@ -70,29 +68,52 @@ export default function Dashboard() {
         return (
             <div className="space-y-6">
                 {/* 資產總覽 */}
-                <div className="bg-[#1a3a5c] rounded-lg p-6 border border-[#294565]">
-                    <h3 className="text-lg font-semibold text-[#92cbf4] mb-4">資產總覽</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="rounded-lg border border-[#294565] bg-[#1a3a5c] p-6">
+                    <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                        資產總覽
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                         <div>
-                            <p className="text-[#557797] text-sm">現金點數</p>
-                            <p className="text-xl font-bold text-white">{portfolio.points?.toLocaleString()}</p>
+                            <p className="text-sm text-[#557797]">
+                                現金點數
+                            </p>
+                            <p className="text-xl font-bold text-white">
+                                {portfolio.points?.toLocaleString()}
+                            </p>
                         </div>
                         <div>
-                            <p className="text-[#557797] text-sm">股票數量</p>
-                            <p className="text-xl font-bold text-white">{portfolio.stocks?.toLocaleString()}</p>
+                            <p className="text-sm text-[#557797]">
+                                股票數量
+                            </p>
+                            <p className="text-xl font-bold text-white">
+                                {portfolio.stocks?.toLocaleString()}
+                            </p>
                         </div>
                         <div>
-                            <p className="text-[#557797] text-sm">股票價值</p>
-                            <p className="text-xl font-bold text-white">{portfolio.stockValue?.toLocaleString()}</p>
+                            <p className="text-sm text-[#557797]">
+                                股票價值
+                            </p>
+                            <p className="text-xl font-bold text-white">
+                                {portfolio.stockValue?.toLocaleString()}
+                            </p>
                         </div>
                         <div>
-                            <p className="text-[#557797] text-sm">總資產</p>
-                            <p className="text-xl font-bold text-[#92cbf4]">{portfolio.totalValue?.toLocaleString()}</p>
+                            <p className="text-sm text-[#557797]">
+                                總資產
+                            </p>
+                            <p className="text-xl font-bold text-[#92cbf4]">
+                                {portfolio.totalValue?.toLocaleString()}
+                            </p>
                         </div>
                     </div>
                     {portfolio.avgCost !== undefined && (
-                        <div className="mt-4 pt-4 border-t border-[#294565]">
-                            <p className="text-[#557797] text-sm">平均成本: <span className="text-white font-semibold">{portfolio.avgCost}</span></p>
+                        <div className="mt-4 border-t border-[#294565] pt-4">
+                            <p className="text-sm text-[#557797]">
+                                平均成本:{" "}
+                                <span className="font-semibold text-white">
+                                    {portfolio.avgCost}
+                                </span>
+                            </p>
                         </div>
                     )}
                 </div>
@@ -119,19 +140,21 @@ export default function Dashboard() {
                     order_type: orderType,
                     side: side,
                     quantity: parseInt(quantity),
-                    ...(orderType === "limit" && { price: parseInt(price) })
+                    ...(orderType === "limit" && {
+                        price: parseInt(price),
+                    }),
                 };
 
                 await placeWebStockOrder(token, orderData);
-                
+
                 // 重新載入投資組合
                 const portfolioData = await getWebPortfolio(token);
                 setPortfolio(portfolioData);
-                
+
                 // 清空表單
                 setQuantity("");
                 setPrice("");
-                
+
                 alert("下單成功！");
             } catch (error) {
                 console.error("下單失敗:", error);
@@ -142,20 +165,27 @@ export default function Dashboard() {
         };
 
         return (
-            <div className="bg-[#1a3a5c] rounded-lg p-6 border border-[#294565]">
-                <h3 className="text-lg font-semibold text-[#92cbf4] mb-4">股票交易</h3>
-                
-                <form onSubmit={handleSubmitOrder} className="space-y-4">
+            <div className="rounded-lg border border-[#294565] bg-[#1a3a5c] p-6">
+                <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                    股票交易
+                </h3>
+
+                <form
+                    onSubmit={handleSubmitOrder}
+                    className="space-y-4"
+                >
                     {/* 買賣方向 */}
                     <div>
-                        <label className="block text-sm font-medium text-[#557797] mb-2">買賣方向</label>
+                        <label className="mb-2 block text-sm font-medium text-[#557797]">
+                            買賣方向
+                        </label>
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 type="button"
                                 onClick={() => setSide("buy")}
-                                className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-                                    side === "buy" 
-                                        ? "bg-green-600 text-white" 
+                                className={`rounded-lg px-4 py-2 font-medium transition-colors ${
+                                    side === "buy"
+                                        ? "bg-green-600 text-white"
                                         : "bg-[#294565] text-[#557797] hover:bg-[#3a5678]"
                                 }`}
                             >
@@ -164,9 +194,9 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 onClick={() => setSide("sell")}
-                                className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-                                    side === "sell" 
-                                        ? "bg-red-600 text-white" 
+                                className={`rounded-lg px-4 py-2 font-medium transition-colors ${
+                                    side === "sell"
+                                        ? "bg-red-600 text-white"
                                         : "bg-[#294565] text-[#557797] hover:bg-[#3a5678]"
                                 }`}
                             >
@@ -177,24 +207,42 @@ export default function Dashboard() {
 
                     {/* 訂單類型 */}
                     <div>
-                        <label className="block text-sm font-medium text-[#557797] mb-2">訂單類型</label>
+                        <label className="mb-2 block text-sm font-medium text-[#557797]">
+                            訂單類型
+                        </label>
                         <select
                             value={orderType}
-                            onChange={(e) => setOrderType(e.target.value)}
+                            onChange={(e) =>
+                                setOrderType(e.target.value)
+                            }
                             className="w-full rounded-lg border-2 border-[#294565] bg-transparent px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
                         >
-                            <option value="market" className="bg-[#1a3a5c]">市價單</option>
-                            <option value="limit" className="bg-[#1a3a5c]">限價單</option>
+                            <option
+                                value="market"
+                                className="bg-[#1a3a5c]"
+                            >
+                                市價單
+                            </option>
+                            <option
+                                value="limit"
+                                className="bg-[#1a3a5c]"
+                            >
+                                限價單
+                            </option>
                         </select>
                     </div>
 
                     {/* 數量 */}
                     <div>
-                        <label className="block text-sm font-medium text-[#557797] mb-2">數量</label>
+                        <label className="mb-2 block text-sm font-medium text-[#557797]">
+                            數量
+                        </label>
                         <input
                             type="number"
                             value={quantity}
-                            onChange={(e) => setQuantity(e.target.value)}
+                            onChange={(e) =>
+                                setQuantity(e.target.value)
+                            }
                             min="1"
                             required
                             className="w-full rounded-lg border-2 border-[#294565] bg-transparent px-4 py-2 text-white placeholder-slate-400 focus:border-cyan-400 focus:outline-none"
@@ -205,11 +253,15 @@ export default function Dashboard() {
                     {/* 價格（限價單才顯示） */}
                     {orderType === "limit" && (
                         <div>
-                            <label className="block text-sm font-medium text-[#557797] mb-2">價格</label>
+                            <label className="mb-2 block text-sm font-medium text-[#557797]">
+                                價格
+                            </label>
                             <input
                                 type="number"
                                 value={price}
-                                onChange={(e) => setPrice(e.target.value)}
+                                onChange={(e) =>
+                                    setPrice(e.target.value)
+                                }
                                 min="1"
                                 required
                                 className="w-full rounded-lg border-2 border-[#294565] bg-transparent px-4 py-2 text-white placeholder-slate-400 focus:border-cyan-400 focus:outline-none"
@@ -234,7 +286,7 @@ export default function Dashboard() {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
                 <div className="text-center">
-                    <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent mx-auto"></div>
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
                     <p className="text-[#92cbf4]">載入中...</p>
                 </div>
             </div>
@@ -244,10 +296,12 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen bg-[#0f203e] pb-20">
             {/* 標題列 */}
-            <div className="bg-[#1a3a5c] border-b border-[#294565] px-4 py-4">
+            <div className="border-b border-[#294565] bg-[#1a3a5c] px-4 py-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-[#92cbf4]">投資儀表板</h1>
+                        <h1 className="text-xl font-bold text-[#92cbf4]">
+                            投資儀表板
+                        </h1>
                         {user && (
                             <p className="text-sm text-[#557797]">
                                 歡迎，{user.name || user.id}
@@ -256,7 +310,7 @@ export default function Dashboard() {
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="text-[#557797] hover:text-red-400 text-sm transition-colors"
+                        className="text-sm text-[#557797] transition-colors hover:text-red-400"
                     >
                         登出
                     </button>
@@ -264,13 +318,13 @@ export default function Dashboard() {
             </div>
 
             {/* 頁籤導航 */}
-            <div className="bg-[#1a3a5c] border-b border-[#294565]">
+            <div className="border-b border-[#294565] bg-[#1a3a5c]">
                 <div className="flex">
                     <button
                         onClick={() => setActiveTab("portfolio")}
                         className={`flex-1 py-3 text-sm font-medium transition-colors ${
                             activeTab === "portfolio"
-                                ? "text-[#92cbf4] border-b-2 border-[#92cbf4]"
+                                ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"
                                 : "text-[#557797] hover:text-[#92cbf4]"
                         }`}
                     >
@@ -280,7 +334,7 @@ export default function Dashboard() {
                         onClick={() => setActiveTab("trading")}
                         className={`flex-1 py-3 text-sm font-medium transition-colors ${
                             activeTab === "trading"
-                                ? "text-[#92cbf4] border-b-2 border-[#92cbf4]"
+                                ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"
                                 : "text-[#557797] hover:text-[#92cbf4]"
                         }`}
                     >

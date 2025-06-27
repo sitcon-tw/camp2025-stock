@@ -25,23 +25,26 @@ export default function TelegramLogin() {
 
         // 檢查 URL 參數中的 Telegram OAuth 資料
         const urlParams = new URLSearchParams(window.location.search);
-        const hash = urlParams.get('hash');
-        
+        const hash = urlParams.get("hash");
+
         if (hash) {
             // 從 URL 參數解析 Telegram OAuth 資料
             const authDataFromUrl = {
-                id: parseInt(urlParams.get('id')),
-                first_name: urlParams.get('first_name'),
-                last_name: urlParams.get('last_name'),
-                username: urlParams.get('username'),
-                photo_url: urlParams.get('photo_url'),
-                auth_date: parseInt(urlParams.get('auth_date')),
-                hash: hash
+                id: parseInt(urlParams.get("id")),
+                first_name: urlParams.get("first_name"),
+                last_name: urlParams.get("last_name"),
+                username: urlParams.get("username"),
+                photo_url: urlParams.get("photo_url"),
+                auth_date: parseInt(urlParams.get("auth_date")),
+                hash: hash,
             };
 
             // 移除 null 值
-            Object.keys(authDataFromUrl).forEach(key => {
-                if (authDataFromUrl[key] === null || authDataFromUrl[key] === 'null') {
+            Object.keys(authDataFromUrl).forEach((key) => {
+                if (
+                    authDataFromUrl[key] === null ||
+                    authDataFromUrl[key] === "null"
+                ) {
                     delete authDataFromUrl[key];
                 }
             });
@@ -67,7 +70,10 @@ export default function TelegramLogin() {
                 // 存認證資訊
                 localStorage.setItem("isUser", "true");
                 localStorage.setItem("userToken", data.token);
-                localStorage.setItem("userData", JSON.stringify(data.user));
+                localStorage.setItem(
+                    "userData",
+                    JSON.stringify(data.user),
+                );
 
                 router.push("/dashboard");
             } else {
@@ -83,7 +89,9 @@ export default function TelegramLogin() {
 
     const initTelegramWidget = () => {
         // 如果 Telegram 小工具已存在，先移除
-        const existingWidget = document.getElementById("telegram-login-widget");
+        const existingWidget = document.getElementById(
+            "telegram-login-widget",
+        );
         if (existingWidget) {
             existingWidget.remove();
         }
@@ -91,13 +99,25 @@ export default function TelegramLogin() {
         // 建立 Telegram 登入小工具
         const telegramLoginWidget = document.createElement("script");
         telegramLoginWidget.id = "telegram-login-widget";
-        telegramLoginWidget.src = "https://telegram.org/js/telegram-widget.js?22";
-        telegramLoginWidget.setAttribute("data-telegram-login", "sitconcamp2025bot");
+        telegramLoginWidget.src =
+            "https://telegram.org/js/telegram-widget.js?22";
+        telegramLoginWidget.setAttribute(
+            "data-telegram-login",
+            "sitconcamp2025bot",
+        );
         telegramLoginWidget.setAttribute("data-size", "large");
-        telegramLoginWidget.setAttribute("data-auth-url", window.location.origin + "/telegram-login");
-        telegramLoginWidget.setAttribute("data-request-access", "write");
-        
-        const widgetContainer = document.getElementById("telegram-widget-container");
+        telegramLoginWidget.setAttribute(
+            "data-auth-url",
+            window.location.origin + "/telegram-login",
+        );
+        telegramLoginWidget.setAttribute(
+            "data-request-access",
+            "write",
+        );
+
+        const widgetContainer = document.getElementById(
+            "telegram-widget-container",
+        );
         if (widgetContainer) {
             widgetContainer.appendChild(telegramLoginWidget);
         }
@@ -109,7 +129,7 @@ export default function TelegramLogin() {
             const timer = setTimeout(() => {
                 initTelegramWidget();
             }, 100);
-            
+
             return () => clearTimeout(timer);
         }
     }, [authData]);
@@ -118,8 +138,10 @@ export default function TelegramLogin() {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
                 <div className="text-center">
-                    <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent mx-auto"></div>
-                    <p className="text-[#92cbf4]">正在驗證 Telegram 登入...</p>
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
+                    <p className="text-[#92cbf4]">
+                        正在驗證 Telegram 登入...
+                    </p>
                 </div>
             </div>
         );
@@ -129,11 +151,12 @@ export default function TelegramLogin() {
         <div className="flex min-h-screen items-center justify-center bg-[#0f203e] px-4">
             <div className="w-full max-w-md">
                 <div className="mb-12 text-center">
-                    <h1 className="text-2xl font-bold tracking-wider text-[#92cbf4] mb-4">
+                    <h1 className="mb-4 text-2xl font-bold tracking-wider text-[#92cbf4]">
                         使用者登入
                     </h1>
-                    <p className="text-[#557797] text-sm">
-                        使用您的 Telegram 帳號登入查看投資組合和進行交易
+                    <p className="text-sm text-[#557797]">
+                        使用您的 Telegram
+                        帳號登入查看投資組合和進行交易
                     </p>
                 </div>
 
@@ -147,30 +170,36 @@ export default function TelegramLogin() {
                     {!authData && (
                         <div className="text-center">
                             <div className="mb-6">
-                                <p className="text-[#557797] text-sm mb-4">
+                                <p className="mb-4 text-sm text-[#557797]">
                                     點擊下方按鈕使用 Telegram 登入
                                 </p>
-                                <div id="telegram-widget-container" className="flex justify-center">
+                                <div
+                                    id="telegram-widget-container"
+                                    className="flex justify-center"
+                                >
                                     {/* Telegram 小工具將在這裡載入 */}
                                 </div>
                             </div>
-                            
-                            <div className="mt-8 pt-6 border-t border-[#294565]">
-                                <p className="text-[#557797] text-xs">
-                                    首次使用請先透過 Telegram Bot 註冊帳號
+
+                            <div className="mt-8 border-t border-[#294565] pt-6">
+                                <p className="text-xs text-[#557797]">
+                                    首次使用請先透過 Telegram Bot
+                                    註冊帳號
                                 </p>
                             </div>
                         </div>
                     )}
 
                     {authData && (
-                        <div className="bg-[#1a3a5c] rounded-lg p-4 border border-[#294565]">
-                            <p className="text-[#92cbf4] text-sm mb-2">
+                        <div className="rounded-lg border border-[#294565] bg-[#1a3a5c] p-4">
+                            <p className="mb-2 text-sm text-[#92cbf4]">
                                 檢測到 Telegram 認證資料
                             </p>
-                            <p className="text-[#557797] text-xs">
-                                使用者: {authData.first_name} {authData.last_name}
-                                {authData.username && ` (@${authData.username})`}
+                            <p className="text-xs text-[#557797]">
+                                使用者: {authData.first_name}{" "}
+                                {authData.last_name}
+                                {authData.username &&
+                                    ` (@${authData.username})`}
                             </p>
                         </div>
                     )}
@@ -179,7 +208,7 @@ export default function TelegramLogin() {
                 <div className="mt-8 text-center">
                     <button
                         onClick={() => router.push("/")}
-                        className="text-[#557797] hover:text-[#92cbf4] text-sm transition-colors duration-200"
+                        className="text-sm text-[#557797] transition-colors duration-200 hover:text-[#92cbf4]"
                     >
                         ← 返回首頁
                     </button>

@@ -38,12 +38,12 @@ const Modal = ({
     // Modal 尺寸
     const sizeClasses = {
         sm: "max-w-sm",
-        md: "max-w-md", 
+        md: "max-w-md",
         lg: "max-w-lg",
         xl: "max-w-xl",
         "2xl": "max-w-2xl",
         "3xl": "max-w-3xl",
-        full: "max-w-full mx-4"
+        full: "max-w-full mx-4",
     };
 
     const handleOverlayClick = (e) => {
@@ -72,7 +72,7 @@ const Modal = ({
                         isClosing
                             ? "animate-modal-close"
                             : "animate-modal-open",
-                        className
+                        className,
                     )}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -87,7 +87,7 @@ const Modal = ({
                             {showCloseButton && (
                                 <button
                                     onClick={onClose}
-                                    className="text-xl font-bold text-[#AFE1F5] hover:text-[#7BC2E6] transition-colors"
+                                    className="text-xl font-bold text-[#AFE1F5] transition-colors hover:text-[#7BC2E6]"
                                     aria-label="關閉"
                                 >
                                     ×
@@ -97,7 +97,11 @@ const Modal = ({
                     )}
 
                     {/* Modal內容 */}
-                    <div className={title || showCloseButton ? "" : "mt-0"}>
+                    <div
+                        className={
+                            title || showCloseButton ? "" : "mt-0"
+                        }
+                    >
                         {children}
                     </div>
                 </div>

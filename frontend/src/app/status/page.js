@@ -4,8 +4,8 @@ import HeaderBar from "@/components/HeaderBar";
 import Modal from "@/components/Modal";
 import StockChart from "@/components/StockChart";
 import TradingTabs from "@/components/TradingTabs";
-import { apiService } from "@/services/apiService";
 import useModal from "@/hooks/useModal";
+import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
 
 export default function Status() {
@@ -29,7 +29,7 @@ export default function Status() {
     const [tradeType, setTradeType] = useState("buy"); // "buy" or "sell"
     const [isMarketPrice, setIsMarketPrice] = useState(true);
     const [customPrice, setCustomPrice] = useState("");
-    
+
     const tradeModal = useModal();
 
     const fetchData = async () => {
@@ -98,9 +98,9 @@ export default function Status() {
                                     setTradeType("buy");
                                     tradeModal.openModal();
                                 }}
-                                className="rounded-lg bg-[#1B325E] hover:bg-[#2A4A7F] p-3 xl:p-4 transition-colors"
+                                className="rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F] xl:p-4"
                             >
-                                <p className="text-lg font-bold lg:text-2xl xl:text-3xl text-white">
+                                <p className="text-lg font-bold text-white lg:text-2xl xl:text-3xl">
                                     買
                                 </p>
                             </button>
@@ -109,9 +109,9 @@ export default function Status() {
                                     setTradeType("sell");
                                     tradeModal.openModal();
                                 }}
-                                className="rounded-lg bg-[#1B325E] hover:bg-[#2A4A7F] p-3 xl:p-4 transition-colors"
+                                className="rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F] xl:p-4"
                             >
-                                <p className="text-lg font-bold lg:text-2xl xl:text-3xl text-white">
+                                <p className="text-lg font-bold text-white lg:text-2xl xl:text-3xl">
                                     賣
                                 </p>
                             </button>
@@ -231,38 +231,49 @@ export default function Status() {
                             type="checkbox"
                             id="marketPrice"
                             checked={isMarketPrice}
-                            onChange={(e) => setIsMarketPrice(e.target.checked)}
+                            onChange={(e) =>
+                                setIsMarketPrice(e.target.checked)
+                            }
                             className="h-4 w-4 rounded border-[#4f6f97] bg-[#0f203e] text-[#7BC2E6] focus:ring-[#7BC2E6]"
                         />
-                        <label htmlFor="marketPrice" className="text-[#AFE1F5]">
+                        <label
+                            htmlFor="marketPrice"
+                            className="text-[#AFE1F5]"
+                        >
                             市價 ({Math.round(currentPrice)})
                         </label>
                     </div>
 
                     {/* 價格輸入 */}
                     <div>
-                        <label className="block text-sm font-medium text-[#AFE1F5] mb-2">
+                        <label className="mb-2 block text-sm font-medium text-[#AFE1F5]">
                             價格
                         </label>
                         <input
                             type="number"
-                            value={isMarketPrice ? Math.round(currentPrice) : customPrice}
-                            onChange={(e) => setCustomPrice(e.target.value)}
+                            value={
+                                isMarketPrice
+                                    ? Math.round(currentPrice)
+                                    : customPrice
+                            }
+                            onChange={(e) =>
+                                setCustomPrice(e.target.value)
+                            }
                             disabled={isMarketPrice}
                             placeholder="請輸入價格"
-                            className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:outline-none focus:ring-1 focus:ring-[#7BC2E6] disabled:bg-gray-700 disabled:text-gray-400"
+                            className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:ring-1 focus:ring-[#7BC2E6] focus:outline-none disabled:bg-gray-700 disabled:text-gray-400"
                         />
                     </div>
 
                     {/* 數量輸入 */}
                     <div>
-                        <label className="block text-sm font-medium text-[#AFE1F5] mb-2">
+                        <label className="mb-2 block text-sm font-medium text-[#AFE1F5]">
                             數量
                         </label>
                         <input
                             type="number"
                             placeholder="請輸入數量"
-                            className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:outline-none focus:ring-1 focus:ring-[#7BC2E6]"
+                            className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:ring-1 focus:ring-[#7BC2E6] focus:outline-none"
                         />
                     </div>
 
@@ -274,10 +285,9 @@ export default function Status() {
                         >
                             取消
                         </button>
-                        <button
-                            className="flex-1 rounded-lg px-4 py-2 text-black font-medium bg-[#7CBEE4] hover:bg-[#6AADD1]"
-                        >
-                            確認{tradeType === "buy" ? "買入" : "賣出"}
+                        <button className="flex-1 rounded-lg bg-[#7CBEE4] px-4 py-2 font-medium text-black hover:bg-[#6AADD1]">
+                            確認
+                            {tradeType === "buy" ? "買入" : "賣出"}
                         </button>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import useModal from "@/hooks/useModal";
 import { apiService } from "@/services/apiService";
 import {
     CategoryScale,
@@ -17,7 +18,6 @@ import { Line } from "react-chartjs-2";
 import { twMerge } from "tailwind-merge";
 import CandlestickChart from "./CandlestickChart";
 import Modal from "./Modal";
-import useModal from "@/hooks/useModal";
 
 ChartJS.register(
     CategoryScale,
@@ -573,7 +573,9 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     </li>
                     <li>
                         <button
-                            onClick={() => handleModeSelect("average")}
+                            onClick={() =>
+                                handleModeSelect("average")
+                            }
                             className={twMerge(
                                 "text-md w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-[#82bee2]/70",
                                 displayMode === "average"
@@ -586,7 +588,9 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     </li>
                     <li>
                         <button
-                            onClick={() => handleModeSelect("candlestick")}
+                            onClick={() =>
+                                handleModeSelect("candlestick")
+                            }
                             className={twMerge(
                                 "text-md w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-[#82bee2]/70",
                                 displayMode === "candlestick"
@@ -599,7 +603,6 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     </li>
                 </ul>
             </Modal>
-
         </div>
     );
 };

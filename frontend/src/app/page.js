@@ -1,16 +1,16 @@
 "use client";
 
-import { getAnnouncements } from "@/lib/api";
 import Modal from "@/components/Modal";
-import { apiService } from "@/services/apiService";
 import useModal from "@/hooks/useModal";
+import { getAnnouncements } from "@/lib/api";
+import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
 
 export default function Home() {
     const [marketStatus, setMarketStatus] = useState(null);
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     const announcementModal = useModal();
 
     useEffect(() => {
@@ -112,7 +112,6 @@ export default function Home() {
         return closedTimes.slice(0, 5);
     };
 
-
     const latestAnnouncement =
         announcements.length > 0 ? announcements[0] : null;
 
@@ -213,24 +212,24 @@ export default function Home() {
                 <div className="flex-1 overflow-y-auto">
                     {announcements.length > 0 ? (
                         <div className="space-y-4">
-                            {announcements.map(
-                                (announcement) => (
-                                    <div
-                                        key={announcement.id}
-                                        className="border-b border-[#2A4A7F] pb-4 last:border-b-0"
-                                    >
-                                        <h3 className="mb-2 text-lg font-semibold text-[#7BC2E6]">
-                                            {announcement.title}
-                                        </h3>
-                                        <p className="mb-2 text-[#AFE1F5]">
-                                            {announcement.message}
-                                        </p>
-                                        <p className="text-sm text-[#AFE1F5] opacity-70">
-                                            {formatDate(announcement.createdAt)}
-                                        </p>
-                                    </div>
-                                ),
-                            )}
+                            {announcements.map((announcement) => (
+                                <div
+                                    key={announcement.id}
+                                    className="border-b border-[#2A4A7F] pb-4 last:border-b-0"
+                                >
+                                    <h3 className="mb-2 text-lg font-semibold text-[#7BC2E6]">
+                                        {announcement.title}
+                                    </h3>
+                                    <p className="mb-2 text-[#AFE1F5]">
+                                        {announcement.message}
+                                    </p>
+                                    <p className="text-sm text-[#AFE1F5] opacity-70">
+                                        {formatDate(
+                                            announcement.createdAt,
+                                        )}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <p className="text-center text-[#AFE1F5]">
@@ -239,7 +238,6 @@ export default function Home() {
                     )}
                 </div>
             </Modal>
-
         </div>
     );
 }
