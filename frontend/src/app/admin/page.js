@@ -641,7 +641,7 @@ export default function AdminPage() {
                 value,
                 "學生列表長度:",
                 students.length,
-            ); // 調試用
+            ); // Debug用
             if (Array.isArray(students)) {
                 filteredSuggestions = students
                     .filter(
@@ -670,7 +670,7 @@ export default function AdminPage() {
                 value,
                 "團隊列表長度:",
                 teams.length,
-            ); // 調試用
+            ); // Debug用
             if (Array.isArray(teams)) {
                 filteredSuggestions = teams
                     .filter(
@@ -691,7 +691,7 @@ export default function AdminPage() {
             }
         }
 
-        console.log("過濾後的建議:", filteredSuggestions); // 調試用
+        console.log("過濾後的建議:", filteredSuggestions); // Debug用
         setSuggestions(filteredSuggestions.slice(0, 5));
         setShowSuggestions(filteredSuggestions.length > 0);
     };

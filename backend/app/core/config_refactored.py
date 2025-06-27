@@ -150,6 +150,10 @@ class ApplicationConfig:
         self.environment = os.getenv("CAMP_ENVIRONMENT", "development")
         self.debug = os.getenv("CAMP_DEBUG", "True").lower() == "true"
         self.timezone = timezone(timedelta(hours=8))  # Asia/Taipei UTC+8
+        
+        # 開發模式下記錄環境變數
+        if self.is_development:
+            self._log_env_vars()
     
     @property
     def is_development(self) -> bool:
@@ -195,6 +199,48 @@ class ApplicationConfig:
         
         if self.trading.ipo_initial_price <= 0:
             raise ValueError("IPO initial price must be positive")
+    
+    def _log_env_vars(self) -> None:
+        """
+        開發模式下記錄環境變數
+        用於 Zeabur 等雲端平台的Debug
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # 需要記錄的環境變數
+        env_vars_to_log = [
+            "CAMP_ENVIRONMENT",
+            "CAMP_DEBUG", 
+            "CAMP_TELEGRAM_BOT_TOKEN",
+            "CAMP_TELEGRAM_BOT_API_URL",
+            "CAMP_MONGO_URI",
+            "CAMP_DATABASE_NAME",
+            "CAMP_JWT_SECRET",
+            "CAMP_JWT_EXPIRE_MINUTES",
+            "CAMP_ADMIN_PASSWORD",
+            "CAMP_INTERNAL_API_KEY",
+            "CAMP_ALLOWED_HOSTS"
+        ]
+        
+        logger.info("=== Development Environment Variables ===")
+        for var in env_vars_to_log:
+            value = os.getenv(var)
+            if value:
+                # 敏感資料部分隱藏，但 TELEGRAM_BOT_TOKEN 完整顯示用於Debug
+                if var == "CAMP_TELEGRAM_BOT_TOKEN":
+                    logger.info(f"{var}: {value}")
+                elif var in ["CAMP_JWT_SECRET", "CAMP_ADMIN_PASSWORD", "CAMP_MONGO_URI"]:
+                    if len(value) > 10:
+                        masked_value = value[:5] + "..." + value[-3:]
+                    else:
+                        masked_value = "***"
+                    logger.info(f"{var}: {masked_value}")
+                else:
+                    logger.info(f"{var}: {value}")
+            else:
+                logger.info(f"{var}: (not set)")
+        logger.info("=== End Environment Variables ===")
     
     def get_database_url(self) -> str:
         """獲取完整的資料庫連接 URL"""

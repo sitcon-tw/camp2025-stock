@@ -41,7 +41,7 @@ async def telegram_oauth(
                 detail="Telegram authentication not configured"
             )
         
-        # 調試：顯示 token 是否有設定（隱藏完整內容）
+        # Debug：顯示 token 是否有設定（隱藏完整內容）
         token_preview = settings.CAMP_TELEGRAM_BOT_TOKEN[:10] + "..." if len(settings.CAMP_TELEGRAM_BOT_TOKEN) > 10 else "短於10字符"
         logger.info(f"Bot token configured: {token_preview}")
         

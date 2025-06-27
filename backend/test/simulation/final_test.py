@@ -1347,7 +1347,7 @@ def main():
     print("6. 啟用學員 + 股票發行 + 混合交易 (完整流程)")
     print("7. 查看系統統計和市場狀態")
     print("8. 快速市場測試")
-    print("9. 深度調試 - 檢查成交和撮合機制")
+    print("9. 深度Debug - 檢查成交和撮合機制")
     print("10. 重置IPO狀態")
     print("11. 重置所有資料")
     print("12. 退出")
@@ -1488,7 +1488,7 @@ def main():
                 break
                 
             elif choice == "9":
-                print("\n🔍 深度調試模式")
+                print("\n🔍 深度Debug模式")
                 print("正在檢查系統狀態...")
                 
                 # 檢查市場資訊
