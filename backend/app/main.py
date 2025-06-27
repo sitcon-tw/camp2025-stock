@@ -5,6 +5,8 @@ from app.core.database import connect_to_mongo, close_mongo_connection, init_dat
 from app.config import settings
 import logging
 
+# 本檔案已棄用
+
 # 設定日誌
 logging.basicConfig(
     level=logging.INFO,

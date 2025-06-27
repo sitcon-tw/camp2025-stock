@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system
+from app.routers import user_refactored, admin, public, bot, system, auth
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -67,6 +67,12 @@ app.include_router(
     admin.router, 
     prefix="/api/admin", 
     tags=["Admin Management - 管理員後台"]
+)
+
+app.include_router(
+    auth.router, 
+    prefix="/api/auth", 
+    tags=["Authentication - 使用者認證"]
 )
 
 

@@ -131,6 +131,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message.chat_id in STUDENT_GROUPS.values():
         await update.message.reply_text("🚫 只能在小隊群組裡面查詢該小隊的點數")
+        return
 
     response = api_helper.get("/api/bot/teams", protected_route=True)
 
@@ -141,7 +142,7 @@ async def point(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"👥{team_name} 目前的點數共：*{result.get("total_points")}* 點", parse_mode=ParseMode.MARKDOWN_V2)
 
 
-async def log(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def log(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"/start triggered by {update.effective_user.id}")
 
     response = api_helper.post("/api/bot/points/history", protected_route=True, json={
