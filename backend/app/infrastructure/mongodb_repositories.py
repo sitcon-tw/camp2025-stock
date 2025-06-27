@@ -42,7 +42,13 @@ class MongoUserRepository(UserRepository):
     async def get_by_telegram_id(self, telegram_id: int) -> Optional[User]:
         """根據 Telegram ID 獲取使用者"""
         try:
-            doc = await self.collection.find_one({"telegram_id": telegram_id})
+            # Try both string and integer formats
+            doc = await self.collection.find_one({
+                "$or": [
+                    {"telegram_id": telegram_id},
+                    {"telegram_id": str(telegram_id)}
+                ]
+            })
             return self._document_to_entity(doc) if doc else None
         except Exception as e:
             logger.error(f"Error getting user by telegram_id {telegram_id}: {e}")
@@ -93,14 +99,22 @@ class MongoUserRepository(UserRepository):
     
     def _document_to_entity(self, doc: dict) -> User:
         """將 MongoDB 文件轉換為領域實體"""
+        # Handle telegram_id as both string and int
+        telegram_id = doc.get("telegram_id")
+        if telegram_id and isinstance(telegram_id, str):
+            try:
+                telegram_id = int(telegram_id)
+            except ValueError:
+                telegram_id = None
+        
         return User(
             user_id=doc.get("id"),
-            username=doc.get("username"),
+            username=doc.get("name") or doc.get("username"),  # Support both field names
             email=doc.get("email"),
             team=doc.get("team"),
             points=doc.get("points", 0),
-            telegram_id=doc.get("telegram_id"),
-            is_active=doc.get("is_active", True),
+            telegram_id=telegram_id,
+            is_active=doc.get("enabled", doc.get("is_active", True)),  # Support both field names
             created_at=doc.get("created_at")
         )
     
