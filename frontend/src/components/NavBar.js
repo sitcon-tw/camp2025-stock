@@ -4,6 +4,7 @@ import {
     ChartCandlestick,
     CircleQuestionMark,
     House,
+    LogIn,
     Trophy,
     User,
 } from "lucide-react";
@@ -92,18 +93,7 @@ export default function NavBar() {
                         getIconColor("/dashboard"),
                     )}
                 >
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 12.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
-                            fill="currentColor"
-                        />
-                    </svg>
+                    <User />
                 </Link>
             ) : (
                 <Link
@@ -113,7 +103,7 @@ export default function NavBar() {
                         getIconColor("/telegram-login"),
                     )}
                 >
-                    <User />
+                    <LogIn />
                 </Link>
             )}
         </div>
