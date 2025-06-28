@@ -209,8 +209,15 @@ async def final_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
     else:
         print(response)
+        error_message = response.get("message")
+        
+        # Add helpful guidance for market order failures
+        if "市場上沒有可用的賣單" in error_message and "IPO 剩餘股數不足" in error_message:
+            guidance = "\n\n💡 建議使用限價單：\n• 使用 /stock 選擇「🖊️ 限價單」\n• 設定您願意支付的價格等待撮合"
+            error_message += guidance
+        
         await query.edit_message_text(
-            f"❌ {response.get("message")}"
+            f"❌ {error_message}"
         )
 
     context.user_data["in_stock_convo"] = False
