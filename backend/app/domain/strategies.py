@@ -6,6 +6,9 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 from decimal import Decimal
 from .entities import StockOrder
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OrderExecutionStrategy(ABC):
@@ -40,7 +43,9 @@ class MarketOrderStrategy(OrderExecutionStrategy):
         """使用目前市場價格執行"""
         current_price = market_data.get("current_price")
         if not current_price:
-            raise ValueError("market_price_not_available")
+            # 如果無法獲取市場價格，使用預設價格 20（與舊系統一致）
+            logger.warning("Current market price is None, using default price 20")
+            current_price = 20
         return Decimal(str(current_price))
 
 

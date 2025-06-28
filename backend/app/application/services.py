@@ -116,6 +116,14 @@ class TradingApplicationService(BaseApplicationService):
         Clean Code 原則：使用明確的命名和參數
         """
         try:
+            # 檢查市場是否開放
+            if not await self._is_market_open():
+                return StockOrderResponse(
+                    success=False,
+                    order_id=None,
+                    message="市場目前未開放交易"
+                )
+            
             price = Decimal(str(request.price)) if request.price else None
             order_id, executed_price = await self.trading_service.place_order(
                 user_id, request.order_type, request.side, request.quantity, price
@@ -141,19 +149,52 @@ class TradingApplicationService(BaseApplicationService):
         except ValueError as e:
             error_messages = {
                 "invalid_order_type": "無效的訂單類型",
-                "invalid_side": "無效的交易方向",
+                "invalid_side": "無效的交易方向", 
                 "invalid_quantity": "無效的數量",
                 "invalid_price_for_limit_order": "限價單必須指定價格",
                 "user_not_found": "使用者不存在",
                 "insufficient_points": "點數不足",
-                "insufficient_stocks": "持股不足"
+                "insufficient_stocks": "持股不足",
+                "unsupported_order_type": "不支援的訂單類型"
             }
-            message = error_messages.get(str(e), "下單失敗")
+            error_str = str(e)
+            message = error_messages.get(error_str, error_str)
+            logger.error(f"Order validation failed for user {user_id}: {error_str}")
             return StockOrderResponse(success=False, order_id=None, message=message)
         
         except Exception as e:
             logger.error(f"Order placement failed for user {user_id}: {e}")
             return StockOrderResponse(success=False, order_id=None, message="下單失敗")
+    
+    async def _is_market_open(self) -> bool:
+        """檢查市場是否開放交易"""
+        try:
+            from datetime import datetime, timezone
+            from app.core.database import database_manager
+            from app.core.enums import Collections
+            
+            # 取得市場開放時間配置
+            market_config = await database_manager.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "market_hours"}
+            )
+            
+            if not market_config or "openTime" not in market_config:
+                # 如果沒有配置，預設市場開放
+                return True
+            
+            current_timestamp = int(datetime.now(timezone.utc).timestamp())
+            
+            # 檢查目前是否在任何一個開放時間段內
+            for slot in market_config["openTime"]:
+                if slot["start"] <= current_timestamp <= slot["end"]:
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Failed to check market status: {e}")
+            # 出錯時預設開放，避免影響交易
+            return True
     
     async def get_user_portfolio(self, user_id: str) -> Optional[UserPortfolio]:
         """
