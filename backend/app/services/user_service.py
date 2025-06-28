@@ -1777,7 +1777,7 @@ class UserService:
             if not buy_orders and not sell_orders:
                 return {
                     "success": False, 
-                    "message": "no orders available for call auction",
+                    "message": "沒有可撮合的買賣單",
                     "order_stats": {
                         "pending_buy": 0, "pending_sell": 0,
                         "limit_buy": 0, "limit_sell": 0
