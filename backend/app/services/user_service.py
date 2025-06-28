@@ -759,9 +759,19 @@ class UserService:
             if filled_quantity > 0:
                 return filled_quantity
             elif current_quantity == 0 and filled_quantity == 0:
-                # 對於舊的訂單記錄，如果沒有 filled_quantity 但狀態是 filled
-                # 嘗試從 original_quantity 或其他欄位推斷，暫時返回 1 避免顯示 0
-                return 1  # 最保守的估計
+                # 對於舊的訂單記錄，缺少 filled_quantity 欄位
+                # 查看是否有其他可用的數量欄位
+                original_quantity = order.get("original_quantity")
+                stock_amount = order.get("stock_amount")  # 一些舊記錄可能用這個欄位
+                
+                if original_quantity:
+                    return original_quantity
+                elif stock_amount:
+                    return abs(stock_amount)  # 取絕對值，因為賣單可能是負數
+                else:
+                    # 如果真的找不到任何數量資訊，保留 0 並記錄問題
+                    logger.warning(f"Order {order.get('_id')} has filled status but no quantity data")
+                    return 0  # 保持真實性，顯示實際的 0
             else:
                 # 原始數量 = 目前剩餘 + 已成交
                 return current_quantity + filled_quantity
