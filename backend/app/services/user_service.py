@@ -2285,13 +2285,19 @@ class UserService:
             if buy_order["quantity"] == 0:
                 await self.db[Collections.STOCK_ORDERS].update_one(
                     {"_id": buy_order["_id"]},
-                    {"$set": {"status": "filled"}},
+                    {"$set": {
+                        "status": "filled",
+                        "executed_at": datetime.now(timezone.utc)
+                    }},
                     session=session
                 )
             if not is_system_sale and sell_order["quantity"] == 0:
                 await self.db[Collections.STOCK_ORDERS].update_one(
                     {"_id": sell_order["_id"]},
-                    {"$set": {"status": "filled"}},
+                    {"$set": {
+                        "status": "filled", 
+                        "executed_at": datetime.now(timezone.utc)
+                    }},
                     session=session
                 )
             
