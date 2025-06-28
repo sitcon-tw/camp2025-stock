@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { twMerge } from "tailwind-merge";
+import "./Modal.css";
 
 const Modal = ({
     isOpen,
@@ -14,7 +15,7 @@ const Modal = ({
     className = "",
     isClosing = false,
 }) => {
-    // 處理 ESC
+    // ESC 鍵
     useEffect(() => {
         const handleEsc = (e) => {
             if (e.key === "Escape" && isOpen) {
@@ -33,7 +34,8 @@ const Modal = ({
         };
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+    // 只有在未開啟且未關閉中時才隱藏 Modal
+    if (!isOpen && !isClosing) return null;
 
     // Modal 尺寸
     const sizeClasses = {
@@ -54,15 +56,19 @@ const Modal = ({
 
     return (
         <>
-            {/* Modal 遮罩 */}
             <div
                 className={twMerge(
-                    "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm",
+                    "fixed inset-0 z-50 flex items-center justify-center p-4",
                     isClosing
                         ? "animate-modal-close-bg"
                         : "animate-modal-open-bg",
                 )}
                 onClick={handleOverlayClick}
+                style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
+                }}
             >
                 {/* Modal 內容 */}
                 <div
@@ -106,68 +112,6 @@ const Modal = ({
                     </div>
                 </div>
             </div>
-
-            <style jsx global>{`
-                @keyframes modal-open {
-                    from {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                }
-
-                @keyframes modal-close {
-                    from {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                    to {
-                        opacity: 0;
-                        transform: scale(0.95);
-                    }
-                }
-
-                @keyframes modal-open-bg {
-                    from {
-                        opacity: 0;
-                        backdrop-filter: blur(0px);
-                    }
-                    to {
-                        opacity: 1;
-                        backdrop-filter: blur(4px);
-                    }
-                }
-
-                @keyframes modal-close-bg {
-                    from {
-                        opacity: 1;
-                        backdrop-filter: blur(4px);
-                    }
-                    to {
-                        opacity: 0;
-                        backdrop-filter: blur(0px);
-                    }
-                }
-
-                .animate-modal-open {
-                    animation: modal-open 0.2s ease-out;
-                }
-
-                .animate-modal-close {
-                    animation: modal-close 0.2s ease-in;
-                }
-
-                .animate-modal-open-bg {
-                    animation: modal-open-bg 0.2s ease-out;
-                }
-
-                .animate-modal-close-bg {
-                    animation: modal-close-bg 0.2s ease-in;
-                }
-            `}</style>
         </>
     );
 };
