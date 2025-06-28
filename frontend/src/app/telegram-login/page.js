@@ -92,12 +92,23 @@ export default function TelegramLogin() {
     };
 
     const initTelegramWidget = () => {
+        const widgetContainer = document.getElementById(
+            "telegram-widget-container",
+        );
+        if (!widgetContainer) return;
+
         // 如果 Telegram 小工具已存在，先移除
         const existingWidget = document.getElementById(
             "telegram-login-widget",
         );
         if (existingWidget) {
             existingWidget.remove();
+        }
+
+        // 移除載入中的 placeholder
+        const placeholder = widgetContainer.querySelector('.animate-pulse');
+        if (placeholder) {
+            placeholder.remove();
         }
 
         // 建立 Telegram 登入小工具
@@ -119,12 +130,7 @@ export default function TelegramLogin() {
             "write",
         );
 
-        const widgetContainer = document.getElementById(
-            "telegram-widget-container",
-        );
-        if (widgetContainer) {
-            widgetContainer.appendChild(telegramLoginWidget);
-        }
+        widgetContainer.appendChild(telegramLoginWidget);
     };
 
     useEffect(() => {
@@ -160,7 +166,7 @@ export default function TelegramLogin() {
                     </h1>
                     <p className="text-sm text-[#557797]">
                         使用您的 Telegram
-                        帳號登入查看投資組合和進行交易
+                        帳號登入來進行交易
                     </p>
                 </div>
 
@@ -179,9 +185,11 @@ export default function TelegramLogin() {
                                 </p>
                                 <div
                                     id="telegram-widget-container"
-                                    className="flex justify-center"
+                                    className="flex justify-center min-h-[52px] items-center"
                                 >
-                                    {/* Telegram 小工具將在這裡載入 */}
+                                    <div className="animate-pulse rounded-lg bg-[#1A325F] px-6 py-3 text-sm text-[#557797]">
+                                        載入中...
+                                    </div>
                                 </div>
                             </div>
 
