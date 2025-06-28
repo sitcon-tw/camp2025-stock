@@ -5,6 +5,7 @@ import Modal from "@/components/Modal";
 import StockChart from "@/components/StockChart";
 import TradingTabs from "@/components/TradingTabs";
 import useModal from "@/hooks/useModal";
+import { placeWebStockOrder } from "@/lib/api";
 import { apiService } from "@/services/apiService";
 import { BanknoteArrowDown, BanknoteArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -27,9 +28,13 @@ export default function Status() {
     });
 
     const [error, setError] = useState(null);
+    const [modalError, setModalError] = useState(null);
+    const [modalSuccess, setModalSuccess] = useState(null);
     const [tradeType, setTradeType] = useState("buy"); // "buy" or "sell"
     const [isMarketPrice, setIsMarketPrice] = useState(true);
     const [customPrice, setCustomPrice] = useState("");
+    const [quantity, setQuantity] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const tradeModal = useModal();
 
@@ -47,6 +52,58 @@ export default function Status() {
             setError("無法獲取資料");
         }
     };
+
+    const placeStockOrder = async () => {
+        const token = localStorage.getItem("userToken");
+
+        if (quantity < 1) {
+            setModalError("數量好像不能小於 1！");
+            return;
+        } else if (customPrice < 1 && !isMarketPrice) {
+            setModalError("限價單的價格好像不能小於 1！");
+            return;
+        } else {
+            setModalError(null);
+        }
+
+        setIsSubmitting(true);
+
+        const orderData = {
+            order_type: isMarketPrice ? "market" : "limit",
+            side: tradeType,
+            quantity: parseInt(quantity),
+            ...(!isMarketPrice && {
+                price: parseInt(customPrice),
+            }),
+        };
+
+        let orderResponse = null;
+        try {
+            orderResponse = await placeWebStockOrder(
+                token,
+                orderData,
+            );
+        } catch (e) {
+            setModalError(`下單時炸掉了：${e.message}`);
+            setIsSubmitting(false);
+            return;
+        }
+
+        if (!orderResponse.success) {
+            setModalError(orderResponse.message);
+            setIsSubmitting(false);
+            return;
+        } else {
+            setModalSuccess(orderResponse.message);
+        }
+
+        setTimeout(() => {
+            setIsSubmitting(false);
+            setModalSuccess(null);
+            tradeModal.closeModal();
+        }, 1000);
+    };
+
     useEffect(() => {
         let isMounted = true;
 
@@ -228,6 +285,18 @@ export default function Status() {
                 size="md"
             >
                 <div className="space-y-4">
+                    {modalError && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
+                            {modalError}
+                        </div>
+                    )}
+
+                    {modalSuccess && (
+                        <div className="rounded-lg border border-green-500/30 bg-red-900/20 p-3 text-center text-sm text-green-400">
+                            成功下單！{modalSuccess}
+                        </div>
+                    )}
+
                     {/* 市價選項 */}
                     <div className="flex items-center space-x-3">
                         <input
@@ -276,6 +345,9 @@ export default function Status() {
                         <input
                             type="number"
                             placeholder="請輸入數量"
+                            onChange={(e) => {
+                                setQuantity(e.target.value);
+                            }}
                             className="w-full rounded-lg border border-[#4f6f97] bg-[#0f203e] px-3 py-2 text-[#AFE1F5] placeholder-gray-400 focus:border-[#7BC2E6] focus:ring-1 focus:ring-[#7BC2E6] focus:outline-none"
                         />
                     </div>
@@ -288,9 +360,14 @@ export default function Status() {
                         >
                             取消
                         </button>
-                        <button className="flex-1 rounded-lg bg-[#7CBEE4] px-4 py-2 font-medium text-black hover:bg-[#6AADD1]">
-                            確認
-                            {tradeType === "buy" ? "買入" : "賣出"}
+                        <button
+                            className="flex-1 rounded-lg bg-[#7CBEE4] px-4 py-2 font-medium text-black hover:bg-[#6AADD1] disabled:cursor-not-allowed disabled:bg-gray-500"
+                            onClick={placeStockOrder}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting
+                                ? "處理中"
+                                : `確認${tradeType === "buy" ? "買入" : "賣出"}`}
                         </button>
                     </div>
                 </div>
