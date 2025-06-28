@@ -105,6 +105,14 @@ async def startup_event():
         # 驗證服務狀態
         await validate_services(service_container)
         
+        # 初始化撮合調度器
+        from app.services.matching_scheduler import initialize_matching_scheduler
+        from app.services.user_service import get_user_service
+        
+        user_service = get_user_service()
+        await initialize_matching_scheduler(user_service, start_immediately=True)
+        logger.info("Matching scheduler started with 60s interval")
+        
         logger.info("Application started successfully with refactored architecture")
         
     except Exception as e:
@@ -121,6 +129,10 @@ async def shutdown_event():
     logger.info("Shutting down SITCON Camp 2025 點數系統 (重構版)...")
     
     try:
+        # 清理撮合調度器
+        from app.services.matching_scheduler import cleanup_matching_scheduler
+        await cleanup_matching_scheduler()
+        
         # 清理服務資源
         service_container = get_service_container()
         await cleanup_services(service_container)

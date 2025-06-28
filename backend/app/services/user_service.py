@@ -18,6 +18,7 @@ from bson import ObjectId
 import logging
 import random
 import uuid
+import asyncio
 import os
 
 logger = logging.getLogger(__name__)
@@ -482,7 +483,9 @@ class UserService:
                 else:
                     logger.info(f"Limit order placed: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
                 
-                # 限價單已掛單，撮合將由定期任務處理以避免阻塞響應
+                # 觸發異步撮合（不阻塞響應）
+                await self._trigger_async_matching("limit_order_placed")
+                
                 # 檢查訂單狀態（一般為 pending）
                 updated_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": result.inserted_id})
                 if updated_order and updated_order.get("status") == "filled":
@@ -1703,6 +1706,26 @@ class UserService:
                     
         except Exception as e:
             logger.error(f"Failed to reactivate limit orders: {e}")
+    
+    async def _trigger_async_matching(self, reason: str = "manual_trigger"):
+        """觸發異步撮合（不阻塞當前請求）"""
+        try:
+            from app.services.matching_scheduler import get_matching_scheduler
+            
+            scheduler = get_matching_scheduler()
+            if scheduler:
+                await scheduler.trigger_matching_async(reason)
+                logger.debug(f"Triggered async matching: {reason}")
+            else:
+                logger.warning("Matching scheduler not available, falling back to sync matching")
+                # 後備方案：同步撮合（但限制執行時間）
+                try:
+                    await asyncio.wait_for(self._try_match_orders(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    logger.warning("Sync matching timeout, order will be matched later")
+                    
+        except Exception as e:
+            logger.error(f"Failed to trigger async matching: {e}")
 
     async def call_auction_matching(self) -> dict:
         """集合競價撮合機制（類似開盤前的集中撮合）"""
