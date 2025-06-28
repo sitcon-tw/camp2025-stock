@@ -1373,7 +1373,9 @@ class UserService:
                     # 查詢更詳細的市場狀況以提供具體錯誤訊息
                     sell_orders_count = await self.db[Collections.STOCK_ORDERS].count_documents({
                         "side": "sell", 
-                        "status": "pending"
+                        "status": {"$in": ["pending", "partial"]},
+                        "order_type": "limit",
+                        "quantity": {"$gt": 0}
                     }, session=session)
                     
                     ipo_config = await self.db[Collections.MARKET_CONFIG].find_one(
