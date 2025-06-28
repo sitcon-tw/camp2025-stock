@@ -8,9 +8,12 @@ import useModal from "@/hooks/useModal";
 import { placeWebStockOrder } from "@/lib/api";
 import { apiService } from "@/services/apiService";
 import { BanknoteArrowDown, BanknoteArrowUp } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Status() {
+    const router = useRouter();
+
     const [stockData, setStockData] = useState({
         lastPrice: 0,
         change: 0,
@@ -55,6 +58,9 @@ export default function Status() {
 
     const placeStockOrder = async () => {
         const token = localStorage.getItem("userToken");
+        const isUser = localStorage.getItem("isUser");
+
+        if (!isUser || !token) router.push("/telegram-login");
 
         if (quantity < 1) {
             setModalError("數量好像不能小於 1！");
@@ -76,6 +82,8 @@ export default function Status() {
                 price: parseInt(customPrice),
             }),
         };
+
+        console.log(orderData);
 
         let orderResponse = null;
         try {
