@@ -1,33 +1,126 @@
 @import "tailwindcss";
 
-/* 全域背景色設定 */
-html,
-body {
-    background-color: #0f203e;
-    min-height: 100vh;
-    color: #ffffff;
-    font-family: var(--font-inter);
+:root {
+    --color-primary: #0f203e;
+    --color-secondary: #1A325F;
+    --color-accent: #92cbf4;
+    --color-accent-light: #7BC2E6;
+    --color-border: #294565;
+    --color-text-muted: #557797;
+    --color-white: #ffffff;
+
+    --scrollbar-width: 8px;
+    --scrollbar-width-small: 6px;
+    --border-radius: 8px;
+    --border-radius-small: 6px;
+    --transition-smooth: all 0.3s ease;
+    --transition-background: background 0.3s ease;
+
+    --shadow-scrollbar: 0 2px 8px rgba(146, 203, 244, 0.3);
+    --shadow-scrollbar-small: 0 2px 6px rgba(146, 203, 244, 0.25);
 }
 
-/* 全域重置 */
+/* global style */
 *,
 *::before,
 *::after {
     box-sizing: border-box;
 }
 
-/* 主要容器背景色 */
+html,
+body {
+    background-color: var(--color-primary);
+    min-height: 100vh;
+    color: var(--color-white);
+    font-family: var(--font-inter);
+    overflow-y: auto;
+}
+
+/* bg style */
 #__next,
 main,
 .page-container,
 .container {
-    background-color: #0f203e;
+    background-color: var(--color-primary);
 }
 
 .bg-default {
-    background-color: #0f203e;
+    background-color: var(--color-primary);
 }
 
+/* element style */
 button {
     cursor: pointer;
+}
+
+/* scrollbar style */
+::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-primary);
+    border-radius: var(--border-radius);
+    transition: var(--transition-background);
+}
+
+::-webkit-scrollbar-track:hover {
+    background: var(--color-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-secondary);
+    transition: var(--transition-smooth);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+    border-radius: 12px;
+    border: 1px solid var(--color-accent-light);
+    transform: scale(1.1);
+    box-shadow: var(--shadow-scrollbar);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--color-primary);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) var(--color-primary);
+}
+
+.modal-content::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar {
+    width: var(--scrollbar-width-small);
+}
+
+.modal-content::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: var(--color-primary);
+    border-radius: var(--border-radius-small);
+    transition: var(--transition-background);
+}
+
+.modal-content::-webkit-scrollbar-track:hover,
+.overflow-y-auto::-webkit-scrollbar-track:hover {
+    background: var(--color-secondary);
+}
+
+.modal-content::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: var(--color-text-muted);
+    border-radius: var(--border-radius-small);
+    transition: var(--transition-smooth);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+    border-radius: 10px;
+    transform: scale(1.15);
+    box-shadow: var(--shadow-scrollbar-small);
 }
