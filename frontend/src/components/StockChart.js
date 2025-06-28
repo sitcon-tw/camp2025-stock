@@ -16,7 +16,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { twMerge } from "tailwind-merge";
-import CandlestickChart from "./CandlestickChart";
+import KLineChart from "./KLineChart";
 import Modal from "./Modal";
 
 ChartJS.register(
@@ -55,7 +55,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [displayMode, setDisplayMode] = useState("real");
+    const [displayMode, setDisplayMode] = useState("average");
     const [zoomLevel, setZoomLevel] = useState(1);
     const [panOffset, setPanOffset] = useState(0);
     const chartRef = useRef(null);
@@ -466,24 +466,11 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
             <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
                 <div className="md:min-h-none mb-2 min-h-[400px] w-full flex-1">
                     {displayMode === "candlestick" ? (
-                        <div
-                            className="h-full cursor-move select-none"
-                            onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
-                            onWheel={handleWheel}
-                            onTouchStart={handleTouchStart}
-                            onTouchMove={handleTouchMove}
-                            onTouchEnd={handleTouchEnd}
-                            style={{ touchAction: "pan-x pan-y" }}
-                        >
-                            <CandlestickChart
+                        <div className="h-full">
+                            <KLineChart
                                 data={candlestickData}
                                 width={1200}
                                 height={400}
-                                zoomLevel={zoomLevel}
-                                panOffset={panOffset}
                                 changePercent={changePercent}
                                 loading={loading}
                             />
@@ -510,42 +497,44 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         </div>
                     )}
                 </div>
-                <div className="flex flex-shrink-0 flex-col space-y-2 pb-2">
-                    <div className="flex items-center justify-center space-x-2">
-                        <button
-                            onClick={() =>
-                                setZoomLevel((prev) =>
-                                    Math.max(0.5, prev * 0.8),
-                                )
-                            }
-                            className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1A325F] text-[#82bee2] transition"
-                            title="縮小"
-                        >
-                            –
-                        </button>
-                        <div className="min-w-[40px] rounded px-1 py-1 text-center text-xs text-[#82bee2]">
-                            {Math.round(zoomLevel.toFixed(1) * 100)}%
+                {displayMode !== "candlestick" && (
+                    <div className="flex flex-shrink-0 flex-col space-y-2 pb-2">
+                        <div className="flex items-center justify-center space-x-2">
+                            <button
+                                onClick={() =>
+                                    setZoomLevel((prev) =>
+                                        Math.max(0.5, prev * 0.8),
+                                    )
+                                }
+                                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1A325F] text-[#82bee2] transition"
+                                title="縮小"
+                            >
+                                –
+                            </button>
+                            <div className="min-w-[40px] rounded px-1 py-1 text-center text-xs text-[#82bee2]">
+                                {Math.round(zoomLevel.toFixed(1) * 100)}%
+                            </div>
+                            <button
+                                onClick={() =>
+                                    setZoomLevel((prev) =>
+                                        Math.min(10, prev * 1.2),
+                                    )
+                                }
+                                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1A325F] text-[#82bee2] transition"
+                                title="放大"
+                            >
+                                ＋
+                            </button>
+                            <button
+                                onClick={resetZoomPan}
+                                className="rounded bg-[#1A325F] px-2 py-1 text-xs text-[#82bee2] transition"
+                                title="重置"
+                            >
+                                重置
+                            </button>
                         </div>
-                        <button
-                            onClick={() =>
-                                setZoomLevel((prev) =>
-                                    Math.min(10, prev * 1.2),
-                                )
-                            }
-                            className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1A325F] text-[#82bee2] transition"
-                            title="放大"
-                        >
-                            ＋
-                        </button>
-                        <button
-                            onClick={resetZoomPan}
-                            className="rounded bg-[#1A325F] px-2 py-1 text-xs text-[#82bee2] transition"
-                            title="重置"
-                        >
-                            重置
-                        </button>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* 圖表模式選擇 Modal */}
