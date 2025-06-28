@@ -482,10 +482,8 @@ class UserService:
                 else:
                     logger.info(f"Limit order placed: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
                 
-                # 只有未超出限制的訂單才進行撮合
-                await self._try_match_orders()
-                
-                # 檢查訂單是否已被撮合
+                # 限價單已掛單，撮合將由定期任務處理以避免阻塞響應
+                # 檢查訂單狀態（一般為 pending）
                 updated_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": result.inserted_id})
                 if updated_order and updated_order.get("status") == "filled":
                     executed_price = updated_order.get("filled_price", request.price)
