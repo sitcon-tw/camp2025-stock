@@ -14,7 +14,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT Token 驗證
 security = HTTPBearer()
 
-#　驗證密碼
+# 　驗證密碼
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -31,16 +33,18 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.CAMP_JWT_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.CAMP_JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.CAMP_JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
 
 
 def verify_token(token: str) -> dict:
     """驗證 JWT Token"""
     try:
-        payload = jwt.decode(token, settings.CAMP_JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.CAMP_JWT_SECRET,
+                             algorithms=[settings.JWT_ALGORITHM])
         return payload
     except JWTError:
         raise HTTPException(
@@ -52,7 +56,7 @@ def verify_token(token: str) -> dict:
 
 def verify_CAMP_ADMIN_PASSWORD(password: str) -> bool:
     """驗證管理員密碼（簡單版本，實際應該用雜湊）"""
-    #TODO: 實際應該用雜湊
+    # TODO: 實際應該用雜湊
     return password == settings.CAMP_ADMIN_PASSWORD
 
 
@@ -80,7 +84,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """取得目前使用者（依賴注入）"""
     try:
         payload = verify_token(credentials.credentials)
-        
+
         # 檢查 token 類型
         token_type = payload.get("type", "user")
         if token_type not in ["user", "admin"]:
@@ -88,9 +92,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token type"
             )
-        
+
         return payload
-        
+
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -120,25 +124,26 @@ def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
     received_hash = auth_data.pop('hash', None)
     if not received_hash:
         return False
-    
+
     # 準備驗證字串
     auth_data_items = []
     for key, value in sorted(auth_data.items()):
         auth_data_items.append(f"{key}={value}")
-    
+
     data_check_string = '\n'.join(auth_data_items)
-    
+
     # 計算預期的 hash
     secret_key = hashlib.sha256(bot_token.encode()).digest()
-    expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-    
+    expected_hash = hmac.new(
+        secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+
     return hmac.compare_digest(received_hash, expected_hash)
 
 
 def create_user_token(user_id: str, telegram_id: int) -> str:
     """為 Telegram 使用者建立 JWT Token"""
     token_data = {
-        "sub": user_id,
+        "user_id": user_id,
         "telegram_id": telegram_id,
         "type": "user"
     }
