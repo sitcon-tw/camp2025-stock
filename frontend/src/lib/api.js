@@ -18,17 +18,19 @@ async function apiRequest(endpoint, options = {}) {
         const response = await fetch(url, config);
 
         if (!response.ok) {
-            // 如果是 401 錯誤，拋出特殊錯誤
-            if (response.status === 401) {
-                const error = new Error(
-                    `API 請求失敗: ${response.status} ${response.statusText}`,
-                );
-                error.status = 401;
-                throw error;
+            let errorMessage = `API 請求失敗: ${response.status} ${response.statusText}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+            } catch (parseError) {
+                // 如果無法解析 JSON，使用預設錯誤訊息
             }
-            throw new Error(
-                `API 請求失敗: ${response.status} ${response.statusText}`,
-            );
+            
+            const error = new Error(errorMessage);
+            error.status = response.status;
+            throw error;
         }
 
         return await response.json();
