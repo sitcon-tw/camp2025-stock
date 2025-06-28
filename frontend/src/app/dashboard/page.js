@@ -1,6 +1,11 @@
 "use client";
 
-import { getWebPortfolio, placeWebStockOrder } from "@/lib/api";
+import {
+    getWebPointHistory,
+    getWebPortfolio,
+    getWebStockOrders,
+} from "@/lib/api";
+import dayjs from "dayjs";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,6 +14,11 @@ import { useEffect, useState } from "react";
 export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [studentList, setStudentList] = useState([]);
+    const [pointHistory, setPointHistory] = useState([]);
+    const [pointHistoryPage, setPointHistoryPage] = useState(0);
+    const [orderHistory, setOrderHistory] = useState([]);
+    const [orderHistoryPage, setOrderHistoryPage] = useState(0);
     const [authData, setAuthData] = useState(null);
     const [activeTab, setActiveTab] = useState("portfolio");
     const [error, setError] = useState("");
@@ -35,9 +45,17 @@ export default function Dashboard() {
 
             try {
                 // 載入使用者資料
-                const portfolio = await getWebPortfolio(token);
+                const [portfolio, points, stocks] = await Promise.all(
+                    [
+                        getWebPortfolio(token),
+                        getWebPointHistory(token),
+                        getWebStockOrders(token),
+                    ],
+                );
 
                 setUser(portfolio);
+                setPointHistory(points);
+                setOrderHistory(stocks);
                 setIsLoading(false);
             } catch (error) {
                 console.error("載入使用者資料失敗:", error);
@@ -54,229 +72,7 @@ export default function Dashboard() {
         checkAuthAndLoadData();
 
         setAuthData(JSON.parse(localStorage.getItem("telegramData")));
-        console.log(JSON.parse(localStorage.getItem("telegramData")));
     }, [router]);
-
-    // Portfolio 組件
-    const PortfolioView = () => {
-        if (!user) return <div>載入中...</div>;
-
-        return (
-            <div className="space-y-6">
-                {/* 資產總覽 */}
-                <div className="mx-auto max-w-3xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
-                        資產總覽
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                        <div>
-                            <p className="text-sm text-[#557797]">
-                                現金點數
-                            </p>
-                            <p className="text-xl font-bold text-white">
-                                {user.points?.toLocaleString()}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-[#557797]">
-                                股票數量
-                            </p>
-                            <p className="text-xl font-bold text-white">
-                                {user.stocks?.toLocaleString()}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-[#557797]">
-                                股票價值
-                            </p>
-                            <p className="text-xl font-bold text-white">
-                                {user.stockValue?.toLocaleString()}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-[#557797]">
-                                總資產
-                            </p>
-                            <p className="text-xl font-bold text-[#92cbf4]">
-                                {user.totalValue?.toLocaleString()}
-                            </p>
-                        </div>
-                    </div>
-                    {user.avgCost !== undefined && (
-                        <div className="mt-4 border-t border-[#294565] pt-4">
-                            <p className="text-sm text-[#557797]">
-                                平均成本:{" "}
-                                <span className="font-semibold text-white">
-                                    {user.avgCost}
-                                </span>
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    // 交易組件
-    const TradingView = () => {
-        const [orderType, setOrderType] = useState("market");
-        const [side, setSide] = useState("buy");
-        const [quantity, setQuantity] = useState("");
-        const [price, setPrice] = useState("");
-        const [isSubmitting, setIsSubmitting] = useState(false);
-
-        const handleSubmitOrder = async (e) => {
-            e.preventDefault();
-            setIsSubmitting(true);
-            setError("");
-
-            try {
-                const token = localStorage.getItem("userToken");
-                const orderData = {
-                    order_type: orderType,
-                    side: side,
-                    quantity: parseInt(quantity),
-                    ...(orderType === "limit" && {
-                        price: parseInt(price),
-                    }),
-                };
-
-                await placeWebStockOrder(token, orderData);
-
-                // 重新載入投資組合
-                const portfolioData = await getWebPortfolio(token);
-                setPortfolio(portfolioData);
-
-                // 清空表單
-                setQuantity("");
-                setPrice("");
-
-                alert("下單成功！");
-            } catch (error) {
-                console.error("下單失敗:", error);
-                setError(error.message || "下單失敗");
-            } finally {
-                setIsSubmitting(false);
-            }
-        };
-
-        return (
-            <div className="mx-auto max-w-3xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
-                    股票交易
-                </h3>
-
-                <form
-                    onSubmit={handleSubmitOrder}
-                    className="space-y-4"
-                >
-                    {/* 買賣方向 */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-[#557797]">
-                            買賣方向
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setSide("buy")}
-                                className={`rounded-lg px-4 py-2 font-medium transition-colors ${
-                                    side === "buy"
-                                        ? "bg-green-600 text-white"
-                                        : "bg-[#294565] text-[#557797] hover:bg-[#3a5678]"
-                                }`}
-                            >
-                                買入
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSide("sell")}
-                                className={`rounded-lg px-4 py-2 font-medium transition-colors ${
-                                    side === "sell"
-                                        ? "bg-red-600 text-white"
-                                        : "bg-[#294565] text-[#557797] hover:bg-[#3a5678]"
-                                }`}
-                            >
-                                賣出
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* 訂單類型 */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-[#557797]">
-                            訂單類型
-                        </label>
-                        <select
-                            value={orderType}
-                            onChange={(e) =>
-                                setOrderType(e.target.value)
-                            }
-                            className="w-full rounded-lg border-2 border-[#294565] bg-transparent px-4 py-2 text-white focus:border-cyan-400 focus:outline-none"
-                        >
-                            <option
-                                value="market"
-                                className="bg-[#1A325F]"
-                            >
-                                市價單
-                            </option>
-                            <option
-                                value="limit"
-                                className="bg-[#1A325F]"
-                            >
-                                限價單
-                            </option>
-                        </select>
-                    </div>
-
-                    {/* 數量 */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-[#557797]">
-                            數量
-                        </label>
-                        <input
-                            type="number"
-                            value={quantity}
-                            onChange={(e) =>
-                                setQuantity(e.target.value)
-                            }
-                            min="1"
-                            required
-                            className="w-full rounded-lg border-2 border-[#294565] bg-transparent px-4 py-2 text-white placeholder-slate-400 focus:border-cyan-400 focus:outline-none"
-                            placeholder="輸入股票數量"
-                        />
-                    </div>
-
-                    {/* 價格（限價單才顯示） */}
-                    {orderType === "limit" && (
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-[#557797]">
-                                價格
-                            </label>
-                            <input
-                                type="number"
-                                value={price}
-                                onChange={(e) =>
-                                    setPrice(e.target.value)
-                                }
-                                min="1"
-                                required
-                                className="w-full rounded-lg border-2 border-[#294565] bg-transparent px-4 py-2 text-white placeholder-slate-400 focus:border-cyan-400 focus:outline-none"
-                                placeholder="輸入限價"
-                            />
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full rounded-xl bg-[#81c0e7] py-3 font-bold text-[#092e58] transition-colors duration-200 hover:bg-[#70b3d9] disabled:cursor-not-allowed disabled:bg-gray-500"
-                    >
-                        {isSubmitting ? "下單中..." : "確認下單"}
-                    </button>
-                </form>
-            </div>
-        );
-    };
 
     if (isLoading) {
         return (
@@ -291,55 +87,6 @@ export default function Dashboard() {
 
     return (
         <div className="flex min-h-screen w-screen bg-[#0f203e] pb-20 md:items-center">
-            {/* 標題列 */}
-            {/*<div className="border-b border-[#294565] bg-[#1A325F] px-4 py-4">*/}
-            {/*    <div className="flex items-center justify-between">*/}
-            {/*        <div>*/}
-            {/*            <h1 className="text-xl font-bold text-[#92cbf4]">*/}
-            {/*                投資儀表板*/}
-            {/*            </h1>*/}
-            {/*            {user && (*/}
-            {/*                <p className="text-sm text-[#557797]">*/}
-            {/*                    歡迎，{user.name || user.id}*/}
-            {/*                </p>*/}
-            {/*            )}*/}
-            {/*        </div>*/}
-            {/*        <button*/}
-            {/*            onClick={handleLogout}*/}
-            {/*            className="text-sm text-[#557797] transition-colors hover:text-red-400"*/}
-            {/*        >*/}
-            {/*            登出*/}
-            {/*        </button>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
-
-            {/* 頁籤導航 */}
-            {/*<div className="border-b border-[#294565] bg-[#1A325F]">*/}
-            {/*    <div className="flex">*/}
-            {/*        <button*/}
-            {/*            onClick={() => setActiveTab("portfolio")}*/}
-            {/*            className={`flex-1 py-3 text-sm font-medium transition-colors ${*/}
-            {/*                activeTab === "portfolio"*/}
-            {/*                    ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"*/}
-            {/*                    : "text-[#557797] hover:text-[#92cbf4]"*/}
-            {/*            }`}*/}
-            {/*        >*/}
-            {/*            投資組合*/}
-            {/*        </button>*/}
-            {/*        <button*/}
-            {/*            onClick={() => setActiveTab("trading")}*/}
-            {/*            className={`flex-1 py-3 text-sm font-medium transition-colors ${*/}
-            {/*                activeTab === "trading"*/}
-            {/*                    ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"*/}
-            {/*                    : "text-[#557797] hover:text-[#92cbf4]"*/}
-            {/*            }`}*/}
-            {/*        >*/}
-            {/*            股票交易*/}
-            {/*        </button>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
-
-            {/* 內容區域 */}
             <div className="w-full space-y-4 p-4">
                 {error && (
                     <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
@@ -347,7 +94,7 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                <div className="mx-auto flex max-w-3xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     {authData.photo_url ? (
                         <Image
                             src={authData.photo_url}
@@ -389,40 +136,41 @@ export default function Dashboard() {
                         </button>
                     </div>
                 </div>
-                <div className="mx-auto max-w-3xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+
+                <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         資產總覽
                     </h3>
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <div className="grid grid-cols-2 place-items-center gap-4 md:grid-cols-4">
                         <div>
-                            <p className="text-sm text-[#557797]">
+                            <p className="mb-1 text-center text-sm text-[#557797]">
                                 現金點數
                             </p>
-                            <p className="text-xl font-bold text-white">
+                            <p className="text-center text-xl font-bold text-white">
                                 {user.points?.toLocaleString()}
                             </p>
                         </div>
                         <div>
-                            <p className="text-sm text-[#557797]">
+                            <p className="mb-1 text-center text-sm text-[#557797]">
                                 股票數量
                             </p>
-                            <p className="text-xl font-bold text-white">
+                            <p className="text-center text-xl font-bold text-white">
                                 {user.stocks?.toLocaleString()}
                             </p>
                         </div>
                         <div>
-                            <p className="text-sm text-[#557797]">
+                            <p className="mb-1 text-center text-sm text-[#557797]">
                                 股票價值
                             </p>
-                            <p className="text-xl font-bold text-white">
+                            <p className="text-center text-xl font-bold text-white">
                                 {user.stockValue?.toLocaleString()}
                             </p>
                         </div>
                         <div>
-                            <p className="text-sm text-[#557797]">
+                            <p className="mb-1 text-center text-sm text-[#557797]">
                                 總資產
                             </p>
-                            <p className="text-xl font-bold text-[#92cbf4]">
+                            <p className="text-center text-xl font-bold text-[#92cbf4]">
                                 {user.totalValue?.toLocaleString()}
                             </p>
                         </div>
@@ -430,13 +178,182 @@ export default function Dashboard() {
                     {user.avgCost !== undefined && (
                         <div className="mt-4 border-t border-[#294565] pt-4">
                             <p className="text-sm text-[#557797]">
-                                平均成本:{" "}
+                                購買股票平均成本:{" "}
                                 <span className="font-semibold text-white">
                                     {user.avgCost}
                                 </span>
                             </p>
                         </div>
                     )}
+                </div>
+
+                {/* TODO: Blocked due to API */}
+                {/*<div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            // value={givePointsForm.username}
+                            // onChange={(e) =>
+                            //     // handleUsernameChange(
+                            //     //     e.target.value,
+                            //     // )
+                            // }
+                            onFocus={() => {
+                                // 重新觸發搜尋以顯示建議
+                                // if (
+                                //     givePointsForm.username.trim() !==
+                                //     ""
+                                // ) {
+                                //     handleUsernameChange(
+                                //         givePointsForm.username,
+                                //     );
+                                // }
+                            }}
+                            onBlur={() => {
+                                // 延遲隱藏建議，讓點擊事件能夠觸發
+                                // setTimeout(
+                                //     () =>
+                                //         setShowSuggestions(
+                                //             false,
+                                //         ),
+                                //     200,
+                                // );
+                            }}
+                            // disabled={studentsLoading}
+                            className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#0f203e] disabled:opacity-50"
+                            placeholder={"正在載入使用者資料..."}
+                        />
+                        {showSuggestions &&
+                            suggestions.length > 0 && (
+                                <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[#469FD2] bg-[#0f203e] shadow-lg">
+                                    {suggestions.map(
+                                        (suggestion, index) => (
+                                            <div
+                                                key={index}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault(); // 防止blur事件影響點擊
+                                                    if (
+                                                        givePointsForm.type.startsWith(
+                                                            "multi_",
+                                                        )
+                                                    ) {
+                                                        addMultiTarget(
+                                                            suggestion,
+                                                        );
+                                                    } else {
+                                                        selectSuggestion(
+                                                            suggestion,
+                                                        );
+                                                    }
+                                                }}
+                                                className="cursor-pointer border-b border-[#469FD2] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span>
+                                                        {
+                                                            suggestion.label
+                                                        }
+                                                    </span>
+                                                    <span className="text-xs text-gray-400">
+                                                        {suggestion.type ===
+                                                        "user"
+                                                            ? "個人"
+                                                            : "團隊"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            )}
+                    </div>
+                </div>*/}
+
+                <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                        點數紀錄
+                    </h3>
+
+                    <div className="grid grid-flow-row gap-4">
+                        {pointHistory.map((i) => {
+                            return (
+                                <div
+                                    className="grid grid-cols-5 space-x-4"
+                                    key={i.created_at}
+                                >
+                                    <p className="font-mono">
+                                        {dayjs(i.created_at).format(
+                                            "MM/DD HH:mm",
+                                        )}
+                                    </p>
+                                    <p className="col-span-3 text-[#92cbf4]">
+                                        {i.note}
+                                    </p>
+
+                                    <p className="ml-auto font-mono">
+                                        {i.balance_after}{" "}
+                                        <span
+                                            className={
+                                                i.amount < 0
+                                                    ? "text-red-400"
+                                                    : "text-green-400"
+                                            }
+                                        >
+                                            ({i.amount > 0 && "+"}
+                                            {i.amount})
+                                        </span>
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                        股票購買紀錄
+                    </h3>
+
+                    <div className="grid grid-flow-row gap-4">
+                        {orderHistory.map((i) => {
+                            return (
+                                <div
+                                    className="grid grid-cols-5 space-x-4"
+                                    key={i.created_at}
+                                >
+                                    <p className="font-mono">
+                                        {dayjs(i.created_at).format(
+                                            "MM/DD HH:mm",
+                                        )}
+                                    </p>
+                                    <p className="col-span-3 text-[#92cbf4]">
+                                        {i.status === "filled"
+                                            ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
+                                            : i.status === "cancelled"
+                                              ? "❌ 已取消"
+                                              : i.status ===
+                                                  "pending_limit"
+                                                ? "等待中 (限制)"
+                                                : i.status ===
+                                                        "partial" ||
+                                                    i.status ===
+                                                        "pending"
+                                                  ? i.filled_quantity >
+                                                    0
+                                                      ? `部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
+                                                      : "等待成交"
+                                                  : i.status}
+                                    </p>
+
+                                    <p className="ml-auto">
+                                        {i.side === "sell"
+                                            ? "賣出"
+                                            : "買入"}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>

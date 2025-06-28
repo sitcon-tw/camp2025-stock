@@ -27,7 +27,7 @@ async function apiRequest(endpoint, options = {}) {
             } catch (parseError) {
                 // 如果無法解析 JSON，使用預設錯誤訊息
             }
-            
+
             const error = new Error(errorMessage);
             error.status = response.status;
             throw error;
@@ -397,7 +397,7 @@ export async function telegramOAuth(authData) {
 
 // 查詢投資組合
 export async function getWebPortfolio(token) {
-    return apiRequest("/api/user/portfolio", {
+    return apiRequest("/api/web/portfolio", {
         headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -407,7 +407,7 @@ export async function getWebPortfolio(token) {
 
 // 查詢點數記錄
 export async function getWebPointHistory(token, limit = 50) {
-    return apiRequest(`/api/user/points/history?limit=${limit}`, {
+    return apiRequest(`/api/web/points/history?limit=${limit}`, {
         headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -417,7 +417,7 @@ export async function getWebPointHistory(token, limit = 50) {
 
 // 下股票訂單
 export async function placeWebStockOrder(token, orderData) {
-    return apiRequest("/api/user/stock/order", {
+    return apiRequest("/api/web/stock/order", {
         method: "POST",
         headers: {
             Authorization: `Bearer ${token}`,
@@ -429,7 +429,7 @@ export async function placeWebStockOrder(token, orderData) {
 
 // 查詢股票訂單記錄
 export async function getWebStockOrders(token, limit = 50) {
-    return apiRequest(`/api/user/stock/orders?limit=${limit}`, {
+    return apiRequest(`/api/web/stock/orders?limit=${limit}`, {
         headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -439,7 +439,7 @@ export async function getWebStockOrders(token, limit = 50) {
 
 // 點數轉帳
 export async function webTransferPoints(token, transferData) {
-    return apiRequest("/api/user/transfer", {
+    return apiRequest("/api/web/transfer", {
         method: "POST",
         headers: {
             Authorization: `Bearer ${token}`,
@@ -451,7 +451,7 @@ export async function webTransferPoints(token, transferData) {
 
 // 查詢使用者資料
 export async function getWebUserProfile(token) {
-    return apiRequest("/api/user/profile", {
+    return apiRequest("/api/web/profile", {
         headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
