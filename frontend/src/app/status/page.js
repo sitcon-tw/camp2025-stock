@@ -161,6 +161,14 @@ export default function Status() {
                         <div className="mb-4 grid grid-cols-2 gap-2 text-center lg:gap-4">
                             <button
                                 onClick={() => {
+                                    const token = localStorage.getItem("userToken");
+                                    const isUser = localStorage.getItem("isUser");
+                                    
+                                    if (!isUser || !token) {
+                                        router.push("/telegram-login");
+                                        return;
+                                    }
+                                    
                                     setTradeType("buy");
                                     tradeModal.openModal();
                                 }}
@@ -173,6 +181,14 @@ export default function Status() {
                             </button>
                             <button
                                 onClick={() => {
+                                    const token = localStorage.getItem("userToken");
+                                    const isUser = localStorage.getItem("isUser");
+                                    
+                                    if (!isUser || !token) {
+                                        router.push("/telegram-login");
+                                        return;
+                                    }
+                                    
                                     setTradeType("sell");
                                     tradeModal.openModal();
                                 }}
