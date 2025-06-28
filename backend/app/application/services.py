@@ -249,7 +249,7 @@ class TradingApplicationService(BaseApplicationService):
                     order_id=order.order_id,
                     order_type=order.order_type,
                     side=order.side,
-                    quantity=order.quantity,
+                    quantity=self._get_display_quantity_from_entity(order),
                     price=int(order.price) if order.price else None,
                     status=order.status,
                     created_at=order.created_at.isoformat() if order.created_at else "",
@@ -261,6 +261,39 @@ class TradingApplicationService(BaseApplicationService):
         except Exception as e:
             logger.error(f"Failed to get orders for user {user_id}: {e}")
             return []
+    
+    def _get_display_quantity_from_entity(self, order) -> int:
+        """
+        從 Domain 實體取得顯示數量
+        
+        對於已成交訂單，顯示成交數量；對於進行中訂單，顯示剩餘數量
+        
+        Args:
+            order: StockOrder 實體
+            
+        Returns:
+            顯示用的數量
+        """
+        if order.status == "filled":
+            # 已成交訂單：顯示成交數量
+            if hasattr(order, 'filled_quantity') and order.filled_quantity > 0:
+                return order.filled_quantity
+            elif order.quantity == 0:
+                # 對於舊的訂單記錄，如果 quantity 為 0 且狀態是 filled
+                # 檢查是否有其他可用的數量欄位
+                if hasattr(order, 'original_quantity') and order.original_quantity:
+                    return order.original_quantity
+                else:
+                    # 如果找不到真實數量資訊，記錄問題並返回 0
+                    logger.warning(f"Order {order.order_id} has filled status but no quantity data")
+                    return 0
+            else:
+                # 原始數量 = 當前剩餘 + 已成交
+                filled_qty = getattr(order, 'filled_quantity', 0)
+                return order.quantity + filled_qty
+        else:
+            # 進行中或部分成交訂單：顯示剩餘數量
+            return order.quantity
 
 
 class TransferApplicationService(BaseApplicationService):
