@@ -74,6 +74,10 @@ export default function TelegramLogin() {
                     "userData",
                     JSON.stringify(data.user),
                 );
+                localStorage.setItem(
+                    "telegramData",
+                    JSON.stringify(authDataToUse),
+                );
 
                 router.push("/dashboard");
             } else {
