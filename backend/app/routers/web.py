@@ -60,7 +60,7 @@ async def get_portfolio(
         logger.error(f"Failed to get portfolio for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得投資組合資訊"
+            detail=str(e) or "無法取得投資組合資訊"
         )
 
 
@@ -108,7 +108,7 @@ async def get_point_history(
         logger.error(f"Failed to get point history for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得點數記錄"
+            detail=str(e) or "無法取得點數記錄"
         )
 
 
@@ -158,7 +158,7 @@ async def place_stock_order(
         logger.error(f"Failed to place order for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="下單失敗"
+            detail=str(e) or "無法下訂單"
         )
 
 
@@ -206,7 +206,7 @@ async def get_stock_orders(
         logger.error(f"Failed to get stock orders for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得訂單記錄"
+            detail=str(e) or "無法取得股票訂單記錄"
         )
 
 
@@ -256,7 +256,7 @@ async def transfer_points(
         logger.error(f"Failed to transfer points for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="轉帳失敗"
+            detail=str(e) or "無法轉帳點數"
         )
 
 
@@ -303,7 +303,7 @@ async def get_user_profile(
         logger.error(f"Failed to get profile for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得使用者資料"
+            detail=str(e) or "無法取得使用者資料"
         )
 
 
@@ -340,7 +340,7 @@ async def get_users(
         logger.error(f"Failed to get users for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得使用者資產明細"
+            detail=str(e) or "無法取得使用者資產明細"
         )
 
 
@@ -361,7 +361,7 @@ async def get_students(
         logger.error(f"Failed to get students for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得學員資料"
+            detail=str(e) or "無法取得學員資料"
         )
 
 
@@ -382,7 +382,7 @@ async def get_teams(
         logger.error(f"Failed to get teams for user {current_user.get('sub')}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="無法取得隊伍資料"
+            detail=str(e) or "無法取得隊伍資料"
         )
 
 
