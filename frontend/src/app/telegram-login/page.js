@@ -191,7 +191,7 @@ export default function TelegramLogin() {
                     )}
 
                     {authData && (
-                        <div className="rounded-lg border border-[#294565] bg-[#1a3a5c] p-4">
+                        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-4">
                             <p className="mb-2 text-sm text-[#92cbf4]">
                                 檢測到 Telegram 認證資料
                             </p>

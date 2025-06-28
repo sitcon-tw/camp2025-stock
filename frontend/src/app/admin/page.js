@@ -213,6 +213,7 @@ export default function AdminPage() {
                         fetchIpoStatus(token),
                         fetchIpoDefaults(token),
                         fetchMarketStatus(token),
+                        fetchTransferFeeConfig(token),
                     ]);
 
                     // 獲取使用者資料（包含學生列表）
@@ -1048,11 +1049,16 @@ export default function AdminPage() {
                 </div>
             )}
 
-            <div className="container mx-auto w-11/12 px-4 py-6">
+            <div className="mx-auto max-w-xl space-y-6 px-4 py-6">
                 <div className="mb-6 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-[#AFE1F5]">
-                        管理員面板
-                    </h1>
+                    <div>
+                        <h1 className="mb-1 text-2xl font-bold text-[#AFE1F5]">
+                           歡迎，{"康喔"}！
+                        </h1>
+                        <p className="text-sm text-[#7BC2E6]">
+                            權限：點數發放、發送公告、系統管理
+                        </p>
+                    </div>
                     <button
                         onClick={handleLogout}
                         className="rounded-xl bg-[#7BC2E6] px-4 py-2 text-black transition-colors hover:bg-[#6bb0d4]"
@@ -1061,474 +1067,553 @@ export default function AdminPage() {
                     </button>
                 </div>
 
-                <div className="space-y-6">
-                    {/* 發點數 */}
+                {/* 系統統計 */}
+                {systemStats && (
                     <div className="rounded-xl bg-[#1A325F] p-6">
-                        <div className="space-y-4">
-                            {/* 發放模式選擇 */}
-                            <div className="space-y-4">
-                                <label className="block text-sm font-medium text-[#7BC2E6]">
-                                    發放模式
-                                </label>
+                        <h2 className="mb-4 text-xl font-bold text-white">
+                            統計
+                        </h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="rounded-xl bg-[#0f203e] p-3 text-center">
+                                <div className="text-2xl font-bold">
+                                    {systemStats.total_users}
+                                </div>
+                                <div className="mt-1 text-sm text-gray-400">
+                                    個使用者
+                                </div>
+                            </div>
+                            <div className="rounded-xl bg-[#0f203e] p-3 text-center">
+                                <div className="text-2xl font-bold">
+                                    {teamNumber}
+                                </div>
+                                <div className="mt-1 text-sm text-gray-400">
+                                    個隊伍
+                                </div>
+                            </div>
+                            <div className="rounded-xl bg-[#0f203e] p-3 text-center">
+                                <div className="text-2xl font-bold">
+                                    {systemStats.total_points.toLocaleString()}
+                                </div>
+                                <div className="mt-1 text-sm text-gray-400">
+                                    總點數
+                                </div>
+                            </div>
+                            <div className="rounded-xl bg-[#0f203e] p-3 text-center">
+                                <div className="text-2xl font-bold">
+                                    {systemStats.total_stocks.toLocaleString()}
+                                </div>
+                                <div className="mt-1 text-sm text-gray-400">
+                                    總股票數(單位:股)
+                                </div>
+                            </div>
+                            <div className="col-span-2 rounded-xl bg-[#0f203e] p-3 text-center">
+                                <div className="text-2xl font-bold">
+                                    {systemStats.total_trades}
+                                </div>
+                                <div className="mt-1 text-sm text-gray-400">
+                                    總交易數
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                                {/* 個人/團隊切換 */}
-                                <div className="flex items-center space-x-4">
-                                    <span className="text-[#7BC2E6]">
-                                        個人
-                                    </span>
-                                    <label className="relative inline-flex cursor-pointer items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={
+                {/* 發點數 */}
+                <div className="rounded-xl bg-[#1A325F] p-6">
+                    <div className="space-y-4">
+                        {/* 發放模式選擇 */}
+                        <div className="space-y-4">
+                            <label className="block text-sm font-medium text-[#7BC2E6]">
+                                發放模式
+                            </label>
+
+                            {/* 個人/團隊切換 */}
+                            <div className="flex items-center space-x-4">
+                                <span className="text-[#7BC2E6]">
+                                    個人
+                                </span>
+                                <label className="relative inline-flex cursor-pointer items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={
+                                            givePointsForm.type ===
+                                                "group" ||
+                                            givePointsForm.type ===
+                                                "multi_groups"
+                                        }
+                                        onChange={(e) => {
+                                            const isMulti =
+                                                givePointsForm.type.startsWith(
+                                                    "multi_",
+                                                );
+                                            let newType;
+
+                                            if (isMulti) {
+                                                newType = e.target
+                                                    .checked
+                                                    ? "multi_groups"
+                                                    : "multi_users";
+                                            } else {
+                                                newType = e.target
+                                                    .checked
+                                                    ? "group"
+                                                    : "user";
+                                            }
+
+                                            setGivePointsForm({
+                                                ...givePointsForm,
+                                                type: newType,
+                                                username: "",
+                                                multiTargets: [],
+                                            });
+                                            setShowSuggestions(false);
+                                            setSuggestions([]);
+                                        }}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                </label>
+                                <span className="text-[#7BC2E6]">
+                                    團隊
+                                </span>
+                            </div>
+
+                            {/* 多選開關 */}
+                            <div className="flex items-center space-x-4">
+                                <span className="text-[#7BC2E6]">
+                                    單選
+                                </span>
+                                <label className="relative inline-flex cursor-pointer items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={givePointsForm.type.startsWith(
+                                            "multi_",
+                                        )}
+                                        onChange={(e) => {
+                                            const isGroup =
                                                 givePointsForm.type ===
                                                     "group" ||
                                                 givePointsForm.type ===
-                                                    "multi_groups"
-                                            }
-                                            onChange={(e) => {
-                                                const isMulti =
-                                                    givePointsForm.type.startsWith(
-                                                        "multi_",
-                                                    );
-                                                let newType;
+                                                    "multi_groups";
+                                            const newType = e.target
+                                                .checked
+                                                ? isGroup
+                                                    ? "multi_groups"
+                                                    : "multi_users"
+                                                : isGroup
+                                                  ? "group"
+                                                  : "user";
 
-                                                if (isMulti) {
-                                                    newType = e.target
-                                                        .checked
-                                                        ? "multi_groups"
-                                                        : "multi_users";
-                                                } else {
-                                                    newType = e.target
-                                                        .checked
-                                                        ? "group"
-                                                        : "user";
-                                                }
-
-                                                setGivePointsForm({
-                                                    ...givePointsForm,
-                                                    type: newType,
-                                                    username: "",
-                                                    multiTargets: [],
-                                                });
-                                                setShowSuggestions(
-                                                    false,
-                                                );
-                                                setSuggestions([]);
-                                            }}
-                                            className="peer sr-only"
-                                        />
-                                        <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-                                    </label>
-                                    <span className="text-[#7BC2E6]">
-                                        團隊
-                                    </span>
-                                </div>
-
-                                {/* 多選開關 */}
-                                <div className="flex items-center space-x-4">
-                                    <span className="text-[#7BC2E6]">
-                                        單選
-                                    </span>
-                                    <label className="relative inline-flex cursor-pointer items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={givePointsForm.type.startsWith(
-                                                "multi_",
-                                            )}
-                                            onChange={(e) => {
-                                                const isGroup =
-                                                    givePointsForm.type ===
-                                                        "group" ||
-                                                    givePointsForm.type ===
-                                                        "multi_groups";
-                                                const newType = e
-                                                    .target.checked
-                                                    ? isGroup
-                                                        ? "multi_groups"
-                                                        : "multi_users"
-                                                    : isGroup
-                                                      ? "group"
-                                                      : "user";
-
-                                                setGivePointsForm({
-                                                    ...givePointsForm,
-                                                    type: newType,
-                                                    username: "",
-                                                    multiTargets: [],
-                                                });
-                                                setShowSuggestions(
-                                                    false,
-                                                );
-                                                setSuggestions([]);
-                                            }}
-                                            className="peer sr-only"
-                                        />
-                                        <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
-                                    </label>
-                                    <span className="text-[#7BC2E6]">
-                                        多選
-                                    </span>
-                                </div>
-
-                                {/* 全選按鈕 - 只在多選模式下顯示 */}
-                                {givePointsForm.type.startsWith(
-                                    "multi_",
-                                ) && (
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const targetList =
-                                                    givePointsForm.type ===
-                                                    "multi_users"
-                                                        ? students
-                                                        : teams;
-                                                const allTargets =
-                                                    targetList.map(
-                                                        (item) => ({
-                                                            value:
-                                                                givePointsForm.type ===
-                                                                "multi_users"
-                                                                    ? item.username
-                                                                    : item.name,
-                                                            label:
-                                                                givePointsForm.type ===
-                                                                "multi_users"
-                                                                    ? `${item.username}${item.team ? ` (${item.team})` : ""}`
-                                                                    : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ""}`,
-                                                            type:
-                                                                givePointsForm.type ===
-                                                                "multi_users"
-                                                                    ? "user"
-                                                                    : "group",
-                                                        }),
-                                                    );
-
-                                                setGivePointsForm({
-                                                    ...givePointsForm,
-                                                    multiTargets:
-                                                        allTargets,
-                                                    username: "",
-                                                });
-                                                setShowSuggestions(
-                                                    false,
-                                                );
-                                                setSuggestions([]);
-                                            }}
-                                            className="rounded-lg bg-[#7BC2E6] px-4 py-2 text-sm text-black transition-colors hover:bg-[#6bb0d4]"
-                                        >
-                                            全選{" "}
-                                            {givePointsForm.type ===
-                                            "multi_users"
-                                                ? `所有個人 (${students.length})`
-                                                : `所有團隊 (${teams.length})`}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setGivePointsForm({
-                                                    ...givePointsForm,
-                                                    multiTargets: [],
-                                                    username: "",
-                                                });
-                                                setShowSuggestions(
-                                                    false,
-                                                );
-                                                setSuggestions([]);
-                                            }}
-                                            disabled={
-                                                givePointsForm
-                                                    .multiTargets
-                                                    .length === 0
-                                            }
-                                            className="rounded-lg bg-red-700/80 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700/70 disabled:cursor-not-allowed disabled:bg-gray-600"
-                                        >
-                                            全部移除 (
-                                            {
-                                                givePointsForm
-                                                    .multiTargets
-                                                    .length
-                                            }
-                                            )
-                                        </button>
-                                    </div>
-                                )}
+                                            setGivePointsForm({
+                                                ...givePointsForm,
+                                                type: newType,
+                                                username: "",
+                                                multiTargets: [],
+                                            });
+                                            setShowSuggestions(false);
+                                            setSuggestions([]);
+                                        }}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                </label>
+                                <span className="text-[#7BC2E6]">
+                                    多選
+                                </span>
                             </div>
 
-                            {/* 條件顯示搜尋框 */}
+                            {/* 全選按鈕 - 只在多選模式下顯示 */}
                             {givePointsForm.type.startsWith(
                                 "multi_",
-                            ) ||
-                            ["user", "group"].includes(
-                                givePointsForm.type,
-                            ) ? (
-                                <div className="relative">
-                                    <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                        {givePointsForm.type.startsWith(
-                                            "multi_",
-                                        )
-                                            ? "新增目標（搜尋選擇）"
-                                            : "給誰（搜尋選擇）"}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={
-                                            givePointsForm.username
-                                        }
-                                        onChange={(e) =>
-                                            handleUsernameChange(
-                                                e.target.value,
-                                            )
-                                        }
-                                        onFocus={() => {
-                                            // 重新觸發搜尋以顯示建議
-                                            if (
-                                                givePointsForm.username.trim() !==
-                                                ""
-                                            ) {
-                                                handleUsernameChange(
-                                                    givePointsForm.username,
+                            ) && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const targetList =
+                                                givePointsForm.type ===
+                                                "multi_users"
+                                                    ? students
+                                                    : teams;
+                                            const allTargets =
+                                                targetList.map(
+                                                    (item) => ({
+                                                        value:
+                                                            givePointsForm.type ===
+                                                            "multi_users"
+                                                                ? item.username
+                                                                : item.name,
+                                                        label:
+                                                            givePointsForm.type ===
+                                                            "multi_users"
+                                                                ? `${item.username}${item.team ? ` (${item.team})` : ""}`
+                                                                : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ""}`,
+                                                        type:
+                                                            givePointsForm.type ===
+                                                            "multi_users"
+                                                                ? "user"
+                                                                : "group",
+                                                    }),
                                                 );
-                                            }
+
+                                            setGivePointsForm({
+                                                ...givePointsForm,
+                                                multiTargets:
+                                                    allTargets,
+                                                username: "",
+                                            });
+                                            setShowSuggestions(false);
+                                            setSuggestions([]);
                                         }}
-                                        onBlur={() => {
-                                            // 延遲隱藏建議，讓點擊事件能夠觸發
-                                            setTimeout(
-                                                () =>
-                                                    setShowSuggestions(
-                                                        false,
-                                                    ),
-                                                200,
-                                            );
+                                        className="rounded-lg bg-[#7BC2E6] px-4 py-2 text-sm text-black transition-colors hover:bg-[#6bb0d4]"
+                                    >
+                                        全選{" "}
+                                        {givePointsForm.type ===
+                                        "multi_users"
+                                            ? `所有個人 (${students.length})`
+                                            : `所有團隊 (${teams.length})`}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setGivePointsForm({
+                                                ...givePointsForm,
+                                                multiTargets: [],
+                                                username: "",
+                                            });
+                                            setShowSuggestions(false);
+                                            setSuggestions([]);
                                         }}
-                                        disabled={studentsLoading}
-                                        className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#0f203e] disabled:opacity-50"
-                                        placeholder={
-                                            studentsLoading
-                                                ? "正在載入使用者資料..."
-                                                : givePointsForm.type ===
-                                                        "user" ||
-                                                    givePointsForm.type ===
-                                                        "multi_users"
-                                                  ? "搜尋學生姓名..."
-                                                  : "搜尋團隊名稱..."
+                                        disabled={
+                                            givePointsForm
+                                                .multiTargets
+                                                .length === 0
                                         }
-                                    />
-
-                                    {/* 搜尋建議下拉 */}
-                                    {showSuggestions &&
-                                        suggestions.length > 0 && (
-                                            <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[#469FD2] bg-[#0f203e] shadow-lg">
-                                                {suggestions.map(
-                                                    (
-                                                        suggestion,
-                                                        index,
-                                                    ) => (
-                                                        <div
-                                                            key={
-                                                                index
-                                                            }
-                                                            onMouseDown={(
-                                                                e,
-                                                            ) => {
-                                                                e.preventDefault(); // 防止blur事件影響點擊
-                                                                if (
-                                                                    givePointsForm.type.startsWith(
-                                                                        "multi_",
-                                                                    )
-                                                                ) {
-                                                                    addMultiTarget(
-                                                                        suggestion,
-                                                                    );
-                                                                } else {
-                                                                    selectSuggestion(
-                                                                        suggestion,
-                                                                    );
-                                                                }
-                                                            }}
-                                                            className="cursor-pointer border-b border-[#469FD2] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
-                                                        >
-                                                            <div className="flex items-center justify-between">
-                                                                <span>
-                                                                    {
-                                                                        suggestion.label
-                                                                    }
-                                                                </span>
-                                                                <span className="text-xs text-gray-400">
-                                                                    {suggestion.type ===
-                                                                    "user"
-                                                                        ? "個人"
-                                                                        : "團隊"}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    ),
-                                                )}
-                                            </div>
-                                        )}
+                                        className="rounded-lg bg-red-700/80 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700/70 disabled:cursor-not-allowed disabled:bg-gray-600"
+                                    >
+                                        全部移除 (
+                                        {
+                                            givePointsForm
+                                                .multiTargets.length
+                                        }
+                                        )
+                                    </button>
                                 </div>
-                            ) : null}
+                            )}
+                        </div>
 
-                            {/* 多選模式的已選目標列表 */}
-                            {givePointsForm.type.startsWith(
-                                "multi_",
-                            ) &&
-                                givePointsForm.multiTargets.length >
-                                    0 && (
-                                    <div>
-                                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                            已選擇的目標 (
-                                            {
-                                                givePointsForm
-                                                    .multiTargets
-                                                    .length
-                                            }
-                                            )
-                                        </label>
-                                        <div className="max-h-32 space-y-2 overflow-y-auto">
-                                            {givePointsForm.multiTargets.map(
-                                                (target, index) => (
+                        {/* 條件顯示搜尋框 */}
+                        {givePointsForm.type.startsWith("multi_") ||
+                        ["user", "group"].includes(
+                            givePointsForm.type,
+                        ) ? (
+                            <div className="relative">
+                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                    {givePointsForm.type.startsWith(
+                                        "multi_",
+                                    )
+                                        ? "新增目標（搜尋選擇）"
+                                        : "給誰（搜尋選擇）"}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={givePointsForm.username}
+                                    onChange={(e) =>
+                                        handleUsernameChange(
+                                            e.target.value,
+                                        )
+                                    }
+                                    onFocus={() => {
+                                        // 重新觸發搜尋以顯示建議
+                                        if (
+                                            givePointsForm.username.trim() !==
+                                            ""
+                                        ) {
+                                            handleUsernameChange(
+                                                givePointsForm.username,
+                                            );
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        // 延遲隱藏建議，讓點擊事件能夠觸發
+                                        setTimeout(
+                                            () =>
+                                                setShowSuggestions(
+                                                    false,
+                                                ),
+                                            200,
+                                        );
+                                    }}
+                                    disabled={studentsLoading}
+                                    className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#0f203e] disabled:opacity-50"
+                                    placeholder={
+                                        studentsLoading
+                                            ? "正在載入使用者資料..."
+                                            : givePointsForm.type ===
+                                                    "user" ||
+                                                givePointsForm.type ===
+                                                    "multi_users"
+                                              ? "搜尋學生姓名..."
+                                              : "搜尋團隊名稱..."
+                                    }
+                                />
+
+                                {/* 搜尋建議下拉 */}
+                                {showSuggestions &&
+                                    suggestions.length > 0 && (
+                                        <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[#469FD2] bg-[#0f203e] shadow-lg">
+                                            {suggestions.map(
+                                                (
+                                                    suggestion,
+                                                    index,
+                                                ) => (
                                                     <div
                                                         key={index}
-                                                        className="flex items-center justify-between rounded-lg bg-[#0f203e] px-3 py-2"
-                                                    >
-                                                        <span className="text-sm text-white">
-                                                            {
-                                                                target.label
-                                                            }
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                removeMultiTarget(
-                                                                    target.value,
+                                                        onMouseDown={(
+                                                            e,
+                                                        ) => {
+                                                            e.preventDefault(); // 防止blur事件影響點擊
+                                                            if (
+                                                                givePointsForm.type.startsWith(
+                                                                    "multi_",
                                                                 )
+                                                            ) {
+                                                                addMultiTarget(
+                                                                    suggestion,
+                                                                );
+                                                            } else {
+                                                                selectSuggestion(
+                                                                    suggestion,
+                                                                );
                                                             }
-                                                            className="text-sm text-red-400 hover:text-red-300"
-                                                        >
-                                                            移除
-                                                        </button>
+                                                        }}
+                                                        className="cursor-pointer border-b border-[#469FD2] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <span>
+                                                                {
+                                                                    suggestion.label
+                                                                }
+                                                            </span>
+                                                            <span className="text-xs text-gray-400">
+                                                                {suggestion.type ===
+                                                                "user"
+                                                                    ? "個人"
+                                                                    : "團隊"}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 ),
                                             )}
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                            </div>
+                        ) : null}
 
-                            {/* 全部模式的說明 */}
-                            {["all_users", "all_groups"].includes(
-                                givePointsForm.type,
-                            ) && (
-                                <div className="rounded-lg border border-[#469FD2] bg-[#0f203e] p-3">
-                                    <p className="text-sm text-[#7BC2E6]">
-                                        {givePointsForm.type ===
-                                        "all_users"
-                                            ? `將發放給所有 ${students.length} 位使用者`
-                                            : `將發放給所有 ${teams.length} 個團隊`}
-                                    </p>
+                        {/* 多選模式的已選目標列表 */}
+                        {givePointsForm.type.startsWith("multi_") &&
+                            givePointsForm.multiTargets.length >
+                                0 && (
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                        已選擇的目標 (
+                                        {
+                                            givePointsForm
+                                                .multiTargets.length
+                                        }
+                                        )
+                                    </label>
+                                    <div className="max-h-32 space-y-2 overflow-y-auto">
+                                        {givePointsForm.multiTargets.map(
+                                            (target, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center justify-between rounded-lg bg-[#0f203e] px-3 py-2"
+                                                >
+                                                    <span className="text-sm text-white">
+                                                        {target.label}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            removeMultiTarget(
+                                                                target.value,
+                                                            )
+                                                        }
+                                                        className="text-sm text-red-400 hover:text-red-300"
+                                                    >
+                                                        移除
+                                                    </button>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                    給多少
-                                </label>
-                                <input
-                                    type="number"
-                                    value={givePointsForm.amount}
-                                    onChange={(e) =>
-                                        setGivePointsForm({
-                                            ...givePointsForm,
-                                            amount: e.target.value,
-                                        })
-                                    }
-                                    className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
+                        {/* 全部模式的說明 */}
+                        {["all_users", "all_groups"].includes(
+                            givePointsForm.type,
+                        ) && (
+                            <div className="rounded-lg border border-[#469FD2] bg-[#0f203e] p-3">
+                                <p className="text-sm text-[#7BC2E6]">
+                                    {givePointsForm.type ===
+                                    "all_users"
+                                        ? `將發放給所有 ${students.length} 位使用者`
+                                        : `將發放給所有 ${teams.length} 個團隊`}
+                                </p>
                             </div>
+                        )}
 
-                            <div className="flex w-full items-center justify-center">
-                                <button
-                                    onClick={handleGivePoints}
-                                    disabled={
-                                        givePointsLoading ||
-                                        !givePointsForm.amount ||
-                                        (["user", "group"].includes(
-                                            givePointsForm.type,
-                                        ) &&
-                                            !givePointsForm.username) ||
-                                        (givePointsForm.type.startsWith(
-                                            "multi_",
-                                        ) &&
-                                            givePointsForm
-                                                .multiTargets
-                                                .length === 0)
-                                    }
-                                    className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
-                                >
-                                    {givePointsLoading
-                                        ? "發放中..."
-                                        : "發點數"}
-                                </button>
-                            </div>
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                給多少
+                            </label>
+                            <input
+                                type="number"
+                                value={givePointsForm.amount}
+                                onChange={(e) =>
+                                    setGivePointsForm({
+                                        ...givePointsForm,
+                                        amount: e.target.value,
+                                    })
+                                }
+                                className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                        </div>
+
+                        <div className="flex w-full items-center justify-center">
+                            <button
+                                onClick={handleGivePoints}
+                                disabled={
+                                    givePointsLoading ||
+                                    !givePointsForm.amount ||
+                                    (["user", "group"].includes(
+                                        givePointsForm.type,
+                                    ) &&
+                                        !givePointsForm.username) ||
+                                    (givePointsForm.type.startsWith(
+                                        "multi_",
+                                    ) &&
+                                        givePointsForm.multiTargets
+                                            .length === 0)
+                                }
+                                className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
+                            >
+                                {givePointsLoading
+                                    ? "發放中..."
+                                    : "發點數"}
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    {/* 漲跌限制設定 */}
-                    <div className="rounded-xl bg-[#1A325F] p-6">
-                        <h2 className="mb-4 text-lg text-[#7BC2E6]">
-                            當日股票漲跌限制
+                {/* 漲跌限制設定 */}
+                <div className="rounded-xl bg-[#1A325F] p-6">
+                    <h2 className="mb-4 text-lg text-[#7BC2E6]">
+                        當日股票漲跌限制
+                    </h2>
+                    <div className="space-y-4">
+                        <div className="relative">
+                            <input
+                                type="number"
+                                min="0"
+                                step="10"
+                                value={tradingLimitPercent}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (
+                                        value === "" ||
+                                        (!isNaN(value) &&
+                                            parseFloat(value) >= 0)
+                                    ) {
+                                        setTradingLimitPercent(value);
+                                    }
+                                }}
+                                placeholder="輸入百分比數字 (0-100)"
+                                className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 pr-8 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                            <span className="pointer-events-none absolute top-2 right-3 text-[#7BC2E6]">
+                                %
+                            </span>
+                        </div>
+                        <div className="flex w-full items-center justify-center">
+                            <button
+                                onClick={handleSetTradingLimit}
+                                disabled={tradingLimitLoading}
+                                className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
+                            >
+                                {tradingLimitLoading
+                                    ? "設定中..."
+                                    : "設定"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 交易時間管理 */}
+                <div className="rounded-xl bg-[#1A325F] p-6">
+                    <div className="mb-4 flex items-center justify-between border-b-1 border-[#469FD2] pb-3">
+                        <h2 className="text-lg text-[#7BC2E6]">
+                            允許交易時間
                         </h2>
-                        <div className="space-y-4">
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="10"
-                                    value={tradingLimitPercent}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (
-                                            value === "" ||
-                                            (!isNaN(value) &&
-                                                parseFloat(value) >=
-                                                    0)
-                                        ) {
-                                            setTradingLimitPercent(
-                                                value,
-                                            );
-                                        }
-                                    }}
-                                    placeholder="輸入百分比數字 (0-100)"
-                                    className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 pr-8 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
-                                <span className="pointer-events-none absolute top-2 right-3 text-[#7BC2E6]">
-                                    %
-                                </span>
-                            </div>
-                            <div className="flex w-full items-center justify-center">
-                                <button
-                                    onClick={handleSetTradingLimit}
-                                    disabled={tradingLimitLoading}
-                                    className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={openAddTimeModal}
+                                className="rounded-full bg-[#7BC2E6] p-1 text-xs text-black transition-colors"
+                            >
+                                <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
                                 >
-                                    {tradingLimitLoading
-                                        ? "設定中..."
-                                        : "設定"}
-                                </button>
-                            </div>
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                    />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
-                    {/* 交易時間管理 */}
-                    <div className="rounded-xl bg-[#1A325F] p-6">
-                        <div className="mb-4 flex items-center justify-between border-b-1 border-[#469FD2] pb-3">
-                            <h2 className="text-lg text-[#7BC2E6]">
-                                允許交易時間
-                            </h2>
-                            <div className="flex space-x-2">
+                    <div className="space-y-3">
+                        {marketTimes.map((time, index) => (
+                            <div
+                                key={index}
+                                className="flex items-center justify-between rounded-xl bg-[#0f203e] p-3"
+                            >
+                                <div className="flex flex-1 items-center space-x-3">
+                                    <div className="text-yellow-400">
+                                        <svg
+                                            className="h-5 w-5"
+                                            fill="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                    </div>
+
+                                    <div className="flex flex-1 items-center space-x-2">
+                                        <span className="text-sm text-white">
+                                            {time.start}
+                                        </span>
+                                        <span className="text-[#7BC2E6]">
+                                            -
+                                        </span>
+                                        <span className="text-sm text-white">
+                                            {time.end}
+                                        </span>
+                                    </div>
+                                </div>
+
                                 <button
-                                    onClick={openAddTimeModal}
-                                    className="rounded-full bg-[#7BC2E6] p-1 text-xs text-black transition-colors"
+                                    onClick={() =>
+                                        removeMarketTime(index)
+                                    }
+                                    className="ml-2 p-1 text-red-400 transition-colors hover:text-red-300"
                                 >
                                     <svg
                                         className="h-5 w-5"
@@ -1540,374 +1625,263 @@ export default function AdminPage() {
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                             strokeWidth={2}
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                         />
                                     </svg>
                                 </button>
                             </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 flex w-full items-center justify-center">
+                        <button
+                            onClick={saveMarketTimes}
+                            disabled={marketTimesLoading}
+                            className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
+                        >
+                            {marketTimesLoading
+                                ? "保存中..."
+                                : "保存交易時間"}
+                        </button>
+                    </div>
+                </div>
+
+                {/* 發布公告 */}
+                <div className="rounded-xl bg-[#1A325F] p-6">
+                    <h2 className="mb-4 text-xl font-bold text-white">
+                        發布公告
+                    </h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                公告標題
+                            </label>
+                            <input
+                                type="text"
+                                value={announcementForm.title}
+                                onChange={(e) =>
+                                    setAnnouncementForm({
+                                        ...announcementForm,
+                                        title: e.target.value,
+                                    })
+                                }
+                                className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                placeholder="輸入公告標題"
+                            />
                         </div>
 
-                        <div className="space-y-3">
-                            {marketTimes.map((time, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between rounded-xl bg-[#0f203e] p-3"
-                                >
-                                    <div className="flex flex-1 items-center space-x-3">
-                                        <div className="text-yellow-400">
-                                            <svg
-                                                className="h-5 w-5"
-                                                fill="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                            </svg>
-                                        </div>
-
-                                        <div className="flex flex-1 items-center space-x-2">
-                                            <span className="text-sm text-white">
-                                                {time.start}
-                                            </span>
-                                            <span className="text-[#7BC2E6]">
-                                                -
-                                            </span>
-                                            <span className="text-sm text-white">
-                                                {time.end}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() =>
-                                            removeMarketTime(index)
-                                        }
-                                        className="ml-2 p-1 text-red-400 transition-colors hover:text-red-300"
-                                    >
-                                        <svg
-                                            className="h-5 w-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                            />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                公告內容
+                            </label>
+                            <textarea
+                                value={announcementForm.message}
+                                onChange={(e) =>
+                                    setAnnouncementForm({
+                                        ...announcementForm,
+                                        message: e.target.value,
+                                    })
+                                }
+                                rows={4}
+                                className="w-full resize-none rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                placeholder="輸入公告內容"
+                            />
                         </div>
 
-                        <div className="mt-4 flex w-full items-center justify-center">
+                        <div className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                id="broadcast"
+                                checked={announcementForm.broadcast}
+                                onChange={(e) =>
+                                    setAnnouncementForm({
+                                        ...announcementForm,
+                                        broadcast: e.target.checked,
+                                    })
+                                }
+                                className="h-4 w-4 cursor-pointer rounded border border-[#469FD2] bg-[#1A325F] text-blue-600 focus:ring-blue-500"
+                            />
+                            <label
+                                htmlFor="broadcast"
+                                className="cursor-pointer text-sm text-[#7BC2E6]"
+                            >
+                                廣播到 Telegram Bot
+                            </label>
+                        </div>
+
+                        <div className="flex w-full items-center justify-center">
                             <button
-                                onClick={saveMarketTimes}
-                                disabled={marketTimesLoading}
+                                onClick={handleCreateAnnouncement}
+                                disabled={
+                                    announcementLoading ||
+                                    !announcementForm.title.trim() ||
+                                    !announcementForm.message.trim()
+                                }
                                 className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
                             >
-                                {marketTimesLoading
-                                    ? "保存中..."
-                                    : "保存交易時間"}
+                                {announcementLoading
+                                    ? "發布中..."
+                                    : "發布公告"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 使用者資產 */}
+                <div className="rounded-xl bg-[#1A325F] p-6">
+                    <h2 className="mb-4 text-xl font-bold text-white">
+                        使用者資產明細
+                    </h2>
+
+                    <div className="mb-4 space-y-3">
+                        <input
+                            type="text"
+                            value={userSearchTerm}
+                            onChange={(e) =>
+                                setUserSearchTerm(e.target.value)
+                            }
+                            placeholder="查詢使用者名稱..."
+                            className="w-full rounded-xl border border-[#469FD2] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            onKeyPress={(e) =>
+                                e.key === "Enter" &&
+                                handleUserSearch()
+                            }
+                        />
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={handleUserSearch}
+                                disabled={userAssetsLoading}
+                                className="flex-1 rounded-xl bg-[#7bc2e6] px-4 py-2 text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
+                            >
+                                {userAssetsLoading
+                                    ? "查詢中..."
+                                    : "查詢"}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setUserSearchTerm("");
+                                    fetchUserAssets(adminToken);
+                                }}
+                                disabled={userAssetsLoading}
+                                className="flex-1 rounded-xl bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-[#2d3748] disabled:text-[#718096] disabled:hover:bg-[#2d3748]"
+                            >
+                                {userAssetsLoading
+                                    ? "返回中..."
+                                    : "返回"}
                             </button>
                         </div>
                     </div>
 
-                    {/* 發布公告 */}
-                    <div className="rounded-xl bg-[#1A325F] p-6">
-                        <h2 className="mb-4 text-xl font-bold text-white">
-                            發布公告
-                        </h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                    公告標題
-                                </label>
-                                <input
-                                    type="text"
-                                    value={announcementForm.title}
-                                    onChange={(e) =>
-                                        setAnnouncementForm({
-                                            ...announcementForm,
-                                            title: e.target.value,
-                                        })
-                                    }
-                                    className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    placeholder="輸入公告標題"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                    公告內容
-                                </label>
-                                <textarea
-                                    value={announcementForm.message}
-                                    onChange={(e) =>
-                                        setAnnouncementForm({
-                                            ...announcementForm,
-                                            message: e.target.value,
-                                        })
-                                    }
-                                    rows={4}
-                                    className="w-full resize-none rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    placeholder="輸入公告內容"
-                                />
-                            </div>
-
-                            <div className="flex items-center space-x-3">
-                                <input
-                                    type="checkbox"
-                                    id="broadcast"
-                                    checked={
-                                        announcementForm.broadcast
-                                    }
-                                    onChange={(e) =>
-                                        setAnnouncementForm({
-                                            ...announcementForm,
-                                            broadcast:
-                                                e.target.checked,
-                                        })
-                                    }
-                                    className="h-4 w-4 rounded border border-[#469FD2] bg-[#1A325F] text-blue-600 focus:ring-blue-500"
-                                />
-                                <label
-                                    htmlFor="broadcast"
-                                    className="text-sm text-[#7BC2E6]"
+                    {userAssetsLoading ? (
+                        // Loading skeleton
+                        <div className="space-y-3">
+                            {[1, 2, 3].map((index) => (
+                                <div
+                                    key={index}
+                                    className="animate-pulse rounded-xl bg-[#0f203e] p-4"
                                 >
-                                    廣播到 Telegram Bot
-                                </label>
-                            </div>
-
-                            <div className="flex w-full items-center justify-center">
-                                <button
-                                    onClick={handleCreateAnnouncement}
-                                    disabled={
-                                        announcementLoading ||
-                                        !announcementForm.title.trim() ||
-                                        !announcementForm.message.trim()
-                                    }
-                                    className="mx-auto rounded-lg bg-[#7BC2E6] px-4 py-2 font-medium text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
-                                >
-                                    {announcementLoading
-                                        ? "發布中..."
-                                        : "發布公告"}
-                                </button>
-                            </div>
+                                    <div className="mb-2 flex items-start justify-between">
+                                        <div>
+                                            <div className="mb-2 h-5 w-24 rounded bg-[#1A325F]"></div>
+                                            <div className="h-4 w-16 rounded bg-[#1A325F]"></div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="mb-1 h-6 w-20 rounded bg-[#1A325F]"></div>
+                                            <div className="h-3 w-12 rounded bg-[#1A325F]"></div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-sm">
+                                        <div className="text-center">
+                                            <div className="mx-auto mb-1 h-5 w-16 rounded bg-[#1A325F]"></div>
+                                            <div className="mx-auto h-3 w-8 rounded bg-[#1A325F]"></div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="mx-auto mb-1 h-5 w-8 rounded bg-[#1A325F]"></div>
+                                            <div className="mx-auto h-3 w-10 rounded bg-[#1A325F]"></div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="mx-auto mb-1 h-5 w-16 rounded bg-[#1A325F]"></div>
+                                            <div className="mx-auto h-3 w-12 rounded bg-[#1A325F]"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </div>
-
-                    {/* 使用者資產 */}
-                    <div className="rounded-xl bg-[#1A325F] p-6">
-                        <h2 className="mb-4 text-xl font-bold text-white">
-                            使用者資產明細
-                        </h2>
-
-                        <div className="mb-4 space-y-2">
-                            <input
-                                type="text"
-                                value={userSearchTerm}
-                                onChange={(e) =>
-                                    setUserSearchTerm(e.target.value)
-                                }
-                                placeholder="查詢使用者名稱..."
-                                className="w-full rounded-xl border border-[#469FD2] bg-[#0f203e] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                onKeyPress={(e) =>
-                                    e.key === "Enter" &&
-                                    handleUserSearch()
-                                }
-                            />
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={handleUserSearch}
-                                    disabled={userAssetsLoading}
-                                    className="flex-1 rounded-xl bg-[#7bc2e6] px-4 py-2 text-black transition-colors hover:bg-[#6bb0d4] disabled:cursor-not-allowed disabled:bg-[#4a5568] disabled:text-[#a0aec0] disabled:hover:bg-[#4a5568]"
-                                >
-                                    {userAssetsLoading
-                                        ? "查詢中..."
-                                        : "查詢"}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setUserSearchTerm("");
-                                        fetchUserAssets(adminToken);
-                                    }}
-                                    disabled={userAssetsLoading}
-                                    className="flex-1 rounded-xl bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-[#2d3748] disabled:text-[#718096] disabled:hover:bg-[#2d3748]"
-                                >
-                                    {userAssetsLoading
-                                        ? "重置中..."
-                                        : "重置"}
-                                </button>
-                            </div>
-                        </div>
-
-                        {userAssetsLoading ? (
-                            // Loading skeleton
-                            <div className="space-y-3">
-                                {[1, 2, 3].map((index) => (
+                    ) : userAssets.length > 0 ? (
+                        <div className="space-y-3">
+                            {userAssets
+                                .slice(0, 3)
+                                .map((user, index) => (
                                     <div
                                         key={index}
-                                        className="animate-pulse rounded-xl bg-[#0f203e] p-4"
+                                        className="rounded-xl bg-[#0f203e] p-4"
                                     >
                                         <div className="mb-2 flex items-start justify-between">
                                             <div>
-                                                <div className="mb-2 h-5 w-24 rounded bg-[#1A325F]"></div>
-                                                <div className="h-4 w-16 rounded bg-[#1A325F]"></div>
+                                                <div className="font-medium text-white">
+                                                    {user.username}
+                                                </div>
+                                                <div className="text-sm text-gray-400">
+                                                    {user.team}
+                                                </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="mb-1 h-6 w-20 rounded bg-[#1A325F]"></div>
-                                                <div className="h-3 w-12 rounded bg-[#1A325F]"></div>
+                                                <div className="font-bold text-white">
+                                                    {Math.round(
+                                                        user.total,
+                                                    ).toLocaleString()}
+                                                </div>
+                                                <div className="text-sm text-gray-400">
+                                                    總資產
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2 text-sm">
                                             <div className="text-center">
-                                                <div className="mx-auto mb-1 h-5 w-16 rounded bg-[#1A325F]"></div>
-                                                <div className="mx-auto h-3 w-8 rounded bg-[#1A325F]"></div>
+                                                <div className="text-white">
+                                                    {user.points.toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-gray-400">
+                                                    點數
+                                                </div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="mx-auto mb-1 h-5 w-8 rounded bg-[#1A325F]"></div>
-                                                <div className="mx-auto h-3 w-10 rounded bg-[#1A325F]"></div>
+                                                <div className="text-white">
+                                                    {user.stocks}
+                                                </div>
+                                                <div className="text-xs text-gray-400">
+                                                    持股數
+                                                </div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="mx-auto mb-1 h-5 w-16 rounded bg-[#1A325F]"></div>
-                                                <div className="mx-auto h-3 w-12 rounded bg-[#1A325F]"></div>
+                                                <div className="text-white">
+                                                    {Math.round(
+                                                        user.stockValue,
+                                                    ).toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-gray-400">
+                                                    股票價值
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
-                            </div>
-                        ) : userAssets.length > 0 ? (
-                            <div className="space-y-3">
-                                {userAssets
-                                    .slice(0, 3)
-                                    .map((user, index) => (
-                                        <div
-                                            key={index}
-                                            className="rounded-xl bg-[#0f203e] p-4"
-                                        >
-                                            <div className="mb-2 flex items-start justify-between">
-                                                <div>
-                                                    <div className="font-medium text-white">
-                                                        {
-                                                            user.username
-                                                        }
-                                                    </div>
-                                                    <div className="text-sm text-gray-400">
-                                                        {user.team}
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="font-bold text-white">
-                                                        {Math.round(
-                                                            user.total,
-                                                        ).toLocaleString()}
-                                                    </div>
-                                                    <div className="text-sm text-gray-400">
-                                                        總資產
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-2 text-sm">
-                                                <div className="text-center">
-                                                    <div className="text-white">
-                                                        {user.points.toLocaleString()}
-                                                    </div>
-                                                    <div className="text-xs text-gray-400">
-                                                        點數
-                                                    </div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-white">
-                                                        {user.stocks}
-                                                    </div>
-                                                    <div className="text-xs text-gray-400">
-                                                        持股數
-                                                    </div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="text-white">
-                                                        {Math.round(
-                                                            user.stockValue,
-                                                        ).toLocaleString()}
-                                                    </div>
-                                                    <div className="text-xs text-gray-400">
-                                                        股票價值
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                {userAssets.length > 3 && (
-                                    <div className="mt-4 text-center text-sm text-gray-400">
-                                        顯示前3個使用者，共
-                                        {userAssets.length}個使用者
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="py-8 text-center text-gray-400">
-                                暫無使用者資料
-                            </div>
-                        )}
-                    </div>
-
-                    {/* 系統統計 */}
-                    {systemStats && (
-                        <div className="rounded-xl bg-[#1A325F] p-6">
-                            <h2 className="mb-4 text-xl font-bold text-white">
-                                統計
-                            </h2>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="rounded-xl bg-[#0f203e] p-3 text-center">
-                                    <div className="text-2xl font-bold">
-                                        {systemStats.total_users}
-                                    </div>
-                                    <div className="mt-1 text-sm text-gray-400">
-                                        個使用者
-                                    </div>
+                            {userAssets.length > 3 && (
+                                <div className="mt-4 text-center text-sm text-gray-400">
+                                    顯示前3位使用者，共
+                                    {userAssets.length}位使用者
                                 </div>
-                                <div className="rounded-xl bg-[#0f203e] p-3 text-center">
-                                    <div className="text-2xl font-bold">
-                                        {teamNumber}
-                                    </div>
-                                    <div className="mt-1 text-sm text-gray-400">
-                                        個隊伍
-                                    </div>
-                                </div>
-                                <div className="rounded-xl bg-[#0f203e] p-3 text-center">
-                                    <div className="text-2xl font-bold">
-                                        {systemStats.total_points.toLocaleString()}
-                                    </div>
-                                    <div className="mt-1 text-sm text-gray-400">
-                                        總點數
-                                    </div>
-                                </div>
-                                <div className="rounded-xl bg-[#0f203e] p-3 text-center">
-                                    <div className="text-2xl font-bold">
-                                        {systemStats.total_stocks.toLocaleString()}
-                                    </div>
-                                    <div className="mt-1 text-sm text-gray-400">
-                                        總股票數(單位:股)
-                                    </div>
-                                </div>
-                                <div className="col-span-2 rounded-xl bg-[#0f203e] p-3 text-center">
-                                    <div className="text-2xl font-bold">
-                                        {systemStats.total_trades}
-                                    </div>
-                                    <div className="mt-1 text-sm text-gray-400">
-                                        總交易數
-                                    </div>
-                                </div>
-                            </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="py-8 text-center text-gray-400">
+                            暫無使用者資料
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* IPO 管理 */}
-            <div className="mx-auto mt-2 max-w-4xl px-4">
+                {/* IPO 管理 */}
+
                 <div className="rounded-xl bg-[#1A325F] p-6">
                     <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-xl font-bold text-white">
@@ -2002,10 +1976,8 @@ export default function AdminPage() {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* 轉點數手續費設定 */}
-            <div className="mx-auto mt-8 max-w-4xl px-4">
+                {/* 轉點數手續費設定 */}
                 <div className="rounded-xl bg-[#1A325F] p-6">
                     <div className="mb-4 flex items-center justify-between">
                         <h2 className="text-xl font-bold text-white">
@@ -2075,10 +2047,9 @@ export default function AdminPage() {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* 市場開關控制 */}
-            <div className="mx-auto mt-8 max-w-4xl px-4">
+                {/* 市場開關控制 */}
+
                 <div className="rounded-xl bg-[#1A325F] p-6">
                     <h2 className="mb-4 text-xl font-bold text-white">
                         市場開關控制
@@ -2172,10 +2143,9 @@ export default function AdminPage() {
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Danger Zone */}
-            <div className="mx-auto mt-8 max-w-4xl px-4">
+                {/* Danger Zone */}
+
                 <div className="rounded-xl border-2 border-red-500 bg-[#1A325F] p-6">
                     <div className="mb-4 flex items-center">
                         <svg

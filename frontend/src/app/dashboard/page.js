@@ -58,7 +58,7 @@ export default function Dashboard() {
         return (
             <div className="space-y-6">
                 {/* 資產總覽 */}
-                <div className="rounded-lg border border-[#294565] bg-[#1a3a5c] p-6">
+                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         資產總覽
                     </h3>
@@ -155,7 +155,7 @@ export default function Dashboard() {
         };
 
         return (
-            <div className="rounded-lg border border-[#294565] bg-[#1a3a5c] p-6">
+            <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                 <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                     股票交易
                 </h3>
@@ -209,13 +209,13 @@ export default function Dashboard() {
                         >
                             <option
                                 value="market"
-                                className="bg-[#1a3a5c]"
+                                className="bg-[#1A325F]"
                             >
                                 市價單
                             </option>
                             <option
                                 value="limit"
-                                className="bg-[#1a3a5c]"
+                                className="bg-[#1A325F]"
                             >
                                 限價單
                             </option>
@@ -286,7 +286,7 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen bg-[#0f203e] pb-20">
             {/* 標題列 */}
-            <div className="border-b border-[#294565] bg-[#1a3a5c] px-4 py-4">
+            <div className="border-b border-[#294565] bg-[#1A325F] px-4 py-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-[#92cbf4]">
@@ -308,7 +308,7 @@ export default function Dashboard() {
             </div>
 
             {/* 頁籤導航 */}
-            <div className="border-b border-[#294565] bg-[#1a3a5c]">
+            <div className="border-b border-[#294565] bg-[#1A325F]">
                 <div className="flex">
                     <button
                         onClick={() => setActiveTab("portfolio")}
