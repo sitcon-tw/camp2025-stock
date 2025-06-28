@@ -1,17 +1,12 @@
 "use client";
 
-import {
-    getWebPortfolio,
-    getWebUserProfile,
-    placeWebStockOrder,
-} from "@/lib/api";
+import { getWebPortfolio, placeWebStockOrder } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
-    const [portfolio, setPortfolio] = useState(null);
     const [activeTab, setActiveTab] = useState("portfolio");
     const [error, setError] = useState("");
     const router = useRouter();
@@ -37,14 +32,9 @@ export default function Dashboard() {
 
             try {
                 // 載入使用者資料
-                const [profileData, portfolioData] =
-                    await Promise.all([
-                        getWebUserProfile(token),
-                        getWebPortfolio(token),
-                    ]);
+                const portfolio = await getWebPortfolio(token);
 
-                setUser(profileData);
-                setPortfolio(portfolioData);
+                setUser(portfolio);
                 setIsLoading(false);
             } catch (error) {
                 console.error("載入使用者資料失敗:", error);
@@ -63,7 +53,7 @@ export default function Dashboard() {
 
     // Portfolio 組件
     const PortfolioView = () => {
-        if (!portfolio) return <div>載入中...</div>;
+        if (!user) return <div>載入中...</div>;
 
         return (
             <div className="space-y-6">
@@ -78,7 +68,7 @@ export default function Dashboard() {
                                 現金點數
                             </p>
                             <p className="text-xl font-bold text-white">
-                                {portfolio.points?.toLocaleString()}
+                                {user.points?.toLocaleString()}
                             </p>
                         </div>
                         <div>
@@ -86,7 +76,7 @@ export default function Dashboard() {
                                 股票數量
                             </p>
                             <p className="text-xl font-bold text-white">
-                                {portfolio.stocks?.toLocaleString()}
+                                {user.stocks?.toLocaleString()}
                             </p>
                         </div>
                         <div>
@@ -94,7 +84,7 @@ export default function Dashboard() {
                                 股票價值
                             </p>
                             <p className="text-xl font-bold text-white">
-                                {portfolio.stockValue?.toLocaleString()}
+                                {user.stockValue?.toLocaleString()}
                             </p>
                         </div>
                         <div>
@@ -102,16 +92,16 @@ export default function Dashboard() {
                                 總資產
                             </p>
                             <p className="text-xl font-bold text-[#92cbf4]">
-                                {portfolio.totalValue?.toLocaleString()}
+                                {user.totalValue?.toLocaleString()}
                             </p>
                         </div>
                     </div>
-                    {portfolio.avgCost !== undefined && (
+                    {user.avgCost !== undefined && (
                         <div className="mt-4 border-t border-[#294565] pt-4">
                             <p className="text-sm text-[#557797]">
                                 平均成本:{" "}
                                 <span className="font-semibold text-white">
-                                    {portfolio.avgCost}
+                                    {user.avgCost}
                                 </span>
                             </p>
                         </div>
