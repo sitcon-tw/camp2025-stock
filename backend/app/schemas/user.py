@@ -156,6 +156,15 @@ class PVPResult(BaseModel):
 
 # ========== 使用者查詢相關模型 ==========
 
+# 簡化的使用者基本資料（給一般使用者的 Web API）
+class UserBasicInfo(BaseModel):
+    username: str = Field(..., description="使用者id")
+    telegram_id: Optional[int] = Field(None, description="Telegram ID")
+    team: str = Field(..., description="隊伍名稱")
+    
+    class Config:
+        populate_by_name = True
+
 # 使用者點數記錄
 class UserPointLog(BaseModel):
     type: str = Field(..., description="操作類型")

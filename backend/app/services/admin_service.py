@@ -7,6 +7,7 @@ from app.schemas.public import (
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
     MarketLimitRequest, MarketLimitResponse
 )
+from app.schemas.user import UserBasicInfo
 from app.core.security import verify_CAMP_ADMIN_PASSWORD, create_access_token
 from app.core.exceptions import (
     AuthenticationException, UserNotFoundException, 
@@ -406,7 +407,26 @@ class AdminService:
                     "stock_amount": user.get("stock_amount", 0),
                     "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
                 })
+    
+    async def list_basic_users(self) -> List[UserBasicInfo]:
+        """取得所有使用者的基本資料（僅包含使用者名、Telegram ID、隊伍）"""
+        try:
+            users_cursor = self.db[Collections.USERS].find({}, {"id": 1, "name": 1, "team": 1, "telegram_id": 1})
+            users = await users_cursor.to_list(length=None)
+            
+            result = []
+            for user in users:
+                result.append(UserBasicInfo(
+                    username=user.get("name") or user.get("id"),
+                    telegram_id=user.get("telegram_id"),
+                    team=user.get("team", "未知隊伍")
+                ))
             logger.info(f"Retrieved {len(result)} users")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get basic users: {e}")
+            raise AdminException("Failed to get basic users") from e
             return result
             
         except Exception as e:

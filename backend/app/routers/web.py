@@ -3,7 +3,7 @@ from app.services.user_service import UserService, get_user_service
 from app.services.admin_service import AdminService, get_admin_service
 from app.schemas.user import (
     UserPortfolio, StockOrderRequest, StockOrderResponse,
-    TransferRequest, TransferResponse, UserPointLog, UserStockOrder
+    TransferRequest, TransferResponse, UserPointLog, UserStockOrder, UserBasicInfo
 )
 from app.schemas.public import UserAssetDetail, ErrorResponse
 from app.core.security import get_current_user
@@ -346,16 +346,17 @@ async def get_users(
 
 @router.get(
     "/students",
-    summary="取得所有學員資料",
-    description="取得所有學員的基本資料，包括使用者id、所屬隊伍等"
+    summary="取得所有學員基本資料",
+    description="取得所有學員的基本資料，包括使用者名、Telegram ID、隊伍",
+    response_model=List[UserBasicInfo]
 )
 async def get_students(
     current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
-):
-    """取得所有學員資料"""
+) -> List[UserBasicInfo]:
+    """取得所有學員基本資料（僅包含使用者名、Telegram ID、隊伍）"""
     try:
-        return await admin_service.list_all_users()
+        return await admin_service.list_basic_users()
         
     except Exception as e:
         logger.error(f"Failed to get students for user {current_user.get('sub')}: {e}")
