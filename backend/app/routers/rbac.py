@@ -102,7 +102,7 @@ async def check_user_permission(
     "/my-permissions",
     response_model=UserRoleInfo,
     summary="取得自己的權限資訊",
-    description="取得當前使用者的角色和權限資訊"
+    description="取得目前使用者的角色和權限資訊"
 )
 async def get_my_permissions(
     current_user: dict = Depends(get_current_user),

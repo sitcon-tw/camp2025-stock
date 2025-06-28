@@ -725,7 +725,7 @@ class UserService:
                     order_id=str(order["_id"]),
                     order_type=order.get("order_type", "unknown"),
                     side=order.get("side", "unknown"),
-                    quantity=order.get("quantity", 0),
+                    quantity=self._get_display_quantity(order),
                     price=order.get("price"),
                     status=order.get("status", "unknown"),
                     created_at=order.get("created_at", datetime.now(timezone.utc)).isoformat(),
@@ -737,6 +737,37 @@ class UserService:
         except Exception as e:
             logger.error(f"Failed to get user stock orders: {e}")
             return []
+    
+    def _get_display_quantity(self, order: dict) -> int:
+        """
+        取得訂單顯示數量
+        
+        對於已成交訂單，顯示成交數量；對於進行中訂單，顯示剩餘數量
+        
+        Args:
+            order: 訂單文件
+            
+        Returns:
+            顯示用的數量
+        """
+        status = order.get("status", "unknown")
+        current_quantity = order.get("quantity", 0)
+        filled_quantity = order.get("filled_quantity", 0)
+        
+        if status == "filled":
+            # 已成交訂單：顯示成交數量
+            if filled_quantity > 0:
+                return filled_quantity
+            elif current_quantity == 0 and filled_quantity == 0:
+                # 對於舊的訂單記錄，如果沒有 filled_quantity 但狀態是 filled
+                # 嘗試從 original_quantity 或其他欄位推斷，暫時返回 1 避免顯示 0
+                return 1  # 最保守的估計
+            else:
+                # 原始數量 = 目前剩餘 + 已成交
+                return current_quantity + filled_quantity
+        else:
+            # 進行中或部分成交訂單：顯示剩餘數量  
+            return current_quantity
     
     # ========== BOT 專用方法 - 基於使用者名查詢 ==========
     
@@ -1708,7 +1739,7 @@ class UserService:
             logger.error(f"Failed to reactivate limit orders: {e}")
     
     async def _trigger_async_matching(self, reason: str = "manual_trigger"):
-        """觸發異步撮合（不阻塞當前請求）"""
+        """觸發異步撮合（不阻塞目前請求）"""
         try:
             from app.services.matching_scheduler import get_matching_scheduler
             

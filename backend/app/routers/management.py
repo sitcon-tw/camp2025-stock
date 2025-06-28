@@ -43,7 +43,7 @@ async def give_points_with_permission(
         user_role = RBACService.get_user_role(current_user)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要點數管理權限（當前角色：{user_role.value}）"
+            detail=f"權限不足：需要點數管理權限（目前角色：{user_role.value}）"
         )
     
     logger.info(f"User {current_user.get('user_id', 'unknown')} giving points: {request.dict()}")
@@ -74,7 +74,7 @@ async def create_announcement_with_permission(
         user_role = RBACService.get_user_role(current_user)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要公告權限（當前角色：{user_role.value}）"
+            detail=f"權限不足：需要公告權限（目前角色：{user_role.value}）"
         )
     
     logger.info(f"User {current_user.get('user_id', 'unknown')} creating announcement: {request.title}")
@@ -106,7 +106,7 @@ async def get_users_with_permission(
         user_role = RBACService.get_user_role(current_user)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要查看所有使用者權限（當前角色：{user_role.value}）"
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
         )
     
     return await admin_service.get_user_details(user)
@@ -116,12 +116,12 @@ async def get_users_with_permission(
 @router.get(
     "/my-role",
     summary="查看我的角色和權限",
-    description="查看當前使用者的角色和權限資訊"
+    description="查看目前使用者的角色和權限資訊"
 )
 async def get_my_role_info(
     current_user: dict = Depends(get_current_user)
 ):
-    """查看當前使用者的角色和權限"""
+    """查看目前使用者的角色和權限"""
     user_role = RBACService.get_user_role(current_user)
     user_permissions = RBACService.get_user_permissions(current_user)
     

@@ -230,7 +230,7 @@ def require_any_permission(required_permissions: List[Permission]):
 # FastAPI 依賴函數
 def get_current_user_with_permission(required_permission: Permission):
     """
-    取得有指定權限的當前使用者的依賴函數
+    取得有指定權限的目前使用者的依賴函數
     
     Args:
         required_permission: 所需權限
@@ -251,7 +251,7 @@ def get_current_user_with_permission(required_permission: Permission):
 
 def get_current_user_with_role(required_role: Role):
     """
-    取得有指定角色的當前使用者的依賴函數
+    取得有指定角色的目前使用者的依賴函數
     
     Args:
         required_role: 所需角色
