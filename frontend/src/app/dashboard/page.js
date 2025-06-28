@@ -86,7 +86,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex min-h-screen w-screen bg-[#0f203e] pb-20 md:items-center">
+        <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
             <div className="w-full space-y-4 p-4">
                 {error && (
                     <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
@@ -330,19 +330,19 @@ export default function Dashboard() {
                                         {i.status === "filled"
                                             ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
                                             : i.status === "cancelled"
-                                              ? "❌ 已取消"
-                                              : i.status ===
-                                                  "pending_limit"
-                                                ? "等待中 (限制)"
+                                                ? "❌ 已取消"
                                                 : i.status ===
+                                                    "pending_limit"
+                                                    ? "等待中 (限制)"
+                                                    : i.status ===
                                                         "partial" ||
-                                                    i.status ===
+                                                        i.status ===
                                                         "pending"
-                                                  ? i.filled_quantity >
-                                                    0
-                                                      ? `部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
-                                                      : "等待成交"
-                                                  : i.status}
+                                                        ? i.filled_quantity >
+                                                            0
+                                                            ? `部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
+                                                            : "等待成交"
+                                                        : i.status}
                                     </p>
 
                                     <p className="ml-auto">
