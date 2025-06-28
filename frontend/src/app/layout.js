@@ -39,7 +39,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <html data-theme="dark" lang="zh-TW" suppressHydrationWarning>
+        <html lang="zh-TW" suppressHydrationWarning>
             <head>
                 <title>SITCON Camp 2025 點數系統</title>
 
