@@ -17,21 +17,22 @@ const KLineChart = ({
             if (!mounted || !chartRef.current || !data || data.length === 0) return;
 
             try {
-                const { init, dispose } = await import('klinecharts');
-                
+                const { init } = await import('klinecharts');
+
                 if (chartInstance.current) {
-                    dispose(chartRef.current);
+                    try {
+                        chartInstance.current.dispose();
+                    } catch (e) {
+                        console.warn('Error disposing previous chart:', e);
+                    }
                     chartInstance.current = null;
                 }
 
                 const chart = init(chartRef.current);
                 chartInstance.current = chart;
 
-                chart.setSymbol({ ticker: 'TestSymbol' });
-                chart.setPeriod({ span: 1, type: 'minute' });
-
                 const klineData = data.map(item => ({
-                    timestamp: item.timestamp,
+                    timestamp: parseInt(item.timestamp) || Date.now(),
                     open: parseFloat(item.open) || 0,
                     high: parseFloat(item.high) || 0,
                     low: parseFloat(item.low) || 0,
@@ -39,14 +40,10 @@ const KLineChart = ({
                     volume: parseFloat(item.volume) || 0
                 }));
 
-                chart.setDataLoader({
-                    getBars: ({ callback }) => {
-                        callback(klineData);
-                    }
-                });
+                chart.applyNewData(klineData);
 
                 const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                
+
                 chart.setStyles({
                     grid: {
                         show: true,
@@ -66,46 +63,6 @@ const KLineChart = ({
                             upColor: '#22c55e',
                             downColor: '#ef4444',
                             noChangeColor: '#22c55e'
-                        },
-                        tooltip: {
-                            showRule: 'follow_cross',
-                            showType: 'rect',
-                            rect: {
-                                position: isMobile ? 'fixed' : 'pointer',
-                                paddingLeft: 6,
-                                paddingRight: 6,
-                                paddingTop: 6,
-                                paddingBottom: 6,
-                                offsetLeft: 4,
-                                offsetTop: isMobile ? 20 : 4,
-                                offsetRight: 4,
-                                offsetBottom: isMobile ? 20 : 4,
-                                borderRadius: 6,
-                                borderSize: 1,
-                                borderColor: '#CCCCCC',
-                                backgroundColor: '#FFFFFF'
-                            },
-                            title: {
-                                show: false
-                            },
-                            legend: {
-                                size: isMobile ? 11 : 13,
-                                family: 'Helvetica Neue',
-                                weight: 'normal',
-                                color: '#000000',
-                                marginLeft: 6,
-                                marginTop: 4,
-                                marginRight: 6,
-                                marginBottom: 4,
-                                defaultValue: 'n/a',
-                                template: [
-                                    { title: { text: '時間', color: '#666666' }, value: { text: '{time}', color: '#000000' } },
-                                    { title: { text: '開', color: '#666666' }, value: { text: '{open}', color: '#000000' } },
-                                    { title: { text: '高', color: '#666666' }, value: { text: '{high}', color: '#000000' } },
-                                    { title: { text: '低', color: '#666666' }, value: { text: '{low}', color: '#000000' } },
-                                    { title: { text: '收', color: '#666666' }, value: { text: '{close}', color: '#000000' } }
-                                ]
-                            }
                         }
                     },
                     xAxis: {
@@ -119,26 +76,13 @@ const KLineChart = ({
                         tickText: {
                             show: true,
                             color: '#82bee2',
-                            size: isMobile ? 8 : 10,
-                            family: 'Helvetica Neue',
-                            weight: 'normal',
-                            marginStart: 2,
-                            marginEnd: 2
-                        },
-                        tickLine: {
-                            show: true,
-                            size: 1,
-                            length: 2,
-                            color: '#82bee2'
+                            size: isMobile ? 8 : 10
                         }
                     },
                     yAxis: {
                         show: true,
                         width: isMobile ? 40 : null,
                         position: 'right',
-                        type: 'normal',
-                        inside: false,
-                        reverse: false,
                         axisLine: {
                             show: true,
                             color: '#82bee2',
@@ -147,24 +91,8 @@ const KLineChart = ({
                         tickText: {
                             show: true,
                             color: '#82bee2',
-                            size: isMobile ? 8 : 10,
-                            family: 'Helvetica Neue',
-                            weight: 'normal',
-                            marginStart: 2,
-                            marginEnd: 2
-                        },
-                        tickLine: {
-                            show: true,
-                            size: 1,
-                            length: 2,
-                            color: '#82bee2'
+                            size: isMobile ? 8 : 10
                         }
-                    },
-                    separator: {
-                        size: 1,
-                        color: '#82bee2',
-                        fill: true,
-                        activeBackgroundColor: 'rgba(130, 190, 226, 0.08)'
                     },
                     crosshair: {
                         show: true,
@@ -173,24 +101,8 @@ const KLineChart = ({
                             line: {
                                 show: true,
                                 style: 'dash',
-                                dashValue: [4, 2],
                                 size: 1,
                                 color: '#82bee2'
-                            },
-                            text: {
-                                show: true,
-                                color: '#000000',
-                                size: isMobile ? 8 : 10,
-                                family: 'Helvetica Neue',
-                                weight: 'normal',
-                                paddingLeft: 4,
-                                paddingRight: 4,
-                                paddingTop: 3,
-                                paddingBottom: 3,
-                                borderSize: 1,
-                                borderColor: '#CCCCCC',
-                                borderRadius: 3,
-                                backgroundColor: '#FFFFFF'
                             }
                         },
                         vertical: {
@@ -198,24 +110,8 @@ const KLineChart = ({
                             line: {
                                 show: true,
                                 style: 'dash',
-                                dashValue: [4, 2],
                                 size: 1,
                                 color: '#82bee2'
-                            },
-                            text: {
-                                show: true,
-                                color: '#000000',
-                                size: isMobile ? 8 : 10,
-                                family: 'Helvetica Neue',
-                                weight: 'normal',
-                                paddingLeft: 4,
-                                paddingRight: 4,
-                                paddingTop: 3,
-                                paddingBottom: 3,
-                                borderSize: 1,
-                                borderColor: '#CCCCCC',
-                                borderRadius: 3,
-                                backgroundColor: '#FFFFFF'
                             }
                         }
                     }
@@ -232,10 +128,9 @@ const KLineChart = ({
 
         return () => {
             mounted = false;
-            if (chartInstance.current && chartRef.current) {
+            if (chartInstance.current) {
                 try {
-                    const { dispose } = require('klinecharts');
-                    dispose(chartRef.current);
+                    chartInstance.current.dispose();
                 } catch (error) {
                     console.error('Error disposing chart:', error);
                 }
