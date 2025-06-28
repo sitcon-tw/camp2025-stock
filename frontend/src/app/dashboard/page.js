@@ -1,12 +1,15 @@
 "use client";
 
 import { getWebPortfolio, placeWebStockOrder } from "@/lib/api";
+import { LogOut } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [authData, setAuthData] = useState(null);
     const [activeTab, setActiveTab] = useState("portfolio");
     const [error, setError] = useState("");
     const router = useRouter();
@@ -49,6 +52,9 @@ export default function Dashboard() {
         };
 
         checkAuthAndLoadData();
+
+        setAuthData(JSON.parse(localStorage.getItem("telegramData")));
+        console.log(JSON.parse(localStorage.getItem("telegramData")));
     }, [router]);
 
     // Portfolio 組件
@@ -58,7 +64,7 @@ export default function Dashboard() {
         return (
             <div className="space-y-6">
                 {/* 資產總覽 */}
-                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 mx-auto max-w-3xl">
+                <div className="mx-auto max-w-3xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         資產總覽
                     </h3>
@@ -155,7 +161,7 @@ export default function Dashboard() {
         };
 
         return (
-            <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 mx-auto max-w-3xl">
+            <div className="mx-auto max-w-3xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                 <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                     股票交易
                 </h3>
@@ -284,65 +290,154 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0f203e] pb-20">
+        <div className="flex min-h-screen w-screen bg-[#0f203e] pb-20 md:items-center">
             {/* 標題列 */}
-            <div className="border-b border-[#294565] bg-[#1A325F] px-4 py-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-[#92cbf4]">
-                            投資儀表板
-                        </h1>
-                        {user && (
-                            <p className="text-sm text-[#557797]">
-                                歡迎，{user.name || user.id}
-                            </p>
-                        )}
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="text-sm text-[#557797] transition-colors hover:text-red-400"
-                    >
-                        登出
-                    </button>
-                </div>
-            </div>
+            {/*<div className="border-b border-[#294565] bg-[#1A325F] px-4 py-4">*/}
+            {/*    <div className="flex items-center justify-between">*/}
+            {/*        <div>*/}
+            {/*            <h1 className="text-xl font-bold text-[#92cbf4]">*/}
+            {/*                投資儀表板*/}
+            {/*            </h1>*/}
+            {/*            {user && (*/}
+            {/*                <p className="text-sm text-[#557797]">*/}
+            {/*                    歡迎，{user.name || user.id}*/}
+            {/*                </p>*/}
+            {/*            )}*/}
+            {/*        </div>*/}
+            {/*        <button*/}
+            {/*            onClick={handleLogout}*/}
+            {/*            className="text-sm text-[#557797] transition-colors hover:text-red-400"*/}
+            {/*        >*/}
+            {/*            登出*/}
+            {/*        </button>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* 頁籤導航 */}
-            <div className="border-b border-[#294565] bg-[#1A325F]">
-                <div className="flex">
-                    <button
-                        onClick={() => setActiveTab("portfolio")}
-                        className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                            activeTab === "portfolio"
-                                ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"
-                                : "text-[#557797] hover:text-[#92cbf4]"
-                        }`}
-                    >
-                        投資組合
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("trading")}
-                        className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                            activeTab === "trading"
-                                ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"
-                                : "text-[#557797] hover:text-[#92cbf4]"
-                        }`}
-                    >
-                        股票交易
-                    </button>
-                </div>
-            </div>
+            {/*<div className="border-b border-[#294565] bg-[#1A325F]">*/}
+            {/*    <div className="flex">*/}
+            {/*        <button*/}
+            {/*            onClick={() => setActiveTab("portfolio")}*/}
+            {/*            className={`flex-1 py-3 text-sm font-medium transition-colors ${*/}
+            {/*                activeTab === "portfolio"*/}
+            {/*                    ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"*/}
+            {/*                    : "text-[#557797] hover:text-[#92cbf4]"*/}
+            {/*            }`}*/}
+            {/*        >*/}
+            {/*            投資組合*/}
+            {/*        </button>*/}
+            {/*        <button*/}
+            {/*            onClick={() => setActiveTab("trading")}*/}
+            {/*            className={`flex-1 py-3 text-sm font-medium transition-colors ${*/}
+            {/*                activeTab === "trading"*/}
+            {/*                    ? "border-b-2 border-[#92cbf4] text-[#92cbf4]"*/}
+            {/*                    : "text-[#557797] hover:text-[#92cbf4]"*/}
+            {/*            }`}*/}
+            {/*        >*/}
+            {/*            股票交易*/}
+            {/*        </button>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* 內容區域 */}
-            <div className="p-4">
+            <div className="w-full space-y-4 p-4">
                 {error && (
                     <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
                         {error}
                     </div>
                 )}
 
-                {activeTab === "portfolio" && <PortfolioView />}
-                {activeTab === "trading" && <TradingView />}
+                <div className="mx-auto flex max-w-3xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    {authData.photo_url ? (
+                        <Image
+                            src={authData.photo_url}
+                            alt="Telegram 頭貼"
+                            width={80}
+                            height={80}
+                            className="h-20 w-20 rounded-full"
+                        />
+                    ) : (
+                        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#264173] text-xl font-bold text-[#92cbf4]">
+                            {user.username
+                                .substring(0, 1)
+                                .toUpperCase()}
+                        </div>
+                    )}
+                    <div>
+                        <p className="mb-2 text-xl">
+                            早安，
+                            <b>{user.username}</b>
+                        </p>
+                        <p className="mb-1 text-[#92cbf4]">
+                            你現在擁有的總資產約{" "}
+                            <span className="text-white">
+                                {user.totalValue?.toLocaleString()}
+                            </span>{" "}
+                            點
+                        </p>
+                        <p className="text-sm text-[#92cbf4]">
+                            可動用點數共{" "}
+                            <span className="text-white">
+                                {user.points?.toLocaleString()}
+                            </span>{" "}
+                            點
+                        </p>
+                    </div>
+                    <div className="ml-auto">
+                        <button onClick={handleLogout}>
+                            <LogOut className="h-5 w-5 text-[#92cbf4] transition-colors hover:text-red-700" />
+                        </button>
+                    </div>
+                </div>
+                <div className="mx-auto max-w-3xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                        資產總覽
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div>
+                            <p className="text-sm text-[#557797]">
+                                現金點數
+                            </p>
+                            <p className="text-xl font-bold text-white">
+                                {user.points?.toLocaleString()}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-[#557797]">
+                                股票數量
+                            </p>
+                            <p className="text-xl font-bold text-white">
+                                {user.stocks?.toLocaleString()}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-[#557797]">
+                                股票價值
+                            </p>
+                            <p className="text-xl font-bold text-white">
+                                {user.stockValue?.toLocaleString()}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-[#557797]">
+                                總資產
+                            </p>
+                            <p className="text-xl font-bold text-[#92cbf4]">
+                                {user.totalValue?.toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                    {user.avgCost !== undefined && (
+                        <div className="mt-4 border-t border-[#294565] pt-4">
+                            <p className="text-sm text-[#557797]">
+                                平均成本:{" "}
+                                <span className="font-semibold text-white">
+                                    {user.avgCost}
+                                </span>
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
