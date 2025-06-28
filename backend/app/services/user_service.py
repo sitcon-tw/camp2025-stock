@@ -458,27 +458,7 @@ class UserService:
                 execution_result = await self._execute_market_order(user_oid, order_doc)
                 return execution_result
             else:
-                # 對於買單，檢查是否有足夠的股票可供交易
-                if request.side == "buy":
-                    # 檢查是否有現有賣單
-                    existing_sell_orders = await self.db[Collections.STOCK_ORDERS].count_documents({
-                        "side": "sell", 
-                        "status": {"$in": ["pending", "partial"]}, 
-                        "order_type": "limit",
-                        "price": {"$lte": request.price}
-                    })
-                    
-                    # 檢查 IPO 可用性
-                    ipo_config = await self._get_or_initialize_ipo_config()
-                    ipo_available = ipo_config and ipo_config.get("shares_remaining", 0) > 0
-                    
-                    # 如果沒有賣單且 IPO 也沒有，拒絕買單
-                    if existing_sell_orders == 0 and not ipo_available:
-                        logger.warning(f"Buy limit order rejected: no sell orders and no IPO stock available for user {user_oid}")
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="無法下買單：市場上沒有可用的賣單，且 IPO 股票已售完"
-                        )
+                # 限價單可以直接掛單等待撮合，不需要檢查即時流動性
                 
                 # 限價單加入訂單簿
                 result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc)
