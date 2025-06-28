@@ -1049,7 +1049,7 @@ export default function AdminPage() {
                 </div>
             )}
 
-            <div className="mx-auto max-w-xl space-y-6 px-4 py-6">
+            <div className="mx-auto max-w-xl space-y-6 px-4 py-8">
                 <div className="mb-6 flex items-center justify-between">
                     <div>
                         <h1 className="mb-1 text-2xl font-bold text-[#AFE1F5]">

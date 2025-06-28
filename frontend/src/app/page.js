@@ -129,12 +129,12 @@ export default function Home() {
     };
 
     return (
-        <div className="flex min-h-screen place-items-center justify-center overflow-hidden bg-[#101f3e]">
+        <div className="flex min-h-screen place-items-center justify-center overflow-hidden bg-[#101f3e] py-8 px-8">
             <div className="flex flex-col items-center">
                 <Image
                     src={botAvatar}
                     alt="喵券機頭貼"
-                    className="mb-6 aspect-auto h-56 bg-transparent"
+                    className="mb-6 aspect-auto h-30 bg-transparent"
                 />
                 <h1 className="text-center text-4xl font-bold text-[#7BC2E6]">
                     SITCON Camp 喵券機

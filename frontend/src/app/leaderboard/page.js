@@ -224,7 +224,7 @@ export default function Leaderboard() {
                     </div>
                 )}
 
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto max-w-xl">
                     {loading ? (
                         <>
                             <RankingListSkeleton title="組排行" />

@@ -58,7 +58,7 @@ export default function Dashboard() {
         return (
             <div className="space-y-6">
                 {/* 資產總覽 */}
-                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 mx-auto max-w-3xl">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         資產總覽
                     </h3>
@@ -155,7 +155,7 @@ export default function Dashboard() {
         };
 
         return (
-            <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+            <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 mx-auto max-w-3xl">
                 <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                     股票交易
                 </h3>
