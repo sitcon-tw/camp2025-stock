@@ -1663,7 +1663,7 @@ class UserService:
             buy_idx, sell_idx = 0, 0
             matches_found = 0
             
-            logger.info(f"Starting order matching: {len(buy_book)} buy orders, {len(sell_book)} sell orders")
+            logger.info(f"🔍Starting order matching: {len(buy_book)} buy orders, {len(sell_book)} sell orders")
             
             while buy_idx < len(buy_book) and sell_idx < len(sell_book):
                 buy_order = buy_book[buy_idx]
