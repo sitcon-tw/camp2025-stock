@@ -100,7 +100,7 @@ async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAUL
 
 
 async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """處理 PVP 挑戰接受按鈕點擊"""
+    """處理 PVP 挑戰接受按鈕點選"""
     query = update.callback_query
     await query.answer()
     

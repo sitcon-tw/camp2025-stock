@@ -216,7 +216,7 @@ export default function TelegramLogin() {
                         <div className="text-center">
                             <div className="mb-6">
                                 <p className="mb-4 text-sm text-[#557797]">
-                                    點擊下方按鈕使用 Telegram 登入
+                                    點選下方按鈕使用 Telegram 登入
                                 </p>
                                 <div
                                     id="telegram-widget-container"

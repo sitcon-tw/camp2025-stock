@@ -297,7 +297,7 @@ export default function Dashboard() {
                                 // }
                             }}
                             onBlur={() => {
-                                // 延遲隱藏建議，讓點擊事件能夠觸發
+                                // 延遲隱藏建議，讓點選事件能夠觸發
                                 // setTimeout(
                                 //     () =>
                                 //         setShowSuggestions(
@@ -318,7 +318,7 @@ export default function Dashboard() {
                                             <div
                                                 key={index}
                                                 onMouseDown={(e) => {
-                                                    e.preventDefault(); // 防止blur事件影響點擊
+                                                    e.preventDefault(); // 防止blur事件影響點選
                                                     if (
                                                         givePointsForm.type.startsWith(
                                                             "multi_",
