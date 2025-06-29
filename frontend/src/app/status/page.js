@@ -103,16 +103,9 @@ export default function Status() {
         if (!orderResponse.success) {
             setModalError(orderResponse.message);
             setIsSubmitting(false);
-            return;
         } else {
             setModalSuccess(orderResponse.message);
         }
-
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setModalSuccess(null);
-            tradeModal.closeModal();
-        }, 1000);
     };
 
     useEffect(() => {
