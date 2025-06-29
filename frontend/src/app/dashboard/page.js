@@ -38,8 +38,19 @@ export default function Dashboard() {
     };
 
     // 取消訂單功能
-    const handleCancelOrder = async (orderId, orderType, quantity) => {
-        if (!confirm(`確定要取消這筆${orderType === "market" ? "市價" : "限價"}單嗎？\n數量：${quantity} 股`)) {
+    const handleCancelOrder = async (orderData, orderType, quantity) => {
+        // 從訂單物件中提取正確的 ID
+        const orderId = orderData._id || orderData.id || orderData.order_id;
+        
+        console.log("取消訂單 - 訂單資料:", orderData);
+        console.log("取消訂單 - 提取的 ID:", orderId);
+        
+        if (!orderId) {
+            setCancelError("無法取得訂單 ID");
+            return;
+        }
+
+        if (!confirm(`確定要取消這筆${orderType === "market" ? "市價" : "限價"}單嗎？\n數量：${quantity} 股\n訂單 ID: ${orderId}`)) {
             return;
         }
 
@@ -515,12 +526,13 @@ export default function Dashboard() {
                         {orderHistory && orderHistory.length > 0 ? (
                             orderHistory.map((i) => {
                                 const isCancellable = canCancelOrder(i);
-                                const isCancelling = cancelingOrders.has(i._id || i.id);
+                                const orderId = i._id || i.id || i.order_id;
+                                const isCancelling = cancelingOrders.has(orderId);
                                 
                                 return (
                                     <div
                                         className="rounded-lg border border-[#294565] bg-[#0f203e] p-4"
-                                        key={i._id || i.id || i.created_at}
+                                        key={orderId || i.created_at}
                                     >
                                         {/* 訂單基本資訊 */}
                                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -541,6 +553,18 @@ export default function Dashboard() {
                                                 </span>
                                             </div>
                                         </div>
+
+                                        {/* Debug訊息 - 可以在生產環境中移除 */}
+                                        {process.env.NODE_ENV === 'development' && (
+                                            <div className="mb-2 rounded bg-gray-800 p-2 text-xs">
+                                                <details>
+                                                    <summary className="cursor-pointer text-gray-400">Debug：訂單物件結構</summary>
+                                                    <pre className="mt-1 text-gray-300 overflow-auto">
+                                                        {JSON.stringify(i, null, 2)}
+                                                    </pre>
+                                                </details>
+                                            </div>
+                                        )}
 
                                         {/* 訂單狀態和詳情 */}
                                         <div className="mb-3">
@@ -585,7 +609,7 @@ export default function Dashboard() {
                                             <div className="flex justify-end">
                                                 <button
                                                     onClick={() => handleCancelOrder(
-                                                        i._id || i.id,
+                                                        i,
                                                         i.order_type,
                                                         i.quantity - (i.filled_quantity || 0)
                                                     )}
