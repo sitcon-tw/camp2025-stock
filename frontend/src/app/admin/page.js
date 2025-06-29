@@ -1056,7 +1056,7 @@ export default function AdminPage() {
                            歡迎，{"康喔"}！
                         </h1>
                         <p className="text-sm text-[#7BC2E6]">
-                            權限：點數發放、發送公告、系統管理
+                            權限：點數發放、傳送公告、系統管理
                         </p>
                     </div>
                     <button

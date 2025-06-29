@@ -7,6 +7,7 @@ from decimal import Decimal
 from datetime import datetime
 import uuid
 import logging
+import requests
 
 from .entities import User, Stock, StockOrder, Transfer
 from .repositories import (
@@ -19,6 +20,7 @@ from .strategies import (
 )
 import hashlib
 import hmac
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +265,68 @@ class StockTradingService:
         order.execute(execution_price)
         order_id = await self.order_repo.create(order)
         
+        # 傳送交易通知
+        await self._send_trade_notification(
+            user_id=user.user_id,
+            action=order.side,
+            quantity=order.quantity,
+            price=float(execution_price),
+            total_amount=float(total_cost),
+            order_id=order_id
+        )
+        
         return order_id, execution_price
+
+    async def _send_trade_notification(self, user_id: str, action: str, quantity: int, 
+                                     price: float, total_amount: float, order_id: str):
+        """傳送交易通知到 Telegram Bot"""
+        try:
+            if not settings.CAMP_TELEGRAM_BOT_API_URL or not settings.CAMP_INTERNAL_API_KEY:
+                logger.warning("Telegram Bot API 設定不完整，跳過通知傳送")
+                return
+            
+            # 獲取使用者的 Telegram ID
+            user = await self.user_repo.get_by_id(user_id)
+            if not user or not hasattr(user, 'telegram_id') or not user.telegram_id:
+                logger.warning(f"無法傳送通知：使用者 {user_id} 未設定 telegram_id")
+                return
+            
+            # 構建通知請求
+            notification_url = f"{settings.CAMP_TELEGRAM_BOT_API_URL.rstrip('/')}/bot/notification/trade"
+            
+            payload = {
+                "user_id": user.telegram_id,
+                "action": action,
+                "quantity": quantity,
+                "price": price,
+                "total_amount": total_amount,
+                "order_id": order_id
+            }
+            
+            headers = {
+                "Content-Type": "application/json",
+                "token": settings.CAMP_INTERNAL_API_KEY
+            }
+            
+            # 傳送通知（設定短超時避免阻塞交易）
+            response = requests.post(
+                notification_url,
+                json=payload,
+                headers=headers,
+                timeout=5  # 5秒超時
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"成功傳送 {action} 交易通知給使用者 {user.telegram_id}")
+            else:
+                logger.warning(f"傳送交易通知失敗: HTTP {response.status_code} - {response.text}")
+                
+        except requests.exceptions.Timeout:
+            logger.warning(f"傳送交易通知超時，使用者: {user_id}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"傳送交易通知網路錯誤: {e}")
+        except Exception as e:
+            logger.error(f"傳送交易通知發生未預期錯誤: {e}")
 
 
 class TransferService:

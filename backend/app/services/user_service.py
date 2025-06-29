@@ -2346,7 +2346,7 @@ class UserService:
             
             logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
             
-            # 發送交易通知給相關使用者
+            # 傳送交易通知給相關使用者
             await self._send_trade_notifications(
                 buy_order=buy_order,
                 sell_order=sell_order if not is_system_sale else None,
@@ -3382,12 +3382,12 @@ class UserService:
 
     async def _send_trade_notifications(self, buy_order: dict, sell_order: dict, trade_quantity: int, 
                                       trade_price: float, trade_amount: float, is_system_sale: bool, session=None):
-        """發送交易通知給買方和賣方"""
+        """傳送交易通知給買方和賣方"""
         try:
             # 獲取買方使用者資訊
             buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
             if not buy_user or not buy_user.get("telegram_id"):
-                logger.warning(f"無法發送買方通知：使用者 {buy_order['user_id']} 未設定 telegram_id")
+                logger.warning(f"無法傳送買方通知：使用者 {buy_order['user_id']} 未設定 telegram_id")
             else:
                 await self._send_single_trade_notification(
                     user_telegram_id=buy_user["telegram_id"],
@@ -3402,7 +3402,7 @@ class UserService:
             if not is_system_sale and sell_order:
                 sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
                 if not sell_user or not sell_user.get("telegram_id"):
-                    logger.warning(f"無法發送賣方通知：使用者 {sell_order['user_id']} 未設定 telegram_id")
+                    logger.warning(f"無法傳送賣方通知：使用者 {sell_order['user_id']} 未設定 telegram_id")
                 else:
                     await self._send_single_trade_notification(
                         user_telegram_id=sell_user["telegram_id"],
@@ -3414,15 +3414,15 @@ class UserService:
                     )
                     
         except Exception as e:
-            # 通知發送失敗不應該影響交易本身
-            logger.error(f"發送交易通知時發生錯誤: {e}")
+            # 通知傳送失敗不應該影響交易本身
+            logger.error(f"傳送交易通知時發生錯誤: {e}")
 
     async def _send_single_trade_notification(self, user_telegram_id: int, action: str, quantity: int, 
                                             price: float, total_amount: float, order_id: str):
-        """發送單一交易通知"""
+        """傳送單一交易通知"""
         try:
             if not settings.CAMP_TELEGRAM_BOT_API_URL or not settings.CAMP_INTERNAL_API_KEY:
-                logger.warning("Telegram Bot API 設定不完整，跳過通知發送")
+                logger.warning("Telegram Bot API 設定不完整，跳過通知傳送")
                 return
             
             # 構建通知請求
@@ -3442,7 +3442,7 @@ class UserService:
                 "token": settings.CAMP_INTERNAL_API_KEY
             }
             
-            # 發送通知（設定短超時避免阻塞交易）
+            # 傳送通知（設定短超時避免阻塞交易）
             response = requests.post(
                 notification_url,
                 json=payload,
@@ -3451,13 +3451,13 @@ class UserService:
             )
             
             if response.status_code == 200:
-                logger.info(f"成功發送 {action} 交易通知給使用者 {user_telegram_id}")
+                logger.info(f"成功傳送 {action} 交易通知給使用者 {user_telegram_id}")
             else:
-                logger.warning(f"發送交易通知失敗: HTTP {response.status_code} - {response.text}")
+                logger.warning(f"傳送交易通知失敗: HTTP {response.status_code} - {response.text}")
                 
         except requests.exceptions.Timeout:
-            logger.warning(f"發送交易通知超時，使用者: {user_telegram_id}")
+            logger.warning(f"傳送交易通知超時，使用者: {user_telegram_id}")
         except requests.exceptions.RequestException as e:
-            logger.warning(f"發送交易通知網路錯誤: {e}")
+            logger.warning(f"傳送交易通知網路錯誤: {e}")
         except Exception as e:
-            logger.error(f"發送交易通知發生未預期錯誤: {e}")
+            logger.error(f"傳送交易通知發生未預期錯誤: {e}")
