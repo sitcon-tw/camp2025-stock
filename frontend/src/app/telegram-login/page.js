@@ -4,9 +4,7 @@ import { telegramOAuth } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-
-// login svg
-import LoginSvg from "@/assets/undraw_authentication_tbfc.svg";
+import loginSvg from "@/assets/undraw_authentication_tbfc.svg";
 
 export default function TelegramLogin() {
     const [isLoading, setIsLoading] = useState(false);
@@ -192,7 +190,7 @@ export default function TelegramLogin() {
                 <div className="mb-12 text-center">
                     <div className="mb-6 flex justify-center">
                         <Image
-                            src={LoginSvg}
+                            src={loginSvg}
                             alt="登入圖示"
                             className="h-32 w-auto"
                         />
