@@ -42,16 +42,20 @@ export default function Dashboard() {
         // 從訂單物件中提取正確的 ID - 嘗試更多可能的字段
         const orderId = orderData._id || orderData.id || orderData.order_id || orderData.orderId || orderData["$oid"];
         
-        console.log("=== 取消訂單調試信息 ===");
+        console.log("=== 取消訂單Debug訊息 ===");
         console.log("完整訂單資料:", orderData);
         console.log("訂單物件的所有 keys:", Object.keys(orderData));
         console.log("嘗試提取的 ID:", orderId);
         console.log("ID 類型:", typeof orderId);
+        console.log("訂單的使用者ID:", orderData.user_id);
+        console.log("目前使用者資料:", user);
+        console.log("localStorage 中的 telegramData:", localStorage.getItem("telegramData"));
+        console.log("localStorage 中的 userData:", localStorage.getItem("userData"));
         console.log("========================");
         
         if (!orderId) {
             console.error("無法從訂單物件中找到有效的 ID 字段");
-            setCancelError("無法取得訂單 ID - 請檢查控制台調試信息");
+            setCancelError("無法取得訂單 ID - 請檢查控制台Debug訊息");
             return;
         }
 

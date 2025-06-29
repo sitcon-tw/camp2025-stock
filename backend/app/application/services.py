@@ -288,7 +288,7 @@ class TradingApplicationService(BaseApplicationService):
                     logger.warning(f"Order {order.order_id} has filled status but no quantity data")
                     return 0
             else:
-                # 原始數量 = 當前剩餘 + 已成交
+                # 原始數量 = 目前剩餘 + 已成交
                 filled_qty = getattr(order, 'filled_quantity', 0)
                 return order.quantity + filled_qty
         else:

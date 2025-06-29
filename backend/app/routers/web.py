@@ -232,7 +232,7 @@ async def cancel_stock_order(
     Args:
         order_id: 訂單 ID
         reason: 取消原因
-        current_user: 當前使用者（透過 JWT Token 取得）
+        current_user: 目前使用者（透過 JWT Token 取得）
         user_service: 使用者服務
         
     Returns:
@@ -249,7 +249,7 @@ async def cancel_stock_order(
         if telegram_id:
             user = await user_service.get_user_by_telegram_id(telegram_id)
             if user:
-                user_id = user.get("_id")
+                user_id = str(user.get("_id"))  # 轉換為字串以確保一致性
         
         if not user_id:
             raise HTTPException(

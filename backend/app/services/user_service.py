@@ -3493,10 +3493,20 @@ class UserService:
                 }
             
             # 驗證使用者擁有權
-            if order.get("user_id") != user_id:
+            order_user_id = order.get("user_id")
+            # 將兩個 ID 都轉換為字串進行比較，確保格式一致
+            order_user_id_str = str(order_user_id) if order_user_id else ""
+            user_id_str = str(user_id) if user_id else ""
+            
+            logger.info(f"權限驗證 - 訂單使用者ID: {order_user_id} ({type(order_user_id)}) -> {order_user_id_str}")
+            logger.info(f"權限驗證 - 目前使用者ID: {user_id} ({type(user_id)}) -> {user_id_str}")
+            logger.info(f"權限驗證 - 字串比較結果: {order_user_id_str == user_id_str}")
+            
+            if order_user_id_str != user_id_str:
+                logger.warning(f"權限驗證失敗 - 訂單 {order_id} 屬於使用者 {order_user_id}，但目前使用者為 {user_id}")
                 return {
                     "success": False,
-                    "message": "您沒有權限取消此訂單"
+                    "message": f"您沒有權限取消此訂單 (訂單使用者: {order_user_id}, 目前使用者: {user_id})"
                 }
             
             # 詳細檢查訂單是否可以取消
