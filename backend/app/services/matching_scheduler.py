@@ -76,15 +76,15 @@ class MatchingScheduler:
         start_time = datetime.now()
         
         try:
-            logger.info(f"Starting order matching (reason: {reason})")
+            logger.info(f"🔍Starting order matching (reason: {reason})")
             await self.user_service._try_match_orders()
             
             duration = (datetime.now() - start_time).total_seconds()
-            logger.info(f"Completed order matching in {duration:.2f}s (reason: {reason})")
+            logger.info(f"☑️Completed order matching in {duration:.2f}s (reason: {reason})")
             
         except Exception as e:
             duration = (datetime.now() - start_time).total_seconds()
-            logger.error(f"Order matching failed after {duration:.2f}s (reason: {reason}): {e}")
+            logger.error(f"❌Order matching failed after {duration:.2f}s (reason: {reason}): {e}")
             
         finally:
             self._matching_in_progress = False
