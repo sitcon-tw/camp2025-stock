@@ -108,7 +108,7 @@ class MongoUserRepository(UserRepository):
                 telegram_id = None
         
         return User(
-            user_id=str(doc.get("_id")),  # 使用 MongoDB ObjectId 作為 user_id，確保與訂單系統一致
+            user_id=doc.get("id"),  # 使用 id 字段作為 user_id，與現有系統一致
             username=doc.get("name") or doc.get("username"),  # Support both field names
             email=doc.get("email"),
             team=doc.get("team"),
