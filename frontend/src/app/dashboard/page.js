@@ -4,6 +4,7 @@ import {
     getWebPointHistory,
     getWebPortfolio,
     getWebStockOrders,
+    cancelWebStockOrder,
 } from "@/lib/api";
 import dayjs from "dayjs";
 import { LogOut } from "lucide-react";
@@ -23,6 +24,9 @@ export default function Dashboard() {
     const [authData, setAuthData] = useState(null);
     const [activeTab, setActiveTab] = useState("portfolio");
     const [error, setError] = useState("");
+    const [cancelingOrders, setCancelingOrders] = useState(new Set());
+    const [cancelSuccess, setCancelSuccess] = useState("");
+    const [cancelError, setCancelError] = useState("");
     const router = useRouter();
 
     // 登出功能
@@ -31,6 +35,62 @@ export default function Dashboard() {
         localStorage.removeItem("userToken");
         localStorage.removeItem("userData");
         router.push("/");
+    };
+
+    // 取消訂單功能
+    const handleCancelOrder = async (orderId, orderType, quantity) => {
+        if (!confirm(`確定要取消這筆${orderType === "market" ? "市價" : "限價"}單嗎？\n數量：${quantity} 股`)) {
+            return;
+        }
+
+        const token = localStorage.getItem("userToken");
+        if (!token) {
+            setCancelError("認證已過期，請重新登入");
+            return;
+        }
+
+        // 添加到取消中的訂單集合
+        setCancelingOrders(prev => new Set(prev).add(orderId));
+        setCancelError("");
+        setCancelSuccess("");
+
+        try {
+            const result = await cancelWebStockOrder(token, orderId, "使用者主動取消");
+            
+            if (result.success) {
+                setCancelSuccess("訂單已成功取消");
+                
+                // 重新載入訂單歷史
+                try {
+                    const updatedOrders = await getWebStockOrders(token);
+                    setOrderHistory(updatedOrders);
+                } catch (refreshError) {
+                    console.error("重新載入訂單失敗:", refreshError);
+                }
+                
+                // 3秒後清除成功訊息
+                setTimeout(() => setCancelSuccess(""), 3000);
+            } else {
+                setCancelError(result.message || "取消訂單失敗");
+            }
+        } catch (error) {
+            console.error("取消訂單失敗:", error);
+            setCancelError(error.message || "取消訂單時發生錯誤");
+        } finally {
+            // 從取消中的訂單集合移除
+            setCancelingOrders(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(orderId);
+                return newSet;
+            });
+        }
+    };
+
+    // 檢查訂單是否可以取消
+    const canCancelOrder = (order) => {
+        const cancellableStatuses = ["pending", "partial", "pending_limit"];
+        return cancellableStatuses.includes(order.status) && 
+               order.quantity > 0;
     };
 
     // 檢查登入狀態並載入使用者資料
@@ -439,53 +499,108 @@ export default function Dashboard() {
                         股票購買紀錄
                     </h3>
 
+                    {/* 取消訂單的通知訊息 */}
+                    {cancelSuccess && (
+                        <div className="mb-4 rounded-lg bg-green-600/20 border border-green-500/30 p-3">
+                            <p className="text-green-400 text-sm">✅ {cancelSuccess}</p>
+                        </div>
+                    )}
+                    {cancelError && (
+                        <div className="mb-4 rounded-lg bg-red-600/20 border border-red-500/30 p-3">
+                            <p className="text-red-400 text-sm">❌ {cancelError}</p>
+                        </div>
+                    )}
+
                     <div className="grid grid-flow-row gap-4">
                         {orderHistory && orderHistory.length > 0 ? (
                             orderHistory.map((i) => {
+                                const isCancellable = canCancelOrder(i);
+                                const isCancelling = cancelingOrders.has(i._id || i.id);
+                                
                                 return (
                                     <div
-                                        className="grid grid-cols-5 space-y-1 md:space-y-0 md:space-x-4"
-                                        key={i.created_at}
+                                        className="rounded-lg border border-[#294565] bg-[#0f203e] p-4"
+                                        key={i._id || i.id || i.created_at}
                                     >
-                                        <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
-                                            {dayjs(
-                                                i.created_at,
-                                            ).format("MM/DD HH:mm")}
-                                        </p>
-                                        <div className="col-span-5 md:col-span-4 md:flex">
+                                        {/* 訂單基本資訊 */}
+                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                            <p className="font-mono text-sm text-[#92cbf4]">
+                                                {dayjs(i.created_at).format("MM/DD HH:mm")}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <span className={twMerge(
+                                                    "rounded px-2 py-1 text-xs font-semibold",
+                                                    i.side === "sell" 
+                                                        ? "bg-green-600/20 text-green-400" 
+                                                        : "bg-red-600/20 text-red-400"
+                                                )}>
+                                                    {i.side === "sell" ? "賣出" : "買入"}
+                                                </span>
+                                                <span className="rounded bg-[#294565] px-2 py-1 text-xs text-[#92cbf4]">
+                                                    {i.order_type === "market" ? "市價單" : "限價單"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* 訂單狀態和詳情 */}
+                                        <div className="mb-3">
                                             <p className="font-bold text-[#92cbf4]">
                                                 {i.status === "filled"
                                                     ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
-                                                    : i.status ===
-                                                        "cancelled"
+                                                    : i.status === "cancelled"
                                                       ? "❌ 已取消"
-                                                      : i.status ===
-                                                          "pending_limit"
-                                                        ? "等待中 (限制)"
-                                                        : i.status ===
-                                                                "partial" ||
-                                                            i.status ===
-                                                                "pending"
-                                                          ? i.filled_quantity >
-                                                            0
-                                                              ? `部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
-                                                              : "等待成交"
+                                                      : i.status === "pending_limit"
+                                                        ? "⏳ 等待中 (限制)"
+                                                        : i.status === "partial" ||
+                                                            i.status === "pending"
+                                                          ? i.filled_quantity > 0
+                                                              ? `🔄 部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
+                                                              : "⏳ 等待成交"
                                                           : i.status}
                                             </p>
-
-                                            <p
-                                                className={twMerge(
-                                                    "ml-auto w-fit",
-                                                    i.side === "sell"
-                                                        ? "text-green-400"
-                                                        : "text-red-400",
+                                            
+                                            {/* 訂單詳情 */}
+                                            <div className="mt-2 grid grid-cols-2 gap-4 text-sm text-[#557797] md:grid-cols-3">
+                                                <div>
+                                                    <span>數量：</span>
+                                                    <span className="text-white">{i.quantity} 股</span>
+                                                </div>
+                                                {i.price && (
+                                                    <div>
+                                                        <span>價格：</span>
+                                                        <span className="text-white">{i.price} 元</span>
+                                                    </div>
                                                 )}
-                                            >
-                                                {i.side === "sell"
-                                                    ? "賣出"
-                                                    : "買入"}
-                                            </p>
+                                                {i.filled_quantity > 0 && (
+                                                    <div>
+                                                        <span>已成交：</span>
+                                                        <span className="text-green-400">{i.filled_quantity} 股</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {/* 取消按鈕 */}
+                                        {isCancellable && (
+                                            <div className="flex justify-end">
+                                                <button
+                                                    onClick={() => handleCancelOrder(
+                                                        i._id || i.id,
+                                                        i.order_type,
+                                                        i.quantity - (i.filled_quantity || 0)
+                                                    )}
+                                                    disabled={isCancelling}
+                                                    className={twMerge(
+                                                        "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                                                        isCancelling
+                                                            ? "cursor-not-allowed bg-gray-600/50 text-gray-400"
+                                                            : "bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30"
+                                                    )}
+                                                >
+                                                    {isCancelling ? "取消中..." : "取消訂單"}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })

@@ -437,6 +437,17 @@ export async function getWebStockOrders(token, limit = 50) {
     });
 }
 
+// 取消股票訂單
+export async function cancelWebStockOrder(token, orderId, reason = "user_cancelled") {
+    return apiRequest(`/api/web/stock/orders/${orderId}?reason=${encodeURIComponent(reason)}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // 點數轉帳
 export async function webTransferPoints(token, transferData) {
     return apiRequest("/api/web/transfer", {
