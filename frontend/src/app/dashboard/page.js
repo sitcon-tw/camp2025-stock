@@ -10,6 +10,7 @@ import { LogOut } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +41,11 @@ export default function Dashboard() {
             const token = localStorage.getItem("userToken");
             const telegramData = localStorage.getItem("telegramData");
 
-            console.log("認證檢查:", { isUser, hasToken: !!token, hasTelegramData: !!telegramData });
+            console.log("認證檢查:", {
+                isUser,
+                hasToken: !!token,
+                hasTelegramData: !!telegramData,
+            });
 
             // 如果缺少任何必要的認證資料，重新導向到登入頁
             if (!isUser || !token || !telegramData) {
@@ -51,7 +56,7 @@ export default function Dashboard() {
 
             // 檢查 token 格式是否正確
             try {
-                const tokenParts = token.split('.');
+                const tokenParts = token.split(".");
                 if (tokenParts.length !== 3) {
                     console.log("Token 格式無效");
                     handleLogout();
@@ -69,11 +74,19 @@ export default function Dashboard() {
                 try {
                     parsedTelegramData = JSON.parse(telegramData);
                     // 檢查是否為有效的 Telegram 登入資料
-                    if (!parsedTelegramData || typeof parsedTelegramData !== 'object') {
-                        throw new Error("Invalid telegram data structure");
+                    if (
+                        !parsedTelegramData ||
+                        typeof parsedTelegramData !== "object"
+                    ) {
+                        throw new Error(
+                            "Invalid telegram data structure",
+                        );
                     }
                 } catch (parseError) {
-                    console.log("Telegram 資料無效，可能未使用 Telegram 登入:", parseError);
+                    console.log(
+                        "Telegram 資料無效，可能未使用 Telegram 登入:",
+                        parseError,
+                    );
                     // 如果是無效的 Telegram 資料，引導重新登入
                     setError("請使用 Telegram 登入以獲得完整功能");
                     setTimeout(() => {
@@ -84,15 +97,21 @@ export default function Dashboard() {
                 setAuthData(parsedTelegramData);
 
                 console.log("開始載入使用者資料...");
-                
-                // 載入使用者資料
-                const [portfolio, points, stocks] = await Promise.all([
-                    getWebPortfolio(token),
-                    getWebPointHistory(token),
-                    getWebStockOrders(token),
-                ]);
 
-                console.log("資料載入成功:", { portfolio, pointsCount: points.length, stocksCount: stocks.length });
+                // 載入使用者資料
+                const [portfolio, points, stocks] = await Promise.all(
+                    [
+                        getWebPortfolio(token),
+                        getWebPointHistory(token),
+                        getWebStockOrders(token),
+                    ],
+                );
+
+                console.log("資料載入成功:", {
+                    portfolio,
+                    pointsCount: points.length,
+                    stocksCount: stocks.length,
+                });
 
                 setUser(portfolio);
                 setPointHistory(points);
@@ -100,14 +119,16 @@ export default function Dashboard() {
                 setIsLoading(false);
             } catch (error) {
                 console.error("載入使用者資料失敗:", error);
-                
+
                 // 處理不同類型的錯誤
                 if (error.status === 401 || error.status === 403) {
                     console.log("認證失敗，重新登入");
                     handleLogout();
                 } else if (error.status === 404) {
                     console.log("使用者未註冊或資料不存在");
-                    setError("使用者帳號未完成註冊，或需要使用 Telegram 登入。將重新導向到登入頁面...");
+                    setError(
+                        "使用者帳號未完成註冊，或需要使用 Telegram 登入。將重新導向到登入頁面...",
+                    );
                     setTimeout(() => {
                         handleLogout();
                     }, 3000);
@@ -142,20 +163,22 @@ export default function Dashboard() {
     if (error && !isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
-                <div className="text-center max-w-md p-6">
+                <div className="max-w-md p-6 text-center">
                     <div className="mb-4 text-6xl">⚠️</div>
-                    <h2 className="mb-4 text-xl font-bold text-red-400">載入失敗</h2>
+                    <h2 className="mb-4 text-xl font-bold text-red-400">
+                        載入失敗
+                    </h2>
                     <p className="mb-6 text-[#92cbf4]">{error}</p>
                     <div className="space-y-3">
                         <button
                             onClick={() => window.location.reload()}
-                            className="w-full rounded-lg bg-[#469FD2] px-4 py-2 text-white hover:bg-[#357AB8] transition-colors"
+                            className="w-full rounded-lg bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8]"
                         >
                             重新載入
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="w-full rounded-lg border border-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] transition-colors"
+                            className="w-full rounded-lg border border-[#294565] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#1A325F]"
                         >
                             重新登入
                         </button>
@@ -180,7 +203,6 @@ export default function Dashboard() {
     return (
         <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
             <div className="w-full space-y-4 p-4">
-
                 <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     {authData?.photo_url ? (
                         <Image
@@ -205,14 +227,16 @@ export default function Dashboard() {
                         <p className="mb-1 text-[#92cbf4]">
                             你現在擁有的總資產為{" "}
                             <span className="text-white">
-                                {user?.totalValue?.toLocaleString() || "0"}
+                                {user?.totalValue?.toLocaleString() ||
+                                    "0"}
                             </span>{" "}
                             點
                         </p>
                         <p className="text-sm text-[#92cbf4]">
                             可動用點數共{" "}
                             <span className="text-white">
-                                {user?.points?.toLocaleString() || "0"}
+                                {user?.points?.toLocaleString() ||
+                                    "0"}
                             </span>{" "}
                             點
                         </p>
@@ -234,7 +258,8 @@ export default function Dashboard() {
                                 現金點數
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.points?.toLocaleString() || "0"}
+                                {user?.points?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                         <div>
@@ -242,7 +267,8 @@ export default function Dashboard() {
                                 股票數量
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.stocks?.toLocaleString() || "0"}
+                                {user?.stocks?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                         <div>
@@ -250,7 +276,8 @@ export default function Dashboard() {
                                 股票價值
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.stockValue?.toLocaleString() || "0"}
+                                {user?.stockValue?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                         <div>
@@ -258,7 +285,8 @@ export default function Dashboard() {
                                 總資產
                             </p>
                             <p className="text-center text-xl font-bold text-[#92cbf4]">
-                                {user?.totalValue?.toLocaleString() || "0"}
+                                {user?.totalValue?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                     </div>
@@ -362,38 +390,44 @@ export default function Dashboard() {
                     </h3>
 
                     <div className="grid grid-flow-row gap-4">
-                        {pointHistory && pointHistory.length > 0 ? pointHistory.map((i) => {
-                            return (
-                                <div
-                                    className="grid grid-cols-5 space-x-4"
-                                    key={i.created_at}
-                                >
-                                    <p className="font-mono">
-                                        {dayjs(i.created_at).format(
-                                            "MM/DD HH:mm",
-                                        )}
-                                    </p>
-                                    <p className="col-span-3 text-[#92cbf4]">
-                                        {i.note}
-                                    </p>
+                        {pointHistory && pointHistory.length > 0 ? (
+                            pointHistory.map((i) => {
+                                return (
+                                    <div
+                                        className="grid grid-cols-5 space-y-1 md:space-y-0 md:space-x-4"
+                                        key={i.created_at}
+                                    >
+                                        <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
+                                            {dayjs(
+                                                i.created_at,
+                                            ).format("MM/DD HH:mm")}
+                                        </p>
+                                        <div className="col-span-5 md:col-span-4 md:flex">
+                                            <p className="font-bold text-[#92cbf4]">
+                                                {i.note}
+                                            </p>
 
-                                    <p className="ml-auto font-mono">
-                                        {i.balance_after}{" "}
-                                        <span
-                                            className={
-                                                i.amount < 0
-                                                    ? "text-red-400"
-                                                    : "text-green-400"
-                                            }
-                                        >
-                                            ({i.amount > 0 && "+"}
-                                            {i.amount})
-                                        </span>
-                                    </p>
-                                </div>
-                            );
-                        }) : (
-                            <div className="text-center text-[#557797] py-4">
+                                            <p className="ml-auto w-fit font-mono">
+                                                {i.balance_after}{" "}
+                                                <span
+                                                    className={
+                                                        i.amount < 0
+                                                            ? "text-red-400"
+                                                            : "text-green-400"
+                                                    }
+                                                >
+                                                    (
+                                                    {i.amount > 0 &&
+                                                        "+"}
+                                                    {i.amount})
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="py-4 text-center text-[#557797]">
                                 暫無點數記錄
                             </div>
                         )}
@@ -406,45 +440,57 @@ export default function Dashboard() {
                     </h3>
 
                     <div className="grid grid-flow-row gap-4">
-                        {orderHistory && orderHistory.length > 0 ? orderHistory.map((i) => {
-                            return (
-                                <div
-                                    className="grid grid-cols-5 space-x-4"
-                                    key={i.created_at}
-                                >
-                                    <p className="font-mono">
-                                        {dayjs(i.created_at).format(
-                                            "MM/DD HH:mm",
-                                        )}
-                                    </p>
-                                    <p className="col-span-3 text-[#92cbf4]">
-                                        {i.status === "filled"
-                                            ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
-                                            : i.status === "cancelled"
-                                                ? "❌ 已取消"
-                                                : i.status ===
-                                                    "pending_limit"
-                                                    ? "等待中 (限制)"
+                        {orderHistory && orderHistory.length > 0 ? (
+                            orderHistory.map((i) => {
+                                return (
+                                    <div
+                                        className="grid grid-cols-5 space-y-1 md:space-y-0 md:space-x-4"
+                                        key={i.created_at}
+                                    >
+                                        <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
+                                            {dayjs(
+                                                i.created_at,
+                                            ).format("MM/DD HH:mm")}
+                                        </p>
+                                        <div className="col-span-5 md:col-span-4 md:flex">
+                                            <p className="font-bold text-[#92cbf4]">
+                                                {i.status === "filled"
+                                                    ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
                                                     : i.status ===
-                                                        "partial" ||
-                                                        i.status ===
-                                                        "pending"
-                                                        ? i.filled_quantity >
+                                                        "cancelled"
+                                                      ? "❌ 已取消"
+                                                      : i.status ===
+                                                          "pending_limit"
+                                                        ? "等待中 (限制)"
+                                                        : i.status ===
+                                                                "partial" ||
+                                                            i.status ===
+                                                                "pending"
+                                                          ? i.filled_quantity >
                                                             0
-                                                            ? `部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
-                                                            : "等待成交"
-                                                        : i.status}
-                                    </p>
+                                                              ? `部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
+                                                              : "等待成交"
+                                                          : i.status}
+                                            </p>
 
-                                    <p className="ml-auto">
-                                        {i.side === "sell"
-                                            ? "賣出"
-                                            : "買入"}
-                                    </p>
-                                </div>
-                            );
-                        }) : (
-                            <div className="text-center text-[#557797] py-4">
+                                            <p
+                                                className={twMerge(
+                                                    "ml-auto w-fit",
+                                                    i.side === "sell"
+                                                        ? "text-green-400"
+                                                        : "text-red-400",
+                                                )}
+                                            >
+                                                {i.side === "sell"
+                                                    ? "賣出"
+                                                    : "買入"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="py-4 text-center text-[#557797]">
                                 暫無股票交易記錄
                             </div>
                         )}
