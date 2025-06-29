@@ -39,14 +39,19 @@ export default function Dashboard() {
 
     // 取消訂單功能
     const handleCancelOrder = async (orderData, orderType, quantity) => {
-        // 從訂單物件中提取正確的 ID
-        const orderId = orderData._id || orderData.id || orderData.order_id;
+        // 從訂單物件中提取正確的 ID - 嘗試更多可能的字段
+        const orderId = orderData._id || orderData.id || orderData.order_id || orderData.orderId || orderData["$oid"];
         
-        console.log("取消訂單 - 訂單資料:", orderData);
-        console.log("取消訂單 - 提取的 ID:", orderId);
+        console.log("=== 取消訂單調試信息 ===");
+        console.log("完整訂單資料:", orderData);
+        console.log("訂單物件的所有 keys:", Object.keys(orderData));
+        console.log("嘗試提取的 ID:", orderId);
+        console.log("ID 類型:", typeof orderId);
+        console.log("========================");
         
         if (!orderId) {
-            setCancelError("無法取得訂單 ID");
+            console.error("無法從訂單物件中找到有效的 ID 字段");
+            setCancelError("無法取得訂單 ID - 請檢查控制台調試信息");
             return;
         }
 
@@ -526,7 +531,7 @@ export default function Dashboard() {
                         {orderHistory && orderHistory.length > 0 ? (
                             orderHistory.map((i) => {
                                 const isCancellable = canCancelOrder(i);
-                                const orderId = i._id || i.id || i.order_id;
+                                const orderId = i._id || i.id || i.order_id || i.orderId || i["$oid"];
                                 const isCancelling = cancelingOrders.has(orderId);
                                 
                                 return (
