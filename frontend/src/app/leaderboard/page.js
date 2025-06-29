@@ -89,9 +89,6 @@ function RankingItem({ rank, user, isGroup = false }) {
 function RankingList({ title, items, isGroup = false }) {
     return (
         <div className="mb-8">
-            <h2 className="mb-4 ml-5 text-2xl font-bold text-[#82bee2]">
-                {title}
-            </h2>
             <div className="flex flex-col items-center gap-4">
                 {items.length > 0 ? (
                     items.map((item, index) => (
@@ -122,6 +119,7 @@ export default function Leaderboard() {
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [groupLeaderboard, setGroupLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [sortWithTotal, setSortWithTotal] = useState(true);
     const [error, setError] = useState(null);
 
     const fetchLeaderboard = async () => {
@@ -232,11 +230,66 @@ export default function Leaderboard() {
                         </>
                     ) : (
                         <>
+                            <h2 className="mb-4 ml-5 text-2xl font-bold text-[#82bee2]">
+                                組排行
+                            </h2>
                             <RankingList
                                 title="組排行"
                                 items={groupLeaderboard}
                                 isGroup={true}
                             />
+
+                            <h2 className="mb-4 ml-5 text-2xl font-bold text-[#82bee2]">
+                                個人排名
+                            </h2>
+                            <div className="mx-auto mt-2 mb-6 flex w-11/12 items-center rounded-2xl bg-[#1A325F] px-4 py-3">
+                                <p className="text-[#AFE1F5]">
+                                    將股票換算成點數
+                                </p>
+                                <label className="relative ml-auto inline-flex cursor-pointer items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={sortWithTotal}
+                                        onChange={(e) => {
+                                            const currentState =
+                                                e.currentTarget
+                                                    .checked;
+
+                                            const newData =
+                                                leaderboardData
+                                                    .map((user) => ({
+                                                        ...user,
+                                                        compareAssets:
+                                                            currentState
+                                                                ? (user.stockValue ??
+                                                                      0) +
+                                                                  (user.points ??
+                                                                      0)
+                                                                : (user.points ??
+                                                                  0),
+                                                    }))
+                                                    .sort(
+                                                        (a, b) =>
+                                                            b.compareAssets -
+                                                            a.compareAssets,
+                                                    );
+                                            setLeaderboardData(
+                                                newData,
+                                            );
+                                            setSortWithTotal(
+                                                currentState,
+                                            );
+                                            console.log(newData);
+                                            console.log(
+                                                "fire",
+                                                currentState,
+                                            );
+                                        }}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                </label>
+                            </div>
 
                             <RankingList
                                 title="個人排行"
