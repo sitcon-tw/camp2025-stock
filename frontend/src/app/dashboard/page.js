@@ -35,23 +35,49 @@ export default function Dashboard() {
     // 檢查登入狀態並載入使用者資料
     useEffect(() => {
         const checkAuthAndLoadData = async () => {
+            // 檢查必要的認證資料
             const isUser = localStorage.getItem("isUser");
             const token = localStorage.getItem("userToken");
+            const telegramData = localStorage.getItem("telegramData");
 
-            if (!isUser || !token) {
-                router.push("/telegram-login");
+            console.log("認證檢查:", { isUser, hasToken: !!token, hasTelegramData: !!telegramData });
+
+            // 如果缺少任何必要的認證資料，重新導向到登入頁
+            if (!isUser || !token || !telegramData) {
+                console.log("缺少認證資料，重新導向到登入頁");
+                handleLogout(); // 清理可能不完整的資料
+                return;
+            }
+
+            // 檢查 token 格式是否正確
+            try {
+                const tokenParts = token.split('.');
+                if (tokenParts.length !== 3) {
+                    console.log("Token 格式無效");
+                    handleLogout();
+                    return;
+                }
+            } catch (e) {
+                console.log("Token 驗證失敗");
+                handleLogout();
                 return;
             }
 
             try {
+                // 設定 Telegram 資料
+                const parsedTelegramData = JSON.parse(telegramData);
+                setAuthData(parsedTelegramData);
+
+                console.log("開始載入使用者資料...");
+                
                 // 載入使用者資料
-                const [portfolio, points, stocks] = await Promise.all(
-                    [
-                        getWebPortfolio(token),
-                        getWebPointHistory(token),
-                        getWebStockOrders(token),
-                    ],
-                );
+                const [portfolio, points, stocks] = await Promise.all([
+                    getWebPortfolio(token),
+                    getWebPointHistory(token),
+                    getWebStockOrders(token),
+                ]);
+
+                console.log("資料載入成功:", { portfolio, pointsCount: points.length, stocksCount: stocks.length });
 
                 setUser(portfolio);
                 setPointHistory(points);
@@ -59,10 +85,21 @@ export default function Dashboard() {
                 setIsLoading(false);
             } catch (error) {
                 console.error("載入使用者資料失敗:", error);
-                if (error.status === 401) {
-                    // Token 過期，重新登入
+                
+                // 處理不同類型的錯誤
+                if (error.status === 401 || error.status === 403) {
+                    console.log("認證失敗，重新登入");
                     handleLogout();
+                } else if (error.status === 404) {
+                    console.log("使用者未註冊或資料不存在");
+                    setError("使用者帳號未完成註冊，請先完成註冊流程");
+                    setIsLoading(false);
+                } else if (error.status >= 500) {
+                    console.log("伺服器錯誤");
+                    setError("伺服器暫時無法使用，請稍後再試");
+                    setIsLoading(false);
                 } else {
+                    console.log("其他錯誤:", error);
                     setError("載入資料失敗，請重新整理頁面");
                     setIsLoading(false);
                 }
@@ -70,8 +107,6 @@ export default function Dashboard() {
         };
 
         checkAuthAndLoadData();
-
-        setAuthData(JSON.parse(localStorage.getItem("telegramData")));
     }, [router]);
 
     if (isLoading) {
@@ -85,14 +120,48 @@ export default function Dashboard() {
         );
     }
 
+    // 如果有錯誤且不是載入中，顯示錯誤頁面
+    if (error && !isLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+                <div className="text-center max-w-md p-6">
+                    <div className="mb-4 text-6xl">⚠️</div>
+                    <h2 className="mb-4 text-xl font-bold text-red-400">載入失敗</h2>
+                    <p className="mb-6 text-[#92cbf4]">{error}</p>
+                    <div className="space-y-3">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="w-full rounded-lg bg-[#469FD2] px-4 py-2 text-white hover:bg-[#357AB8] transition-colors"
+                        >
+                            重新載入
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full rounded-lg border border-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] transition-colors"
+                        >
+                            重新登入
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 確保必要資料存在才渲染主要內容
+    if (!user || !authData) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+                <div className="text-center">
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
+                    <p className="text-[#92cbf4]">準備資料中...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
             <div className="w-full space-y-4 p-4">
-                {error && (
-                    <div className="mb-4 rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
-                        {error}
-                    </div>
-                )}
 
                 <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     {authData.photo_url ? (
