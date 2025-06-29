@@ -105,6 +105,7 @@ export default function Status() {
             setIsSubmitting(false);
         } else {
             setModalSuccess(orderResponse.message);
+            setIsSubmitting(false);
         }
     };
 
