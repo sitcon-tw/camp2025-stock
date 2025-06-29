@@ -65,7 +65,22 @@ export default function Dashboard() {
 
             try {
                 // 設定 Telegram 資料
-                const parsedTelegramData = JSON.parse(telegramData);
+                let parsedTelegramData = null;
+                try {
+                    parsedTelegramData = JSON.parse(telegramData);
+                    // 檢查是否為有效的 Telegram 登入資料
+                    if (!parsedTelegramData || typeof parsedTelegramData !== 'object') {
+                        throw new Error("Invalid telegram data structure");
+                    }
+                } catch (parseError) {
+                    console.log("Telegram 資料無效，可能未使用 Telegram 登入:", parseError);
+                    // 如果是無效的 Telegram 資料，引導重新登入
+                    setError("請使用 Telegram 登入以獲得完整功能");
+                    setTimeout(() => {
+                        handleLogout();
+                    }, 3000);
+                    return;
+                }
                 setAuthData(parsedTelegramData);
 
                 console.log("開始載入使用者資料...");
@@ -92,7 +107,10 @@ export default function Dashboard() {
                     handleLogout();
                 } else if (error.status === 404) {
                     console.log("使用者未註冊或資料不存在");
-                    setError("使用者帳號未完成註冊，請先完成註冊流程");
+                    setError("使用者帳號未完成註冊，或需要使用 Telegram 登入。將重新導向到登入頁面...");
+                    setTimeout(() => {
+                        handleLogout();
+                    }, 3000);
                     setIsLoading(false);
                 } else if (error.status >= 500) {
                     console.log("伺服器錯誤");
@@ -164,7 +182,7 @@ export default function Dashboard() {
             <div className="w-full space-y-4 p-4">
 
                 <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    {authData.photo_url ? (
+                    {authData?.photo_url ? (
                         <Image
                             src={authData.photo_url}
                             alt="Telegram 頭貼"
@@ -174,27 +192,27 @@ export default function Dashboard() {
                         />
                     ) : (
                         <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#264173] text-xl font-bold text-[#92cbf4]">
-                            {user.username
-                                .substring(0, 1)
-                                .toUpperCase()}
+                            {user?.username
+                                ?.substring(0, 1)
+                                ?.toUpperCase() || "U"}
                         </div>
                     )}
                     <div>
                         <p className="mb-2 text-xl">
                             早安，
-                            <b>{user.username}</b>
+                            <b>{user?.username || "使用者"}</b>
                         </p>
                         <p className="mb-1 text-[#92cbf4]">
                             你現在擁有的總資產約{" "}
                             <span className="text-white">
-                                {user.totalValue?.toLocaleString()}
+                                {user?.totalValue?.toLocaleString() || "0"}
                             </span>{" "}
                             點
                         </p>
                         <p className="text-sm text-[#92cbf4]">
                             可動用點數共{" "}
                             <span className="text-white">
-                                {user.points?.toLocaleString()}
+                                {user?.points?.toLocaleString() || "0"}
                             </span>{" "}
                             點
                         </p>
@@ -216,7 +234,7 @@ export default function Dashboard() {
                                 現金點數
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user.points?.toLocaleString()}
+                                {user?.points?.toLocaleString() || "0"}
                             </p>
                         </div>
                         <div>
@@ -224,7 +242,7 @@ export default function Dashboard() {
                                 股票數量
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user.stocks?.toLocaleString()}
+                                {user?.stocks?.toLocaleString() || "0"}
                             </p>
                         </div>
                         <div>
@@ -232,7 +250,7 @@ export default function Dashboard() {
                                 股票價值
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user.stockValue?.toLocaleString()}
+                                {user?.stockValue?.toLocaleString() || "0"}
                             </p>
                         </div>
                         <div>
@@ -240,11 +258,11 @@ export default function Dashboard() {
                                 總資產
                             </p>
                             <p className="text-center text-xl font-bold text-[#92cbf4]">
-                                {user.totalValue?.toLocaleString()}
+                                {user?.totalValue?.toLocaleString() || "0"}
                             </p>
                         </div>
                     </div>
-                    {user.avgCost !== undefined && (
+                    {user?.avgCost !== undefined && (
                         <div className="mt-4 border-t border-[#294565] pt-4">
                             <p className="text-sm text-[#557797]">
                                 購買股票平均成本:{" "}
@@ -344,7 +362,7 @@ export default function Dashboard() {
                     </h3>
 
                     <div className="grid grid-flow-row gap-4">
-                        {pointHistory.map((i) => {
+                        {pointHistory && pointHistory.length > 0 ? pointHistory.map((i) => {
                             return (
                                 <div
                                     className="grid grid-cols-5 space-x-4"
@@ -374,7 +392,11 @@ export default function Dashboard() {
                                     </p>
                                 </div>
                             );
-                        })}
+                        }) : (
+                            <div className="text-center text-[#557797] py-4">
+                                暫無點數記錄
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -384,7 +406,7 @@ export default function Dashboard() {
                     </h3>
 
                     <div className="grid grid-flow-row gap-4">
-                        {orderHistory.map((i) => {
+                        {orderHistory && orderHistory.length > 0 ? orderHistory.map((i) => {
                             return (
                                 <div
                                     className="grid grid-cols-5 space-x-4"
@@ -421,7 +443,11 @@ export default function Dashboard() {
                                     </p>
                                 </div>
                             );
-                        })}
+                        }) : (
+                            <div className="text-center text-[#557797] py-4">
+                                暫無股票交易記錄
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
