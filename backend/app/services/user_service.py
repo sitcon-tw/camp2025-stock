@@ -786,10 +786,17 @@ class UserService:
     
     async def _get_user_(self, username: str):
         """根據使用者名或ID查詢使用者"""
-        # Special handling for numeric lookups (likely Telegram user IDs)
+        # Special handling for numeric lookups
         if username.isdigit():
-            # For numeric values, first try telegram_id field specifically
-            user_by_telegram = await self.db[Collections.USERS].find_one({"telegram_id": username})
+            # For numeric values, try both id field and telegram_id field
+            # First try id field (internal user ID)
+            user_by_id = await self.db[Collections.USERS].find_one({"id": username})
+            if user_by_id:
+                logger.info(f"Found user by id '{username}': id={user_by_id.get('id')}, name={user_by_id.get('name')}, points={user_by_id.get('points')}, enabled={user_by_id.get('enabled')}")
+                return user_by_id
+                
+            # Then try telegram_id field
+            user_by_telegram = await self.db[Collections.USERS].find_one({"telegram_id": int(username)})
             if user_by_telegram:
                 logger.info(f"Found user by telegram_id '{username}': id={user_by_telegram.get('id')}, name={user_by_telegram.get('name')}, points={user_by_telegram.get('points')}, enabled={user_by_telegram.get('enabled')}")
                 return user_by_telegram
@@ -3554,13 +3561,17 @@ class UserService:
             if last_updated:
                 from datetime import timedelta
                 now = datetime.now(timezone.utc)
-                # 如果訂單在最近 10 秒內有更新，可能正在撮合中
-                if isinstance(last_updated, datetime) and (now - last_updated) < timedelta(seconds=10):
-                    logger.info(f"訂單可能正在撮合中，等待後重試 - 訂單: {order_id}, 使用者: {user_id}")
-                    return {
-                        "success": False,
-                        "message": "訂單可能正在撮合中，請稍後再試"
-                    }
+                # 確保 last_updated 有時區信息，如果沒有則假設為 UTC
+                if isinstance(last_updated, datetime):
+                    if last_updated.tzinfo is None:
+                        last_updated = last_updated.replace(tzinfo=timezone.utc)
+                    # 如果訂單在最近 10 秒內有更新，可能正在撮合中
+                    if (now - last_updated) < timedelta(seconds=10):
+                        logger.info(f"訂單可能正在撮合中，等待後重試 - 訂單: {order_id}, 使用者: {user_id}")
+                        return {
+                            "success": False,
+                            "message": "訂單可能正在撮合中，請稍後再試"
+                        }
             
             # 記錄取消操作
             logger.info(f"準備取消訂單 - 訂單: {order_id}, 狀態: {order_status}, 類型: {order_type}, 剩餘數量: {remaining_quantity}, 已成交: {filled_quantity}, 使用者: {user_id}")
