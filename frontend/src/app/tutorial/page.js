@@ -10,7 +10,6 @@ export default function TutorialPage() {
                     <p className="text-md text-white">
                         歡迎來到 SITCON Camp 的 SITC
                         模擬股市！你可以使用「營隊點數」來體驗
-                        <s>賭博</s>
                         投資的樂趣，就算你從沒碰過股票也沒關係！
                     </p>
                 </div>
