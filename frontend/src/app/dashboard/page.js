@@ -1,10 +1,10 @@
 "use client";
 
 import {
+    cancelWebStockOrder,
     getWebPointHistory,
     getWebPortfolio,
     getWebStockOrders,
-    cancelWebStockOrder,
 } from "@/lib/api";
 import dayjs from "dayjs";
 import { LogOut } from "lucide-react";
@@ -38,10 +38,19 @@ export default function Dashboard() {
     };
 
     // 取消訂單功能
-    const handleCancelOrder = async (orderData, orderType, quantity) => {
+    const handleCancelOrder = async (
+        orderData,
+        orderType,
+        quantity,
+    ) => {
         // 從訂單物件中提取正確的 ID - 嘗試更多可能的字段
-        const orderId = orderData._id || orderData.id || orderData.order_id || orderData.orderId || orderData["$oid"];
-        
+        const orderId =
+            orderData._id ||
+            orderData.id ||
+            orderData.order_id ||
+            orderData.orderId ||
+            orderData["$oid"];
+
         console.log("=== 取消訂單Debug訊息 ===");
         console.log("完整訂單資料:", orderData);
         console.log("訂單物件的所有 keys:", Object.keys(orderData));
@@ -49,17 +58,27 @@ export default function Dashboard() {
         console.log("ID 類型:", typeof orderId);
         console.log("訂單的使用者ID:", orderData.user_id);
         console.log("目前使用者資料:", user);
-        console.log("localStorage 中的 telegramData:", localStorage.getItem("telegramData"));
-        console.log("localStorage 中的 userData:", localStorage.getItem("userData"));
+        console.log(
+            "localStorage 中的 telegramData:",
+            localStorage.getItem("telegramData"),
+        );
+        console.log(
+            "localStorage 中的 userData:",
+            localStorage.getItem("userData"),
+        );
         console.log("========================");
-        
+
         if (!orderId) {
             console.error("無法從訂單物件中找到有效的 ID 字段");
             setCancelError("無法取得訂單 ID - 請檢查控制台Debug訊息");
             return;
         }
 
-        if (!confirm(`確定要取消這筆${orderType === "market" ? "市價" : "限價"}單嗎？\n數量：${quantity} 股\n訂單 ID: ${orderId}`)) {
+        if (
+            !confirm(
+                `確定要取消這筆${orderType === "market" ? "市價" : "限價"}單嗎？\n數量：${quantity} 股\n訂單 ID: ${orderId}`,
+            )
+        ) {
             return;
         }
 
@@ -70,24 +89,29 @@ export default function Dashboard() {
         }
 
         // 添加到取消中的訂單集合
-        setCancelingOrders(prev => new Set(prev).add(orderId));
+        setCancelingOrders((prev) => new Set(prev).add(orderId));
         setCancelError("");
         setCancelSuccess("");
 
         try {
-            const result = await cancelWebStockOrder(token, orderId, "使用者主動取消");
-            
+            const result = await cancelWebStockOrder(
+                token,
+                orderId,
+                "使用者主動取消",
+            );
+
             if (result.success) {
                 setCancelSuccess("訂單已成功取消");
-                
+
                 // 重新載入訂單歷史
                 try {
-                    const updatedOrders = await getWebStockOrders(token);
+                    const updatedOrders =
+                        await getWebStockOrders(token);
                     setOrderHistory(updatedOrders);
                 } catch (refreshError) {
                     console.error("重新載入訂單失敗:", refreshError);
                 }
-                
+
                 // 3秒後清除成功訊息
                 setTimeout(() => setCancelSuccess(""), 3000);
             } else {
@@ -98,7 +122,7 @@ export default function Dashboard() {
             setCancelError(error.message || "取消訂單時發生錯誤");
         } finally {
             // 從取消中的訂單集合移除
-            setCancelingOrders(prev => {
+            setCancelingOrders((prev) => {
                 const newSet = new Set(prev);
                 newSet.delete(orderId);
                 return newSet;
@@ -108,9 +132,15 @@ export default function Dashboard() {
 
     // 檢查訂單是否可以取消
     const canCancelOrder = (order) => {
-        const cancellableStatuses = ["pending", "partial", "pending_limit"];
-        return cancellableStatuses.includes(order.status) && 
-               order.quantity > 0;
+        const cancellableStatuses = [
+            "pending",
+            "partial",
+            "pending_limit",
+        ];
+        return (
+            cancellableStatuses.includes(order.status) &&
+            order.quantity > 0
+        );
     };
 
     // 檢查登入狀態並載入使用者資料
@@ -480,7 +510,7 @@ export default function Dashboard() {
                                         <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
                                             {dayjs(
                                                 i.created_at,
-                                            ).format("MM/DD HH:mm")}
+                                            ).add(8, "hour")format("MM/DD HH:mm")}
                                         </p>
                                         <div className="col-span-5 md:col-span-4 md:flex">
                                             <p className="font-bold text-[#92cbf4]">
@@ -521,23 +551,34 @@ export default function Dashboard() {
 
                     {/* 取消訂單的通知訊息 */}
                     {cancelSuccess && (
-                        <div className="mb-4 rounded-lg bg-green-600/20 border border-green-500/30 p-3">
-                            <p className="text-green-400 text-sm">✅ {cancelSuccess}</p>
+                        <div className="mb-4 rounded-lg border border-green-500/30 bg-green-600/20 p-3">
+                            <p className="text-sm text-green-400">
+                                ✅ {cancelSuccess}
+                            </p>
                         </div>
                     )}
                     {cancelError && (
-                        <div className="mb-4 rounded-lg bg-red-600/20 border border-red-500/30 p-3">
-                            <p className="text-red-400 text-sm">❌ {cancelError}</p>
+                        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                            <p className="text-sm text-red-400">
+                                ❌ {cancelError}
+                            </p>
                         </div>
                     )}
 
                     <div className="grid grid-flow-row gap-4">
                         {orderHistory && orderHistory.length > 0 ? (
                             orderHistory.map((i) => {
-                                const isCancellable = canCancelOrder(i);
-                                const orderId = i._id || i.id || i.order_id || i.orderId || i["$oid"];
-                                const isCancelling = cancelingOrders.has(orderId);
-                                
+                                const isCancellable =
+                                    canCancelOrder(i);
+                                const orderId =
+                                    i._id ||
+                                    i.id ||
+                                    i.order_id ||
+                                    i.orderId ||
+                                    i["$oid"];
+                                const isCancelling =
+                                    cancelingOrders.has(orderId);
+
                                 return (
                                     <div
                                         className="rounded-lg border border-[#294565] bg-[#0f203e] p-4"
@@ -546,30 +587,49 @@ export default function Dashboard() {
                                         {/* 訂單基本資訊 */}
                                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                                             <p className="font-mono text-sm text-[#92cbf4]">
-                                                {dayjs(i.created_at).format("MM/DD HH:mm")}
+                                                {dayjs(i.created_at)
+                                                    .add(8, "hour")
+                                                    .format(
+                                                        "MM/DD HH:mm",
+                                                    )}
                                             </p>
                                             <div className="flex items-center gap-2">
-                                                <span className={twMerge(
-                                                    "rounded px-2 py-1 text-xs font-semibold",
-                                                    i.side === "sell" 
-                                                        ? "bg-green-600/20 text-green-400" 
-                                                        : "bg-red-600/20 text-red-400"
-                                                )}>
-                                                    {i.side === "sell" ? "賣出" : "買入"}
+                                                <span
+                                                    className={twMerge(
+                                                        "rounded px-2 py-1 text-xs font-semibold",
+                                                        i.side ===
+                                                            "sell"
+                                                            ? "bg-green-600/20 text-green-400"
+                                                            : "bg-red-600/20 text-red-400",
+                                                    )}
+                                                >
+                                                    {i.side === "sell"
+                                                        ? "賣出"
+                                                        : "買入"}
                                                 </span>
                                                 <span className="rounded bg-[#294565] px-2 py-1 text-xs text-[#92cbf4]">
-                                                    {i.order_type === "market" ? "市價單" : "限價單"}
+                                                    {i.order_type ===
+                                                    "market"
+                                                        ? "市價單"
+                                                        : "限價單"}
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Debug訊息 - 可以在生產環境中移除 */}
-                                        {process.env.NODE_ENV === 'development' && (
+                                        {process.env.NODE_ENV ===
+                                            "development" && (
                                             <div className="mb-2 rounded bg-gray-800 p-2 text-xs">
                                                 <details>
-                                                    <summary className="cursor-pointer text-gray-400">Debug：訂單物件結構</summary>
-                                                    <pre className="mt-1 text-gray-300 overflow-auto">
-                                                        {JSON.stringify(i, null, 2)}
+                                                    <summary className="cursor-pointer text-gray-400">
+                                                        Debug：訂單物件結構
+                                                    </summary>
+                                                    <pre className="mt-1 overflow-auto text-gray-300">
+                                                        {JSON.stringify(
+                                                            i,
+                                                            null,
+                                                            2,
+                                                        )}
                                                     </pre>
                                                 </details>
                                             </div>
@@ -580,34 +640,57 @@ export default function Dashboard() {
                                             <p className="font-bold text-[#92cbf4]">
                                                 {i.status === "filled"
                                                     ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
-                                                    : i.status === "cancelled"
+                                                    : i.status ===
+                                                        "cancelled"
                                                       ? "❌ 已取消"
-                                                      : i.status === "pending_limit"
+                                                      : i.status ===
+                                                          "pending_limit"
                                                         ? "⏳ 等待中 (限制)"
-                                                        : i.status === "partial" ||
-                                                            i.status === "pending"
-                                                          ? i.filled_quantity > 0
+                                                        : i.status ===
+                                                                "partial" ||
+                                                            i.status ===
+                                                                "pending"
+                                                          ? i.filled_quantity >
+                                                            0
                                                               ? `🔄 部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
                                                               : "⏳ 等待成交"
                                                           : i.status}
                                             </p>
-                                            
+
                                             {/* 訂單詳情 */}
                                             <div className="mt-2 grid grid-cols-2 gap-4 text-sm text-[#557797] md:grid-cols-3">
                                                 <div>
-                                                    <span>數量：</span>
-                                                    <span className="text-white">{i.quantity} 股</span>
+                                                    <span>
+                                                        數量：
+                                                    </span>
+                                                    <span className="text-white">
+                                                        {i.quantity}{" "}
+                                                        股
+                                                    </span>
                                                 </div>
                                                 {i.price && (
                                                     <div>
-                                                        <span>價格：</span>
-                                                        <span className="text-white">{i.price} 元</span>
+                                                        <span>
+                                                            價格：
+                                                        </span>
+                                                        <span className="text-white">
+                                                            {i.price}{" "}
+                                                            元
+                                                        </span>
                                                     </div>
                                                 )}
-                                                {i.filled_quantity > 0 && (
+                                                {i.filled_quantity >
+                                                    0 && (
                                                     <div>
-                                                        <span>已成交：</span>
-                                                        <span className="text-green-400">{i.filled_quantity} 股</span>
+                                                        <span>
+                                                            已成交：
+                                                        </span>
+                                                        <span className="text-green-400">
+                                                            {
+                                                                i.filled_quantity
+                                                            }{" "}
+                                                            股
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
@@ -617,20 +700,28 @@ export default function Dashboard() {
                                         {isCancellable && (
                                             <div className="flex justify-end">
                                                 <button
-                                                    onClick={() => handleCancelOrder(
-                                                        i,
-                                                        i.order_type,
-                                                        i.quantity - (i.filled_quantity || 0)
-                                                    )}
-                                                    disabled={isCancelling}
+                                                    onClick={() =>
+                                                        handleCancelOrder(
+                                                            i,
+                                                            i.order_type,
+                                                            i.quantity -
+                                                                (i.filled_quantity ||
+                                                                    0),
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        isCancelling
+                                                    }
                                                     className={twMerge(
                                                         "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
                                                         isCancelling
                                                             ? "cursor-not-allowed bg-gray-600/50 text-gray-400"
-                                                            : "bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30"
+                                                            : "border border-red-500/30 bg-red-600/20 text-red-400 hover:bg-red-600/30",
                                                     )}
                                                 >
-                                                    {isCancelling ? "取消中..." : "取消訂單"}
+                                                    {isCancelling
+                                                        ? "取消中..."
+                                                        : "取消訂單"}
                                                 </button>
                                             </div>
                                         )}
