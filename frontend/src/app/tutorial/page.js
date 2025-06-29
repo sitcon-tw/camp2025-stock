@@ -116,6 +116,7 @@ export default function TutorialPage() {
                                 <li><strong>市價買單</strong>：優先與最低價賣單配對，若無賣單則從 IPO 以 20 點/股購買</li>
                                 <li><strong>市價賣單</strong>：優先與最高價買單配對，若無買單則拒絕交易</li>
                                 <li>成交立即執行，無需等待</li>
+                                <li><span className="text-red-400">⚠️ 限制</span>：市價買單在無賣單且 IPO 售完時會失敗</li>
                             </ul>
                         </div>
                         <div>
@@ -131,7 +132,7 @@ export default function TutorialPage() {
                             <ul className="list-disc pl-6 text-white space-y-1">
                                 <li>當市場缺乏賣單時，市價買單可從系統 IPO 購買</li>
                                 <li>IPO 價格固定為 20 點/股，提供市場流動性</li>
-                                <li>IPO 股數有限，售完後市價買單可能失敗</li>
+                                <li><span className="text-yellow-400">⚠️ IPO 股數有限</span>，售完後市價買單會失敗</li>
                             </ul>
                         </div>
                     </div>
@@ -166,6 +167,7 @@ export default function TutorialPage() {
                             系統會顯示「你花了多少點數，買了幾張」。
                         </li>
                         <li><span className="text-[#ffd700]">立即成交</span>：無需等待撮合時間。</li>
+                        <li><span className="text-red-400">⚠️ 注意</span>：若市場無賣單且 IPO 股份售完，市價買單會失敗。</li>
                     </ul>
                 </div>
 
@@ -419,7 +421,7 @@ export default function TutorialPage() {
                             ❓ 如果我買不到怎麼辦？
                         </h3>
                         <p className="text-white">
-                            你可能買的價格太低，請改用市價單或調整掛單價格。
+                            可能的原因：價格太低、市場無賣單且 IPO 售完，或流動性不足。請改用市價單或調整掛單價格。
                         </p>
                     </div>
 
