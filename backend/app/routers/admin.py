@@ -378,11 +378,11 @@ async def get_ipo_status(
             # IPO未初始化，返回預設值
             import os
             try:
-                initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "100"))
-                initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "10"))
+                initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
+                initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
             except (ValueError, TypeError):
-                initial_shares = 100
-                initial_price = 10
+                initial_shares = 1000000
+                initial_price = 20
             
             return {
                 "ok": True,
@@ -449,13 +449,13 @@ async def reset_ipo(
                 # 回退到環境變數或硬編碼預設值
                 if initial_shares is None:
                     try:
-                        initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "100"))
+                        initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
                     except (ValueError, TypeError):
                         initial_shares = 1000000000
                         
                 if initial_price is None:
                     try:
-                        initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "10"))
+                        initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
                     except (ValueError, TypeError):
                         initial_price = 20
         
@@ -671,8 +671,8 @@ async def reset_all_data(
         # 重新初始化基本配置
         try:
             # 初始化IPO狀態
-            initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "100"))
-            initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "10"))
+            initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
+            initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
         except (ValueError, TypeError):
             initial_shares = 1000000
             initial_price = 20
@@ -860,8 +860,8 @@ async def get_ipo_defaults(
             # 如果沒有配置，回傳環境變數或預設值
             import os
             try:
-                default_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "100"))
-                default_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "10"))
+                default_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
+                default_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
             except (ValueError, TypeError):
                 default_shares = 1000000
                 default_price = 20
