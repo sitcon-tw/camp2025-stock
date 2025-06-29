@@ -203,7 +203,7 @@ export default function Dashboard() {
                             <b>{user?.username || "使用者"}</b>
                         </p>
                         <p className="mb-1 text-[#92cbf4]">
-                            你現在擁有的總資產約{" "}
+                            你現在擁有的總資產為{" "}
                             <span className="text-white">
                                 {user?.totalValue?.toLocaleString() || "0"}
                             </span>{" "}
