@@ -15,6 +15,14 @@ logging.basicConfig(
     level=getattr(logging, config.get_log_level()),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# MongoDB 相關的 debug 訊息
+logging.getLogger('motor').setLevel(logging.WARNING)
+logging.getLogger('pymongo').setLevel(logging.WARNING)
+logging.getLogger('motor.core').setLevel(logging.WARNING)
+logging.getLogger('pymongo.command').setLevel(logging.WARNING)
+logging.getLogger('pymongo.serverSelection').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # SRP 原則：專注於應用程式配置和啟動
