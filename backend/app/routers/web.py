@@ -242,20 +242,24 @@ async def cancel_stock_order(
         HTTPException: 當取消失敗時
     """
     try:
-        user_id = current_user.get("user_id")
         telegram_id = current_user.get("telegram_id")
         
-        # 處理使用者 ID 的不同格式
-        if telegram_id:
-            user = await user_service.get_user_by_telegram_id(telegram_id)
-            if user:
-                user_id = str(user.get("_id"))  # 轉換為字串以確保一致性
-        
-        if not user_id:
+        # 始終通過 telegram_id 獲取 MongoDB ObjectId，確保與股票訂單格式一致
+        if not telegram_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="無法確認使用者身份"
+                detail="JWT Token 中缺少 Telegram ID"
             )
+            
+        user = await user_service.get_user_by_telegram_id(telegram_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="使用者不存在或已停用"
+            )
+        
+        # 使用 MongoDB ObjectId 作為 user_id，因為股票訂單使用此格式
+        user_id = str(user.get("_id"))
         
         # 呼叫取消訂單方法
         result = await user_service.cancel_stock_order(user_id, order_id, reason)
