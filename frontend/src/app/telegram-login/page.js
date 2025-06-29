@@ -188,13 +188,7 @@ export default function TelegramLogin() {
         <div className="flex min-h-screen items-center justify-center bg-[#0f203e] px-4">
             <div className="w-full max-w-md">
                 <div className="mb-12 text-center">
-                    <div className="mb-6 flex justify-center">
-                        <Image
-                            src={loginSvg}
-                            alt="登入圖示"
-                            className="h-32 w-auto"
-                        />
-                    </div>
+                    
                     <h1 className="mb-4 text-2xl font-bold tracking-wider text-[#92cbf4]">
                         使用者登入
                     </h1>
@@ -202,6 +196,13 @@ export default function TelegramLogin() {
                         使用您的 Telegram
                         帳號登入來進行交易
                     </p>
+                    <div className="mb-6 flex justify-center">
+                        <Image
+                            src={loginSvg}
+                            alt="登入圖示"
+                            className="h-32 w-auto"
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-6">
