@@ -34,7 +34,8 @@ export default function Dashboard() {
         localStorage.removeItem("isUser");
         localStorage.removeItem("userToken");
         localStorage.removeItem("userData");
-        router.push("/");
+        localStorage.removeItem("telegramData");
+        router.push("/telegram-login");
     };
 
     // 取消訂單功能
