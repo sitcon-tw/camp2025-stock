@@ -3561,7 +3561,7 @@ class UserService:
             if last_updated:
                 from datetime import timedelta
                 now = datetime.now(timezone.utc)
-                # 確保 last_updated 有時區信息，如果沒有則假設為 UTC
+                # 確保 last_updated 有時區訊息，如果沒有則假設為 UTC
                 if isinstance(last_updated, datetime):
                     if last_updated.tzinfo is None:
                         last_updated = last_updated.replace(tzinfo=timezone.utc)
