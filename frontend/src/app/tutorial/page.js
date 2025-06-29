@@ -486,11 +486,11 @@ export default function TutorialPage() {
                     </div>
                 </div>
 
-                <div className="mt-8 overflow-hidden rounded-xl bg-[#1a2e4a] p-3">
+                {/* <div className="mt-8 overflow-hidden rounded-xl bg-[#1a2e4a] p-3">
                     <blockquote className="text-center text-lg text-[#82bee2] italic">
                         最大的秘密，就是票多的贏、票少的輸。 -韓國瑜
                     </blockquote>
-                </div>
+                </div> */}
             </div>
         </div>
     );
