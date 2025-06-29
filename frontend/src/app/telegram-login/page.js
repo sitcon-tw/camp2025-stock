@@ -12,12 +12,37 @@ export default function TelegramLogin() {
 
     useEffect(() => {
         // 檢查是否已經登入
-        const checkUserStatus = () => {
+        const checkUserStatus = async () => {
             const isUser = localStorage.getItem("isUser");
             const token = localStorage.getItem("userToken");
 
             if (isUser === "true" && token) {
-                router.push("/dashboard");
+                try {
+                    // 驗證 token 是否仍然有效
+                    const response = await fetch(`${window.location.origin}/api/web/profile`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    
+                    if (response.ok) {
+                        router.push("/dashboard");
+                    } else {
+                        // 清除無效的認證資料
+                        localStorage.removeItem("isUser");
+                        localStorage.removeItem("userToken");
+                        localStorage.removeItem("userData");
+                        localStorage.removeItem("telegramData");
+                    }
+                } catch (error) {
+                    console.log("Token validation failed, clearing auth data");
+                    // 清除認證資料
+                    localStorage.removeItem("isUser");
+                    localStorage.removeItem("userToken");
+                    localStorage.removeItem("userData");
+                    localStorage.removeItem("telegramData");
+                }
             }
         };
 
