@@ -725,6 +725,7 @@ class UserService:
             return [
                 UserStockOrder(
                     order_id=str(order["_id"]),
+                    user_id=str(order.get("user_id")),
                     order_type=order.get("order_type", "unknown"),
                     side=order.get("side", "unknown"),
                     quantity=self._get_display_quantity(order),

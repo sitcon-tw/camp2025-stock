@@ -58,14 +58,24 @@ export default function Dashboard() {
         console.log("ID 類型:", typeof orderId);
         console.log("訂單的使用者ID:", orderData.user_id);
         console.log("目前使用者資料:", user);
-        console.log(
-            "localStorage 中的 telegramData:",
-            localStorage.getItem("telegramData"),
-        );
-        console.log(
-            "localStorage 中的 userData:",
-            localStorage.getItem("userData"),
-        );
+        
+        // 從 localStorage 獲取真正的 telegram ID
+        const telegramDataStr = localStorage.getItem("telegramData");
+        const userDataStr = localStorage.getItem("userData"); 
+        let telegramData = null;
+        let userData = null;
+        
+        try {
+            telegramData = JSON.parse(telegramDataStr);
+            userData = JSON.parse(userDataStr);
+        } catch (e) {
+            console.error("無法解析 localStorage 數據:", e);
+        }
+        
+        console.log("解析後的 telegramData:", telegramData);
+        console.log("解析後的 userData:", userData);
+        console.log("真正的 Telegram ID:", telegramData?.id);
+        console.log("內部 User ID:", userData?.id);
         console.log("========================");
 
         if (!orderId) {
@@ -508,11 +518,9 @@ export default function Dashboard() {
                                         key={i.created_at}
                                     >
                                         <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
-                                            {dayjs(i.created_at)
-                                                .add(8, "hour")
-                                                .format(
-                                                    "MM/DD HH:mm",
-                                                )}
+                                            {dayjs(
+                                                i.created_at,
+                                            ).add(8, "hour").format("MM/DD HH:mm")}
                                         </p>
                                         <div className="col-span-5 md:col-span-4 md:flex">
                                             <p className="font-bold text-[#92cbf4]">

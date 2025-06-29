@@ -242,34 +242,18 @@ async def cancel_stock_order(
         HTTPException: 當取消失敗時
     """
     try:
+        user_id = current_user.get("user_id")
         telegram_id = current_user.get("telegram_id")
-        jwt_user_id = current_user.get("user_id")
         
-        logger.info(f"取消訂單 - JWT Token 內容: telegram_id={telegram_id}, user_id={jwt_user_id}")
-        
-        # 嘗試多種方式確定 user_id，確保與股票訂單中的 user_id 格式一致
-        user_id = None
-        
-        if telegram_id:
-            # 方法1: 通過 telegram_id 查找用戶，獲取其 MongoDB ObjectId
-            user = await user_service.get_user_by_telegram_id(telegram_id)
-            logger.info(f"取消訂單 - 通過 telegram_id {telegram_id} 查找用戶結果: {user is not None}")
-            if user:
-                logger.info(f"取消訂單 - 找到用戶: _id={user.get('_id')}, id={user.get('id')}, name={user.get('name')}")
-                user_id = str(user.get("_id"))  # 使用 MongoDB ObjectId
-            
-        if not user_id and jwt_user_id:
-            # 方法2: 直接使用 JWT 中的 user_id (可能是 Telegram ID 或 ObjectId)
-            logger.info(f"取消訂單 - 使用 JWT user_id: {jwt_user_id}")
-            user_id = str(jwt_user_id)
+        logger.info(f"取消訂單 - JWT Token 內容: user_id={user_id}, telegram_id={telegram_id}")
         
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"無法確定用戶身份 (telegram_id: {telegram_id}, jwt_user_id: {jwt_user_id})"
+                detail="JWT Token 中缺少 user_id"
             )
         
-        logger.info(f"取消訂單 - 最終使用的 user_id: {user_id}")
+        logger.info(f"取消訂單 - 使用 JWT 中的 user_id: {user_id}")
         
         # 呼叫取消訂單方法
         result = await user_service.cancel_stock_order(user_id, order_id, reason)

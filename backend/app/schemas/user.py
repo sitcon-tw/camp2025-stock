@@ -177,6 +177,7 @@ class UserPointLog(BaseModel):
 # 使用者股票訂單
 class UserStockOrder(BaseModel):
     order_id: str = Field(..., description="訂單ID")
+    user_id: str = Field(..., description="使用者ID")
     order_type: str = Field(..., description="訂單類型")
     side: str = Field(..., description="買賣方向")
     quantity: int = Field(..., description="數量")
