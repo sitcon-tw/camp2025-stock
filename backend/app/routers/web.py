@@ -214,6 +214,71 @@ async def get_stock_orders(
         )
 
 
+@router.delete(
+    "/stock/orders/{order_id}",
+    response_model=dict,
+    summary="取消股票訂單",
+    description="取消指定的股票訂單"
+)
+async def cancel_stock_order(
+    order_id: str,
+    reason: str = "user_cancelled",
+    current_user: dict = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> dict:
+    """
+    取消股票訂單
+    
+    Args:
+        order_id: 訂單 ID
+        reason: 取消原因
+        current_user: 當前使用者（透過 JWT Token 取得）
+        user_service: 使用者服務
+        
+    Returns:
+        取消結果
+        
+    Raises:
+        HTTPException: 當取消失敗時
+    """
+    try:
+        user_id = current_user.get("user_id")
+        telegram_id = current_user.get("telegram_id")
+        
+        # 處理使用者 ID 的不同格式
+        if telegram_id:
+            user = await user_service.get_user_by_telegram_id(telegram_id)
+            if user:
+                user_id = user.get("_id")
+        
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="無法確認使用者身份"
+            )
+        
+        # 呼叫取消訂單方法
+        result = await user_service.cancel_stock_order(user_id, order_id, reason)
+        
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get("message", "取消訂單失敗")
+            )
+        
+        return result
+        
+    except HTTPException:
+        # 重新拋出 HTTP 異常
+        raise
+    except Exception as e:
+        logger.error(f"Failed to cancel order {order_id} for user {current_user.get('user_id')}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e) or "取消訂單時發生錯誤"
+        )
+
+
 # ========== 點數轉帳 ==========
 
 @router.post(

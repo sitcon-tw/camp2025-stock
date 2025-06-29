@@ -85,6 +85,8 @@ class StockOrder:
     status: str = "pending"  # pending, filled, cancelled
     created_at: Optional[datetime] = None
     executed_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancel_reason: Optional[str] = None
     
     def can_execute(self, market_price: Optional[Decimal] = None) -> bool:
         """檢查訂單是否可執行"""
@@ -114,11 +116,18 @@ class StockOrder:
         if self.order_type == "market":
             self.price = executed_price
     
-    def cancel(self) -> None:
+    def can_cancel(self) -> bool:
+        """檢查訂單是否可以取消"""
+        return self.status in ["pending", "partial", "pending_limit"]
+    
+    def cancel(self, reason: Optional[str] = None) -> None:
         """取消訂單"""
-        if self.status != "pending":
-            raise ValueError("order_cannot_be_cancelled")
+        if not self.can_cancel():
+            raise ValueError(f"order_cannot_be_cancelled_status_{self.status}")
+        
         self.status = "cancelled"
+        self.cancelled_at = datetime.now()
+        self.cancel_reason = reason or "user_cancelled"
 
 
 @dataclass

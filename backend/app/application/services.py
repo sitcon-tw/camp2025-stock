@@ -295,6 +295,61 @@ class TradingApplicationService(BaseApplicationService):
             # 進行中或部分成交訂單：顯示剩餘數量
             return order.quantity
 
+    async def cancel_stock_order(self, user_id: str, order_id: str, reason: str = "user_cancelled") -> StockOrderResponse:
+        """
+        取消股票訂單用例
+        
+        Args:
+            user_id: 使用者 ID
+            order_id: 訂單 ID  
+            reason: 取消原因
+            
+        Returns:
+            StockOrderResponse: 取消結果
+        """
+        try:
+            # 檢查市場是否開放取消操作（根據業務需求決定）
+            # 通常取消操作在市場關閉時也應該允許
+            
+            success = await self.trading_service.cancel_order(user_id, order_id, reason)
+            
+            if success:
+                return StockOrderResponse(
+                    success=True,
+                    order_id=order_id,
+                    message="訂單已成功取消"
+                )
+            else:
+                return StockOrderResponse(
+                    success=False,
+                    order_id=order_id,
+                    message="取消訂單失敗"
+                )
+                
+        except ValueError as e:
+            # 處理業務邏輯錯誤
+            error_messages = {
+                "order_not_found": "訂單不存在",
+                "order_not_owned": "您沒有權限取消此訂單",
+                "order_cannot_be_cancelled_status_filled": "已成交的訂單無法取消",
+                "order_cannot_be_cancelled_status_cancelled": "訂單已經被取消",
+                "order_has_no_remaining_quantity": "訂單已無剩餘數量可取消",
+            }
+            
+            error_str = str(e)
+            if error_str.startswith("order_cannot_be_cancelled_status_"):
+                status = error_str.replace("order_cannot_be_cancelled_status_", "")
+                message = f"訂單狀態為 {status}，無法取消"
+            else:
+                message = error_messages.get(error_str, error_str)
+            
+            logger.warning(f"Order cancellation failed for user {user_id}, order {order_id}: {error_str}")
+            return StockOrderResponse(success=False, order_id=order_id, message=message)
+            
+        except Exception as e:
+            logger.error(f"Order cancellation failed for user {user_id}, order {order_id}: {e}")
+            return StockOrderResponse(success=False, order_id=order_id, message="取消訂單時發生錯誤")
+
 
 class TransferApplicationService(BaseApplicationService):
     """

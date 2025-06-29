@@ -145,6 +145,42 @@ async def bot_get_stock_orders(
     return await user_service.get_user_stock_orders_by_username(request.from_user, request.limit)
 
 
+@router.delete(
+    "/stock/order/{order_id}",
+    response_model=dict,
+    summary="BOT 取消股票訂單",
+    description="透過 BOT 取消股票訂單"
+)
+async def bot_cancel_stock_order(
+    order_id: str,
+    from_user: str,
+    reason: str = "user_cancelled",
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+):
+    """
+    透過 BOT 取消股票訂單
+    
+    Args:
+        order_id: 訂單 ID
+        from_user: 發起使用者的 username
+        reason: 取消原因
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        取消結果
+    """
+    # 先取得使用者資訊
+    user = await user_service.get_user_by_username(from_user)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="使用者不存在"
+        )
+    
+    return await user_service.cancel_stock_order(user["_id"], order_id, reason)
+
+
 # ========== BOT 點數轉帳 ==========
 
 @router.post(

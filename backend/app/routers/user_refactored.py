@@ -114,6 +114,24 @@ async def get_user_stock_orders(
     return await trading_service.get_user_orders(current_user["user_id"], limit)
 
 
+@router.delete("/stock/orders/{order_id}", response_model=StockOrderResponse)
+async def cancel_stock_order(
+    order_id: str,
+    reason: str = "user_cancelled",
+    current_user: dict = Depends(get_current_user),
+    trading_service: TradingApplicationService = Depends(get_trading_application_service)
+):
+    """
+    取消股票訂單
+    SRP 原則：專注於訂單取消功能
+    """
+    return await trading_service.cancel_stock_order(
+        user_id=current_user["user_id"],
+        order_id=order_id,
+        reason=reason
+    )
+
+
 @router.post("/stock/ipo", response_model=StockOrderResponse)
 async def purchase_ipo_shares(
     quantity: int,

@@ -328,6 +328,116 @@ class StockTradingService:
         except Exception as e:
             logger.error(f"傳送交易通知發生未預期錯誤: {e}")
 
+    async def cancel_order(self, order_id: str, user_id: str, reason: str = "user_cancelled") -> bool:
+        """
+        取消訂單
+        
+        Args:
+            order_id: 訂單 ID
+            user_id: 使用者 ID (用於驗證擁有權)
+            reason: 取消原因
+            
+        Returns:
+            bool: 是否成功取消
+            
+        Raises:
+            ValueError: 訂單不存在、無權限或無法取消
+        """
+        # 取得訂單
+        order = await self.order_repo.get_by_id(order_id)
+        if not order:
+            raise ValueError("order_not_found")
+        
+        # 驗證使用者擁有權
+        if order.user_id != user_id:
+            raise ValueError("order_not_owned")
+        
+        # 詳細檢查是否可以取消
+        if not order.can_cancel():
+            raise ValueError(f"order_cannot_be_cancelled_status_{order.status}")
+        
+        # 檢查剩餘數量
+        if order.quantity <= 0:
+            raise ValueError("order_has_no_remaining_quantity")
+        
+        # 記錄取消操作詳情
+        logger.info(f"準備取消訂單 - 訂單: {order_id}, 狀態: {order.status}, 類型: {order.order_type}, 數量: {order.quantity}, 使用者: {user_id}")
+        
+        # 取消訂單
+        order.cancel(reason)
+        
+        # 更新資料庫 - 這裡應該使用原子操作，但目前的 repository 介面可能不支援
+        # 在實際生產環境中，repository 層應該提供原子更新的方法
+        await self.order_repo.update_status(
+            order_id=order_id,
+            status="cancelled",
+            executed_price=None
+        )
+        
+        logger.info(f"訂單已取消: {order_id}, 使用者: {user_id}, 原因: {reason}")
+        
+        # 發送取消通知
+        await self._send_cancellation_notification(
+            user_id=user_id,
+            order_id=order_id,
+            order_type=order.order_type,
+            side=order.side,
+            quantity=order.quantity,
+            price=float(order.price) if order.price else 0.0,
+            reason=reason
+        )
+        
+        return True
+
+    async def _send_cancellation_notification(self, user_id: str, order_id: str, 
+                                            order_type: str, side: str, quantity: int,
+                                            price: float, reason: str):
+        """發送取消訂單通知"""
+        try:
+            if not settings.CAMP_TELEGRAM_BOT_API_URL or not settings.CAMP_INTERNAL_API_KEY:
+                logger.warning("Telegram Bot API 設定不完整，跳過取消通知傳送")
+                return
+            
+            # 獲取使用者的 Telegram ID
+            user = await self.user_repo.get_by_id(user_id)
+            if not user or not hasattr(user, 'telegram_id') or not user.telegram_id:
+                logger.warning(f"無法傳送取消通知：使用者 {user_id} 未設定 telegram_id")
+                return
+            
+            # 構建取消通知 (使用直接訊息而非特定格式)
+            action_text = "買入" if side == "buy" else "賣出"
+            type_text = "市價單" if order_type == "market" else "限價單"
+            
+            message = f"🚫 您的訂單已取消\n\n• 訂單號碼：{order_id}\n• 類型：{type_text}\n• 操作：{action_text}\n• 數量：{quantity}\n• 價格：{price:.2f}\n• 取消原因：{reason}"
+            
+            notification_url = f"{settings.CAMP_TELEGRAM_BOT_API_URL.rstrip('/')}/bot/direct/send"
+            
+            payload = {
+                "user_id": user.telegram_id,
+                "message": message,
+                "parse_mode": "MarkdownV2"
+            }
+            
+            headers = {
+                "Content-Type": "application/json",
+                "token": settings.CAMP_INTERNAL_API_KEY
+            }
+            
+            response = requests.post(
+                notification_url,
+                json=payload,
+                headers=headers,
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"成功傳送取消通知給使用者 {user.telegram_id}")
+            else:
+                logger.warning(f"傳送取消通知失敗: HTTP {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            logger.error(f"傳送取消通知發生錯誤: {e}")
+
 
 class TransferService:
     """

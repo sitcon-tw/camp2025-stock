@@ -3461,3 +3461,209 @@ class UserService:
             logger.warning(f"傳送交易通知網路錯誤: {e}")
         except Exception as e:
             logger.error(f"傳送交易通知發生未預期錯誤: {e}")
+
+    async def cancel_stock_order(self, user_id: str, order_id: str, reason: str = "user_cancelled") -> dict:
+        """
+        取消股票訂單 (舊架構方法)
+        
+        Args:
+            user_id: 使用者 ID
+            order_id: 訂單 ID
+            reason: 取消原因
+            
+        Returns:
+            dict: 取消結果
+        """
+        try:
+            # 轉換 order_id 為 ObjectId
+            try:
+                order_oid = ObjectId(order_id)
+            except Exception:
+                return {
+                    "success": False,
+                    "message": "無效的訂單 ID 格式"
+                }
+            
+            # 取得訂單
+            order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": order_oid})
+            if not order:
+                return {
+                    "success": False,
+                    "message": "訂單不存在"
+                }
+            
+            # 驗證使用者擁有權
+            if order.get("user_id") != user_id:
+                return {
+                    "success": False,
+                    "message": "您沒有權限取消此訂單"
+                }
+            
+            # 詳細檢查訂單是否可以取消
+            order_status = order.get("status", "")
+            order_type = order.get("order_type", "")
+            filled_quantity = order.get("filled_quantity", 0)
+            remaining_quantity = order.get("quantity", 0)
+            
+            # 基本狀態檢查
+            cancellable_statuses = ["pending", "partial", "pending_limit"]
+            
+            if order_status not in cancellable_statuses:
+                status_messages = {
+                    "filled": "已成交的訂單無法取消",
+                    "cancelled": "訂單已經被取消"
+                }
+                message = status_messages.get(order_status, f"訂單狀態為 {order_status}，無法取消")
+                logger.warning(f"嘗試取消不可取消的訂單 - 訂單: {order_id}, 狀態: {order_status}, 使用者: {user_id}")
+                return {
+                    "success": False,
+                    "message": message
+                }
+            
+            # 檢查是否還有可取消的數量
+            if remaining_quantity <= 0:
+                logger.warning(f"嘗試取消無剩餘數量的訂單 - 訂單: {order_id}, 剩餘數量: {remaining_quantity}, 使用者: {user_id}")
+                return {
+                    "success": False,
+                    "message": "訂單已無剩餘數量可取消"
+                }
+            
+            # 檢查訂單是否在撮合中
+            # 這可以通過檢查訂單的最後更新時間來判斷
+            last_updated = order.get("updated_at", order.get("created_at"))
+            if last_updated:
+                from datetime import timedelta
+                now = datetime.now(timezone.utc)
+                # 如果訂單在最近 10 秒內有更新，可能正在撮合中
+                if isinstance(last_updated, datetime) and (now - last_updated) < timedelta(seconds=10):
+                    logger.info(f"訂單可能正在撮合中，等待後重試 - 訂單: {order_id}, 使用者: {user_id}")
+                    return {
+                        "success": False,
+                        "message": "訂單可能正在撮合中，請稍後再試"
+                    }
+            
+            # 記錄取消操作
+            logger.info(f"準備取消訂單 - 訂單: {order_id}, 狀態: {order_status}, 類型: {order_type}, 剩餘數量: {remaining_quantity}, 已成交: {filled_quantity}, 使用者: {user_id}")
+            
+            # 使用原子操作更新訂單狀態，確保只有可取消狀態的訂單才會被更新
+            now = datetime.now(timezone.utc)
+            update_result = await self.db[Collections.STOCK_ORDERS].update_one(
+                {
+                    "_id": order_oid,
+                    "status": {"$in": cancellable_statuses},  # 再次確認狀態
+                    "quantity": {"$gt": 0}  # 確保還有剩餘數量
+                },
+                {
+                    "$set": {
+                        "status": "cancelled",
+                        "cancelled_at": now,
+                        "cancel_reason": reason,
+                        "updated_at": now
+                    }
+                }
+            )
+            
+            if update_result.modified_count == 0:
+                # 可能是在更新過程中訂單狀態發生了變化
+                logger.warning(f"取消訂單失敗，可能訂單狀態已變更 - 訂單: {order_id}, 使用者: {user_id}")
+                
+                # 重新查詢訂單狀態
+                updated_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": order_oid})
+                if updated_order:
+                    current_status = updated_order.get("status", "")
+                    if current_status == "cancelled":
+                        return {
+                            "success": True,
+                            "message": "訂單已經被取消",
+                            "order_id": order_id
+                        }
+                    elif current_status == "filled":
+                        return {
+                            "success": False,
+                            "message": "訂單已成交，無法取消"
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "message": f"取消訂單失敗，訂單狀態已變更為 {current_status}"
+                        }
+                else:
+                    return {
+                        "success": False,
+                        "message": "訂單不存在"
+                    }
+            
+            logger.info(f"訂單已取消: {order_id}, 使用者: {user_id}, 原因: {reason}")
+            
+            # 發送取消通知
+            await self._send_cancellation_notification_legacy(
+                user_id=user_id,
+                order_id=order_id,
+                order_type=order.get("order_type", "unknown"),
+                side=order.get("side", "unknown"),
+                quantity=order.get("quantity", 0),
+                price=order.get("price", 0.0),
+                reason=reason
+            )
+            
+            return {
+                "success": True,
+                "message": "訂單已成功取消",
+                "order_id": order_id
+            }
+            
+        except Exception as e:
+            logger.error(f"取消訂單時發生錯誤 - 使用者: {user_id}, 訂單: {order_id}, 錯誤: {e}")
+            return {
+                "success": False,
+                "message": "取消訂單時發生錯誤"
+            }
+
+    async def _send_cancellation_notification_legacy(self, user_id: str, order_id: str, 
+                                                   order_type: str, side: str, quantity: int,
+                                                   price: float, reason: str):
+        """發送取消訂單通知 (舊架構版本)"""
+        try:
+            if not settings.CAMP_TELEGRAM_BOT_API_URL or not settings.CAMP_INTERNAL_API_KEY:
+                logger.warning("Telegram Bot API 設定不完整，跳過取消通知傳送")
+                return
+            
+            # 獲取使用者的 Telegram ID
+            user = await self.db[Collections.USERS].find_one({"_id": user_id})
+            if not user or not user.get("telegram_id"):
+                logger.warning(f"無法傳送取消通知：使用者 {user_id} 未設定 telegram_id")
+                return
+            
+            # 構建取消通知
+            action_text = "買入" if side == "buy" else "賣出"
+            type_text = "市價單" if order_type == "market" else "限價單"
+            
+            message = f"🚫 您的訂單已取消\n\n• 訂單號碼：{order_id}\n• 類型：{type_text}\n• 操作：{action_text}\n• 數量：{quantity}\n• 價格：{price:.2f}\n• 取消原因：{reason}"
+            
+            notification_url = f"{settings.CAMP_TELEGRAM_BOT_API_URL.rstrip('/')}/bot/direct/send"
+            
+            payload = {
+                "user_id": user["telegram_id"],
+                "message": message,
+                "parse_mode": "MarkdownV2"
+            }
+            
+            headers = {
+                "Content-Type": "application/json",
+                "token": settings.CAMP_INTERNAL_API_KEY
+            }
+            
+            response = requests.post(
+                notification_url,
+                json=payload,
+                headers=headers,
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"成功傳送取消通知給使用者 {user['telegram_id']}")
+            else:
+                logger.warning(f"傳送取消通知失敗: HTTP {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            logger.error(f"傳送取消通知發生錯誤: {e}")
