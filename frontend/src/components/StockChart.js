@@ -78,133 +78,142 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         let isMounted = true;
 
         const fetchHistoricalData = async () => {
-            const now = Date.now();
+            while (isMounted) {
+                if (fetchingRef.current) {
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, 1000),
+                    );
+                    console.log("Skipping");
+                    continue;
+                }
 
-            // 避免重複 fetch
-            if (fetchingRef.current) {
-                return;
-            }
-
-            if (!isMounted) return;
-            try {
                 fetchingRef.current = true;
                 setLoading(true);
-                const historicalData =
-                    await apiService.getHistoricalData(24);
 
-                if (!isMounted) return;
+                try {
+                    const now = Date.now();
+                    const historicalData =
+                        await apiService.getHistoricalData(24);
 
-                if (historicalData && historicalData.length > 0) {
-                    const realPriceData = historicalData.map(
-                        (item) => item.price,
-                    );
-                    const labels = historicalData.map((item) => {
-                        const date = new Date(item.timestamp);
+                    if (!isMounted) break;
 
-                        // time zone asia/taipei
-                        date.setHours(date.getHours() + 8);
-
-                        return date.toLocaleTimeString("zh-TW", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        });
-                    });
-
-                    setChartData({ data: realPriceData, labels });
-
-                    const candlesticks = [];
-                    for (
-                        let i = 0;
-                        i < historicalData.length;
-                        i += 4
-                    ) {
-                        const chunk = historicalData.slice(i, i + 4);
-                        if (chunk.length > 0) {
-                            const open = chunk[0].price;
-                            const close =
-                                chunk[chunk.length - 1].price;
-                            const high = Math.max(
-                                ...chunk.map((d) => d.price),
-                            );
-                            const low = Math.min(
-                                ...chunk.map((d) => d.price),
-                            );
-
-                            let datetime = new Date(
-                                chunk[0].timestamp,
-                            );
-                            datetime.setHours(
-                                datetime.getHours() + 8,
-                            ); // 時區調整
-
-                            candlesticks.push({
-                                open,
-                                high,
-                                low,
-                                close,
-                                timestamp: chunk[0].timestamp,
-                                time: datetime,
-                            });
-                        }
-                    }
-                    setCandlestickData(candlesticks);
-
-                    const period = 5;
-                    const movingAverages = [];
-                    for (
-                        let i = period - 1;
-                        i < realPriceData.length;
-                        i++
-                    ) {
-                        const sum = realPriceData
-                            .slice(i - period + 1, i + 1)
-                            .reduce((a, b) => a + b, 0);
-                        movingAverages.push(sum / period);
-                    }
-                    setAverageData({
-                        data: movingAverages,
-                        labels: labels.slice(period - 1),
-                    });
-
-                    if (candlesticks.length > 0) {
-                        const chartWidth = 1200;
-                        const scaledWidth = chartWidth * 1;
-                        const visibleCandles = Math.floor(
-                            chartWidth / 20,
+                    if (historicalData && historicalData.length > 0) {
+                        const realPriceData = historicalData.map(
+                            (item) => item.price,
                         );
-                        if (candlesticks.length > visibleCandles) {
-                            const totalWidth =
-                                (candlesticks.length - 1) *
-                                (scaledWidth /
-                                    (candlesticks.length - 1));
-                            const offsetToShowLast = -(
-                                totalWidth -
-                                chartWidth +
-                                100
+                        const labels = historicalData.map((item) => {
+                            const date = new Date(item.timestamp);
+                            date.setHours(date.getHours() + 8); // Adjust for Taipei time
+                            return date.toLocaleTimeString("zh-TW", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            });
+                        });
+
+                        setChartData({ data: realPriceData, labels });
+
+                        const candlesticks = [];
+                        for (
+                            let i = 0;
+                            i < historicalData.length;
+                            i += 4
+                        ) {
+                            const chunk = historicalData.slice(
+                                i,
+                                i + 4,
                             );
-                            setPanOffset(offsetToShowLast);
+                            if (chunk.length > 0) {
+                                const open = chunk[0].price;
+                                const close =
+                                    chunk[chunk.length - 1].price;
+                                const high = Math.max(
+                                    ...chunk.map((d) => d.price),
+                                );
+                                const low = Math.min(
+                                    ...chunk.map((d) => d.price),
+                                );
+
+                                let datetime = new Date(
+                                    chunk[0].timestamp,
+                                );
+                                datetime.setHours(
+                                    datetime.getHours() + 8,
+                                );
+
+                                candlesticks.push({
+                                    open,
+                                    high,
+                                    low,
+                                    close,
+                                    timestamp: chunk[0].timestamp,
+                                    time: datetime,
+                                });
+                            }
                         }
+                        setCandlestickData(candlesticks);
+
+                        const period = 5;
+                        const movingAverages = [];
+                        for (
+                            let i = period - 1;
+                            i < realPriceData.length;
+                            i++
+                        ) {
+                            const sum = realPriceData
+                                .slice(i - period + 1, i + 1)
+                                .reduce((a, b) => a + b, 0);
+                            movingAverages.push(sum / period);
+                        }
+                        setAverageData({
+                            data: movingAverages,
+                            labels: labels.slice(period - 1),
+                        });
+
+                        if (candlesticks.length > 0) {
+                            const chartWidth = 1200;
+                            const scaledWidth = chartWidth * 1;
+                            const visibleCandles = Math.floor(
+                                chartWidth / 20,
+                            );
+                            if (
+                                candlesticks.length > visibleCandles
+                            ) {
+                                const totalWidth =
+                                    (candlesticks.length - 1) *
+                                    (scaledWidth /
+                                        (candlesticks.length - 1));
+                                const offsetToShowLast = -(
+                                    totalWidth -
+                                    chartWidth +
+                                    100
+                                );
+                                setPanOffset(offsetToShowLast);
+                            }
+                        }
+                    } else {
+                        setChartData({ data: [], labels: [] });
+                        setCandlestickData([]);
+                        setAverageData({ data: [], labels: [] });
                     }
-                } else {
-                    setChartData({ data: [], labels: [] });
-                    setCandlestickData([]);
-                    setAverageData({ data: [], labels: [] });
+
+                    setError(null);
+                    lastFetchTimeRef.current = now;
+                } catch (err) {
+                    console.error("獲取歷史資料失敗:", err);
+                    if (isMounted) {
+                        setError("無法獲取歷史資料");
+                        setChartData({ data: [], labels: [] });
+                        setCandlestickData([]);
+                        setAverageData({ data: [], labels: [] });
+                    }
+                } finally {
+                    if (isMounted) setLoading(false);
+                    fetchingRef.current = false;
                 }
-                setError(null);
-                lastFetchTimeRef.current = now;
-            } catch (err) {
-                console.error("獲取歷史資料失敗:", err);
-                if (isMounted) {
-                    setError("無法獲取歷史資料");
-                    setChartData({ data: [], labels: [] });
-                    setCandlestickData([]);
-                    setAverageData({ data: [], labels: [] });
-                }
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-                fetchingRef.current = false;
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 15_000),
+                );
             }
         };
 
@@ -512,7 +521,10 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                                 –
                             </button>
                             <div className="min-w-[40px] rounded px-1 py-1 text-center text-xs text-[#82bee2]">
-                                {Math.round(zoomLevel.toFixed(1) * 100)}%
+                                {Math.round(
+                                    zoomLevel.toFixed(1) * 100,
+                                )}
+                                %
                             </div>
                             <button
                                 onClick={() =>

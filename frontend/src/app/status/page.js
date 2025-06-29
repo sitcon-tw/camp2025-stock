@@ -51,8 +51,11 @@ export default function Status() {
             setTradingStats(statsData);
             setError(null);
         } catch (err) {
-            console.error("獲取資料失敗:", err);
-            setError("無法獲取資料");
+            console.error(
+                "Error when fetching new stock data: ",
+                err,
+            );
+            setError("更新資料失敗");
         }
     };
 
@@ -116,8 +119,11 @@ export default function Status() {
         let isMounted = true;
 
         const fetchInitialData = async () => {
-            if (isMounted) {
-                await fetchData();
+            while (isMounted) {
+                await fetchData(); // You better make sure this is not crashing...
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 15_000),
+                );
             }
         };
 
@@ -161,14 +167,22 @@ export default function Status() {
                         <div className="mb-4 grid grid-cols-2 gap-2 text-center lg:gap-4">
                             <button
                                 onClick={() => {
-                                    const token = localStorage.getItem("userToken");
-                                    const isUser = localStorage.getItem("isUser");
-                                    
+                                    const token =
+                                        localStorage.getItem(
+                                            "userToken",
+                                        );
+                                    const isUser =
+                                        localStorage.getItem(
+                                            "isUser",
+                                        );
+
                                     if (!isUser || !token) {
-                                        router.push("/telegram-login");
+                                        router.push(
+                                            "/telegram-login",
+                                        );
                                         return;
                                     }
-                                    
+
                                     setTradeType("buy");
                                     tradeModal.openModal();
                                 }}
@@ -181,14 +195,22 @@ export default function Status() {
                             </button>
                             <button
                                 onClick={() => {
-                                    const token = localStorage.getItem("userToken");
-                                    const isUser = localStorage.getItem("isUser");
-                                    
+                                    const token =
+                                        localStorage.getItem(
+                                            "userToken",
+                                        );
+                                    const isUser =
+                                        localStorage.getItem(
+                                            "isUser",
+                                        );
+
                                     if (!isUser || !token) {
-                                        router.push("/telegram-login");
+                                        router.push(
+                                            "/telegram-login",
+                                        );
                                         return;
                                     }
-                                    
+
                                     setTradeType("sell");
                                     tradeModal.openModal();
                                 }}

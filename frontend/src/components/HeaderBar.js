@@ -62,11 +62,15 @@ export default function HeaderBar() {
         let isMounted = true;
 
         const fetchInitialData = async () => {
-            if (isMounted) {
+            while (isMounted) {
                 await Promise.all([
                     fetchPriceData(),
                     fetchMarketStatus(),
                 ]);
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 15_000),
+                );
             }
         };
 
