@@ -508,9 +508,11 @@ export default function Dashboard() {
                                         key={i.created_at}
                                     >
                                         <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
-                                            {dayjs(
-                                                i.created_at,
-                                            ).add(8, "hour")format("MM/DD HH:mm")}
+                                            {dayjs(i.created_at)
+                                                .add(8, "hour")
+                                                .format(
+                                                    "MM/DD HH:mm",
+                                                )}
                                         </p>
                                         <div className="col-span-5 md:col-span-4 md:flex">
                                             <p className="font-bold text-[#92cbf4]">
