@@ -106,6 +106,38 @@ export default function TutorialPage() {
                     </li>
                 </ol>
 
+                <div className="mb-8 rounded-lg bg-[#0d2543] border border-[#82bee2] p-6">
+                    <h3 className="mb-4 text-xl font-semibold text-[#82bee2]">
+                        ⚡ 即時成交機制說明
+                    </h3>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="mb-2 font-semibold text-[#a8d4f0]">市價單即時成交：</h4>
+                            <ul className="list-disc pl-6 text-white space-y-1">
+                                <li><strong>市價買單</strong>：優先與最低價賣單配對，若無賣單則從 IPO 以 20 點/股購買</li>
+                                <li><strong>市價賣單</strong>：優先與最高價買單配對，若無買單則拒絕交易</li>
+                                <li>成交立即執行，無需等待</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="mb-2 font-semibold text-[#a8d4f0]">限價單可能即時成交：</h4>
+                            <ul className="list-disc pl-6 text-white space-y-1">
+                                <li><strong>限價買單</strong>：當有賣單價格 ≤ 你的買價時，透過撮合系統立即成交</li>
+                                <li><strong>限價賣單</strong>：當有買單價格 ≥ 你的賣價時，透過撮合系統立即成交</li>
+                                <li>撮合系統每 60 秒執行一次，或在下單後觸發</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="mb-2 font-semibold text-[#a8d4f0]">IPO 回補機制：</h4>
+                            <ul className="list-disc pl-6 text-white space-y-1">
+                                <li>當市場缺乏賣單時，市價買單可從系統 IPO 購買</li>
+                                <li>IPO 價格固定為 20 點/股，提供市場流動性</li>
+                                <li>IPO 股數有限，售完後市價買單可能失敗</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <h2 className="mb-4 text-2xl font-bold text-[#82bee2]">
                     🛒 如何「買股票」？
                 </h2>
@@ -130,10 +162,11 @@ export default function TutorialPage() {
                             使用 /stock
                             指令進入交易介面，選擇市價買入。
                         </li>
-                        <li>用當下市場「賣一價」直接買入。</li>
+                        <li>用當下市場「賣一價」直接買入，若無賣單則從 IPO 以 20 點/股購買。</li>
                         <li>
                             系統會顯示「你花了多少點數，買了幾張」。
                         </li>
+                        <li><span className="text-[#ffd700]">立即成交</span>：無需等待撮合時間。</li>
                     </ul>
                 </div>
 
@@ -162,6 +195,7 @@ export default function TutorialPage() {
                             只有當「有人的賣價 ≤
                             你的買價」時才會成交。
                         </li>
+                        <li><span className="text-[#ffd700]">可能即時成交</span>：若有符合條件的賣單，透過撮合系統立即配對。</li>
                     </ul>
                 </div>
 
@@ -191,6 +225,7 @@ export default function TutorialPage() {
                         </li>
                         <li>以當下市場「買一價」賣出。</li>
                         <li>越多競爭者願意買，價格越好。</li>
+                        <li><span className="text-[#ffd700]">立即成交</span>：若有買單則立即配對，無買單則拒絕交易。</li>
                     </ul>
                 </div>
 
@@ -219,6 +254,7 @@ export default function TutorialPage() {
                             只有當「有人的買價 ≥
                             你的賣價」時才會成交。
                         </li>
+                        <li><span className="text-[#ffd700]">可能即時成交</span>：若有符合條件的買單，透過撮合系統立即配對。</li>
                     </ul>
                 </div>
 
