@@ -30,7 +30,7 @@ const Modal = ({
 
         return () => {
             document.removeEventListener("keydown", handleEsc);
-            document.body.style.overflow = "unset";
+            document.body.style.overflow = "";
         };
     }, [isOpen, onClose]);
 
@@ -73,7 +73,7 @@ const Modal = ({
                 {/* Modal 內容 */}
                 <div
                     className={twMerge(
-                        "w-full rounded-xl bg-[#1A325F] p-6 shadow-2xl",
+                        "w-full rounded-xl bg-[#1A325F] shadow-2xl max-h-[90vh] flex flex-col",
                         sizeClasses[size],
                         isClosing
                             ? "animate-modal-close"
@@ -84,7 +84,7 @@ const Modal = ({
                 >
                     {/* Modal 標題 */}
                     {(title || showCloseButton) && (
-                        <div className="mb-4 flex items-center justify-between">
+                        <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
                             {title && (
                                 <h2 className="text-xl font-bold text-[#AFE1F5]">
                                     {title}
@@ -104,9 +104,10 @@ const Modal = ({
 
                     {/* Modal內容 */}
                     <div
-                        className={
-                            title || showCloseButton ? "" : "mt-0"
-                        }
+                        className={twMerge(
+                            "overflow-y-auto overflow-x-hidden flex-1",
+                            title || showCloseButton ? "px-6 pb-6" : "p-6"
+                        )}
                     >
                         {children}
                     </div>

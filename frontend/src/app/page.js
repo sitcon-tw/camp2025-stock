@@ -212,36 +212,33 @@ export default function Home() {
                 onClose={announcementModal.closeModal}
                 title="所有公告"
                 size="2xl"
-                className="flex max-h-[80vh] flex-col overflow-hidden"
             >
-                <div className="flex-1 overflow-y-auto">
-                    {announcements.length > 0 ? (
-                        <div className="space-y-4">
-                            {announcements.map((announcement) => (
-                                <div
-                                    key={announcement.id}
-                                    className="border-b border-[#2A4A7F] pb-4 last:border-b-0"
-                                >
-                                    <h3 className="mb-2 text-lg font-semibold text-[#7BC2E6]">
-                                        {announcement.title}
-                                    </h3>
-                                    <p className="mb-2 text-[#AFE1F5]">
-                                        {announcement.message}
-                                    </p>
-                                    <p className="text-sm text-[#AFE1F5] opacity-70">
-                                        {formatDate(
-                                            announcement.createdAt,
-                                        )}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-center text-[#AFE1F5]">
-                            暫無公告
-                        </p>
-                    )}
-                </div>
+                {announcements.length > 0 ? (
+                    <div className="space-y-4">
+                        {announcements.map((announcement) => (
+                            <div
+                                key={announcement.id}
+                                className="border-b border-[#2A4A7F] pb-4 last:border-b-0"
+                            >
+                                <h3 className="mb-2 text-lg font-semibold text-[#7BC2E6]">
+                                    {announcement.title}
+                                </h3>
+                                <p className="mb-2 text-[#AFE1F5]">
+                                    {announcement.message}
+                                </p>
+                                <p className="text-sm text-[#AFE1F5] opacity-70">
+                                    {formatDate(
+                                        announcement.createdAt,
+                                    )}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-[#AFE1F5]">
+                        暫無公告
+                    </p>
+                )}
             </Modal>
         </div>
     );
