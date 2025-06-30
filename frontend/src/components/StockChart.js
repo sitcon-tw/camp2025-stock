@@ -237,7 +237,9 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         const clientX =
             e.clientX || (e.touches && e.touches[0].clientX);
         const deltaX = clientX - lastMouseX.current;
-        setPanOffset((prev) => prev + deltaX * 0.5);
+        const maxOffset = getCurrentData().labels.length * zoomLevel * 10;
+        const minOffset = -maxOffset;
+        setPanOffset((prev) => Math.max(minOffset, Math.min(maxOffset, prev + deltaX * 2)));
         lastMouseX.current = clientX;
     };
 
@@ -264,7 +266,9 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         e.preventDefault();
         if (e.touches.length === 1 && isDragging.current) {
             const deltaX = e.touches[0].clientX - lastMouseX.current;
-            setPanOffset((prev) => prev + deltaX * 0.8);
+            const maxOffset = getCurrentData().labels.length * zoomLevel * 10;
+            const minOffset = -maxOffset;
+            setPanOffset((prev) => Math.max(minOffset, Math.min(maxOffset, prev + deltaX * 2.5)));
             lastMouseX.current = e.touches[0].clientX;
         }
     };
@@ -353,7 +357,8 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     displayMode !== "candlestick"
                         ? Math.max(
                               0,
-                              getCurrentData().labels.length -
+                              Math.floor(-panOffset / (zoomLevel * 10)) +
+                                  getCurrentData().labels.length -
                                   Math.floor(
                                       getCurrentData().labels.length /
                                           zoomLevel,
@@ -362,7 +367,8 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         : undefined,
                 max:
                     displayMode !== "candlestick"
-                        ? getCurrentData().labels.length - 1
+                        ? Math.floor(-panOffset / (zoomLevel * 10)) +
+                          getCurrentData().labels.length - 1
                         : undefined,
             },
             y: {
@@ -456,9 +462,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
     const handleModeSelect = (mode) => {
         setDisplayMode(mode);
-        if (mode === "candlestick") {
-            resetZoomPan();
-        }
+        resetZoomPan();
         chartModeModal.closeModal();
     };
 
