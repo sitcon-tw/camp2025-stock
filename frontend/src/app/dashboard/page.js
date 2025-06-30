@@ -6,6 +6,7 @@ import {
     getWebPortfolio,
     getWebStockOrders,
 } from "@/lib/api";
+import Modal from "@/components/Modal";
 import dayjs from "dayjs";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
@@ -27,6 +28,8 @@ export default function Dashboard() {
     const [cancelingOrders, setCancelingOrders] = useState(new Set());
     const [cancelSuccess, setCancelSuccess] = useState("");
     const [cancelError, setCancelError] = useState("");
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [pendingCancelOrder, setPendingCancelOrder] = useState(null);
     const router = useRouter();
 
     // 登出功能
@@ -38,12 +41,8 @@ export default function Dashboard() {
         router.push("/telegram-login");
     };
 
-    // 取消訂單功能
-    const handleCancelOrder = async (
-        orderData,
-        orderType,
-        quantity,
-    ) => {
+    // 開啟取消訂單 Modal
+    const openCancelModal = (orderData, orderType, quantity) => {
         // 從訂單物件中提取正確的 ID - 嘗試更多可能的字段
         const orderId =
             orderData._id ||
@@ -59,20 +58,20 @@ export default function Dashboard() {
         console.log("ID 類型:", typeof orderId);
         console.log("訂單的使用者ID:", orderData.user_id);
         console.log("目前使用者資料:", user);
-        
+
         // 從 localStorage 獲取真正的 telegram ID
         const telegramDataStr = localStorage.getItem("telegramData");
-        const userDataStr = localStorage.getItem("userData"); 
+        const userDataStr = localStorage.getItem("userData");
         let telegramData = null;
         let userData = null;
-        
+
         try {
             telegramData = JSON.parse(telegramDataStr);
             userData = JSON.parse(userDataStr);
         } catch (e) {
             console.error("無法解析 localStorage 數據:", e);
         }
-        
+
         console.log("解析後的 telegramData:", telegramData);
         console.log("解析後的 userData:", userData);
         console.log("真正的 Telegram ID:", telegramData?.id);
@@ -85,19 +84,31 @@ export default function Dashboard() {
             return;
         }
 
-        if (
-            !confirm(
-                `確定要取消這筆${orderType === "market" ? "市價" : "限價"}單嗎？\n數量：${quantity} 股\n訂單 ID: ${orderId}`,
-            )
-        ) {
-            return;
-        }
+        setPendingCancelOrder({
+            orderData,
+            orderType,
+            quantity,
+            orderId
+        });
+        setShowCancelModal(true);
+    };
+
+    // 確認取消訂單
+    const confirmCancelOrder = async () => {
+        if (!pendingCancelOrder) return;
+
+        const { orderData, orderType, quantity, orderId } = pendingCancelOrder;
 
         const token = localStorage.getItem("userToken");
         if (!token) {
             setCancelError("認證已過期，請重新登入");
+            setShowCancelModal(false);
+            setPendingCancelOrder(null);
             return;
         }
+
+        // 關閉 Modal
+        setShowCancelModal(false);
 
         // 添加到取消中的訂單集合
         setCancelingOrders((prev) => new Set(prev).add(orderId));
@@ -138,7 +149,14 @@ export default function Dashboard() {
                 newSet.delete(orderId);
                 return newSet;
             });
+            setPendingCancelOrder(null);
         }
+    };
+
+    // 關閉取消 Modal
+    const closeCancelModal = () => {
+        setShowCancelModal(false);
+        setPendingCancelOrder(null);
     };
 
     // 檢查訂單是否可以取消
@@ -620,7 +638,7 @@ export default function Dashboard() {
                                                 </span>
                                                 <span className="rounded bg-[#294565] px-2 py-1 text-xs text-[#92cbf4]">
                                                     {i.order_type ===
-                                                    "market"
+                                                        "market"
                                                         ? "市價單"
                                                         : "限價單"}
                                                 </span>
@@ -630,21 +648,21 @@ export default function Dashboard() {
                                         {/* Debug訊息 - 可以在生產環境中移除 */}
                                         {process.env.NODE_ENV ===
                                             "development" && (
-                                            <div className="mb-2 rounded bg-gray-800 p-2 text-xs">
-                                                <details>
-                                                    <summary className="cursor-pointer text-gray-400">
-                                                        Debug：訂單物件結構
-                                                    </summary>
-                                                    <pre className="mt-1 overflow-auto text-gray-300">
-                                                        {JSON.stringify(
-                                                            i,
-                                                            null,
-                                                            2,
-                                                        )}
-                                                    </pre>
-                                                </details>
-                                            </div>
-                                        )}
+                                                <div className="mb-2 rounded bg-gray-800 p-2 text-xs">
+                                                    <details>
+                                                        <summary className="cursor-pointer text-gray-400">
+                                                            Debug：訂單物件結構
+                                                        </summary>
+                                                        <pre className="mt-1 overflow-auto text-gray-300">
+                                                            {JSON.stringify(
+                                                                i,
+                                                                null,
+                                                                2,
+                                                            )}
+                                                        </pre>
+                                                    </details>
+                                                </div>
+                                            )}
 
                                         {/* 訂單狀態和詳情 */}
                                         <div className="mb-3">
@@ -653,19 +671,19 @@ export default function Dashboard() {
                                                     ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
                                                     : i.status ===
                                                         "cancelled"
-                                                      ? "❌ 已取消"
-                                                      : i.status ===
-                                                          "pending_limit"
-                                                        ? "⏳ 等待中 (限制)"
+                                                        ? "❌ 已取消"
                                                         : i.status ===
+                                                            "pending_limit"
+                                                            ? "⏳ 等待中 (限制)"
+                                                            : i.status ===
                                                                 "partial" ||
-                                                            i.status ===
+                                                                i.status ===
                                                                 "pending"
-                                                          ? i.filled_quantity >
-                                                            0
-                                                              ? `🔄 部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
-                                                              : "⏳ 等待成交"
-                                                          : i.status}
+                                                                ? i.filled_quantity >
+                                                                    0
+                                                                    ? `🔄 部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
+                                                                    : "⏳ 等待成交"
+                                                                : i.status}
                                             </p>
 
                                             {/* 訂單詳情 */}
@@ -692,18 +710,18 @@ export default function Dashboard() {
                                                 )}
                                                 {i.filled_quantity >
                                                     0 && (
-                                                    <div>
-                                                        <span>
-                                                            已成交：
-                                                        </span>
-                                                        <span className="text-green-400">
-                                                            {
-                                                                i.filled_quantity
-                                                            }{" "}
-                                                            股
-                                                        </span>
-                                                    </div>
-                                                )}
+                                                        <div>
+                                                            <span>
+                                                                已成交：
+                                                            </span>
+                                                            <span className="text-green-400">
+                                                                {
+                                                                    i.filled_quantity
+                                                                }{" "}
+                                                                股
+                                                            </span>
+                                                        </div>
+                                                    )}
                                             </div>
                                         </div>
 
@@ -712,12 +730,12 @@ export default function Dashboard() {
                                             <div className="flex justify-end">
                                                 <button
                                                     onClick={() =>
-                                                        handleCancelOrder(
+                                                        openCancelModal(
                                                             i,
                                                             i.order_type,
                                                             i.quantity -
-                                                                (i.filled_quantity ||
-                                                                    0),
+                                                            (i.filled_quantity ||
+                                                                0),
                                                         )
                                                     }
                                                     disabled={
@@ -747,6 +765,66 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* 取消訂單確認 Modal */}
+            <Modal
+                isOpen={showCancelModal}
+                onClose={closeCancelModal}
+                title="確認取消訂單"
+                size="md"
+            >
+                {pendingCancelOrder && (
+                    <div className="space-y-4">
+                        <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                                <h3 className="text-lg font-semibold text-orange-400">
+                                    你確定要取消這張訂單？
+                                </h3>
+                            </div>
+
+                            <div className="space-y-2 text-sm text-[#92cbf4]">
+                                <div className="flex justify-between">
+                                    <span>訂單類型：</span>
+                                    <span className="text-white">
+                                        {pendingCancelOrder.orderType === "market" ? "市價單" : "限價單"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>數量：</span>
+                                    <span className="text-white">
+                                        {pendingCancelOrder.quantity} 股
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>訂單 ID：</span>
+                                    <span className="font-mono text-white text-xs">
+                                        {pendingCancelOrder.orderId}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-[#557797]">
+                            謹慎操作，按錯不能幫你復原喔
+                        </p>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={closeCancelModal}
+                                className="flex-1 rounded-lg border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                            >
+                                保留訂單
+                            </button>
+                            <button
+                                onClick={confirmCancelOrder}
+                                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+                            >
+                                確認取消
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
