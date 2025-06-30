@@ -78,7 +78,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if not user_not_exists:
         await update.message.reply_text(
-            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，*你已經註冊過了！*",
+            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name, 2)}，*你已經註冊過了！*",
             parse_mode=ParseMode.MARKDOWN_V2
         )
         logger.info(f"✋ 使用者 {update.effective_user.full_name} ({update.effective_user.id}) 已經註冊過了")
@@ -110,7 +110,7 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if response.get("ok"):
         name = response.get("message").split(":")[1]
         await update.message.reply_text(
-            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name)}，原來你就是 *{escape_markdown(name)}* 啊！\n\n"
+            f"😸 喵嗚，{escape_markdown(update.effective_user.full_name, 2)}，原來你就是 *{escape_markdown(name, 2)}* 啊！\n\n"
             f"很高興可以在 *SITCON Camp 2025* 看到你，希望你可以在這裡交到好多好多好朋友\n"
             f"我叫做喵券機，顧名思義就是拿來買股票券的機器人，你可以跟我買股票喵！"
             , parse_mode=ParseMode.MARKDOWN_V2)
@@ -167,7 +167,7 @@ async def log(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         lines.append(line)
 
     await update.message.reply_text(
-        f"😺 *{escape_markdown(update.effective_user.full_name)} 的點數紀錄*\n"
+        f"😺 *{escape_markdown(update.effective_user.full_name, 2)} 的點數紀錄*\n"
         f"{"\n".join(lines)}",
         parse_mode=ParseMode.MARKDOWN_V2)
 
@@ -483,7 +483,7 @@ async def show_orders_page(update_or_query, user_id: str, page: int = 1, edit_me
 
     # 頁面資訊
     page_info = f"第 {page}/{total_pages} 頁 (共 {total_orders} 筆訂單)"
-    message_text = f"📊 *{escape_markdown(user_name)} 的股票訂單*\n\n" + "\n".join(
+    message_text = f"📊 *{escape_markdown(user_name, 2)} 的股票訂單*\n\n" + "\n".join(
         lines) + f"\n\n{escape_markdown(page_info, 2)}"
 
     # 建立分頁按鈕
