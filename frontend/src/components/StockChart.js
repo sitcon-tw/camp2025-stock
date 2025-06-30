@@ -477,7 +477,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 </button>
             </div>
             <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
-                <div className="md:min-h-none mb-2 min-h-[400px] w-full flex-1">
+                <div className="mb-2 h-[400px] w-full flex-shrink-0">
                     {displayMode === "candlestick" ? (
                         <div className="h-full">
                             <KLineChart
