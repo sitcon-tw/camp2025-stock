@@ -103,10 +103,10 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         );
                         const labels = historicalData.map((item) => {
                             const date = new Date(item.timestamp);
-                            date.setHours(date.getHours() + 8); // Adjust for Taipei time
                             return date.toLocaleTimeString("zh-TW", {
                                 hour: "2-digit",
                                 minute: "2-digit",
+                                timeZone: "Asia/Taipei"
                             });
                         });
 
@@ -133,20 +133,13 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                                     ...chunk.map((d) => d.price),
                                 );
 
-                                let datetime = new Date(
-                                    chunk[0].timestamp,
-                                );
-                                datetime.setHours(
-                                    datetime.getHours() + 8,
-                                );
-
                                 candlesticks.push({
                                     open,
                                     high,
                                     low,
                                     close,
-                                    timestamp: chunk[0].timestamp,
-                                    time: datetime,
+                                    timestamp: new Date(chunk[0].timestamp).getTime(),
+                                    volume: chunk.reduce((sum, d) => sum + (d.volume || 0), 0)
                                 });
                             }
                         }

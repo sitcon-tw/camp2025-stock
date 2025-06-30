@@ -38,7 +38,7 @@ const KLineChart = ({
                 chartInstance.current = chart;
 
                 const klineData = data.map(item => ({
-                    timestamp: parseInt(item.timestamp) || Date.now(),
+                    timestamp: new Date(item.timestamp).getTime(),
                     open: parseFloat(item.open) || 0,
                     high: parseFloat(item.high) || 0,
                     low: parseFloat(item.low) || 0,
@@ -69,6 +69,14 @@ const KLineChart = ({
                             upColor: '#22c55e',
                             downColor: '#ef4444',
                             noChangeColor: '#22c55e'
+                        },
+                        tooltip: {
+                            showRule: 'always',
+                            showType: 'standard',
+                            title: {
+                                show: true,
+                                template: '{ticker} · {period}'
+                            }
                         }
                     },
                     xAxis: {
