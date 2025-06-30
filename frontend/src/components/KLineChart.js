@@ -21,12 +21,18 @@ const KLineChart = ({
 
                 if (chartInstance.current) {
                     try {
-                        chartInstance.current.dispose();
+                        if (typeof chartInstance.current.dispose === 'function') {
+                            chartInstance.current.dispose();
+                        } else if (typeof chartInstance.current.destroy === 'function') {
+                            chartInstance.current.destroy();
+                        }
                     } catch (e) {
                         console.warn('Error disposing previous chart:', e);
                     }
                     chartInstance.current = null;
                 }
+
+                chartRef.current.innerHTML = '';
 
                 const chart = init(chartRef.current);
                 chartInstance.current = chart;
@@ -130,7 +136,11 @@ const KLineChart = ({
             mounted = false;
             if (chartInstance.current) {
                 try {
-                    chartInstance.current.dispose();
+                    if (typeof chartInstance.current.dispose === 'function') {
+                        chartInstance.current.dispose();
+                    } else if (typeof chartInstance.current.destroy === 'function') {
+                        chartInstance.current.destroy();
+                    }
                 } catch (error) {
                     console.error('Error disposing chart:', error);
                 }
@@ -164,7 +174,7 @@ const KLineChart = ({
     }
 
     return (
-        <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-lg bg-[#0f203e]">
+        <div className="h-full w-full overflow-hidden rounded-lg bg-[#0f203e]">
             <div
                 ref={chartRef}
                 style={{ width: '100%', height: height }}
