@@ -55,6 +55,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    
+    if not DEBUG and update.message.chat_id != MAIN_GROUP:
+        await update.message.reply_text("🚫 大群只能進行 PVP！")
+        return
+    
     portfolio_response = api_helper.post("/api/bot/portfolio", protected_route=True, json={
         "from_user": str(update.effective_user.id)
     })
