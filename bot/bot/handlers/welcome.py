@@ -2,7 +2,7 @@ from telegram import Update, ChatMember
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
-from helper.chat_ids import STUDENT_GROUPS
+from bot.helper.chat_ids import STUDENT_GROUPS
 from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
