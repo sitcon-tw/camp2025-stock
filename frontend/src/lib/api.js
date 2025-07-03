@@ -470,4 +470,48 @@ export async function getWebUserProfile(token) {
     });
 }
 
+// ========== RBAC 權限管理 API ==========
+
+// 取得目前使用者的權限資訊
+export async function getMyPermissions(token) {
+    return apiRequest("/api/rbac/my-permissions", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 取得使用者角色資訊
+export async function getUserRole(token, userId) {
+    return apiRequest(`/api/rbac/users/role/${userId}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 檢查特定權限
+export async function checkPermission(token, userId, permission) {
+    return apiRequest("/api/rbac/check-permission", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: userId, permission }),
+    });
+}
+
+// 取得可用角色列表
+export async function getAvailableRoles(token) {
+    return apiRequest("/api/rbac/roles", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 export { API_BASE_URL };
