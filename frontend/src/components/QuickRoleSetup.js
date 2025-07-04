@@ -87,13 +87,13 @@ export const QuickRoleSetup = ({ token }) => {
 
                     {/* 角色選擇 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                             目標角色
                         </label>
                         <select
                             value={selectedRole}
                             onChange={(e) => setSelectedRole(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                             disabled={loading}
                         >
                             <option value="point_manager">點數管理員</option>
@@ -104,8 +104,8 @@ export const QuickRoleSetup = ({ token }) => {
                 </div>
 
                 {/* 角色說明 */}
-                <div className="p-3 bg-gray-50 rounded text-sm">
-                    <p className="text-gray-700">
+                <div className="p-3 bg-[#0f203e] border border-[#294565] rounded text-sm">
+                    <p className="text-[#557797]">
                         <strong>{formatRoleName(selectedRole)}：</strong>
                         {selectedRole === "point_manager" && "可以發放點數給使用者、查看所有使用者資料"}
                         {selectedRole === "announcer" && "可以發布系統公告、查看所有使用者資料"}

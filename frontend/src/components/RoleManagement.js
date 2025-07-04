@@ -108,12 +108,12 @@ export const RoleManagement = ({ token }) => {
 
     const getRoleColor = (role) => {
         const colors = {
-            student: "bg-gray-100 text-gray-800",
-            point_manager: "bg-blue-100 text-blue-800",
-            announcer: "bg-purple-100 text-purple-800",
-            admin: "bg-red-100 text-red-800"
+            student: "bg-blue-600/20 text-blue-400 border border-blue-500/30",
+            point_manager: "bg-yellow-600/20 text-yellow-400 border border-yellow-500/30",
+            announcer: "bg-purple-600/20 text-purple-400 border border-purple-500/30",
+            admin: "bg-red-600/20 text-red-400 border border-red-500/30"
         };
-        return colors[role] || "bg-gray-100 text-gray-800";
+        return colors[role] || "bg-blue-600/20 text-blue-400 border border-blue-500/30";
     };
 
     const getPermissionBadges = (user) => {
@@ -127,7 +127,7 @@ export const RoleManagement = ({ token }) => {
     if (loading) {
         return (
             <div className="flex items-center justify-center p-8">
-                <div className="text-lg text-gray-600">載入使用者資料中...</div>
+                <div className="text-lg text-[#557797]">載入使用者資料中...</div>
             </div>
         );
     }
@@ -138,10 +138,10 @@ export const RoleManagement = ({ token }) => {
             {notification.show && (
                 <div className={`p-4 rounded-lg border ${
                     notification.type === "success" 
-                        ? "bg-green-50 border-green-200 text-green-800"
+                        ? "bg-green-600/20 border-green-500/30 text-green-400"
                         : notification.type === "error"
-                        ? "bg-red-50 border-red-200 text-red-800"
-                        : "bg-blue-50 border-blue-200 text-blue-800"
+                        ? "bg-red-600/20 border-red-500/30 text-red-400"
+                        : "bg-blue-600/20 border-blue-500/30 text-blue-400"
                 }`}>
                     {notification.message}
                 </div>
@@ -150,20 +150,20 @@ export const RoleManagement = ({ token }) => {
             {/* 標題和統計 */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">角色管理</h2>
-                    <p className="text-gray-600">管理使用者角色和權限</p>
+                    <h2 className="text-2xl font-bold text-[#92cbf4]">角色管理</h2>
+                    <p className="text-[#557797]">管理使用者角色和權限</p>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-[#557797]">
                     總共 {users.length} 個使用者，顯示 {filteredUsers.length} 個
                 </div>
             </div>
 
             {/* 搜尋和篩選 */}
-            <div className="bg-white p-4 rounded-lg shadow space-y-4">
+            <div className="bg-[#1A325F] p-4 rounded-lg shadow border border-[#294565] space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* 搜尋框 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                             搜尋使用者
                         </label>
                         <input
@@ -171,19 +171,19 @@ export const RoleManagement = ({ token }) => {
                             placeholder="輸入使用者名稱或 ID"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded-md text-white placeholder-[#557797] focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                         />
                     </div>
 
                     {/* 角色篩選 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                             篩選角色
                         </label>
                         <select
                             value={roleFilter}
                             onChange={(e) => setRoleFilter(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                         >
                             <option value="all">所有角色</option>
                             <option value="student">學員</option>
@@ -199,9 +199,9 @@ export const RoleManagement = ({ token }) => {
                     {Object.values(ROLES).map(role => {
                         const count = users.filter(user => user.role === role).length;
                         return (
-                            <div key={role} className="text-center p-3 bg-gray-50 rounded">
-                                <div className="text-lg font-bold text-gray-900">{count}</div>
-                                <div className="text-sm text-gray-600">{formatRoleName(role)}</div>
+                            <div key={role} className="text-center p-3 bg-[#0f203e] border border-[#294565] rounded">
+                                <div className="text-lg font-bold text-[#92cbf4]">{count}</div>
+                                <div className="text-sm text-[#557797]">{formatRoleName(role)}</div>
                             </div>
                         );
                     })}
@@ -209,34 +209,34 @@ export const RoleManagement = ({ token }) => {
             </div>
 
             {/* 使用者列表 */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-[#1A325F] rounded-lg shadow border border-[#294565] overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-[#294565]">
+                        <thead className="bg-[#0f203e]">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                     使用者
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                     角色
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                     權限
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                     操作
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-[#1A325F] divide-y divide-[#294565]">
                             {filteredUsers.map((user) => (
-                                <tr key={user.user_id} className="hover:bg-gray-50">
+                                <tr key={user.user_id} className="hover:bg-[#0f203e]">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div>
-                                            <div className="text-sm font-medium text-gray-900">
+                                            <div className="text-sm font-medium text-[#92cbf4]">
                                                 {user.username}
                                             </div>
-                                            <div className="text-sm text-gray-500">
+                                            <div className="text-sm text-[#557797]">
                                                 ID: {user.user_id}
                                             </div>
                                         </div>
@@ -249,12 +249,12 @@ export const RoleManagement = ({ token }) => {
                                     <td className="px-6 py-4">
                                         <div className="flex flex-wrap gap-1">
                                             {getPermissionBadges(user).map((badge, index) => (
-                                                <span key={index} className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+                                                <span key={index} className="inline-flex px-2 py-1 text-xs bg-green-600/20 text-green-400 border border-green-500/30 rounded">
                                                     {badge}
                                                 </span>
                                             ))}
                                             {getPermissionBadges(user).length === 0 && (
-                                                <span className="text-xs text-gray-500">基本權限</span>
+                                                <span className="text-xs text-[#557797]">基本權限</span>
                                             )}
                                         </div>
                                     </td>
@@ -262,7 +262,7 @@ export const RoleManagement = ({ token }) => {
                                         <button
                                             onClick={() => openRoleChangeModal(user)}
                                             disabled={updating[user.user_id]}
-                                            className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                                            className="text-[#469FD2] hover:text-[#92cbf4] disabled:opacity-50"
                                         >
                                             {updating[user.user_id] ? "更新中..." : "變更角色"}
                                         </button>
@@ -274,7 +274,7 @@ export const RoleManagement = ({ token }) => {
                 </div>
 
                 {filteredUsers.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-[#557797]">
                         找不到符合條件的使用者
                     </div>
                 )}
@@ -324,26 +324,26 @@ const RoleChangeModal = ({ user, availableRoles, onConfirm, onCancel }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-[#1A325F] border border-[#294565] rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold text-[#92cbf4] mb-4">
                     變更使用者角色
                 </h3>
                 
-                <div className="mb-4 p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-600">使用者：</p>
-                    <p className="font-medium">{user?.username}</p>
-                    <p className="text-xs text-gray-500">ID: {user?.user_id}</p>
+                <div className="mb-4 p-3 bg-[#0f203e] border border-[#294565] rounded">
+                    <p className="text-sm text-[#557797]">使用者：</p>
+                    <p className="font-medium text-white">{user?.username}</p>
+                    <p className="text-xs text-[#557797]">ID: {user?.user_id}</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                             選擇新角色
                         </label>
                         <select
                             value={selectedRole}
                             onChange={(e) => setSelectedRole(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                             required
                         >
                             {Object.values(ROLES).map(role => (
@@ -354,21 +354,21 @@ const RoleChangeModal = ({ user, availableRoles, onConfirm, onCancel }) => {
                         </select>
                         
                         {selectedRole && (
-                            <p className="mt-2 text-xs text-gray-600">
+                            <p className="mt-2 text-xs text-[#557797]">
                                 {getRoleDescription(selectedRole)}
                             </p>
                         )}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                             變更原因 (選填)
                         </label>
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="請說明變更角色的原因..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded-md text-white placeholder-[#557797] focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                             rows={3}
                         />
                     </div>
@@ -377,14 +377,14 @@ const RoleChangeModal = ({ user, availableRoles, onConfirm, onCancel }) => {
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                            className="px-4 py-2 text-[#92cbf4] bg-[#294565] rounded hover:bg-[#1A325F]"
                             disabled={loading}
                         >
                             取消
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                            className="px-4 py-2 bg-[#469FD2] text-white rounded hover:bg-[#357AB8] disabled:opacity-50"
                             disabled={loading || selectedRole === user?.role}
                         >
                             {loading ? "更新中..." : "確認變更"}
