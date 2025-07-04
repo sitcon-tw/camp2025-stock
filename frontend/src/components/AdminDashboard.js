@@ -118,7 +118,14 @@ export const AdminDashboard = ({ token }) => {
                 </div>
 
                 <div className="p-6">
-                    {activeSection === "overview" && <OverviewSection token={token} />}
+                    {activeSection === "overview" && (
+                        <OverviewSection 
+                            token={token} 
+                            setShowPointsModal={setShowPointsModal}
+                            setShowAnnouncementModal={setShowAnnouncementModal}
+                            showNotification={showNotification}
+                        />
+                    )}
                     {activeSection === "roles" && (
                         <PermissionGuard
                             requiredPermission={PERMISSIONS.MANAGE_USERS}
@@ -229,7 +236,7 @@ export const AdminDashboard = ({ token }) => {
 /**
  * 功能概覽區塊
  */
-const OverviewSection = ({ token }) => (
+const OverviewSection = ({ token, setShowPointsModal, setShowAnnouncementModal, showNotification }) => (
     <div className="space-y-6">
         <div>
             <h2 className="text-2xl font-bold text-[#92cbf4] mb-2">管理員功能概覽</h2>
