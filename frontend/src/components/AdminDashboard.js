@@ -22,10 +22,39 @@ export const AdminDashboard = ({ token }) => {
     const [activeSection, setActiveSection] = useState("overview");
     const [notification, setNotification] = useState({ show: false, message: "", type: "info" });
     
+    const [showPointsModal, setShowPointsModal] = useState(false);
+    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+    const [pointsForm, setPointsForm] = useState({ username: "", amount: "" });
+    const [announcementForm, setAnnouncementForm] = useState({ title: "", message: "" });
+    
     // 顯示通知
     const showNotification = (message, type = "info") => {
         setNotification({ show: true, message, type });
         setTimeout(() => setNotification({ show: false, message: "", type: "info" }), 3000);
+    };
+    
+    // 發放點數
+    const handleGivePoints = async () => {
+        try {
+            await givePoints(token, pointsForm.username, "user", parseInt(pointsForm.amount));
+            showNotification(`成功發放 ${pointsForm.amount} 點給 ${pointsForm.username}`, 'success');
+            setShowPointsModal(false);
+            setPointsForm({ username: "", amount: "" });
+        } catch (error) {
+            showNotification(`發放點數失敗: ${error.message}`, 'error');
+        }
+    };
+    
+    // 發布公告
+    const handleCreateAnnouncement = async () => {
+        try {
+            await createAnnouncement(token, announcementForm.title, announcementForm.message, true);
+            showNotification('公告已成功發布', 'success');
+            setShowAnnouncementModal(false);
+            setAnnouncementForm({ title: "", message: "" });
+        } catch (error) {
+            showNotification(`發布公告失敗: ${error.message}`, 'error');
+        }
     };
     
     if (loading) {
