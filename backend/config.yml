@@ -1,0 +1,130 @@
+# CAMP 2025 Stock Trading System Configuration
+# 這些設定值會被對應的環境變數覆蓋（如果有設定的話）
+# 
+# 環境變數優先級：環境變數 > config.yml > code預設值
+#
+# 主要環境變數對應：
+# - CAMP_MONGO_URI -> database.mongo_uri
+# - CAMP_DATABASE_NAME -> database.database_name  
+# - CAMP_JWT_SECRET -> auth.jwt_secret
+# - CAMP_JWT_EXPIRE_MINUTES -> auth.jwt_expire_minutes
+# - CAMP_ADMIN_PASSWORD -> auth.admin_password
+# - CAMP_INTERNAL_API_KEY -> auth.internal_api_key
+# - CAMP_ALLOWED_HOSTS -> network.allowed_hosts
+# - CAMP_TELEGRAM_BOT_API_URL -> network.telegram_bot_api_url
+# - CAMP_TELEGRAM_BOT_TOKEN -> network.telegram_bot_token
+# - CAMP_ENVIRONMENT -> system.environment
+# - CAMP_DEBUG -> system.debug
+# - CAMP_IPO_INITIAL_SHARES -> trading.ipo.initial_shares
+# - CAMP_IPO_INITIAL_PRICE -> trading.ipo.initial_price
+
+# 系統基本設定
+system:
+  debug: true                    # 對應 CAMP_DEBUG
+  environment: development       # 對應 CAMP_ENVIRONMENT
+  timezone: "UTC+8"
+  
+# 資料庫設定
+database:
+  mongo_uri: "mongodb://localhost:27017"  # 對應 CAMP_MONGO_URI
+  database_name: "sitcon_camp_2025"       # 對應 CAMP_DATABASE_NAME
+  connection_timeout: 30                  # 對應 CAMP_DB_TIMEOUT
+  max_pool_size: 100                      # 對應 CAMP_DB_POOL_SIZE
+  
+# 認證與安全設定
+auth:
+  jwt_secret: "your-secret-key"           # 對應 CAMP_JWT_SECRET
+  jwt_algorithm: "HS256"                  # 對應 CAMP_JWT_ALGORITHM
+  jwt_expire_minutes: 1440                # 對應 CAMP_JWT_EXPIRE_MINUTES (24小時)
+  admin_password: "admin123"              # 對應 CAMP_ADMIN_PASSWORD
+  internal_api_key: "neverGonnaGiveYouUp" # 對應 CAMP_INTERNAL_API_KEY
+  
+# 網路設定
+network:
+  allowed_hosts:                          # 對應 CAMP_ALLOWED_HOSTS
+    - "*"
+  cors_origins:                           # 對應 CAMP_CORS_ORIGINS  
+    - "*"
+  telegram_bot_api_url: "https://camp.sitcon.party/bot/broadcast/"  # 對應 CAMP_TELEGRAM_BOT_API_URL
+  telegram_bot_token: ""                  # 對應 CAMP_TELEGRAM_BOT_TOKEN
+  notification_timeout: 30                # 對應 CAMP_NOTIFICATION_TIMEOUT
+  
+# 交易系統設定
+trading:
+  # 股價設定（代碼中最常見的硬編碼值）
+  initial_stock_price: 20      # 初始/預設股價
+  default_stock_price: 20      # 當無法取得價格時的預設值
+  
+  # IPO 設定（代碼中最重要的硬編碼值）
+  ipo:
+    initial_shares: 1000000    # IPO 初始發行股數，對應 CAMP_IPO_INITIAL_SHARES
+    initial_price: 20          # IPO 初始股價，對應 CAMP_IPO_INITIAL_PRICE
+    
+  # 交易限制
+  trading_limits:
+    default_limit_percent: 2000  # 預設漲跌幅限制，20% = 2000 基點
+    
+  # 交易設定（來自 config_refactored.py 的實際環境變數）
+  min_trade_amount: 1            # 對應 CAMP_MIN_TRADE_AMOUNT
+  max_trade_amount: 1000000      # 對應 CAMP_MAX_TRADE_AMOUNT
+  trading_fee_percentage: 0.01   # 對應 CAMP_TRADING_FEE_PCT  
+  min_trading_fee: 1             # 對應 CAMP_MIN_TRADING_FEE
+  transfer_fee_percentage: 0.01  # 對應 CAMP_TRANSFER_FEE_PCT
+  min_transfer_fee: 1            # 對應 CAMP_MIN_TRANSFER_FEE
+    
+  # 手續費設定（從 domain/strategies.py 找到的實際值）
+  fees:
+    tier_1_threshold: 10000    # 1000-10000 收 5 點
+    tier_1_fee: 5
+    tier_2_threshold: 50000    # 10000-50000 收 20 點
+    tier_2_fee: 20
+    default_fee_rate: 10.0     # 預設手續費率 10%
+    min_fee: 1                 # 最少手續費 1 點
+    
+  # 市場時間設定
+  market_hours:
+    default_open_hour: 9       # 預設開市時間
+    default_close_hour: 17     # 預設收市時間
+    
+# 使用者系統設定
+user:
+  # 初始設定
+  initial_balance: 0           # 新用戶初始點數
+  initial_stocks: 0            # 新用戶初始股數
+  
+  # 學員設定（從代碼中找到的實際值）
+  student_defaults:
+    enabled: false             # 新學員預設未啟用
+    initial_points: 100        # 新學員初始點數
+    
+  # PVP 設定（從 schemas/bot.py 找到的實際值）
+  pvp:
+    max_challenge_amount: 10000  # 最大挑戰金額
+    
+# 系統維護設定
+maintenance:
+  # 最終結算設定
+  final_settlement:
+    default_price: 20          # 最終結算時的預設股價
+    
+  # 重置設定
+  reset:
+    default_initial_balance: 10000  # 重置後的初始餘額
+    default_initial_stocks: 0       # 重置後的初始股數
+    
+  # 動態價格限制
+  dynamic_price_limit:
+    default_percent: 10.0      # 預設動態價格限制 10%
+    
+# 測試與模擬設定
+simulation:
+  # 測試用預設值
+  initial_points_per_user: 1000    # 模擬測試中每人初始點數
+  max_stocks_per_person: 10        # 初始股票分發時每人最多股數
+  
+  # 價格模擬
+  base_price: 20.0                 # 價格模擬的基準價格
+  
+# 錯誤處理設定
+error_handling:
+  error_id_modulo: 10000           # 錯誤 ID 生成的模數（main_refactored.py 中的值）

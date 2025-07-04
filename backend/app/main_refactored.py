@@ -10,7 +10,7 @@ from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
 import logging
 
-# Clean Code 原則：清晰的日誌配置
+# Clean Code 原則：清晰的日誌設定
 logging.basicConfig(
     level=getattr(logging, config.get_log_level()),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -25,7 +25,7 @@ logging.getLogger('pymongo.serverSelection').setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-# SRP 原則：專注於應用程式配置和啟動
+# SRP 原則：專注於應用程式設定和啟動
 app = FastAPI(
     title="SITCON Camp 2025 點數系統 (重構版)",
     description="基於 SOLID 原則和 Clean Architecture 重構的股票交易及點數管理系統 API",
@@ -35,7 +35,7 @@ app = FastAPI(
     debug=config.debug
 )
 
-# CORS 設定 - 使用重構後的配置
+# CORS 設定 - 使用重構後的設定
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.security.cors_origins,
@@ -114,7 +114,7 @@ async def startup_event():
     logger.info(f"Environment: {config.environment}")
     logger.info(f"Debug mode: {config.debug}")
     
-    # 記錄配置資訊（敏感資訊已遮蔽）
+    # 記錄設定資訊（敏感資訊已遮蔽）
     logger.info(f"Configuration: {config.to_dict()}")
     
     try:
@@ -345,7 +345,7 @@ async def architecture_info():
             "使用策略模式支援多種業務規則",
             "透過依賴注入提高可測試性",
             "清晰的錯誤處理和日誌記錄",
-            "配置管理和常數定義",
+            "設定管理和常數定義",
             "基於介面的設計，支援未來擴充"
         ]
     }

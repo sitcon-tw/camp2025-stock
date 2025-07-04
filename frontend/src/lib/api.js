@@ -268,8 +268,8 @@ export async function executeCallAuction(token) {
     });
 }
 
-// IPO 預設配置管理
-// 查詢IPO預設配置
+// IPO 預設設定管理
+// 查詢IPO預設設定
 export async function getIpoDefaults(token) {
     return apiRequest("/api/admin/ipo/defaults", {
         method: "GET",
@@ -280,7 +280,7 @@ export async function getIpoDefaults(token) {
     });
 }
 
-// 更新IPO預設配置
+// 更新IPO預設設定
 export async function updateIpoDefaults(
     token,
     defaultInitialShares = null,

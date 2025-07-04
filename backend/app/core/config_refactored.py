@@ -1,5 +1,5 @@
-# 重構後的配置類
-# SRP 原則：專注於配置管理
+# 重構後的設定類
+# SRP 原則：專注於設定管理
 # Clean Code 原則：清晰的命名、常數管理、類型提示
 
 import os
@@ -14,7 +14,7 @@ load_dotenv()
 @dataclass
 class DatabaseConfig:
     """
-    資料庫配置
+    資料庫設定
     SRP 原則：專注於資料庫相關設定
     Clean Code 原則：使用 dataclass 提高可讀性
     """
@@ -25,7 +25,7 @@ class DatabaseConfig:
     
     @classmethod
     def from_env(cls) -> 'DatabaseConfig':
-        """從環境變數建立配置"""
+        """從環境變數建立設定"""
         return cls(
             mongo_uri=os.getenv("CAMP_MONGO_URI", "mongodb://localhost:27017"),
             database_name=os.getenv("CAMP_DATABASE_NAME", "sitcon_camp_2025"),
@@ -37,7 +37,7 @@ class DatabaseConfig:
 @dataclass
 class JWTConfig:
     """
-    JWT 配置
+    JWT 設定
     SRP 原則：專注於 JWT 相關設定
     """
     secret_key: str
@@ -46,7 +46,7 @@ class JWTConfig:
     
     @classmethod
     def from_env(cls) -> 'JWTConfig':
-        """從環境變數建立配置"""
+        """從環境變數建立設定"""
         return cls(
             secret_key=os.getenv("CAMP_JWT_SECRET", "your-secret-key"),
             algorithm=os.getenv("CAMP_JWT_ALGORITHM", "HS256"),
@@ -57,7 +57,7 @@ class JWTConfig:
 @dataclass
 class SecurityConfig:
     """
-    安全配置
+    安全設定
     SRP 原則：專注於安全相關設定
     """
     admin_password: str
@@ -67,7 +67,7 @@ class SecurityConfig:
     
     @classmethod
     def from_env(cls) -> 'SecurityConfig':
-        """從環境變數建立配置"""
+        """從環境變數建立設定"""
         allowed_hosts = os.getenv("CAMP_ALLOWED_HOSTS", "*").split(",")
         cors_origins = os.getenv("CAMP_CORS_ORIGINS", "*").split(",")
         
@@ -82,7 +82,7 @@ class SecurityConfig:
 @dataclass
 class TradingConfig:
     """
-    交易配置
+    交易設定
     SRP 原則：專注於交易相關設定
     DDD 原則：將業務規則集中管理
     """
@@ -97,7 +97,7 @@ class TradingConfig:
     
     @classmethod
     def from_env(cls) -> 'TradingConfig':
-        """從環境變數建立配置"""
+        """從環境變數建立設定"""
         return cls(
             ipo_initial_shares=int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000")),
             ipo_initial_price=int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20")),
@@ -113,7 +113,7 @@ class TradingConfig:
 @dataclass
 class ExternalServiceConfig:
     """
-    外部服務配置
+    外部服務設定
     SRP 原則：專注於外部服務相關設定
     """
     telegram_bot_api_url: str
@@ -121,7 +121,7 @@ class ExternalServiceConfig:
     
     @classmethod
     def from_env(cls) -> 'ExternalServiceConfig':
-        """從環境變數建立配置"""
+        """從環境變數建立設定"""
         return cls(
             telegram_bot_api_url=os.getenv(
                 "CAMP_TELEGRAM_BOT_API_URL", 
@@ -133,9 +133,9 @@ class ExternalServiceConfig:
 
 class ApplicationConfig:
     """
-    應用程式主配置類
-    SRP 原則：整合各個配置模組
-    Facade Pattern：提供統一的配置介面
+    應用程式主設定類
+    SRP 原則：整合各個設定模組
+    Facade Pattern：提供統一的設定介面
     Clean Code 原則：清晰的組織結構和命名
     """
     
@@ -173,7 +173,7 @@ class ApplicationConfig:
     def get_log_level(self) -> str:
         """
         獲取日誌級別
-        Clean Code 原則：根據環境動態決定配置
+        Clean Code 原則：根據環境動態決定設定
         """
         if self.is_development:
             return "DEBUG"
@@ -184,8 +184,8 @@ class ApplicationConfig:
     
     def validate(self) -> None:
         """
-        驗證配置的有效性
-        Fail Fast 原則：儘早發現配置錯誤
+        驗證設定的有效性
+        Fail Fast 原則：儘早發現設定錯誤
         """
         if not self.jwt.secret_key or self.jwt.secret_key == "your-secret-key":
             if self.is_production:
@@ -274,11 +274,11 @@ class ApplicationConfig:
         }
 
 
-# 全域配置實例
-# Singleton Pattern：確保整個應用使用相同的配置
+# 全域設定實例
+# Singleton Pattern：確保整個應用使用相同的設定
 config = ApplicationConfig()
 
-# 在應用啟動時驗證配置
+# 在應用啟動時驗證設定
 config.validate()
 
 

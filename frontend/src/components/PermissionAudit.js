@@ -316,7 +316,7 @@ const AuditTab = ({ auditData }) => (
                 <div className="flex items-center">
                     <span className="text-green-600 text-xl mr-2">✓</span>
                     <span className="text-green-800 font-semibold">
-                        權限配置正常，未發現問題
+                        權限設定正常，未發現問題
                     </span>
                 </div>
             </div>

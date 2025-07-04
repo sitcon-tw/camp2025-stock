@@ -202,20 +202,20 @@ async def test_clean_code_principles():
         assert Constants.DEFAULT_USER_POINTS == 100
         print("    ✅ 常數管理實現正確")
         
-        # 2. 測試配置管理
-        print("  📋 測試配置管理...")
+        # 2. 測試設定管理
+        print("  📋 測試設定管理...")
         from app.core.config_refactored import config
         
-        # 驗證配置結構
+        # 驗證設定結構
         assert hasattr(config, 'database')
         assert hasattr(config, 'jwt')
         assert hasattr(config, 'trading')
         assert hasattr(config, 'security')
         
-        # 驗證配置方法
+        # 驗證設定方法
         assert callable(config.is_development)
         assert callable(config.get_log_level)
-        print("    ✅ 配置管理實現正確")
+        print("    ✅ 設定管理實現正確")
         
         # 3. 測試清晰命名
         print("  📋 測試清晰命名...")
@@ -390,7 +390,7 @@ async def main():
     print("     - Dependency Injection: 控制反轉")
     print("  ✅ Clean Code 實踐:")
     print("     - 清晰的命名和結構")
-    print("     - 常數管理和配置分離") 
+    print("     - 常數管理和設定分離") 
     print("     - 單一職責函數設計")
     print("  ✅ Domain-Driven Design:")
     print("     - 豐富的領域模型")

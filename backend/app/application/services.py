@@ -173,13 +173,13 @@ class TradingApplicationService(BaseApplicationService):
             from app.core.database import database_manager
             from app.core.enums import Collections
             
-            # 取得市場開放時間配置
+            # 取得市場開放時間設定
             market_config = await database_manager.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "market_hours"}
             )
             
             if not market_config or "openTime" not in market_config:
-                # 如果沒有配置，預設市場開放
+                # 如果沒有設定，預設市場開放
                 return True
             
             current_timestamp = int(datetime.now(timezone.utc).timestamp())

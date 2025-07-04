@@ -172,13 +172,13 @@ async def test_strategy_pattern():
         return False
 
 async def test_configuration():
-    """測試配置管理"""
-    print("\n⚙️  測試配置管理...")
+    """測試設定管理"""
+    print("\n⚙️  測試設定管理...")
     
     try:
         from app.core.config_refactored import config, Constants
         
-        # 測試配置結構
+        # 測試設定結構
         assert hasattr(config, 'database')
         assert hasattr(config, 'jwt')
         assert hasattr(config, 'trading')
@@ -193,12 +193,12 @@ async def test_configuration():
         assert Constants.ORDER_STATUS_PENDING == "pending"
         assert Constants.ORDER_TYPE_MARKET == "market"
         
-        print("  ✅ 配置管理測試通過")
+        print("  ✅ 設定管理測試通過")
         
         return True
         
     except Exception as e:
-        print(f"  ❌ 配置管理測試失敗: {e}")
+        print(f"  ❌ 設定管理測試失敗: {e}")
         return False
 
 async def test_dependency_injection():

@@ -202,7 +202,7 @@ export const getPermissionRecommendations = (summary) => {
     }
     
     if (recommendations.length === 0) {
-        recommendations.push("權限配置符合角色要求，無需調整");
+        recommendations.push("權限設定符合角色要求，無需調整");
     }
     
     return recommendations;

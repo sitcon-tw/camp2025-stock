@@ -31,7 +31,7 @@ export const usePermissionContext = () => {
 };
 
 /**
- * 權限配置常量
+ * 權限設定常量
  * 定義系統中的所有權限
  */
 export const PERMISSIONS = {
@@ -52,7 +52,7 @@ export const PERMISSIONS = {
 };
 
 /**
- * 角色配置常量
+ * 角色設定常量
  * 定義系統中的所有角色
  */
 export const ROLES = {
@@ -63,7 +63,7 @@ export const ROLES = {
 };
 
 /**
- * 權限組配置
+ * 權限組設定
  * 將相關權限組合在一起
  */
 export const PERMISSION_GROUPS = {

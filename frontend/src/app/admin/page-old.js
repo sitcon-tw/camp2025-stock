@@ -1998,7 +1998,7 @@ export default function AdminPage() {
 
                     {transferFeeConfig ? (
                         <div className="space-y-4">
-                            {/* 手續費配置顯示 */}
+                            {/* 手續費設定顯示 */}
                             <div className="grid grid-cols-2 gap-4 rounded-xl bg-[#0f203e] p-4">
                                 <div className="text-center">
                                     <div className="text-2xl font-bold text-white">
