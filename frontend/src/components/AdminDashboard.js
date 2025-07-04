@@ -113,10 +113,9 @@ export const AdminDashboard = ({ token }) => {
                     )}
                 </div>
             </div>
-        </div>
-        
-        {/* 發放點數模態框 */}
-        {showPointsModal && (
+            
+            {/* 發放點數模態框 */}
+            {showPointsModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-[#1A325F] p-6 rounded-lg border border-[#294565] max-w-md w-full mx-4">
                     <h3 className="text-lg font-bold text-[#92cbf4] mb-4">💰 發放點數</h3>

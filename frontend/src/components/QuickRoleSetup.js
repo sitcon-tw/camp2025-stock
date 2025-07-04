@@ -58,12 +58,12 @@ export const QuickRoleSetup = ({ token }) => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
             <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-[#92cbf4] mb-2">
                     🚀 快速角色設定
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[#557797]">
                     快速將使用者提升為管理員角色，適用於初始系統設定
                 </p>
             </div>
@@ -72,7 +72,7 @@ export const QuickRoleSetup = ({ token }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* 使用者名稱輸入 */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                             使用者名稱 / ID
                         </label>
                         <input
@@ -80,7 +80,7 @@ export const QuickRoleSetup = ({ token }) => {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="輸入使用者名稱或 ID"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded-md text-white placeholder-[#557797] focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                             disabled={loading}
                         />
                     </div>
@@ -117,8 +117,8 @@ export const QuickRoleSetup = ({ token }) => {
                 {result && (
                     <div className={`p-3 rounded text-sm ${
                         result.success 
-                            ? "bg-green-50 border border-green-200 text-green-800"
-                            : "bg-red-50 border border-red-200 text-red-800"
+                            ? "bg-green-600/20 border border-green-500/30 text-green-400"
+                            : "bg-red-600/20 border border-red-500/30 text-red-400"
                     }`}>
                         {result.message}
                     </div>
@@ -128,18 +128,18 @@ export const QuickRoleSetup = ({ token }) => {
                 <button
                     type="submit"
                     disabled={loading || !username.trim()}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#469FD2] text-white py-2 px-4 rounded-md hover:bg-[#357AB8] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? "設定中..." : `設定為${formatRoleName(selectedRole)}`}
                 </button>
             </form>
 
             {/* 使用提示 */}
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                <p className="text-yellow-800">
+            <div className="mt-4 p-3 bg-yellow-600/20 border border-yellow-500/30 rounded text-sm">
+                <p className="text-yellow-400">
                     <strong>💡 使用提示：</strong>
                 </p>
-                <ul className="list-disc list-inside text-yellow-700 mt-1 space-y-1">
+                <ul className="list-disc list-inside text-yellow-300 mt-1 space-y-1">
                     <li>請確保輸入正確的使用者名稱或 ID</li>
                     <li>使用者需要先通過 Telegram 完成註冊</li>
                     <li>角色變更會立即生效，使用者下次登入時即可使用新權限</li>
