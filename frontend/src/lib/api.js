@@ -482,6 +482,16 @@ export async function getMyPermissions(token) {
     });
 }
 
+// 檢查 Telegram 使用者是否為管理員
+export async function checkTelegramAdminStatus(token) {
+    return apiRequest("/api/rbac/my-permissions", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // 取得使用者角色資訊
 export async function getUserRole(token, userId) {
     return apiRequest(`/api/rbac/users/role/${userId}`, {

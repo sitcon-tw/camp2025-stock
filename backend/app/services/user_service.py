@@ -3501,22 +3501,22 @@ class UserService:
                 }
             
             # 驗證使用者擁有權
-            # 由於訂單的 user_id 是 MongoDB ObjectId，但當前的 user_id 是內部 ID，需要轉換
+            # 由於訂單的 user_id 是 MongoDB ObjectId，但目前的 user_id 是內部 ID，需要轉換
             order_user_id = order.get("user_id")
             
             # 通過內部 user_id 查找對應的 MongoDB ObjectId
             current_user = await self._get_user_(user_id)
             if not current_user:
-                logger.warning(f"無法找到當前使用者: {user_id}")
+                logger.warning(f"無法找到目前使用者: {user_id}")
                 return {
                     "success": False,
-                    "message": "當前使用者不存在"
+                    "message": "目前使用者不存在"
                 }
             
             current_user_oid = current_user.get("_id")
             
             logger.info(f"權限驗證 - 訂單使用者ObjectId: {order_user_id} ({type(order_user_id)})")
-            logger.info(f"權限驗證 - 當前使用者ID: {user_id} -> ObjectId: {current_user_oid} ({type(current_user_oid)})")
+            logger.info(f"權限驗證 - 目前使用者ID: {user_id} -> ObjectId: {current_user_oid} ({type(current_user_oid)})")
             logger.info(f"權限驗證 - ObjectId比較結果: {order_user_id == current_user_oid}")
             
             if order_user_id != current_user_oid:

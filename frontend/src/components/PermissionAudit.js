@@ -169,9 +169,9 @@ const OverviewTab = ({ auditData, onRefresh }) => (
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 當前角色 */}
+            {/* 目前角色 */}
             <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900">當前角色</h3>
+                <h3 className="font-semibold text-blue-900">目前角色</h3>
                 <p className="text-2xl font-bold text-blue-600">
                     {auditData.currentRole || "未知"}
                 </p>
