@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { PermissionGuard, AdminGuard, PermissionButton } from "./PermissionGuard";
 import { PERMISSIONS, ROLES } from "@/contexts/PermissionContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { RoleManagement } from "./RoleManagement";
+import { QuickRoleSetup } from "./QuickRoleSetup";
 
 /**
  * 管理員儀表板組件
@@ -9,6 +11,7 @@ import { usePermissions } from "@/hooks/usePermissions";
  */
 export const AdminDashboard = ({ token }) => {
     const { permissions, role, loading, isAdmin } = usePermissions(token);
+    const [activeSection, setActiveSection] = useState("overview");
     
     if (loading) {
         return (
@@ -28,53 +31,151 @@ export const AdminDashboard = ({ token }) => {
 
     return (
         <div className="space-y-6">
-            {/* 系統管理區塊 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
-                token={token}
-                fallback={
-                    <div className="p-4 bg-gray-100 rounded-lg text-gray-500">
-                        您沒有系統管理權限
+            {/* 功能導航 */}
+            <div className="bg-white rounded-lg shadow">
+                <div className="border-b border-gray-200">
+                    <nav className="flex space-x-8 px-6">
+                        {[
+                            { id: "overview", label: "功能概覽", icon: "🏠" },
+                            { id: "roles", label: "角色管理", icon: "👥", permission: PERMISSIONS.MANAGE_USERS },
+                            { id: "system", label: "系統管理", icon: "⚙️", permission: PERMISSIONS.SYSTEM_ADMIN },
+                        ].map(section => (
+                            <PermissionGuard
+                                key={section.id}
+                                requiredPermission={section.permission}
+                                token={token}
+                                fallback={section.id === "overview" ? null : undefined}
+                            >
+                                <button
+                                    onClick={() => setActiveSection(section.id)}
+                                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                                        activeSection === section.id
+                                            ? "border-blue-500 text-blue-600"
+                                            : "border-transparent text-gray-500 hover:text-gray-700"
+                                    }`}
+                                >
+                                    <span>{section.icon}</span>
+                                    <span>{section.label}</span>
+                                </button>
+                            </PermissionGuard>
+                        ))}
+                    </nav>
+                </div>
+
+                <div className="p-6">
+                    {activeSection === "overview" && <OverviewSection token={token} />}
+                    {activeSection === "roles" && (
+                        <PermissionGuard
+                            requiredPermission={PERMISSIONS.MANAGE_USERS}
+                            token={token}
+                            fallback={<div className="text-red-600">權限不足：需要用戶管理權限</div>}
+                        >
+                            <div className="space-y-6">
+                                <QuickRoleSetup token={token} />
+                                <RoleManagement token={token} />
+                            </div>
+                        </PermissionGuard>
+                    )}
+                    {activeSection === "system" && (
+                        <PermissionGuard
+                            requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                            token={token}
+                            fallback={<div className="text-red-600">權限不足：需要系統管理權限</div>}
+                        >
+                            <SystemManagementSection token={token} />
+                        </PermissionGuard>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * 功能概覽區塊
+ */
+const OverviewSection = ({ token }) => (
+    <div className="space-y-6">
+        <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">管理員功能概覽</h2>
+            <p className="text-gray-600">選擇上方頁簽來使用不同的管理功能</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* 角色管理卡片 */}
+            <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_USERS} token={token}>
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                    <div className="flex items-center mb-4">
+                        <span className="text-2xl mr-3">👥</span>
+                        <h3 className="text-lg font-semibold text-blue-900">角色管理</h3>
                     </div>
-                }
-            >
-                <SystemManagementSection token={token} />
+                    <p className="text-blue-700 text-sm mb-4">
+                        管理使用者角色和權限，將使用者從學員提升為管理員角色
+                    </p>
+                    <div className="text-xs text-blue-600">
+                        • 查看所有使用者<br/>
+                        • 變更使用者角色<br/>
+                        • 權限狀態檢視
+                    </div>
+                </div>
             </PermissionGuard>
 
-            {/* 用戶管理區塊 */}
-            <PermissionGuard
-                requiredPermissions={[PERMISSIONS.VIEW_ALL_USERS, PERMISSIONS.MANAGE_USERS]}
-                token={token}
-            >
-                <UserManagementSection token={token} />
+            {/* 系統管理卡片 */}
+            <PermissionGuard requiredPermission={PERMISSIONS.SYSTEM_ADMIN} token={token}>
+                <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                    <div className="flex items-center mb-4">
+                        <span className="text-2xl mr-3">⚙️</span>
+                        <h3 className="text-lg font-semibold text-red-900">系統管理</h3>
+                    </div>
+                    <p className="text-red-700 text-sm mb-4">
+                        危險操作區域，包含系統重置和強制結算功能
+                    </p>
+                    <div className="text-xs text-red-600">
+                        • 重置所有資料<br/>
+                        • 強制結算<br/>
+                        • 系統設定
+                    </div>
+                </div>
             </PermissionGuard>
 
+            {/* 點數管理卡片 */}
+            <PermissionGuard requiredPermission={PERMISSIONS.GIVE_POINTS} token={token}>
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                    <div className="flex items-center mb-4">
+                        <span className="text-2xl mr-3">💰</span>
+                        <h3 className="text-lg font-semibold text-green-900">點數管理</h3>
+                    </div>
+                    <p className="text-green-700 text-sm mb-4">
+                        發放點數給使用者，查看點數交易記錄
+                    </p>
+                    <div className="text-xs text-green-600">
+                        • 發放點數<br/>
+                        • 查看記錄<br/>
+                        • 點數統計
+                    </div>
+                </div>
+            </PermissionGuard>
+        </div>
+
+        {/* 其他管理功能 */}
+        <div className="space-y-6">
             {/* 點數管理區塊 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.GIVE_POINTS}
-                token={token}
-            >
+            <PermissionGuard requiredPermission={PERMISSIONS.GIVE_POINTS} token={token}>
                 <PointManagementSection token={token} />
             </PermissionGuard>
 
             {/* 公告管理區塊 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
-                token={token}
-            >
+            <PermissionGuard requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT} token={token}>
                 <AnnouncementSection token={token} />
             </PermissionGuard>
 
             {/* 市場管理區塊 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                token={token}
-            >
+            <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_MARKET} token={token}>
                 <MarketManagementSection token={token} />
             </PermissionGuard>
         </div>
-    );
-};
+    </div>
+);
 
 /**
  * 系統管理區塊

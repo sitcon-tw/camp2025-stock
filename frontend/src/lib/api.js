@@ -524,4 +524,31 @@ export async function getAvailableRoles(token) {
     });
 }
 
+// 更新使用者角色
+export async function updateUserRole(token, userId, newRole, reason = "") {
+    return apiRequest("/api/rbac/users/role", {
+        method: "PUT",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            new_role: newRole,
+            reason: reason,
+        }),
+    });
+}
+
+// 取得所有使用者權限摘要
+export async function getUserPermissionSummaries(token, role = null) {
+    const url = role ? `/api/rbac/users?role=${role}` : "/api/rbac/users";
+    return apiRequest(url, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 export { API_BASE_URL };
