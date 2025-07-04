@@ -32,8 +32,8 @@ export const AdminDashboard = ({ token }) => {
     return (
         <div className="space-y-6">
             {/* 功能導航 */}
-            <div className="bg-white rounded-lg shadow">
-                <div className="border-b border-gray-200">
+            <div className="bg-[#1A325F] rounded-lg shadow border border-[#294565]">
+                <div className="border-b border-[#294565]">
                     <nav className="flex space-x-8 px-6">
                         {[
                             { id: "overview", label: "功能概覽", icon: "🏠" },
@@ -50,8 +50,8 @@ export const AdminDashboard = ({ token }) => {
                                     onClick={() => setActiveSection(section.id)}
                                     className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                                         activeSection === section.id
-                                            ? "border-blue-500 text-blue-600"
-                                            : "border-transparent text-gray-500 hover:text-gray-700"
+                                            ? "border-[#469FD2] text-[#92cbf4]"
+                                            : "border-transparent text-[#557797] hover:text-[#92cbf4]"
                                     }`}
                                 >
                                     <span>{section.icon}</span>
@@ -97,22 +97,22 @@ export const AdminDashboard = ({ token }) => {
 const OverviewSection = ({ token }) => (
     <div className="space-y-6">
         <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">管理員功能概覽</h2>
-            <p className="text-gray-600">選擇上方頁簽來使用不同的管理功能</p>
+            <h2 className="text-2xl font-bold text-[#92cbf4] mb-2">管理員功能概覽</h2>
+            <p className="text-[#557797]">選擇上方頁簽來使用不同的管理功能</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* 角色管理卡片 */}
             <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_USERS} token={token}>
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                <div className="bg-blue-600/20 p-6 rounded-lg border border-blue-500/30">
                     <div className="flex items-center mb-4">
                         <span className="text-2xl mr-3">👥</span>
-                        <h3 className="text-lg font-semibold text-blue-900">角色管理</h3>
+                        <h3 className="text-lg font-semibold text-blue-400">角色管理</h3>
                     </div>
-                    <p className="text-blue-700 text-sm mb-4">
+                    <p className="text-blue-300 text-sm mb-4">
                         管理使用者角色和權限，將使用者從學員提升為管理員角色
                     </p>
-                    <div className="text-xs text-blue-600">
+                    <div className="text-xs text-blue-300">
                         • 查看所有使用者<br/>
                         • 變更使用者角色<br/>
                         • 權限狀態檢視
@@ -122,15 +122,15 @@ const OverviewSection = ({ token }) => (
 
             {/* 系統管理卡片 */}
             <PermissionGuard requiredPermission={PERMISSIONS.SYSTEM_ADMIN} token={token}>
-                <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                <div className="bg-red-600/20 p-6 rounded-lg border border-red-500/30">
                     <div className="flex items-center mb-4">
                         <span className="text-2xl mr-3">⚙️</span>
-                        <h3 className="text-lg font-semibold text-red-900">系統管理</h3>
+                        <h3 className="text-lg font-semibold text-red-400">系統管理</h3>
                     </div>
-                    <p className="text-red-700 text-sm mb-4">
+                    <p className="text-red-300 text-sm mb-4">
                         危險操作區域，包含系統重置和強制結算功能
                     </p>
-                    <div className="text-xs text-red-600">
+                    <div className="text-xs text-red-300">
                         • 重置所有資料<br/>
                         • 強制結算<br/>
                         • 系統設定
@@ -140,15 +140,15 @@ const OverviewSection = ({ token }) => (
 
             {/* 點數管理卡片 */}
             <PermissionGuard requiredPermission={PERMISSIONS.GIVE_POINTS} token={token}>
-                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                <div className="bg-green-600/20 p-6 rounded-lg border border-green-500/30">
                     <div className="flex items-center mb-4">
                         <span className="text-2xl mr-3">💰</span>
-                        <h3 className="text-lg font-semibold text-green-900">點數管理</h3>
+                        <h3 className="text-lg font-semibold text-green-400">點數管理</h3>
                     </div>
-                    <p className="text-green-700 text-sm mb-4">
+                    <p className="text-green-300 text-sm mb-4">
                         發放點數給使用者，查看點數交易記錄
                     </p>
-                    <div className="text-xs text-green-600">
+                    <div className="text-xs text-green-300">
                         • 發放點數<br/>
                         • 查看記錄<br/>
                         • 點數統計
@@ -181,8 +181,8 @@ const OverviewSection = ({ token }) => (
  * 系統管理區塊
  */
 const SystemManagementSection = ({ token }) => (
-    <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4 text-red-600">🔧 系統管理</h2>
+    <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
+        <h2 className="text-xl font-bold mb-4 text-red-400">🔧 系統管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PermissionButton
                 requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
@@ -246,8 +246,8 @@ const UserManagementSection = ({ token }) => (
  * 點數管理區塊
  */
 const PointManagementSection = ({ token }) => (
-    <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4 text-green-600">💰 點數管理</h2>
+    <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
+        <h2 className="text-xl font-bold mb-4 text-green-400">💰 點數管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PermissionButton
                 requiredPermission={PERMISSIONS.GIVE_POINTS}
@@ -274,8 +274,8 @@ const PointManagementSection = ({ token }) => (
  * 公告管理區塊
  */
 const AnnouncementSection = ({ token }) => (
-    <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4 text-purple-600">📢 公告管理</h2>
+    <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
+        <h2 className="text-xl font-bold mb-4 text-purple-400">📢 公告管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PermissionButton
                 requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
@@ -302,8 +302,8 @@ const AnnouncementSection = ({ token }) => (
  * 市場管理區塊
  */
 const MarketManagementSection = ({ token }) => (
-    <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4 text-orange-600">📈 市場管理</h2>
+    <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
+        <h2 className="text-xl font-bold mb-4 text-orange-400">📈 市場管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <PermissionButton
                 requiredPermission={PERMISSIONS.MANAGE_MARKET}
