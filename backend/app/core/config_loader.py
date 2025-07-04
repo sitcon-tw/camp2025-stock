@@ -111,30 +111,32 @@ class ConfigLoader:
         value = self.get(key, default)
         return value if isinstance(value, dict) else default
     
-    def get_with_env_override(self, key: str, env_var: str, default: Any = None) -> Any:
+    def get_with_env_override(self, key: str, env_var: str, fallback_default: Any = None) -> Any:
         """
-        獲取設定值，優先使用環境變數
+        獲取設定值，優先使用環境變數，然後使用 config.yml
         
         Args:
             key: 設定鍵
             env_var: 環境變數名稱
-            default: 預設值
+            fallback_default: 緊急備用預設值（只在 config.yml 也沒有時使用）
             
         Returns:
-            環境變數值 > 設定文件值 > 預設值
+            環境變數值 > config.yml 值 > 緊急備用預設值
         """
         # 優先使用環境變數
         env_value = os.getenv(env_var)
         if env_value is not None:
             return env_value
         
-        # 其次使用設定文件
+        # 其次使用 config.yml 設定文件（這應該是主要的預設值來源）
         config_value = self.get(key)
         if config_value is not None:
             return config_value
         
-        # 最後使用預設值
-        return default
+        # 最後使用緊急備用預設值（理論上不應該走到這裡）
+        if fallback_default is not None:
+            logger.warning(f"Using emergency fallback default for {key}: {fallback_default}")
+        return fallback_default
     
     def reload(self) -> None:
         """重新載入設定文件"""

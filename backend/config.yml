@@ -1,7 +1,13 @@
 # CAMP 2025 Stock Trading System Configuration
-# 這些設定值會被對應的環境變數覆蓋（如果有設定的話）
 # 
-# 環境變數優先級：環境變數 > config.yml > code預設值
+# 🎯 這是系統的主要設定檔案，包含所有預設值
+# 
+# 設定優先級：環境變數 > config.yml（此檔案）> 緊急備用預設值
+# 
+# 💡 建議：
+# - 在此檔案中設定所有預設值
+# - 使用環境變數覆蓋特定環境的設定（如正式環境的密碼）
+# - 避免在程式碼中硬編碼數值
 #
 # 主要環境變數對應：
 # - CAMP_MONGO_URI -> database.mongo_uri
@@ -51,11 +57,11 @@ network:
   
 # 交易系統設定
 trading:
-  # 股價設定（代碼中最常見的硬編碼值）
+  # 股價設定（程式碼中最常見的硬編碼值）
   initial_stock_price: 20      # 初始/預設股價
   default_stock_price: 20      # 當無法取得價格時的預設值
   
-  # IPO 設定（代碼中最重要的硬編碼值）
+  # IPO 設定（程式碼中最重要的硬編碼值）
   ipo:
     initial_shares: 1000000    # IPO 初始發行股數，對應 CAMP_IPO_INITIAL_SHARES
     initial_price: 20          # IPO 初始股價，對應 CAMP_IPO_INITIAL_PRICE
@@ -92,7 +98,7 @@ user:
   initial_balance: 0           # 新用戶初始點數
   initial_stocks: 0            # 新用戶初始股數
   
-  # 學員設定（從代碼中找到的實際值）
+  # 學員設定（從程式碼中找到的實際值）
   student_defaults:
     enabled: false             # 新學員預設未啟用
     initial_points: 100        # 新學員初始點數
