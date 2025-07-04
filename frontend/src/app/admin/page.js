@@ -7,6 +7,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { PermissionAudit } from "@/components/PermissionAudit";
+import { debugAuth } from "@/utils/debugAuth";
 
 /**
  * 增強版管理員頁面
@@ -73,17 +74,39 @@ export default function EnhancedAdminPage() {
                     <div className="text-center">
                         <div className="text-red-600 text-4xl mb-4">⚠️</div>
                         <h2 className="text-xl font-bold text-red-800 mb-2">權限驗證失敗</h2>
-                        <p className="text-red-700 mb-4">{error}</p>
-                        <button
-                            onClick={() => {
-                                localStorage.removeItem("isAdmin");
-                                localStorage.removeItem("adminToken");
-                                router.push("/login");
-                            }}
-                            className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
-                        >
-                            重新登入
-                        </button>
+                        <p className="text-red-700 mb-2">{error}</p>
+                        <p className="text-red-600 text-sm mb-4">
+                            這可能是由於：
+                            <br />• Token 已過期
+                            <br />• 權限設定問題
+                            <br />• 後端服務連線異常
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="w-full bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                            >
+                                重新載入頁面
+                            </button>
+                            <button
+                                onClick={() => {
+                                    debugAuth(); // 在控制台顯示調試資訊
+                                }}
+                                className="w-full bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 text-sm"
+                            >
+                                顯示調試資訊 (請查看控制台)
+                            </button>
+                            <button
+                                onClick={() => {
+                                    localStorage.removeItem("isAdmin");
+                                    localStorage.removeItem("adminToken");
+                                    router.push("/login");
+                                }}
+                                className="w-full bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
+                            >
+                                重新登入
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

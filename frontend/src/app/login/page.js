@@ -110,13 +110,23 @@ export default function Login() {
                     try {
                         const permissionData = await checkTelegramAdminStatus(userToken);
                         setTelegramUserInfo(permissionData);
+                        setTelegramError(""); // 清除之前的錯誤
                     } catch (error) {
                         console.error("檢查 Telegram 使用者資訊失敗:", error);
+                        setTelegramUserInfo(null);
+                        setTelegramError("無法檢查 Telegram 使用者狀態");
                     }
+                } else {
+                    setTelegramUserInfo(null);
+                    setTelegramError("");
                 }
             };
             
             checkTelegramUser();
+        } else {
+            // 重置 Telegram 相關狀態
+            setTelegramUserInfo(null);
+            setTelegramError("");
         }
     }, [loginMethod]);
 
@@ -284,12 +294,14 @@ export default function Login() {
 
                             <button
                                 onClick={handleTelegramLogin}
-                                disabled={isTelegramLoading || !telegramUserInfo}
+                                disabled={isTelegramLoading || (telegramUserInfo && telegramUserInfo.role !== "admin")}
                                 className={`text-md w-full rounded-xl py-3 font-bold transition-colors duration-200 ${
                                     telegramUserInfo?.role === "admin"
                                         ? "bg-green-600 text-white hover:bg-green-700"
+                                        : telegramUserInfo && telegramUserInfo.role !== "admin"
+                                        ? "bg-gray-400 text-gray-700 cursor-not-allowed"
                                         : "bg-[#81c0e7] text-[#092e58] hover:bg-[#70b3d9]"
-                                } disabled:cursor-not-allowed disabled:bg-gray-500`}
+                                } disabled:cursor-not-allowed disabled:opacity-75`}
                             >
                                 {isTelegramLoading ? "驗證中..." : 
                                  telegramUserInfo?.role === "admin" ? "以管理員身份登入" :

@@ -23,11 +23,53 @@ export const usePermissions = (token) => {
             setLoading(true);
             setError(null);
             
-            const response = await getMyPermissions(token);
-            
-            if (response) {
-                setPermissions(response.permissions || []);
-                setRole(response.role || null);
+            // 嘗試從 RBAC API 獲取權限
+            try {
+                const response = await getMyPermissions(token);
+                if (response) {
+                    setPermissions(response.permissions || []);
+                    setRole(response.role || null);
+                    return;
+                }
+            } catch (rbacError) {
+                console.log("RBAC API failed, checking if admin token:", rbacError);
+                
+                // 如果 RBAC API 失敗，檢查是否為傳統管理員 token
+                // 嘗試調用管理員 API 來驗證
+                try {
+                    // 使用管理員 stats API 來驗證 admin token
+                    const adminResponse = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/stats`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+                    
+                    if (adminResponse.ok) {
+                        // 是有效的管理員 token，設置管理員權限
+                        setRole("admin");
+                        setPermissions([
+                            "view_own_data",
+                            "trade_stocks", 
+                            "transfer_points",
+                            "view_all_users",
+                            "give_points",
+                            "create_announcement",
+                            "manage_users",
+                            "manage_market",
+                            "system_admin"
+                        ]);
+                        return;
+                    }
+                } catch (adminError) {
+                    console.error("Admin API also failed:", adminError);
+                }
+                
+                // 兩個 API 都失敗，重新拋出原始錯誤
+                throw rbacError;
             }
         } catch (err) {
             console.error("Failed to fetch permissions:", err);
