@@ -10,7 +10,21 @@ import {
     resetAllData, 
     forceSettlement, 
     openMarket, 
-    closeMarket 
+    closeMarket,
+    getSystemStats,
+    getAdminMarketStatus,
+    getIpoStatus,
+    getIpoDefaults,
+    updateIpo,
+    resetIpo,
+    executeCallAuction,
+    getTradingHours,
+    updateMarketTimes,
+    getTransferFeeConfig,
+    updateTransferFeeConfig,
+    getUserAssets,
+    getTeams,
+    setTradingLimit
 } from "@/lib/api";
 
 /**
@@ -469,52 +483,362 @@ const AnnouncementSection = ({ token, onCreateAnnouncement, showNotification }) 
 /**
  * 市場管理區塊
  */
-const MarketManagementSection = ({ token, showNotification }) => (
-    <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-        <h2 className="text-xl font-bold mb-4 text-orange-400">📈 市場管理</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <PermissionButton
-                requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                token={token}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                onClick={async () => {
-                    try {
-                        await openMarket(token);
-                        showNotification('市場已開盤', 'success');
-                    } catch (error) {
-                        showNotification(`開盤失敗: ${error.message}`, 'error');
-                    }
-                }}
-            >
-                手動開盤
-            </PermissionButton>
-            
-            <PermissionButton
-                requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                token={token}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                onClick={async () => {
-                    try {
-                        await closeMarket(token);
-                        showNotification('市場已收盤', 'success');
-                    } catch (error) {
-                        showNotification(`收盤失敗: ${error.message}`, 'error');
-                    }
-                }}
-            >
-                手動收盤
-            </PermissionButton>
-            
-            <PermissionButton
-                requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                token={token}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                onClick={() => showNotification('IPO管理功能尚未實作', 'info')}
-            >
-                IPO 管理
-            </PermissionButton>
+const MarketManagementSection = ({ token, showNotification }) => {
+    const [marketStatus, setMarketStatus] = useState(null);
+    const [ipoStatus, setIpoStatus] = useState(null);
+    const [showIpoModal, setShowIpoModal] = useState(false);
+    const [callAuctionLoading, setCallAuctionLoading] = useState(false);
+    const [showTradingLimitModal, setShowTradingLimitModal] = useState(false);
+    const [tradingLimitPercent, setTradingLimitPercent] = useState(10);
+    const [ipoForm, setIpoForm] = useState({
+        sharesRemaining: "",
+        initialPrice: "",
+    });
+
+    // 獲取市場狀態
+    useEffect(() => {
+        const fetchMarketStatus = async () => {
+            try {
+                const status = await getAdminMarketStatus(token);
+                setMarketStatus(status);
+            } catch (error) {
+                console.error("獲取市場狀態失敗:", error);
+            }
+        };
+
+        const fetchIpoStatus = async () => {
+            try {
+                const status = await getIpoStatus(token);
+                setIpoStatus(status);
+            } catch (error) {
+                console.error("獲取IPO狀態失敗:", error);
+            }
+        };
+
+        fetchMarketStatus();
+        fetchIpoStatus();
+    }, [token]);
+
+    // 執行集合競價
+    const handleCallAuction = async () => {
+        try {
+            setCallAuctionLoading(true);
+            const result = await executeCallAuction(token);
+
+            if (result.success) {
+                let message = result.message;
+
+                // 如果有詳細統計，新增到通知中
+                if (result.order_stats) {
+                    const stats = result.order_stats;
+                    const totalBuy = (stats.pending_buy || 0) + (stats.limit_buy || 0);
+                    const totalSell = (stats.pending_sell || 0) + (stats.limit_sell || 0);
+                    message += ` (處理了 ${totalBuy} 張買單、${totalSell} 張賣單)`;
+                }
+
+                showNotification(message, "success");
+            } else {
+                let errorMessage = result.message || "集合競價執行失敗";
+                showNotification(errorMessage, "error");
+            }
+        } catch (error) {
+            showNotification(`集合競價失敗: ${error.message}`, "error");
+        } finally {
+            setCallAuctionLoading(false);
+        }
+    };
+
+    // 更新IPO
+    const handleIpoUpdate = async () => {
+        try {
+            const sharesRemaining = ipoForm.sharesRemaining !== "" ? parseInt(ipoForm.sharesRemaining) : null;
+            const initialPrice = ipoForm.initialPrice !== "" ? parseInt(ipoForm.initialPrice) : null;
+
+            const result = await updateIpo(token, sharesRemaining, initialPrice);
+
+            showNotification(result.message, "success");
+            setShowIpoModal(false);
+            setIpoForm({
+                sharesRemaining: "",
+                initialPrice: "",
+            });
+
+            // 重新取得IPO狀態
+            const status = await getIpoStatus(token);
+            setIpoStatus(status);
+        } catch (error) {
+            showNotification(`IPO更新失敗: ${error.message}`, "error");
+        }
+    };
+
+    // 重置IPO
+    const handleIpoReset = async () => {
+        try {
+            if (confirm('確定要重置IPO嗎？')) {
+                const result = await resetIpo(token);
+                showNotification(result.message, "success");
+
+                // 重新取得IPO狀態
+                const status = await getIpoStatus(token);
+                setIpoStatus(status);
+            }
+        } catch (error) {
+            showNotification(`IPO重置失敗: ${error.message}`, "error");
+        }
+    };
+
+    // 設定交易限制
+    const handleSetTradingLimit = async () => {
+        try {
+            await setTradingLimit(token, parseFloat(tradingLimitPercent));
+            showNotification("交易限制設定成功！", "success");
+            setShowTradingLimitModal(false);
+        } catch (error) {
+            showNotification(`設定交易限制失敗: ${error.message}`, "error");
+        }
+    };
+
+    return (
+        <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
+            <h2 className="text-xl font-bold mb-4 text-orange-400">📈 市場管理</h2>
+
+            {/* 市場狀態顯示 */}
+            {marketStatus && (
+                <div className="mb-6 p-4 rounded-lg bg-[#0f203e] border border-[#294565]">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-[#7BC2E6]">市場狀態:</span>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            marketStatus.is_open 
+                                ? "bg-green-600 text-green-100" 
+                                : "bg-red-600 text-red-100"
+                        }`}>
+                            {marketStatus.is_open ? "開盤中" : "已收盤"}
+                        </span>
+                    </div>
+                    {marketStatus.last_updated && (
+                        <div className="text-sm text-gray-400">
+                            最後更新: {new Date(marketStatus.last_updated).toLocaleString("zh-TW")}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* IPO狀態顯示 */}
+            {ipoStatus && (
+                <div className="mb-6 p-4 rounded-lg bg-[#0f203e] border border-[#294565]">
+                    <h3 className="text-lg font-medium mb-2 text-[#7BC2E6]">IPO 狀態</h3>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center">
+                            <div className="text-lg font-bold text-white">
+                                {ipoStatus.initialShares?.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-400">初始股數</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-lg font-bold text-orange-400">
+                                {ipoStatus.sharesRemaining?.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-400">剩餘股數</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-lg font-bold text-green-400">
+                                {ipoStatus.initialPrice}
+                            </div>
+                            <div className="text-xs text-gray-400">每股價格</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    onClick={async () => {
+                        try {
+                            await openMarket(token);
+                            showNotification('市場已開盤', 'success');
+                            const status = await getAdminMarketStatus(token);
+                            setMarketStatus(status);
+                        } catch (error) {
+                            showNotification(`開盤失敗: ${error.message}`, 'error');
+                        }
+                    }}
+                    disabled={marketStatus?.is_open}
+                >
+                    手動開盤
+                </PermissionButton>
+
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    onClick={async () => {
+                        try {
+                            await closeMarket(token);
+                            showNotification('市場已收盤', 'success');
+                            const status = await getAdminMarketStatus(token);
+                            setMarketStatus(status);
+                        } catch (error) {
+                            showNotification(`收盤失敗: ${error.message}`, 'error');
+                        }
+                    }}
+                    disabled={marketStatus && !marketStatus.is_open}
+                >
+                    手動收盤
+                </PermissionButton>
+
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                    className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+                    onClick={handleCallAuction}
+                    disabled={callAuctionLoading}
+                >
+                    {callAuctionLoading ? "撮合中..." : "集合競價"}
+                </PermissionButton>
+
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    onClick={() => setShowIpoModal(true)}
+                >
+                    更新 IPO 參數
+                </PermissionButton>
+
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                    onClick={handleIpoReset}
+                >
+                    重置 IPO
+                </PermissionButton>
+
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                    className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600"
+                    onClick={() => setShowTradingLimitModal(true)}
+                >
+                    設定漲跌限制
+                </PermissionButton>
+            </div>
+
+            {/* IPO 更新 Modal */}
+            {showIpoModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-[#1A325F] p-6 rounded-lg border border-[#294565] max-w-md w-full mx-4">
+                        <h3 className="text-lg font-bold text-[#92cbf4] mb-4">更新 IPO 參數</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#7BC2E6] mb-1">
+                                    剩餘股數 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={ipoForm.sharesRemaining}
+                                    onChange={(e) => setIpoForm({...ipoForm, sharesRemaining: e.target.value})}
+                                    placeholder="例如: 0"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
+                                />
+                                {ipoStatus && (
+                                    <p className="mt-1 text-xs text-gray-400">
+                                        目前: {ipoStatus.sharesRemaining?.toLocaleString()} 股
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#7BC2E6] mb-1">
+                                    IPO 價格 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={ipoForm.initialPrice}
+                                    onChange={(e) => setIpoForm({...ipoForm, initialPrice: e.target.value})}
+                                    placeholder="例如: 25"
+                                    className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
+                                />
+                                {ipoStatus && (
+                                    <p className="mt-1 text-xs text-gray-400">
+                                        目前: {ipoStatus.initialPrice} 點/股
+                                    </p>
+                                )}
+                            </div>
+                            <div className="border border-blue-600 bg-blue-900/20 p-3 rounded-lg">
+                                <p className="text-sm text-blue-200">
+                                    💡 提示：設定剩餘股數為 0 可以強制市價單使用限價單撮合，實現價格發現機制
+                                </p>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button
+                                    onClick={() => setShowIpoModal(false)}
+                                    className="flex-1 px-4 py-2 bg-[#294565] text-[#92cbf4] rounded hover:bg-[#1A325F]"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleIpoUpdate}
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                    更新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 設定漲跌限制 Modal */}
+            {showTradingLimitModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-[#1A325F] p-6 rounded-lg border border-[#294565] max-w-md w-full mx-4">
+                        <h3 className="text-lg font-bold text-[#92cbf4] mb-4">設定漲跌限制</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#7BC2E6] mb-1">
+                                    漲跌限制百分比
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="10"
+                                        value={tradingLimitPercent}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === "" || (!isNaN(value) && parseFloat(value) >= 0)) {
+                                                setTradingLimitPercent(value);
+                                            }
+                                        }}
+                                        placeholder="輸入百分比數字 (0-100)"
+                                        className="w-full px-3 py-2 pr-8 bg-[#0f203e] border border-[#294565] rounded text-white"
+                                    />
+                                    <span className="absolute top-2 right-3 text-[#7BC2E6]">%</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button
+                                    onClick={() => setShowTradingLimitModal(false)}
+                                    className="flex-1 px-4 py-2 bg-[#294565] text-[#92cbf4] rounded hover:bg-[#1A325F]"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={handleSetTradingLimit}
+                                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                >
+                                    設定
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 export default AdminDashboard;
