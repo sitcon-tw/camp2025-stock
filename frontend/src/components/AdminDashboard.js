@@ -192,7 +192,8 @@ export const AdminDashboard = ({ token }) => {
                     </div>
                 </div>
             </div>
-        )}
+            )}
+        </div>
     );
 };
 
