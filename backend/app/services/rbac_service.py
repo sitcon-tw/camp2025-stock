@@ -37,13 +37,32 @@ class RBACManagementService:
             使用者角色資訊
         """
         try:
+            # 特殊處理：管理員用戶
+            if user_id == "admin":
+                admin_role = Role.ADMIN
+                admin_permissions = list(ROLE_PERMISSIONS.get(admin_role, set()))
+                
+                return UserRoleInfo(
+                    user_id="admin",
+                    username="系統管理員",
+                    role=admin_role,
+                    permissions=admin_permissions
+                )
+            
             # 查詢使用者資料
+            query_conditions = [
+                {"id": user_id},
+                {"name": user_id}
+            ]
+            
+            # 只有當 user_id 是有效的 ObjectId 格式時才加入 _id 查詢
+            try:
+                query_conditions.append({"_id": ObjectId(user_id)})
+            except:
+                pass  # 如果不是有效的 ObjectId，忽略此查詢條件
+            
             user = await self.db[Collections.USERS].find_one({
-                "$or": [
-                    {"_id": ObjectId(user_id)},
-                    {"id": user_id},
-                    {"name": user_id}
-                ]
+                "$or": query_conditions
             })
             
             if not user:
@@ -83,13 +102,27 @@ class RBACManagementService:
             角色更新回應
         """
         try:
+            # 特殊處理：不允許更新管理員角色
+            if request.user_id == "admin":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="無法更新系統管理員角色"
+                )
+            
             # 查詢使用者
+            query_conditions = [
+                {"id": request.user_id},
+                {"name": request.user_id}
+            ]
+            
+            # 只有當 user_id 是有效的 ObjectId 格式時才加入 _id 查詢
+            try:
+                query_conditions.append({"_id": ObjectId(request.user_id)})
+            except:
+                pass  # 如果不是有效的 ObjectId，忽略此查詢條件
+            
             user = await self.db[Collections.USERS].find_one({
-                "$or": [
-                    {"_id": ObjectId(request.user_id)},
-                    {"id": request.user_id},
-                    {"name": request.user_id}
-                ]
+                "$or": query_conditions
             })
             
             if not user:
@@ -155,6 +188,15 @@ class RBACManagementService:
             權限檢查回應
         """
         try:
+            # 特殊處理：管理員擁有所有權限
+            if request.user_id == "admin":
+                return PermissionCheckResponse(
+                    user_id="admin",
+                    role=Role.ADMIN,
+                    required_permission=request.required_permission,
+                    has_permission=True  # 管理員擁有所有權限
+                )
+            
             # 取得使用者角色資訊
             user_info = await self.get_user_role_info(request.user_id)
             
