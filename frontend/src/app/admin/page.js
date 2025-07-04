@@ -55,12 +55,10 @@ export default function EnhancedAdminPage() {
     // 載入中狀態
     if (loading || permissionLoading) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow-lg">
-                    <div className="flex items-center space-x-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="text-lg text-gray-600">載入中...</span>
-                    </div>
+            <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+                <div className="text-center">
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
+                    <p className="text-[#92cbf4]">載入權限中...</p>
                 </div>
             </div>
         );
@@ -69,13 +67,13 @@ export default function EnhancedAdminPage() {
     // 權限錯誤
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <div className="bg-red-50 border border-red-200 p-8 rounded-lg shadow-lg max-w-md">
+            <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
+                <div className="bg-red-600/20 border border-red-500/30 p-8 rounded-lg shadow-lg max-w-md">
                     <div className="text-center">
-                        <div className="text-red-600 text-4xl mb-4">⚠️</div>
-                        <h2 className="text-xl font-bold text-red-800 mb-2">權限驗證失敗</h2>
-                        <p className="text-red-700 mb-2">{error}</p>
-                        <p className="text-red-600 text-sm mb-4">
+                        <div className="text-red-400 text-4xl mb-4">⚠️</div>
+                        <h2 className="text-xl font-bold text-red-400 mb-2">權限驗證失敗</h2>
+                        <p className="text-red-300 mb-2">{error}</p>
+                        <p className="text-red-300 text-sm mb-4">
                             這可能是由於：
                             <br />• Token 已過期
                             <br />• 權限設定問題
@@ -84,7 +82,7 @@ export default function EnhancedAdminPage() {
                         <div className="space-y-3">
                             <button
                                 onClick={() => window.location.reload()}
-                                className="w-full bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                                className="w-full bg-[#469FD2] text-white px-6 py-2 rounded hover:bg-[#357AB8]"
                             >
                                 重新載入頁面
                             </button>
@@ -92,7 +90,7 @@ export default function EnhancedAdminPage() {
                                 onClick={() => {
                                     debugAuth(); // 在控制台顯示調試資訊
                                 }}
-                                className="w-full bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 text-sm"
+                                className="w-full bg-[#294565] text-[#92cbf4] px-6 py-2 rounded hover:bg-[#1A325F] text-sm"
                             >
                                 顯示調試資訊 (請查看控制台)
                             </button>
@@ -116,13 +114,13 @@ export default function EnhancedAdminPage() {
     // 非管理員用戶
     if (!isAdmin()) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <div className="bg-yellow-50 border border-yellow-200 p-8 rounded-lg shadow-lg max-w-md">
+            <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
+                <div className="bg-yellow-600/20 border border-yellow-500/30 p-8 rounded-lg shadow-lg max-w-md">
                     <div className="text-center">
-                        <div className="text-yellow-600 text-4xl mb-4">🚫</div>
-                        <h2 className="text-xl font-bold text-yellow-800 mb-2">權限不足</h2>
-                        <p className="text-yellow-700 mb-2">您的角色是：{role}</p>
-                        <p className="text-yellow-700 mb-4">需要管理員權限才能存取此頁面</p>
+                        <div className="text-yellow-400 text-4xl mb-4">🚫</div>
+                        <h2 className="text-xl font-bold text-yellow-400 mb-2">權限不足</h2>
+                        <p className="text-yellow-300 mb-2">您的角色是：{role}</p>
+                        <p className="text-yellow-300 mb-4">需要管理員權限才能存取此頁面</p>
                         <button
                             onClick={() => router.push("/dashboard")}
                             className="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700"
@@ -137,19 +135,19 @@ export default function EnhancedAdminPage() {
 
     return (
         <PermissionProvider token={adminToken}>
-            <div className="min-h-screen bg-gray-100">
+            <div className="min-h-screen bg-[#0f203e]">
                 {/* 頁面標題和用戶資訊 */}
-                <div className="bg-white shadow">
+                <div className="bg-[#1A325F] shadow border-b border-[#294565]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center py-6">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900">管理員控制台</h1>
-                                <p className="text-gray-600">
+                                <h1 className="text-3xl font-bold text-[#92cbf4]">管理員控制台</h1>
+                                <p className="text-[#557797]">
                                     角色：{role} | 權限數量：{permissions.length}
                                 </p>
                             </div>
                             <div className="flex items-center space-x-4">
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-[#557797]">
                                     {new Date().toLocaleString()}
                                 </div>
                                 <button
@@ -169,7 +167,7 @@ export default function EnhancedAdminPage() {
 
                 {/* 導航頁簽 */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-                    <div className="border-b border-gray-200">
+                    <div className="border-b border-[#294565]">
                         <nav className="flex space-x-8">
                             {[
                                 { id: "dashboard", label: "功能面板", icon: "🏠" },
@@ -180,8 +178,8 @@ export default function EnhancedAdminPage() {
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                                         activeTab === tab.id
-                                            ? "border-blue-500 text-blue-600"
-                                            : "border-transparent text-gray-500 hover:text-gray-700"
+                                            ? "border-[#469FD2] text-[#92cbf4]"
+                                            : "border-transparent text-[#557797] hover:text-[#92cbf4]"
                                     }`}
                                 >
                                     <span>{tab.icon}</span>
@@ -203,9 +201,9 @@ export default function EnhancedAdminPage() {
                 </div>
 
                 {/* 頁腳資訊 */}
-                <div className="bg-gray-50 border-t border-gray-200 mt-12">
+                <div className="bg-[#1A325F] border-t border-[#294565] mt-12">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        <div className="text-center text-sm text-gray-500">
+                        <div className="text-center text-sm text-[#557797]">
                             <p>權限驅動的管理系統 | 基於 RBAC 安全架構</p>
                             <p className="mt-1">
                                 目前擁有權限：
