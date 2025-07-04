@@ -4,6 +4,14 @@ import { PERMISSIONS, ROLES } from "@/contexts/PermissionContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RoleManagement } from "./RoleManagement";
 import { QuickRoleSetup } from "./QuickRoleSetup";
+import { 
+    givePoints, 
+    createAnnouncement, 
+    resetAllData, 
+    forceSettlement, 
+    openMarket, 
+    closeMarket 
+} from "@/lib/api";
 
 /**
  * 管理員儀表板組件
@@ -12,6 +20,13 @@ import { QuickRoleSetup } from "./QuickRoleSetup";
 export const AdminDashboard = ({ token }) => {
     const { permissions, role, loading, isAdmin } = usePermissions(token);
     const [activeSection, setActiveSection] = useState("overview");
+    const [notification, setNotification] = useState({ show: false, message: "", type: "info" });
+    
+    // 顯示通知
+    const showNotification = (message, type = "info") => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: "", type: "info" }), 3000);
+    };
     
     if (loading) {
         return (
@@ -31,6 +46,17 @@ export const AdminDashboard = ({ token }) => {
 
     return (
         <div className="space-y-6">
+            {/* 通知提示 */}
+            {notification.show && (
+                <div className={`p-4 rounded-lg border ${
+                    notification.type === 'success' ? 'bg-green-600/20 border-green-500/30 text-green-400' :
+                    notification.type === 'error' ? 'bg-red-600/20 border-red-500/30 text-red-400' :
+                    'bg-blue-600/20 border-blue-500/30 text-blue-400'
+                }`}>
+                    {notification.message}
+                </div>
+            )}
+            
             {/* 功能導航 */}
             <div className="bg-[#1A325F] rounded-lg shadow border border-[#294565]">
                 <div className="border-b border-[#294565]">
@@ -82,12 +108,92 @@ export const AdminDashboard = ({ token }) => {
                             token={token}
                             fallback={<div className="text-red-600">權限不足：需要系統管理權限</div>}
                         >
-                            <SystemManagementSection token={token} />
+                            <SystemManagementSection token={token} showNotification={showNotification} />
                         </PermissionGuard>
                     )}
                 </div>
             </div>
         </div>
+        
+        {/* 發放點數模態框 */}
+        {showPointsModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-[#1A325F] p-6 rounded-lg border border-[#294565] max-w-md w-full mx-4">
+                    <h3 className="text-lg font-bold text-[#92cbf4] mb-4">💰 發放點數</h3>
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            placeholder="使用者名稱"
+                            value={pointsForm.username}
+                            onChange={(e) => setPointsForm({...pointsForm, username: e.target.value})}
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
+                        />
+                        <input
+                            type="number"
+                            placeholder="點數數量"
+                            value={pointsForm.amount}
+                            onChange={(e) => setPointsForm({...pointsForm, amount: e.target.value})}
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowPointsModal(false)}
+                                className="flex-1 px-4 py-2 bg-[#294565] text-[#92cbf4] rounded hover:bg-[#1A325F]"
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={handleGivePoints}
+                                disabled={!pointsForm.username || !pointsForm.amount}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                            >
+                                發放
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+        
+        {/* 發布公告模態框 */}
+        {showAnnouncementModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-[#1A325F] p-6 rounded-lg border border-[#294565] max-w-md w-full mx-4">
+                    <h3 className="text-lg font-bold text-[#92cbf4] mb-4">📢 發布公告</h3>
+                    <div className="space-y-4">
+                        <input
+                            type="text"
+                            placeholder="公告標題"
+                            value={announcementForm.title}
+                            onChange={(e) => setAnnouncementForm({...announcementForm, title: e.target.value})}
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
+                        />
+                        <textarea
+                            placeholder="公告內容"
+                            value={announcementForm.message}
+                            onChange={(e) => setAnnouncementForm({...announcementForm, message: e.target.value})}
+                            rows={4}
+                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowAnnouncementModal(false)}
+                                className="flex-1 px-4 py-2 bg-[#294565] text-[#92cbf4] rounded hover:bg-[#1A325F]"
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={handleCreateAnnouncement}
+                                disabled={!announcementForm.title || !announcementForm.message}
+                                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                            >
+                                發布
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
     );
 };
 
@@ -161,17 +267,25 @@ const OverviewSection = ({ token }) => (
         <div className="space-y-6">
             {/* 點數管理區塊 */}
             <PermissionGuard requiredPermission={PERMISSIONS.GIVE_POINTS} token={token}>
-                <PointManagementSection token={token} />
+                <PointManagementSection 
+                    token={token} 
+                    onGivePoints={() => setShowPointsModal(true)}
+                    showNotification={showNotification} 
+                />
             </PermissionGuard>
 
             {/* 公告管理區塊 */}
             <PermissionGuard requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT} token={token}>
-                <AnnouncementSection token={token} />
+                <AnnouncementSection 
+                    token={token} 
+                    onCreateAnnouncement={() => setShowAnnouncementModal(true)}
+                    showNotification={showNotification}
+                />
             </PermissionGuard>
 
             {/* 市場管理區塊 */}
             <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_MARKET} token={token}>
-                <MarketManagementSection token={token} />
+                <MarketManagementSection token={token} showNotification={showNotification} />
             </PermissionGuard>
         </div>
     </div>
@@ -180,7 +294,7 @@ const OverviewSection = ({ token }) => (
 /**
  * 系統管理區塊
  */
-const SystemManagementSection = ({ token }) => (
+const SystemManagementSection = ({ token, showNotification }) => (
     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
         <h2 className="text-xl font-bold mb-4 text-red-400">🔧 系統管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,7 +302,16 @@ const SystemManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
                 token={token}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                onClick={() => console.log("重置所有資料")}
+                onClick={async () => {
+                    if (confirm('確定要重置所有資料嗎？這個操作不可復原！')) {
+                        try {
+                            await resetAllData(token);
+                            showNotification('所有資料已成功重置', 'success');
+                        } catch (error) {
+                            showNotification(`重置失敗: ${error.message}`, 'error');
+                        }
+                    }
+                }}
             >
                 重置所有資料
             </PermissionButton>
@@ -197,7 +320,16 @@ const SystemManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
                 token={token}
                 className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
-                onClick={() => console.log("強制結算")}
+                onClick={async () => {
+                    if (confirm('確定要強制結算嗎？')) {
+                        try {
+                            await forceSettlement(token);
+                            showNotification('強制結算已完成', 'success');
+                        } catch (error) {
+                            showNotification(`強制結算失敗: ${error.message}`, 'error');
+                        }
+                    }
+                }}
             >
                 強制結算
             </PermissionButton>
@@ -245,7 +377,7 @@ const UserManagementSection = ({ token }) => (
 /**
  * 點數管理區塊
  */
-const PointManagementSection = ({ token }) => (
+const PointManagementSection = ({ token, onGivePoints, showNotification }) => (
     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
         <h2 className="text-xl font-bold mb-4 text-green-400">💰 點數管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -253,7 +385,7 @@ const PointManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.GIVE_POINTS}
                 token={token}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                onClick={() => console.log("發放點數")}
+                onClick={onGivePoints}
             >
                 發放點數
             </PermissionButton>
@@ -262,7 +394,7 @@ const PointManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.GIVE_POINTS}
                 token={token}
                 className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-                onClick={() => console.log("點數記錄")}
+                onClick={() => showNotification('點數記錄功能尚未實作', 'info')}
             >
                 查看點數記錄
             </PermissionButton>
@@ -273,7 +405,7 @@ const PointManagementSection = ({ token }) => (
 /**
  * 公告管理區塊
  */
-const AnnouncementSection = ({ token }) => (
+const AnnouncementSection = ({ token, onCreateAnnouncement, showNotification }) => (
     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
         <h2 className="text-xl font-bold mb-4 text-purple-400">📢 公告管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -281,7 +413,7 @@ const AnnouncementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
                 token={token}
                 className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
-                onClick={() => console.log("發布公告")}
+                onClick={onCreateAnnouncement}
             >
                 發布公告
             </PermissionButton>
@@ -290,7 +422,7 @@ const AnnouncementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
                 token={token}
                 className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600"
-                onClick={() => console.log("管理公告")}
+                onClick={() => showNotification('公告管理功能尚未實作', 'info')}
             >
                 管理公告
             </PermissionButton>
@@ -301,7 +433,7 @@ const AnnouncementSection = ({ token }) => (
 /**
  * 市場管理區塊
  */
-const MarketManagementSection = ({ token }) => (
+const MarketManagementSection = ({ token, showNotification }) => (
     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
         <h2 className="text-xl font-bold mb-4 text-orange-400">📈 市場管理</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -309,7 +441,14 @@ const MarketManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.MANAGE_MARKET}
                 token={token}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                onClick={() => console.log("開盤")}
+                onClick={async () => {
+                    try {
+                        await openMarket(token);
+                        showNotification('市場已開盤', 'success');
+                    } catch (error) {
+                        showNotification(`開盤失敗: ${error.message}`, 'error');
+                    }
+                }}
             >
                 手動開盤
             </PermissionButton>
@@ -318,7 +457,14 @@ const MarketManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.MANAGE_MARKET}
                 token={token}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                onClick={() => console.log("收盤")}
+                onClick={async () => {
+                    try {
+                        await closeMarket(token);
+                        showNotification('市場已收盤', 'success');
+                    } catch (error) {
+                        showNotification(`收盤失敗: ${error.message}`, 'error');
+                    }
+                }}
             >
                 手動收盤
             </PermissionButton>
@@ -327,7 +473,7 @@ const MarketManagementSection = ({ token }) => (
                 requiredPermission={PERMISSIONS.MANAGE_MARKET}
                 token={token}
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                onClick={() => console.log("IPO管理")}
+                onClick={() => showNotification('IPO管理功能尚未實作', 'info')}
             >
                 IPO 管理
             </PermissionButton>
