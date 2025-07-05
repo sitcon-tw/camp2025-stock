@@ -111,10 +111,8 @@ export default function EnhancedAdminPage() {
         );
     }
 
-    // 檢查是否有管理權限（admin、point_manager、announcer 都可以訪問）
-    const hasManagementAccess = isAdmin() || role === 'point_manager' || role === 'announcer';
-    
-    if (!hasManagementAccess) {
+    // 非管理員用戶
+    if (!isAdmin()) {
         return (
             <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
                 <div className="bg-yellow-600/20 border border-yellow-500/30 p-8 rounded-lg shadow-lg max-w-md">
@@ -122,10 +120,7 @@ export default function EnhancedAdminPage() {
                         <div className="text-yellow-400 text-4xl mb-4">🚫</div>
                         <h2 className="text-xl font-bold text-yellow-400 mb-2">權限不足</h2>
                         <p className="text-yellow-300 mb-2">您的角色是：{role}</p>
-                        <p className="text-yellow-300 mb-4">需要管理相關權限才能存取此頁面</p>
-                        <p className="text-yellow-300 text-sm mb-4">
-                            允許的角色：admin、point_manager、announcer
-                        </p>
+                        <p className="text-yellow-300 mb-4">需要管理員權限才能存取此頁面</p>
                         <button
                             onClick={() => router.push("/dashboard")}
                             className="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700"
