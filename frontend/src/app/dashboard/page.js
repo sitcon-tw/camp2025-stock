@@ -468,6 +468,31 @@ export default function Dashboard() {
                 </div>
 
                 {/* TODO: Blocked due to API */}
+                {/*<div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            // value={givePointsForm.username}
+                            // onChange={(e) =>
+                            //     // handleUsernameChange(
+                            //     //     e.target.value,
+                            //     // )
+                            // }
+                            onFocus={() => {
+                                // 重新觸發搜尋以顯示建議
+                                // if (
+                                //     givePointsForm.username.trim() !==
+                                //     ""
+                                // ) {
+                                //     handleUsernameChange(
+                                //         givePointsForm.username,
+                                //     );
+                                // }
+                            }}
+                            onBlur={() => {
+                                // 延遲隱藏建議，讓點選事件能夠觸發
+                                // setTimeout(
+                                //     () =>
                                 //         setShowSuggestions(
                                 //             false,
                                 //         ),
@@ -529,7 +554,7 @@ export default function Dashboard() {
                         點數紀錄
                     </h3>
 
-                    <div className="grid grid-flow-row gap-4">
+                    <div className="grid grid-flow-row gap-4"></div>
                         {pointHistory && pointHistory.length > 0 ? (
                             pointHistory.map((i) => {
                                 return (
@@ -615,7 +640,7 @@ export default function Dashboard() {
                                         key={orderId || i.created_at}
                                     >
                                         {/* 訂單基本資訊 */}
-                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"></div>
                                             <p className="font-mono text-sm text-[#92cbf4]">
                                                 {dayjs(i.created_at)
                                                     .add(8, "hour")
@@ -727,31 +752,6 @@ export default function Dashboard() {
                                         </div>
 
                                         {/* 取消按鈕 */}
-                                        {isCancellable && (
-                                            <div className="flex justify-end">
-                                                <button
-                                                    onClick={() =>
-                                                        openCancelModal(
-                                                            i,
-                                                            i.order_type,
-                                                            i.quantity -
-                                                            (i.filled_quantity ||
-                                                                0),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        isCancelling
-                                                    }
-                                                    className={twMerge(
-                                                        "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
-                                                        isCancelling
-                                                            ? "cursor-not-allowed bg-gray-600/50 text-gray-400"
-                                                            : "border border-red-500/30 bg-red-600/20 text-red-400 hover:bg-red-600/30",
-                                                    )}
-                                                >
-                                                    {isCancelling
-                                                        ? "取消中..."
-                                                        : "取消訂單"}
                                                 </button>
                                             </div>
                                         )}

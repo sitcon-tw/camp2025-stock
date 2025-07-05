@@ -180,9 +180,9 @@ export default function Status() {
                                     setTradeType("buy");
                                     tradeModal.openModal();
                                 }}
-                                className="inline-flex items-center justify-center gap-3 rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F]"
+                                className="inline-flex items-center justify-center gap-3 rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F]  border-b-rose-500 border-2"
                             >
-                                <p className="text-lg font-bold text-white lg:text-2xl">
+                                <p className="text-lg font-bold text-rose-400 lg:text-2xl">
                                     買
                                 </p>
                                 <BanknoteArrowDown />
@@ -208,9 +208,9 @@ export default function Status() {
                                     setTradeType("sell");
                                     tradeModal.openModal();
                                 }}
-                                className="inline-flex items-center justify-center gap-3 rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F]"
+                                className="inline-flex items-center justify-center gap-3 rounded-lg bg-[#1B325E] p-3 transition-colors hover:bg-[#2A4A7F] border-b-emerald-500 border-2"
                             >
-                                <p className="text-lg font-bold text-white lg:text-2xl">
+                                <p className="text-lg font-bold text-emerald-400 lg:text-2xl">
                                     賣
                                 </p>
                                 <BanknoteArrowUp />
