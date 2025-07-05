@@ -349,33 +349,63 @@ export default function Dashboard() {
                             alt="Telegram 頭貼"
                             width={80}
                             height={80}
-                            className="h-20 w-20 rounded-full"
+                            className="h-20 w-20 rounded-full object-cover"
+                            onError={(e) => {
+                                // 如果圖片載入失敗，隱藏該圖片元素
+                                e.target.style.display = 'none';
+                            }}
                         />
                     ) : (
-                        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#264173] text-xl font-bold text-[#92cbf4]">
-                            {user?.username
-                                ?.substring(0, 1)
-                                ?.toUpperCase() || "U"}
-                        </div>
+                        // 檢查是否有使用者名稱來產生縮寫大頭照
+                        (user?.username && user.username.length >= 2) ? (
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#469FD2] text-3xl font-bold text-white">
+                                {user.username.substring(0, 2).toUpperCase()}
+                            </div>
+                        ) : (
+                            // 最終 fallback - 使用通用圖示
+                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#557797] text-4xl text-white">
+                                👤
+                            </div>
+                        )
                     )}
+                    
+                    {/* 如果 Telegram 圖片載入失敗，顯示備用大頭照 */}
+                    {authData?.photo_url && (
+                        <>
+                            {(user?.username && user.username.length >= 2) ? (
+                                <div 
+                                    className="hidden h-20 w-20 items-center justify-center rounded-full bg-[#469FD2] text-3xl font-bold text-white"
+                                    id="fallback-avatar-username"
+                                >
+                                    {user.username.substring(0, 2).toUpperCase()}
+                                </div>
+                            ) : (
+                                <div 
+                                    className="hidden h-20 w-20 items-center justify-center rounded-full bg-[#557797] text-4xl text-white"
+                                    id="fallback-avatar-default"
+                                >
+                                    👤
+                                </div>
+                            )}
+                        </>
+                    )}
+
                     <div>
                         <p className="mb-2 text-xl">
                             早安，
-                            <b>{user?.username || "使用者"}</b>
+                            <b>{user?.username || authData?.first_name || authData?.username || "使用者"}</b>
                         </p>
                         <p className="mb-1 text-[#92cbf4]">
                             你現在擁有的總資產為{" "}
                             <span className="text-white">
-                                {user?.totalValue?.toLocaleString() ||
-                                    "0"}
+                                {user?.totalValue?.toLocaleString() || "0"}
                             </span>{" "}
                             點
                         </p>
                         <p className="text-sm text-[#92cbf4]">
                             可動用點數共{" "}
                             <span className="text-white">
-                                {user?.points?.toLocaleString() ||
-                                    "0"}
+                                {user?.points?.toLocaleString() || "0"}
                             </span>{" "}
                             點
                         </p>
@@ -397,8 +427,7 @@ export default function Dashboard() {
                                 現金點數
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.points?.toLocaleString() ||
-                                    "0"}
+                                {user?.points?.toLocaleString() || "0"}
                             </p>
                         </div>
                         <div>
@@ -406,8 +435,7 @@ export default function Dashboard() {
                                 股票數量
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.stocks?.toLocaleString() ||
-                                    "0"}
+                                {user?.stocks?.toLocaleString() || "0"}
                             </p>
                         </div>
                         <div>
@@ -415,8 +443,7 @@ export default function Dashboard() {
                                 股票價值
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.stockValue?.toLocaleString() ||
-                                    "0"}
+                                {user?.stockValue?.toLocaleString() || "0"}
                             </p>
                         </div>
                         <div>
@@ -424,8 +451,7 @@ export default function Dashboard() {
                                 總資產
                             </p>
                             <p className="text-center text-xl font-bold text-[#92cbf4]">
-                                {user?.totalValue?.toLocaleString() ||
-                                    "0"}
+                                {user?.totalValue?.toLocaleString() || "0"}
                             </p>
                         </div>
                     </div>
@@ -442,31 +468,6 @@ export default function Dashboard() {
                 </div>
 
                 {/* TODO: Blocked due to API */}
-                {/*<div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            // value={givePointsForm.username}
-                            // onChange={(e) =>
-                            //     // handleUsernameChange(
-                            //     //     e.target.value,
-                            //     // )
-                            // }
-                            onFocus={() => {
-                                // 重新觸發搜尋以顯示建議
-                                // if (
-                                //     givePointsForm.username.trim() !==
-                                //     ""
-                                // ) {
-                                //     handleUsernameChange(
-                                //         givePointsForm.username,
-                                //     );
-                                // }
-                            }}
-                            onBlur={() => {
-                                // 延遲隱藏建議，讓點選事件能夠觸發
-                                // setTimeout(
-                                //     () =>
                                 //         setShowSuggestions(
                                 //             false,
                                 //         ),
