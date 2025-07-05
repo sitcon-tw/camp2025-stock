@@ -340,9 +340,8 @@ export default function Dashboard() {
     }
 
     return (
-        <>
-            <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
-                <div className="w-full space-y-4 p-4">
+        <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
+            <div className="w-full space-y-4 p-4">
                 <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     {authData?.photo_url ? (
                         <Image
@@ -350,63 +349,33 @@ export default function Dashboard() {
                             alt="Telegram 頭貼"
                             width={80}
                             height={80}
-                            className="h-20 w-20 rounded-full object-cover"
-                            onError={(e) => {
-                                // 如果圖片載入失敗，隱藏該圖片元素
-                                e.target.style.display = 'none';
-                            }}
+                            className="h-20 w-20 rounded-full"
                         />
                     ) : (
-                        // 檢查是否有使用者名稱來產生縮寫大頭照
-                        (user?.username && user.username.length >= 2) ? (
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#469FD2] text-3xl font-bold text-white">
-                                {user.username.substring(0, 2).toUpperCase()}
-                            </div>
-                        ) : (
-                            // 最終 fallback - 使用通用圖示
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#557797] text-4xl text-white">
-                                👤
-                            </div>
-                        )
+                        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#264173] text-xl font-bold text-[#92cbf4]">
+                            {user?.username
+                                ?.substring(0, 1)
+                                ?.toUpperCase() || "U"}
+                        </div>
                     )}
-                    
-                    {/* 如果 Telegram 圖片載入失敗，顯示備用大頭照 */}
-                    {authData?.photo_url && (
-                        <>
-                            {(user?.username && user.username.length >= 2) ? (
-                                <div 
-                                    className="hidden h-20 w-20 items-center justify-center rounded-full bg-[#469FD2] text-3xl font-bold text-white"
-                                    id="fallback-avatar-username"
-                                >
-                                    {user.username.substring(0, 2).toUpperCase()}
-                                </div>
-                            ) : (
-                                <div 
-                                    className="hidden h-20 w-20 items-center justify-center rounded-full bg-[#557797] text-4xl text-white"
-                                    id="fallback-avatar-default"
-                                >
-                                    👤
-                                </div>
-                            )}
-                        </>
-                    )}
-
                     <div>
                         <p className="mb-2 text-xl">
                             早安，
-                            <b>{user?.username || authData?.first_name || authData?.username || "使用者"}</b>
+                            <b>{user?.username || "使用者"}</b>
                         </p>
                         <p className="mb-1 text-[#92cbf4]">
                             你現在擁有的總資產為{" "}
                             <span className="text-white">
-                                {user?.totalValue?.toLocaleString() || "0"}
+                                {user?.totalValue?.toLocaleString() ||
+                                    "0"}
                             </span>{" "}
                             點
                         </p>
                         <p className="text-sm text-[#92cbf4]">
                             可動用點數共{" "}
                             <span className="text-white">
-                                {user?.points?.toLocaleString() || "0"}
+                                {user?.points?.toLocaleString() ||
+                                    "0"}
                             </span>{" "}
                             點
                         </p>
@@ -428,7 +397,8 @@ export default function Dashboard() {
                                 現金點數
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.points?.toLocaleString() || "0"}
+                                {user?.points?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                         <div>
@@ -436,7 +406,8 @@ export default function Dashboard() {
                                 股票數量
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.stocks?.toLocaleString() || "0"}
+                                {user?.stocks?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                         <div>
@@ -444,7 +415,8 @@ export default function Dashboard() {
                                 股票價值
                             </p>
                             <p className="text-center text-xl font-bold text-white">
-                                {user?.stockValue?.toLocaleString() || "0"}
+                                {user?.stockValue?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                         <div>
@@ -452,7 +424,8 @@ export default function Dashboard() {
                                 總資產
                             </p>
                             <p className="text-center text-xl font-bold text-[#92cbf4]">
-                                {user?.totalValue?.toLocaleString() || "0"}
+                                {user?.totalValue?.toLocaleString() ||
+                                    "0"}
                             </p>
                         </div>
                     </div>
@@ -555,7 +528,7 @@ export default function Dashboard() {
                         點數紀錄
                     </h3>
 
-                    <div className="grid grid-flow-row gap-4"></div>
+                    <div className="grid grid-flow-row gap-4">
                         {pointHistory && pointHistory.length > 0 ? (
                             pointHistory.map((i) => {
                                 return (
@@ -753,14 +726,31 @@ export default function Dashboard() {
                                         </div>
 
                                         {/* 取消按鈕 */}
-                                        {i.status === "pending" && (
-                                            <div className="mt-3">
+                                        {isCancellable && (
+                                            <div className="flex justify-end">
                                                 <button
-                                                    onClick={() => openCancelModal(i, i.order_type, i.quantity)}
-                                                    disabled={isCancelling}
-                                                    className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+                                                    onClick={() =>
+                                                        openCancelModal(
+                                                            i,
+                                                            i.order_type,
+                                                            i.quantity -
+                                                            (i.filled_quantity ||
+                                                                0),
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        isCancelling
+                                                    }
+                                                    className={twMerge(
+                                                        "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                                                        isCancelling
+                                                            ? "cursor-not-allowed bg-gray-600/50 text-gray-400"
+                                                            : "border border-red-500/30 bg-red-600/20 text-red-400 hover:bg-red-600/30",
+                                                    )}
                                                 >
-                                                    {isCancelling ? "取消中..." : "取消訂單"}
+                                                    {isCancelling
+                                                        ? "取消中..."
+                                                        : "取消訂單"}
                                                 </button>
                                             </div>
                                         )}
@@ -774,14 +764,15 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* 取消訂單確認 Modal */}
-                <Modal
-                    isOpen={showCancelModal}
-                    onClose={closeCancelModal}
-                    title="確認取消訂單"
-                    size="md"
-                >
+            {/* 取消訂單確認 Modal */}
+            <Modal
+                isOpen={showCancelModal}
+                onClose={closeCancelModal}
+                title="確認取消訂單"
+                size="md"
+            >
                 {pendingCancelOrder && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
@@ -833,8 +824,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
-                </Modal>
-            </div>
-        </>
+            </Modal>
+        </div>
     );
 }
