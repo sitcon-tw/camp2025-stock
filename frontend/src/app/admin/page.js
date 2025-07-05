@@ -127,9 +127,16 @@ export default function EnhancedAdminPage() {
                             </button>
                             <button
                                 onClick={() => {
+                                    // 清除所有認證相關的 localStorage
                                     localStorage.removeItem("isAdmin");
                                     localStorage.removeItem("adminToken");
-                                    router.push("/login");
+                                    localStorage.removeItem("isUser");
+                                    localStorage.removeItem("userToken");
+                                    localStorage.removeItem("userData");
+                                    localStorage.removeItem("telegramData");
+                                    
+                                    // 強制重新載入頁面以清除所有狀態
+                                    window.location.href = "/login";
                                 }}
                                 className="w-full bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
                             >
@@ -188,9 +195,16 @@ export default function EnhancedAdminPage() {
                                 </div>
                                 <button
                                     onClick={() => {
+                                        // 清除所有認證相關的 localStorage
                                         localStorage.removeItem("isAdmin");
                                         localStorage.removeItem("adminToken");
-                                        router.push("/login");
+                                        localStorage.removeItem("isUser");
+                                        localStorage.removeItem("userToken");
+                                        localStorage.removeItem("userData");
+                                        localStorage.removeItem("telegramData");
+                                        
+                                        // 強制重新載入頁面以清除所有狀態
+                                        window.location.href = "/login";
                                     }}
                                     className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                                 >

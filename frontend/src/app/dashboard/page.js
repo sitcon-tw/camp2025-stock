@@ -36,11 +36,16 @@ export default function Dashboard() {
 
     // 登出功能
     const handleLogout = () => {
+        // 清除所有認證相關的 localStorage
         localStorage.removeItem("isUser");
         localStorage.removeItem("userToken");
         localStorage.removeItem("userData");
         localStorage.removeItem("telegramData");
-        router.push("/telegram-login");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("adminToken");
+        
+        // 強制重新載入頁面以清除所有狀態
+        window.location.href = "/telegram-login";
     };
 
     // 開啟取消訂單 Modal
