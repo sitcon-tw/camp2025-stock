@@ -4,9 +4,9 @@ import { PERMISSIONS, ROLES } from "@/contexts/PermissionContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RoleManagement } from "./RoleManagement";
 import { QuickRoleSetup } from "./QuickRoleSetup";
+import { AnnouncementManagement } from "./AnnouncementManagement";
 import { 
     givePoints, 
-    createAnnouncement, 
     resetAllData, 
     forceSettlement, 
     openMarket, 
@@ -37,9 +37,7 @@ export const AdminDashboard = ({ token }) => {
     const [notification, setNotification] = useState({ show: false, message: "", type: "info" });
     
     const [showPointsModal, setShowPointsModal] = useState(false);
-    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
     const [pointsForm, setPointsForm] = useState({ username: "", amount: "" });
-    const [announcementForm, setAnnouncementForm] = useState({ title: "", message: "" });
     
     // 顯示通知
     const showNotification = (message, type = "info") => {
@@ -59,17 +57,6 @@ export const AdminDashboard = ({ token }) => {
         }
     };
     
-    // 發布公告
-    const handleCreateAnnouncement = async () => {
-        try {
-            await createAnnouncement(token, announcementForm.title, announcementForm.message, true);
-            showNotification('公告已成功發布', 'success');
-            setShowAnnouncementModal(false);
-            setAnnouncementForm({ title: "", message: "" });
-        } catch (error) {
-            showNotification(`發布公告失敗: ${error.message}`, 'error');
-        }
-    };
     
     if (loading) {
         return (
@@ -136,7 +123,6 @@ export const AdminDashboard = ({ token }) => {
                         <OverviewSection 
                             token={token} 
                             setShowPointsModal={setShowPointsModal}
-                            setShowAnnouncementModal={setShowAnnouncementModal}
                             showNotification={showNotification}
                         />
                     )}
@@ -205,44 +191,6 @@ export const AdminDashboard = ({ token }) => {
         )}
         
         {/* 發布公告模態框 */}
-        {showAnnouncementModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-[#1A325F] p-6 rounded-lg border border-[#294565] max-w-md w-full mx-4">
-                    <h3 className="text-lg font-bold text-[#92cbf4] mb-4">📢 發布公告</h3>
-                    <div className="space-y-4">
-                        <input
-                            type="text"
-                            placeholder="公告標題"
-                            value={announcementForm.title}
-                            onChange={(e) => setAnnouncementForm({...announcementForm, title: e.target.value})}
-                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
-                        />
-                        <textarea
-                            placeholder="公告內容"
-                            value={announcementForm.message}
-                            onChange={(e) => setAnnouncementForm({...announcementForm, message: e.target.value})}
-                            rows={4}
-                            className="w-full px-3 py-2 bg-[#0f203e] border border-[#294565] rounded text-white"
-                        />
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowAnnouncementModal(false)}
-                                className="flex-1 px-4 py-2 bg-[#294565] text-[#92cbf4] rounded hover:bg-[#1A325F]"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={handleCreateAnnouncement}
-                                disabled={!announcementForm.title || !announcementForm.message}
-                                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
-                            >
-                                發布
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            )}
         </div>
     );
 };
@@ -250,7 +198,7 @@ export const AdminDashboard = ({ token }) => {
 /**
  * 功能概覽區塊
  */
-const OverviewSection = ({ token, setShowPointsModal, setShowAnnouncementModal, showNotification }) => (
+const OverviewSection = ({ token, setShowPointsModal, showNotification }) => (
     <div className="space-y-6">
         <div>
             <h2 className="text-2xl font-bold text-[#92cbf4] mb-2">管理員功能概覽</h2>
@@ -326,10 +274,9 @@ const OverviewSection = ({ token, setShowPointsModal, setShowAnnouncementModal, 
 
             {/* 公告管理區塊 */}
             <PermissionGuard requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT} token={token}>
-                <AnnouncementSection 
+                <AnnouncementManagement 
                     token={token} 
-                    onCreateAnnouncement={() => setShowAnnouncementModal(true)}
-                    showNotification={showNotification}
+                    permissions={permissions}
                 />
             </PermissionGuard>
 
@@ -452,33 +399,6 @@ const PointManagementSection = ({ token, onGivePoints, showNotification }) => (
     </div>
 );
 
-/**
- * 公告管理區塊
- */
-const AnnouncementSection = ({ token, onCreateAnnouncement, showNotification }) => (
-    <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-        <h2 className="text-xl font-bold mb-4 text-purple-400">📢 公告管理</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <PermissionButton
-                requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
-                token={token}
-                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
-                onClick={onCreateAnnouncement}
-            >
-                發布公告
-            </PermissionButton>
-            
-            <PermissionButton
-                requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
-                token={token}
-                className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600"
-                onClick={() => showNotification('公告管理功能尚未實作', 'info')}
-            >
-                管理公告
-            </PermissionButton>
-        </div>
-    </div>
-);
 
 /**
  * 市場管理區塊

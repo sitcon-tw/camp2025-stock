@@ -179,6 +179,27 @@ export async function getAnnouncements(limit = 10, options = {}) {
     return apiRequest(`/api/announcements?limit=${limit}`, options);
 }
 
+// 取得公告列表 (管理員版本)
+export async function getAnnouncementsAdmin(token, limit = 50) {
+    return apiRequest(`/api/admin/announcements?limit=${limit}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 刪除公告
+export async function deleteAnnouncement(token, announcementId) {
+    return apiRequest(`/api/admin/announcement/${announcementId}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // 取得交易統計
 export async function getTradingStats(options = {}) {
     return apiRequest("/api/trading/stats", options);
