@@ -49,6 +49,7 @@ export const PermissionGuard = ({
 
     // 如果沒有 requiredPermission，但 loading 剛結束且還沒有任何權限，稍等一下
     // 這可以解決 admin token fallback 的時序問題
+    // 但是如果已經有 role 設定，即使 permissions 為空也不應該繼續載入
     if (!loading && permissions.length === 0 && !role && token) {
         return loadingComponent;
     }

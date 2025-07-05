@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getMyPermissions } from "@/lib/api";
 
 /**
@@ -10,14 +10,24 @@ export const usePermissions = (token) => {
     const [role, setRole] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const isFetchingRef = useRef(false);
+    const hasInitializedRef = useRef(false);
 
     const fetchPermissions = useCallback(async () => {
         if (!token) {
             setLoading(false);
             setPermissions([]);
             setRole(null);
+            hasInitializedRef.current = true;
             return;
         }
+
+        // 防止多次同時執行
+        if (isFetchingRef.current) {
+            return;
+        }
+
+        isFetchingRef.current = true;
 
         try {
             setLoading(true);
@@ -29,6 +39,7 @@ export const usePermissions = (token) => {
                 if (response) {
                     setPermissions(response.permissions || []);
                     setRole(response.role || null);
+                    hasInitializedRef.current = true;
                     return;
                 }
             } catch (rbacError) {
@@ -63,28 +74,46 @@ export const usePermissions = (token) => {
                             "manage_market",
                             "system_admin"
                         ]);
+                        hasInitializedRef.current = true;
                         return;
                     }
                 } catch (adminError) {
                     console.error("Admin API also failed:", adminError);
                 }
                 
-                // 兩個 API 都失敗，重新拋出原始錯誤
-                throw rbacError;
+                // 兩個 API 都失敗，假設為學員角色並設置基本權限
+                console.log("Both APIs failed, setting student role with basic permissions");
+                setRole("student");
+                setPermissions([
+                    "view_own_data",
+                    "trade_stocks", 
+                    "transfer_points"
+                ]);
+                hasInitializedRef.current = true;
+                return;
             }
         } catch (err) {
             console.error("Failed to fetch permissions:", err);
             setError(err.message);
-            setPermissions([]);
-            setRole(null);
+            // 如果所有嘗試都失敗，設置為學員角色
+            setRole("student");
+            setPermissions([
+                "view_own_data",
+                "trade_stocks", 
+                "transfer_points"
+            ]);
+            hasInitializedRef.current = true;
         } finally {
             setLoading(false);
+            isFetchingRef.current = false;
         }
     }, [token]);
 
     useEffect(() => {
+        // 當 token 改變時，重置初始化狀態
+        hasInitializedRef.current = false;
         fetchPermissions();
-    }, [fetchPermissions]);
+    }, [token, fetchPermissions]);
 
     /**
      * 檢查是否有特定權限
@@ -146,6 +175,7 @@ export const usePermissions = (token) => {
      * 重新獲取權限
      */
     const refreshPermissions = useCallback(() => {
+        hasInitializedRef.current = false;
         fetchPermissions();
     }, [fetchPermissions]);
 
