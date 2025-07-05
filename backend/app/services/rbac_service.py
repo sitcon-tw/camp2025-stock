@@ -136,7 +136,7 @@ class RBACManagementService:
                 {"_id": user["_id"]},
                 {
                     "$set": {
-                        "role": request.new_role.value,
+                        "role": request.new_role,
                         "role_updated_at": datetime.now(timezone.utc),
                         "role_update_reason": request.reason or "系統更新"
                     }
@@ -153,7 +153,7 @@ class RBACManagementService:
             await self._log_role_change(
                 user_id=user["_id"],
                 old_role=user.get("role", Role.STUDENT.value),
-                new_role=request.new_role.value,
+                new_role=request.new_role,
                 reason=request.reason
             )
             
@@ -164,7 +164,7 @@ class RBACManagementService:
             
             return RoleUpdateResponse(
                 success=True,
-                message=f"使用者 {request.user_id} 的角色已更新為 {request.new_role.value}",
+                message=f"使用者 {request.user_id} 的角色已更新為 {request.new_role}",
                 user_role_info=updated_info
             )
             
