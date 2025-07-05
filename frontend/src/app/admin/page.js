@@ -143,7 +143,7 @@ export default function EnhancedAdminPage() {
                             <div>
                                 <h1 className="text-3xl font-bold text-[#92cbf4]">管理員控制台</h1>
                                 <p className="text-[#557797]">
-                                    角色：{role} | 權限數量：{permissions.length}
+                                    角色：{role} | 權限數量：{permissions ? permissions.length : 0}
                                 </p>
                             </div>
                             <div className="flex items-center space-x-4">
@@ -207,8 +207,10 @@ export default function EnhancedAdminPage() {
                             <p>權限驅動的管理系統 | 基於 RBAC 安全架構</p>
                             <p className="mt-1">
                                 目前擁有權限：
-                                {permissions.slice(0, 3).join(", ")}
-                                {permissions.length > 3 && ` 等 ${permissions.length} 項`}
+                                {permissions && permissions.length > 0 
+                                    ? permissions.slice(0, 3).join(", ") + (permissions.length > 3 ? ` 等 ${permissions.length} 項` : '')
+                                    : "載入中..."
+                                }
                             </p>
                         </div>
                     </div>

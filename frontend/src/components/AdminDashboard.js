@@ -276,7 +276,7 @@ const OverviewSection = ({ token, setShowPointsModal, showNotification }) => (
             <PermissionGuard requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT} token={token}>
                 <AnnouncementManagement 
                     token={token} 
-                    permissions={permissions}
+                    permissions={permissions || []}
                 />
             </PermissionGuard>
 
