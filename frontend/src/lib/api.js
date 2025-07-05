@@ -194,16 +194,6 @@ export async function getAnnouncementsAdmin(token, limit = 50) {
     });
 }
 
-// 取得自己的權限資訊
-export async function getMyPermissions(token) {
-    return apiRequest("/api/rbac/my-permissions", {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    });
-}
-
 // 刪除公告
 export async function deleteAnnouncement(token, announcementId) {
     return apiRequest(`/api/admin/announcement/${announcementId}`, {
