@@ -24,16 +24,32 @@ const parseJWTPayload = (token) => {
  * @returns {boolean}
  */
 const isLegacyAdminToken = (payload) => {
-    if (!payload) return false;
+    if (!payload) {
+        console.log("No payload found");
+        return false;
+    }
+    
+    console.log("Checking legacy admin token:", {
+        sub: payload.sub,
+        username: payload.username,
+        is_admin: payload.is_admin,
+        telegram_id: payload.telegram_id,
+        role: payload.role
+    });
     
     // 傳統 admin token 特徵：
     // - sub 是 'admin' 
     // - 沒有 telegram_id (因為是早期系統)
     // - 可能有 username='admin' 或 is_admin=true
-    return (payload.sub === 'admin' || 
-            payload.username === 'admin' || 
-            payload.is_admin === true) &&
-           !payload.telegram_id; // 確保不是 Telegram token
+    const isAdmin = (payload.sub === 'admin' || 
+                     payload.username === 'admin' || 
+                     payload.is_admin === true ||
+                     payload.role === 'admin');
+    const hasNoTelegram = !payload.telegram_id;
+    
+    console.log("Legacy admin check:", { isAdmin, hasNoTelegram });
+    
+    return isAdmin && hasNoTelegram;
 };
 
 /**

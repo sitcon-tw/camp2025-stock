@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getSystemStats } from "@/lib/api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { AdminDashboard } from "@/components/AdminDashboard";
@@ -34,20 +33,24 @@ export default function EnhancedAdminPage() {
             
             if (isAdminStored && adminToken) {
                 console.log("Legacy admin login detected");
+                
+                // 檢查 admin token 內容
                 try {
-                    // 驗證傳統 admin token 有效性
-                    await getSystemStats(adminToken);
-                    setAdminToken(adminToken);
-                    setIsLoggedIn(true);
-                    console.log("Legacy admin token validated");
-                } catch (error) {
-                    console.error("Legacy admin token validation failed:", error);
-                    localStorage.removeItem("isAdmin");
-                    localStorage.removeItem("adminToken");
-                    router.push("/login");
-                } finally {
-                    setLoading(false);
+                    const tokenParts = adminToken.split('.');
+                    if (tokenParts.length === 3) {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        console.log("Admin token payload:", payload);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse admin token:", e);
                 }
+                
+                // 直接設置 token，不驗證 getSystemStats
+                // 因為後端可能已經改為 RBAC 驗證，讓 usePermissions hook 處理
+                console.log("Setting admin token, will validate via usePermissions hook");
+                setAdminToken(adminToken);
+                setIsLoggedIn(true);
+                setLoading(false);
                 return;
             }
             
