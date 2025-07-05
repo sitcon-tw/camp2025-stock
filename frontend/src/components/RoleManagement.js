@@ -91,12 +91,8 @@ export const RoleManagement = ({ token }) => {
             const response = await updateUserRole(token, userId, newRole, reason);
             
             if (response.success) {
-                // 更新本地使用者列表
-                setUsers(prev => prev.map(user => 
-                    user.user_id === userId 
-                        ? { ...user, role: newRole }
-                        : user
-                ));
+                // 重新載入使用者列表以確保權限資料同步
+                await loadUsersAndRoles();
                 
                 showNotification(
                     `成功將使用者角色更新為 ${formatRoleName(newRole)}`, 
