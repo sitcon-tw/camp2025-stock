@@ -61,7 +61,19 @@ export const RoleManagement = ({ token }) => {
             setAvailableRoles(rolesResponse.available_roles || []);
         } catch (error) {
             console.error("載入使用者和角色失敗:", error);
-            showNotification("載入資料失敗: " + error.message, "error");
+            
+            // 改善錯誤訊息處理
+            let errorMessage = "載入資料失敗";
+            
+            if (error.status === 422) {
+                errorMessage = "無法載入使用者資料，請確保已登入 Telegram 並綁定帳號";
+            } else if (error.message && typeof error.message === 'string') {
+                errorMessage = `載入資料失敗: ${error.message}`;
+            } else if (error.status) {
+                errorMessage = `載入資料失敗: HTTP ${error.status}`;
+            }
+            
+            showNotification(errorMessage, "error");
         } finally {
             setLoading(false);
         }
@@ -95,7 +107,19 @@ export const RoleManagement = ({ token }) => {
             }
         } catch (error) {
             console.error("更新角色失敗:", error);
-            showNotification(`角色更新失敗: ${error.message}`, "error");
+            
+            // 改善錯誤訊息處理
+            let errorMessage = "角色更新失敗";
+            
+            if (error.status === 422) {
+                errorMessage = "角色更新失敗，請確保已登入 Telegram 並綁定帳號";
+            } else if (error.message && typeof error.message === 'string') {
+                errorMessage = `角色更新失敗: ${error.message}`;
+            } else if (error.status) {
+                errorMessage = `角色更新失敗: HTTP ${error.status}`;
+            }
+            
+            showNotification(errorMessage, "error");
         } finally {
             setUpdating(prev => ({ ...prev, [userId]: false }));
             setRoleChangeModal({ show: false, user: null });

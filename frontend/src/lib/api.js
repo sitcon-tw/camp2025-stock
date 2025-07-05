@@ -23,9 +23,14 @@ async function apiRequest(endpoint, options = {}) {
                 const errorData = await response.json();
                 if (errorData.detail) {
                     errorMessage = errorData.detail;
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
                 }
             } catch (parseError) {
                 // 如果無法解析 JSON，使用預設錯誤訊息
+                if (response.status === 422) {
+                    errorMessage = "請求資料格式錯誤或缺少必要資訊";
+                }
             }
 
             const error = new Error(errorMessage);
