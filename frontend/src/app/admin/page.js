@@ -21,31 +21,50 @@ export default function EnhancedAdminPage() {
     const [activeTab, setActiveTab] = useState("dashboard");
     
     // 使用權限 Hook
-    const { permissions, role, loading: permissionLoading, isAdmin, error } = usePermissions(adminToken);
+    const { permissions, role, loading: permissionLoading, error } = usePermissions(adminToken);
 
     // 檢查登入狀態和權限
     useEffect(() => {
         const checkAuthAndPermissions = async () => {
+            // 首先檢查是否有 Telegram 登入
+            const isUser = localStorage.getItem("isUser");
+            const userToken = localStorage.getItem("userToken");
+            const telegramData = localStorage.getItem("telegramData");
+            
+            // 檢查傳統管理員登入
             const isAdminStored = localStorage.getItem("isAdmin");
-            const token = localStorage.getItem("adminToken");
+            const adminToken = localStorage.getItem("adminToken");
 
-            if (!isAdminStored || !token) {
+            if (isUser && userToken && telegramData) {
+                // 使用 Telegram 登入的用戶，檢查是否有管理權限
+                try {
+                    setAdminToken(userToken);
+                    setIsLoggedIn(true);
+                    // 權限檢查會在 usePermissions hook 中處理
+                } catch (error) {
+                    console.error("Telegram user validation failed:", error);
+                    router.push("/login");
+                } finally {
+                    setLoading(false);
+                }
+            } else if (isAdminStored && adminToken) {
+                // 傳統管理員登入
+                try {
+                    // 驗證 token 有效性
+                    await getSystemStats(adminToken);
+                    setAdminToken(adminToken);
+                    setIsLoggedIn(true);
+                } catch (error) {
+                    console.error("Admin token validation failed:", error);
+                    localStorage.removeItem("isAdmin");
+                    localStorage.removeItem("adminToken");
+                    router.push("/login");
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                // 沒有任何有效登入，導向登入頁
                 router.push("/login");
-                return;
-            }
-
-            try {
-                // 驗證 token 有效性
-                await getSystemStats(token);
-                setAdminToken(token);
-                setIsLoggedIn(true);
-            } catch (error) {
-                console.error("Token validation failed:", error);
-                localStorage.removeItem("isAdmin");
-                localStorage.removeItem("adminToken");
-                router.push("/login");
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -111,16 +130,21 @@ export default function EnhancedAdminPage() {
         );
     }
 
-    // 非管理員用戶
-    if (!isAdmin()) {
+    // 檢查是否有管理權限（admin、point_manager、announcer 都可以訪問）
+    const hasManagementAccess = role && ['admin', 'point_manager', 'announcer'].includes(role);
+    
+    if (!hasManagementAccess) {
         return (
             <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
                 <div className="bg-yellow-600/20 border border-yellow-500/30 p-8 rounded-lg shadow-lg max-w-md">
                     <div className="text-center">
                         <div className="text-yellow-400 text-4xl mb-4">🚫</div>
                         <h2 className="text-xl font-bold text-yellow-400 mb-2">權限不足</h2>
-                        <p className="text-yellow-300 mb-2">您的角色是：{role}</p>
-                        <p className="text-yellow-300 mb-4">需要管理員權限才能存取此頁面</p>
+                        <p className="text-yellow-300 mb-2">您的角色是：{role || '未知'}</p>
+                        <p className="text-yellow-300 mb-4">需要管理相關權限才能存取此頁面</p>
+                        <p className="text-yellow-300 text-sm mb-4">
+                            允許的角色：admin、point_manager、announcer
+                        </p>
                         <button
                             onClick={() => router.push("/dashboard")}
                             className="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700"
