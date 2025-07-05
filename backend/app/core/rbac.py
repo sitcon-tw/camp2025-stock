@@ -273,33 +273,109 @@ def get_current_user_with_role(required_role: Role):
 # 便利函數：檢查權限的 FastAPI 依賴
 def require_student_role():
     """需要學員角色"""
-    return get_current_user_with_role(Role.STUDENT)
+    from app.core.security import get_current_user
+    
+    def check_student_role(current_user: dict = Depends(get_current_user)):
+        user_role = RBACService.get_user_role(current_user)
+        if user_role != Role.STUDENT and user_role != Role.ADMIN:  # 管理員可以存取所有功能
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Role.STUDENT.value} 角色"
+            )
+        return current_user
+    return check_student_role
 
 def require_point_manager_role():
     """需要點數管理員角色"""
-    return get_current_user_with_role(Role.POINT_MANAGER)
+    from app.core.security import get_current_user
+    
+    def check_point_manager_role(current_user: dict = Depends(get_current_user)):
+        user_role = RBACService.get_user_role(current_user)
+        if user_role != Role.POINT_MANAGER and user_role != Role.ADMIN:  # 管理員可以存取所有功能
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Role.POINT_MANAGER.value} 角色"
+            )
+        return current_user
+    return check_point_manager_role
 
 def require_announcer_role():
     """需要公告員角色"""
-    return get_current_user_with_role(Role.ANNOUNCER)
+    from app.core.security import get_current_user
+    
+    def check_announcer_role(current_user: dict = Depends(get_current_user)):
+        user_role = RBACService.get_user_role(current_user)
+        if user_role != Role.ANNOUNCER and user_role != Role.ADMIN:  # 管理員可以存取所有功能
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Role.ANNOUNCER.value} 角色"
+            )
+        return current_user
+    return check_announcer_role
 
 def require_admin_role():
     """需要管理員角色"""
-    return get_current_user_with_role(Role.ADMIN)
+    from app.core.security import get_current_user
+    
+    def check_admin_role(current_user: dict = Depends(get_current_user)):
+        user_role = RBACService.get_user_role(current_user)
+        if user_role != Role.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Role.ADMIN.value} 角色"
+            )
+        return current_user
+    return check_admin_role
 
 # 便利函數：檢查權限的 FastAPI 依賴
 def require_give_points_permission():
     """需要發放點數權限"""
-    return get_current_user_with_permission(Permission.GIVE_POINTS)
+    from app.core.security import get_current_user
+    
+    def check_give_points_permission(current_user: dict = Depends(get_current_user)):
+        if not RBACService.has_permission(current_user, Permission.GIVE_POINTS):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Permission.GIVE_POINTS.value} 權限"
+            )
+        return current_user
+    return check_give_points_permission
 
 def require_announcement_permission():
     """需要發公告權限"""
-    return get_current_user_with_permission(Permission.CREATE_ANNOUNCEMENT)
+    from app.core.security import get_current_user
+    
+    def check_announcement_permission(current_user: dict = Depends(get_current_user)):
+        if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Permission.CREATE_ANNOUNCEMENT.value} 權限"
+            )
+        return current_user
+    return check_announcement_permission
 
 def require_view_all_users_permission():
     """需要查看所有使用者權限"""
-    return get_current_user_with_permission(Permission.VIEW_ALL_USERS)
+    from app.core.security import get_current_user
+    
+    def check_view_all_users_permission(current_user: dict = Depends(get_current_user)):
+        if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Permission.VIEW_ALL_USERS.value} 權限"
+            )
+        return current_user
+    return check_view_all_users_permission
 
 def require_system_admin_permission():
     """需要系統管理權限"""
-    return get_current_user_with_permission(Permission.SYSTEM_ADMIN)
+    from app.core.security import get_current_user
+    
+    def check_system_admin_permission(current_user: dict = Depends(get_current_user)):
+        if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Permission.SYSTEM_ADMIN.value} 權限"
+            )
+        return current_user
+    return check_system_admin_permission
