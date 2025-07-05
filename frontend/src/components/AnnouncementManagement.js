@@ -8,7 +8,7 @@ import { PermissionButton } from "./PermissionGuard";
 /**
  * 公告管理組件 - 包含發布公告和管理公告功能
  */
-export const AnnouncementManagement = ({ token, permissions }) => {
+export const AnnouncementManagement = ({ token }) => {
     const [activeTab, setActiveTab] = useState("manage");
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -159,8 +159,8 @@ export const AnnouncementManagement = ({ token, permissions }) => {
                 <h2 className="text-2xl font-bold text-[#92cbf4]">📢 公告管理</h2>
                 <div className="flex space-x-3">
                     <PermissionButton
-                        permission={PERMISSIONS.CREATE_ANNOUNCEMENT}
-                        userPermissions={permissions}
+                        requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
+                        token={token}
                         onClick={createModal.openModal}
                         className="bg-[#469FD2] text-white px-4 py-2 rounded hover:bg-[#5BAEE3] flex items-center space-x-2"
                     >
@@ -215,16 +215,16 @@ export const AnnouncementManagement = ({ token, permissions }) => {
                                         
                                         <div className="flex space-x-2 ml-4">
                                             <PermissionButton
-                                                permission={PERMISSIONS.CREATE_ANNOUNCEMENT}
-                                                userPermissions={permissions}
+                                                requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
+                                                token={token}
                                                 onClick={() => openEditModal(announcement)}
                                                 className="bg-[#469FD2] text-white px-3 py-1 rounded text-sm hover:bg-[#5BAEE3]"
                                             >
                                                 編輯
                                             </PermissionButton>
                                             <PermissionButton
-                                                permission={PERMISSIONS.CREATE_ANNOUNCEMENT}
-                                                userPermissions={permissions}
+                                                requiredPermission={PERMISSIONS.CREATE_ANNOUNCEMENT}
+                                                token={token}
                                                 onClick={() => openDeleteModal(announcement)}
                                                 className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
                                             >
