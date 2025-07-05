@@ -7,7 +7,8 @@ from app.schemas.public import (
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
     MarketLimitRequest, MarketLimitResponse, ErrorResponse
 )
-from app.core.security import get_current_admin
+from app.core.security import get_current_user
+from app.core.rbac import RBACService, Permission, require_admin_role
 from typing import List, Optional
 from datetime import datetime
 import logging
@@ -47,19 +48,27 @@ async def admin_login(
 )
 async def get_users(
     user: Optional[str] = None,
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> List[UserAssetDetail]:
     """查詢使用者資產明細
     
     Args:
         user: 可選，指定使用者id。如果不提供則回傳所有使用者
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
         admin_service: 管理員服務（自動注入）
     
     Returns:
         使用者資產明細列表
     """
+    # 檢查管理員權限
+    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要管理員權限（目前角色：{user_role.value}）"
+        )
+    
     return await admin_service.get_user_details(user)
 
 
@@ -76,19 +85,27 @@ async def get_users(
 )
 async def give_points(
     request: GivePointsRequest,
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> GivePointsResponse:
     """給予點數
     
     Args:
         request: 給點數請求，包含目標、類型和數量
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
         admin_service: 管理員服務（自動注入）
     
     Returns:
         操作結果
     """
+    # 檢查點數管理權限
+    if not RBACService.has_permission(current_user, Permission.GIVE_POINTS):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要點數管理權限（目前角色：{user_role.value}）"
+        )
+    
     return await admin_service.give_points(request)
 
 
@@ -104,19 +121,27 @@ async def give_points(
 )
 async def create_announcement(
     request: AnnouncementRequest,
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> AnnouncementResponse:
     """發布公告
     
     Args:
         request: 公告請求，包含標題、內容和廣播設定
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
         admin_service: 管理員服務（自動注入）
     
     Returns:
         操作結果
     """
+    # 檢查公告管理權限
+    if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要公告管理權限（目前角色：{user_role.value}）"
+        )
+    
     return await admin_service.create_announcement(request)
 
 
@@ -132,19 +157,27 @@ async def create_announcement(
 )
 async def update_market_hours(
     request: MarketUpdateRequest,
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> MarketUpdateResponse:
     """更新市場開放時間
     
     Args:
         request: 市場時間更新請求
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
         admin_service: 管理員服務（自動注入）
     
     Returns:
         操作結果
     """
+    # 檢查市場管理權限
+    if not RBACService.has_permission(current_user, Permission.MANAGE_MARKET):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要市場管理權限（目前角色：{user_role.value}）"
+        )
+    
     return await admin_service.update_market_hours(request)
 
 
@@ -160,19 +193,27 @@ async def update_market_hours(
 )
 async def set_trading_limit(
     request: MarketLimitRequest,
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> MarketLimitResponse:
     """設定漲跌限制
     
     Args:
         request: 漲跌限制請求
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
         admin_service: 管理員服務（自動注入）
     
     Returns:
         操作結果
     """
+    # 檢查市場管理權限
+    if not RBACService.has_permission(current_user, Permission.MANAGE_MARKET):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要市場管理權限（目前角色：{user_role.value}）"
+        )
+    
     return await admin_service.set_trading_limit(request)
 
 
@@ -185,10 +226,18 @@ async def set_trading_limit(
 )
 async def get_announcements(
     limit: int = 20,
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """取得公告列表"""
+    # 檢查公告管理權限
+    if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要公告管理權限（目前角色：{user_role.value}）"
+        )
+    
     # 這個功能在原始 API 規格書中沒有，但對管理員很有用
     try:
         from app.core.database import get_database, Collections
@@ -219,9 +268,17 @@ async def get_announcements(
     description="取得系統整體統計資訊"
 )
 async def get_system_stats(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """取得系統統計資訊"""
+    # 檢查系統管理權限
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         db = get_database()
@@ -272,10 +329,18 @@ async def get_system_stats(
     description="取得所有學員的基本資料，包括使用者id、所屬隊伍等"
 )
 async def get_students(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """取得所有學員資料"""
+    # 檢查查看所有使用者權限
+    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         return await admin_service.list_all_users()
         
@@ -293,10 +358,18 @@ async def get_students(
     description="取得所有隊伍的基本資料，包括隊伍名稱、成員數量等"
 )
 async def get_teams(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """取得所有隊伍資料"""
+    # 檢查查看所有使用者權限
+    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         return await admin_service.list_all_teams()
         
@@ -320,18 +393,26 @@ async def get_teams(
     description="將所有使用者的持股以固定價格轉換為點數，並清除其股票"
 )
 async def final_settlement(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> GivePointsResponse:
     """最終結算
     
     Args:
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
         admin_service: 管理員服務（自動注入）
 
     Returns:
         操作結果
     """
+    # 檢查系統管理權限
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     return await admin_service.final_settlement()
 
 
@@ -346,16 +427,24 @@ async def final_settlement(
     description="查詢目前IPO狀態資訊"
 )
 async def get_ipo_status(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """查詢IPO狀態
     
     Args:
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
 
     Returns:
         IPO狀態資訊
     """
+    # 檢查系統管理權限
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         
@@ -414,18 +503,26 @@ async def get_ipo_status(
 async def reset_ipo(
     initial_shares: int = None,
     initial_price: int = None,
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """重置IPO狀態
     
     Args:
         initial_shares: 初始股數（如果不提供則使用預設設定）
         initial_price: 初始價格（如果不提供則使用預設設定）
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
 
     Returns:
         操作結果
     """
+    # 檢查系統管理權限
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         from datetime import datetime, timezone
@@ -515,18 +612,26 @@ async def reset_ipo(
 async def update_ipo(
     shares_remaining: int = None,
     initial_price: int = None,
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """更新IPO參數
     
     Args:
         shares_remaining: 剩餘股數（可選）
         initial_price: IPO價格（可選）
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
 
     Returns:
         操作結果
     """
+    # 檢查系統管理權限
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         from datetime import datetime, timezone
@@ -625,16 +730,24 @@ async def update_ipo(
     description="清空所有資料庫集合，將系統恢復到初始狀態"
 )
 async def reset_all_data(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """重置所有資料
     
     Args:
-        current_admin: 目前管理員（自動注入）
+        current_user: 目前使用者（自動注入）
 
     Returns:
         操作結果
     """
+    # 檢查系統管理權限
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         from datetime import datetime, timezone
@@ -760,7 +873,7 @@ async def reset_all_data(
     description="測試系統公告功能是否正常工作"
 )
 async def test_announcement(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """測試系統公告功能"""
@@ -794,7 +907,7 @@ async def test_announcement(
     description="執行集合競價撮合，將所有待成交的限價單以最佳價格批量撮合"
 )
 async def execute_call_auction(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """執行集合競價撮合"""
     try:
@@ -836,7 +949,7 @@ async def execute_call_auction(
     description="查詢IPO的預設初始股數和價格設定"
 )
 async def get_ipo_defaults(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """查詢IPO預設設定"""
     try:
@@ -895,7 +1008,7 @@ async def get_ipo_defaults(
 async def update_ipo_defaults(
     default_initial_shares: int = None,
     default_initial_price: int = None,
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """更新IPO預設設定"""
     try:
@@ -990,7 +1103,7 @@ async def update_ipo_defaults(
     description="手動開盤，將自動執行集合競價後開放市場交易"
 )
 async def open_market(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """手動開盤（包含集合競價）"""
@@ -1018,7 +1131,7 @@ async def open_market(
     description="手動收盤，停止市場交易"
 )
 async def close_market(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """手動收盤"""
@@ -1046,7 +1159,7 @@ async def close_market(
     description="查詢目前市場開閉狀態"
 )
 async def get_market_status(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """查詢市場狀態"""
@@ -1073,7 +1186,7 @@ async def get_market_status(
     description="檢查系統中是否有負點數的使用者"
 )
 async def check_negative_balances(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """檢查負點數使用者"""
@@ -1100,7 +1213,7 @@ async def check_negative_balances(
     description="將所有負點數使用者的點數重置為0"
 )
 async def fix_negative_balances(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """修復負點數使用者"""
@@ -1128,7 +1241,7 @@ async def fix_negative_balances(
     description="對所有使用者進行全面的點數完整性檢查，如發現負點數會立即傳送警報"
 )
 async def trigger_system_wide_balance_check(
-    current_admin=Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
     """觸發系統全面點數檢查"""
@@ -1156,7 +1269,7 @@ async def trigger_system_wide_balance_check(
     description="清理所有過期或卡住的 PVP 挑戰"
 )
 async def cleanup_pvp_challenges(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """清理過期的 PVP 挑戰"""
     try:
@@ -1219,7 +1332,7 @@ async def cleanup_pvp_challenges(
     description="⚠️ 危險操作：刪除資料庫中所有的 PVP 挑戰記錄"
 )
 async def delete_all_pvp_data(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """刪除所有 PVP 資料"""
     try:
@@ -1242,7 +1355,7 @@ async def delete_all_pvp_data(
         # 刪除所有PVP挑戰記錄
         delete_result = await db[Collections.PVP_CHALLENGES].delete_many({})
         
-        logger.warning(f"Admin {current_admin.get('username', 'unknown')} deleted all PVP data: {delete_result.deleted_count} records")
+        logger.warning(f"Admin {current_user.get('username', 'unknown')} deleted all PVP data: {delete_result.deleted_count} records")
         
         return {
             "ok": True,
@@ -1276,7 +1389,7 @@ async def delete_all_pvp_data(
     description="查詢目前轉點數的手續費率和最低手續費設定"
 )
 async def get_transfer_fee_config(
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """查詢轉點數手續費設定"""
     try:
@@ -1327,7 +1440,7 @@ async def get_transfer_fee_config(
 async def update_transfer_fee_config(
     fee_rate: float = None,
     min_fee: int = None,
-    current_admin=Depends(get_current_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """更新轉點數手續費設定"""
     try:
@@ -1436,7 +1549,7 @@ async def update_transfer_fee_config(
 )
 async def fix_negative_stocks(
     cancel_pending_orders: bool = True,
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """
@@ -1449,7 +1562,7 @@ async def fix_negative_stocks(
         修復結果，包含修復的記錄數量和取消的訂單數量
     """
     try:
-        logger.info(f"Admin {current_admin.get('username')} initiated negative stock fix, cancel_orders={cancel_pending_orders}")
+        logger.info(f"Admin {current_user.get('username')} initiated negative stock fix, cancel_orders={cancel_pending_orders}")
         
         result = await user_service.fix_negative_stocks(cancel_pending_orders)
         
@@ -1474,7 +1587,7 @@ async def fix_negative_stocks(
     description="修復系統中的無效訂單（quantity <= 0 但狀態不是 filled）"
 )
 async def fix_invalid_orders(
-    current_admin: dict = Depends(get_current_admin),
+    current_user: dict = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
     """
@@ -1486,7 +1599,7 @@ async def fix_invalid_orders(
         修復結果，包含修復的訂單數量和詳細訊息
     """
     try:
-        logger.info(f"Admin {current_admin.get('username')} initiated invalid orders fix")
+        logger.info(f"Admin {current_user.get('username')} initiated invalid orders fix")
         
         result = await user_service.fix_invalid_orders()
         
