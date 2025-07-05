@@ -72,6 +72,60 @@ class RBACService:
     """權限控制服務"""
     
     @staticmethod
+    async def get_user_role_from_db(user: dict) -> Role:
+        """
+        從資料庫查詢使用者角色
+        
+        Args:
+            user: 使用者資訊字典
+            
+        Returns:
+            使用者角色
+        """
+        try:
+            # 檢查是否為管理員 token
+            if user.get("sub") == "admin":
+                return Role.ADMIN
+            
+            # 從資料庫查詢使用者角色
+            user_id = user.get("user_id") or user.get("sub")
+            if not user_id:
+                return Role.STUDENT
+            
+            from app.core.database import get_database, Collections
+            from bson import ObjectId
+            
+            db = get_database()
+            
+            # 構建查詢條件
+            query_conditions = [
+                {"id": user_id},
+                {"name": user_id}
+            ]
+            
+            # 只有當 user_id 是有效的 ObjectId 格式時才加入 _id 查詢
+            try:
+                query_conditions.append({"_id": ObjectId(user_id)})
+            except:
+                pass
+            
+            user_doc = await db[Collections.USERS].find_one({
+                "$or": query_conditions
+            })
+            
+            if user_doc and user_doc.get("role"):
+                try:
+                    return Role(user_doc["role"])
+                except ValueError:
+                    return Role.STUDENT
+            
+            return Role.STUDENT
+            
+        except Exception as e:
+            logger.warning(f"Failed to get user role from database: {e}")
+            return Role.STUDENT
+    
+    @staticmethod
     def get_user_role(user: dict) -> Role:
         """
         從使用者資訊中取得角色
@@ -317,8 +371,8 @@ def require_admin_role():
     """需要管理員角色"""
     from app.core.security import get_current_user
     
-    def check_admin_role(current_user: dict = Depends(get_current_user)):
-        user_role = RBACService.get_user_role(current_user)
+    async def check_admin_role(current_user: dict = Depends(get_current_user)):
+        user_role = await RBACService.get_user_role_from_db(current_user)
         if user_role != Role.ADMIN:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

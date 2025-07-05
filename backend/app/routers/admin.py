@@ -8,7 +8,7 @@ from app.schemas.public import (
     MarketLimitRequest, MarketLimitResponse, ErrorResponse
 )
 from app.core.security import get_current_user
-from app.core.rbac import RBACService, Permission, require_admin_role
+from app.core.rbac import RBACService, Permission, require_admin_role, ROLE_PERMISSIONS
 from typing import List, Optional
 from datetime import datetime
 import logging
@@ -62,11 +62,13 @@ async def get_users(
         使用者資產明細列表
     """
     # 檢查管理員權限
-    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要管理員權限（目前角色：{user_role.value}）"
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
         )
     
     return await admin_service.get_user_details(user)
@@ -99,8 +101,10 @@ async def give_points(
         操作結果
     """
     # 檢查點數管理權限
-    if not RBACService.has_permission(current_user, Permission.GIVE_POINTS):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.GIVE_POINTS not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要點數管理權限（目前角色：{user_role.value}）"
@@ -135,8 +139,10 @@ async def create_announcement(
         操作結果
     """
     # 檢查公告管理權限
-    if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.CREATE_ANNOUNCEMENT not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要公告管理權限（目前角色：{user_role.value}）"
@@ -231,8 +237,10 @@ async def get_announcements(
 ):
     """取得公告列表"""
     # 檢查公告管理權限
-    if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.CREATE_ANNOUNCEMENT not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要公告管理權限（目前角色：{user_role.value}）"
@@ -438,8 +446,10 @@ async def get_ipo_status(
         IPO狀態資訊
     """
     # 檢查系統管理權限
-    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
