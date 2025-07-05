@@ -503,7 +503,6 @@ export async function getMyPermissions(token) {
     return apiRequest("/api/rbac/my-permissions", {
         headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         },
     });
 }
@@ -513,7 +512,6 @@ export async function checkTelegramAdminStatus(token) {
     return apiRequest("/api/rbac/my-permissions", {
         headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         },
     });
 }
@@ -523,7 +521,6 @@ export async function getUserRole(token, userId) {
     return apiRequest(`/api/rbac/users/role/${userId}`, {
         headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         },
     });
 }
@@ -545,7 +542,6 @@ export async function getAvailableRoles(token) {
     return apiRequest("/api/rbac/roles", {
         headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         },
     });
 }
@@ -572,7 +568,6 @@ export async function getUserPermissionSummaries(token, role = null) {
     return apiRequest(url, {
         headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
         },
     });
 }
