@@ -26,20 +26,42 @@ export default function EnhancedAdminPage() {
     // 檢查登入狀態和權限
     useEffect(() => {
         const checkAuthAndPermissions = async () => {
-            // 首先檢查是否有 Telegram 登入
+            console.log("=== ADMIN PAGE AUTH CHECK ===");
+            
+            // === 路徑1: 檢查傳統管理員登入 (早期系統) ===
+            const isAdminStored = localStorage.getItem("isAdmin");
+            const adminToken = localStorage.getItem("adminToken");
+            
+            if (isAdminStored && adminToken) {
+                console.log("Legacy admin login detected");
+                try {
+                    // 驗證傳統 admin token 有效性
+                    await getSystemStats(adminToken);
+                    setAdminToken(adminToken);
+                    setIsLoggedIn(true);
+                    console.log("Legacy admin token validated");
+                } catch (error) {
+                    console.error("Legacy admin token validation failed:", error);
+                    localStorage.removeItem("isAdmin");
+                    localStorage.removeItem("adminToken");
+                    router.push("/login");
+                } finally {
+                    setLoading(false);
+                }
+                return;
+            }
+            
+            // === 路徑2: 檢查 Telegram 登入 (新系統) ===
             const isUser = localStorage.getItem("isUser");
             const userToken = localStorage.getItem("userToken");
             const telegramData = localStorage.getItem("telegramData");
-            
-            // 檢查傳統管理員登入
-            const isAdminStored = localStorage.getItem("isAdmin");
-            const adminToken = localStorage.getItem("adminToken");
 
             if (isUser && userToken && telegramData) {
-                // 使用 Telegram 登入的用戶，檢查是否有管理權限
+                console.log("Telegram login detected");
                 try {
                     setAdminToken(userToken);
                     setIsLoggedIn(true);
+                    console.log("Telegram user token set, will check permissions via RBAC");
                     // 權限檢查會在 usePermissions hook 中處理
                 } catch (error) {
                     console.error("Telegram user validation failed:", error);
@@ -47,25 +69,12 @@ export default function EnhancedAdminPage() {
                 } finally {
                     setLoading(false);
                 }
-            } else if (isAdminStored && adminToken) {
-                // 傳統管理員登入
-                try {
-                    // 驗證 token 有效性
-                    await getSystemStats(adminToken);
-                    setAdminToken(adminToken);
-                    setIsLoggedIn(true);
-                } catch (error) {
-                    console.error("Admin token validation failed:", error);
-                    localStorage.removeItem("isAdmin");
-                    localStorage.removeItem("adminToken");
-                    router.push("/login");
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                // 沒有任何有效登入，導向登入頁
-                router.push("/login");
+                return;
             }
+            
+            // === 沒有任何登入 ===
+            console.log("No valid login found, redirecting to login page");
+            router.push("/login");
         };
 
         checkAuthAndPermissions();

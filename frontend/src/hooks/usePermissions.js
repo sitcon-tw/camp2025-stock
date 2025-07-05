@@ -2,6 +2,56 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getMyPermissions } from "@/lib/api";
 
 /**
+ * 解析 JWT token payload
+ * @param {string} token - JWT token
+ * @returns {Object|null} - Decoded payload or null if invalid
+ */
+const parseJWTPayload = (token) => {
+    try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+            return JSON.parse(atob(tokenParts[1]));
+        }
+    } catch (error) {
+        console.log("Failed to parse JWT token:", error);
+    }
+    return null;
+};
+
+/**
+ * 檢查是否為傳統管理員 token (早期系統)
+ * @param {Object} payload - JWT payload
+ * @returns {boolean}
+ */
+const isLegacyAdminToken = (payload) => {
+    if (!payload) return false;
+    
+    // 傳統 admin token 特徵：
+    // - sub 是 'admin' 
+    // - 沒有 telegram_id (因為是早期系統)
+    // - 可能有 username='admin' 或 is_admin=true
+    return (payload.sub === 'admin' || 
+            payload.username === 'admin' || 
+            payload.is_admin === true) &&
+           !payload.telegram_id; // 確保不是 Telegram token
+};
+
+/**
+ * 檢查是否為 Telegram 用戶 token (新系統)
+ * @param {Object} payload - JWT payload  
+ * @returns {boolean}
+ */
+const isUserToken = (payload) => {
+    if (!payload) return false;
+    
+    // Telegram 用戶 token 特徵：
+    // - 有 telegram_id
+    // - 或者有 user_id 且不是 admin
+    return payload.telegram_id || 
+           (payload.user_id && payload.sub !== 'admin');
+};
+
+/**
  * 權限管理 Hook
  * 用於獲取和管理使用者權限
  */
@@ -33,64 +83,63 @@ export const usePermissions = (token) => {
             setLoading(true);
             setError(null);
             
-            // 嘗試從 RBAC API 獲取權限
+            // 解析 JWT token 
+            const payload = parseJWTPayload(token);
+            console.log("Token payload:", payload);
+            
+            // === 路徑1: 傳統 Admin 系統 (早期系統) ===
+            if (isLegacyAdminToken(payload)) {
+                console.log("=== LEGACY ADMIN PATH ===");
+                console.log("Early admin system token detected");
+                
+                // 直接設置傳統管理員權限，不調用 RBAC API
+                setRole("admin");
+                setPermissions([
+                    "view_own_data",
+                    "trade_stocks", 
+                    "transfer_points",
+                    "view_all_users",
+                    "give_points",
+                    "create_announcement",
+                    "manage_users",
+                    "manage_market",
+                    "system_admin"
+                ]);
+                hasInitializedRef.current = true;
+                return;
+            }
+            
+            // === 路徑2: Telegram + RBAC 系統 (新系統) ===
+            console.log("=== TELEGRAM + RBAC PATH ===");
+            console.log("Attempting RBAC API for Telegram user");
+            
             try {
                 const response = await getMyPermissions(token);
                 if (response) {
+                    console.log("RBAC API success:", response);
                     setPermissions(response.permissions || []);
                     setRole(response.role || null);
                     hasInitializedRef.current = true;
                     return;
                 }
             } catch (rbacError) {
-                console.log("RBAC API failed, checking if admin token:", rbacError);
+                console.log("RBAC API failed:", rbacError);
                 
-                // 如果 RBAC API 失敗，檢查是否為傳統管理員 token
-                // 嘗試調用管理員 API 來驗證
-                try {
-                    // 使用管理員 stats API 來驗證 admin token
-                    const adminResponse = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/admin/stats`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                                "Content-Type": "application/json",
-                            },
-                        }
-                    );
-                    
-                    if (adminResponse.ok) {
-                        // 是有效的管理員 token，設置管理員權限
-                        console.log("Admin token validated, setting admin permissions");
-                        setRole("admin");
-                        setPermissions([
-                            "view_own_data",
-                            "trade_stocks", 
-                            "transfer_points",
-                            "view_all_users",
-                            "give_points",
-                            "create_announcement",
-                            "manage_users",
-                            "manage_market",
-                            "system_admin"
-                        ]);
-                        hasInitializedRef.current = true;
-                        return;
-                    }
-                } catch (adminError) {
-                    console.error("Admin API also failed:", adminError);
+                // 如果是用戶 token 但 RBAC 失敗，設為學員
+                if (isUserToken(payload)) {
+                    console.log("User token but RBAC failed, setting as student");
+                    setRole("student");
+                    setPermissions([
+                        "view_own_data",
+                        "trade_stocks", 
+                        "transfer_points"
+                    ]);
+                    hasInitializedRef.current = true;
+                    return;
                 }
                 
-                // 兩個 API 都失敗，假設為學員角色並設置基本權限
-                console.log("Both APIs failed, setting student role with basic permissions");
-                setRole("student");
-                setPermissions([
-                    "view_own_data",
-                    "trade_stocks", 
-                    "transfer_points"
-                ]);
-                hasInitializedRef.current = true;
-                return;
+                // 不是已知的 token 類型
+                throw rbacError;
             }
         } catch (err) {
             console.error("Failed to fetch permissions:", err);
