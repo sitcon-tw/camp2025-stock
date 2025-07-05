@@ -5,6 +5,7 @@ import {
     getWebPointHistory,
     getWebPortfolio,
     getWebStockOrders,
+    getMyPermissions,
 } from "@/lib/api";
 import Modal from "@/components/Modal";
 import dayjs from "dayjs";
@@ -30,6 +31,7 @@ export default function Dashboard() {
     const [cancelError, setCancelError] = useState("");
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [pendingCancelOrder, setPendingCancelOrder] = useState(null);
+    const [userPermissions, setUserPermissions] = useState(null);
     const router = useRouter();
 
     // 登出功能
@@ -238,11 +240,15 @@ export default function Dashboard() {
                 console.log("開始載入使用者資料...");
 
                 // 載入使用者資料
-                const [portfolio, points, stocks] = await Promise.all(
+                const [portfolio, points, stocks, permissions] = await Promise.all(
                     [
                         getWebPortfolio(token),
                         getWebPointHistory(token),
                         getWebStockOrders(token),
+                        getMyPermissions(token).catch((error) => {
+                            console.warn("無法載入權限資訊:", error);
+                            return null;
+                        }),
                     ],
                 );
 
@@ -250,11 +256,13 @@ export default function Dashboard() {
                     portfolio,
                     pointsCount: points.length,
                     stocksCount: stocks.length,
+                    permissions,
                 });
 
                 setUser(portfolio);
                 setPointHistory(points);
                 setOrderHistory(stocks);
+                setUserPermissions(permissions);
                 setIsLoading(false);
             } catch (error) {
                 console.error("載入使用者資料失敗:", error);
@@ -440,6 +448,54 @@ export default function Dashboard() {
                         </div>
                     )}
                 </div>
+
+                {/* 權限資訊 */}
+                {userPermissions && (
+                    <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                            帳號權限資訊
+                        </h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-[#557797]">角色</span>
+                                <span className="rounded bg-[#294565] px-2 py-1 text-sm font-medium text-[#92cbf4]">
+                                    {userPermissions.role === 'student' && '一般學員'}
+                                    {userPermissions.role === 'point_manager' && '點數管理員'}
+                                    {userPermissions.role === 'announcer' && '公告員'}
+                                    {userPermissions.role === 'admin' && '系統管理員'}
+                                    {!['student', 'point_manager', 'announcer', 'admin'].includes(userPermissions.role) && userPermissions.role}
+                                </span>
+                            </div>
+                            
+                            <div>
+                                <p className="mb-2 text-sm text-[#557797]">可用權限</p>
+                                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                    {userPermissions.permissions && userPermissions.permissions.length > 0 ? (
+                                        userPermissions.permissions.map((permission, index) => (
+                                            <div key={index} className="flex items-center space-x-2">
+                                                <span className="text-green-400">✓</span>
+                                                <span className="text-xs text-white">
+                                                    {permission === 'view_own_data' && '查看自己的資料'}
+                                                    {permission === 'trade_stocks' && '股票交易'}
+                                                    {permission === 'transfer_points' && '轉帳點數'}
+                                                    {permission === 'view_all_users' && '查看所有使用者'}
+                                                    {permission === 'give_points' && '發放點數'}
+                                                    {permission === 'create_announcement' && '發布公告'}
+                                                    {permission === 'manage_users' && '管理使用者'}
+                                                    {permission === 'manage_market' && '管理市場'}
+                                                    {permission === 'system_admin' && '系統管理'}
+                                                    {!['view_own_data', 'trade_stocks', 'transfer_points', 'view_all_users', 'give_points', 'create_announcement', 'manage_users', 'manage_market', 'system_admin'].includes(permission) && permission}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-[#557797]">暫無特殊權限</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* TODO: Blocked due to API */}
                 {/*<div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
