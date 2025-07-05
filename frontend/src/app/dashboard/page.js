@@ -340,8 +340,9 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
-            <div className="w-full space-y-4 p-4">
+        <>
+            <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
+                <div className="w-full space-y-4 p-4">
                 <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     {authData?.photo_url ? (
                         <Image
@@ -640,7 +641,7 @@ export default function Dashboard() {
                                         key={orderId || i.created_at}
                                     >
                                         {/* 訂單基本資訊 */}
-                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"></div>
+                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                                             <p className="font-mono text-sm text-[#92cbf4]">
                                                 {dayjs(i.created_at)
                                                     .add(8, "hour")
@@ -752,6 +753,14 @@ export default function Dashboard() {
                                         </div>
 
                                         {/* 取消按鈕 */}
+                                        {i.status === "pending" && (
+                                            <div className="mt-3">
+                                                <button
+                                                    onClick={() => openCancelModal(i, i.order_type, i.quantity)}
+                                                    disabled={isCancelling}
+                                                    className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+                                                >
+                                                    {isCancelling ? "取消中..." : "取消訂單"}
                                                 </button>
                                             </div>
                                         )}
@@ -765,15 +774,14 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* 取消訂單確認 Modal */}
-            <Modal
-                isOpen={showCancelModal}
-                onClose={closeCancelModal}
-                title="確認取消訂單"
-                size="md"
-            >
+                {/* 取消訂單確認 Modal */}
+                <Modal
+                    isOpen={showCancelModal}
+                    onClose={closeCancelModal}
+                    title="確認取消訂單"
+                    size="md"
+                >
                 {pendingCancelOrder && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
@@ -825,7 +833,8 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
-            </Modal>
-        </div>
+                </Modal>
+            </div>
+        </>
     );
 }
