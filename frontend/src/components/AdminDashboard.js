@@ -75,10 +75,17 @@ export const AdminDashboard = ({ token }) => {
         );
     }
 
-    if (!isAdmin()) {
+    // 檢查是否有管理權限（admin、point_manager、announcer 都可以訪問）
+    const hasManagementAccess = isAdmin() || role === 'point_manager' || role === 'announcer';
+    
+    if (!hasManagementAccess) {
         return (
             <div className="flex items-center justify-center p-8">
-                <div className="text-lg text-red-600">權限不足：需要管理員權限</div>
+                <div className="text-center">
+                    <div className="text-lg text-red-600 mb-2">權限不足：需要管理相關權限</div>
+                    <div className="text-sm text-gray-600">您的角色：{role}</div>
+                    <div className="text-sm text-gray-600">允許的角色：admin、point_manager、announcer</div>
+                </div>
             </div>
         );
     }
