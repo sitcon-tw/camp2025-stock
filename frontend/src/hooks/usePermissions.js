@@ -50,6 +50,7 @@ export const usePermissions = (token) => {
                     
                     if (adminResponse.ok) {
                         // 是有效的管理員 token，設置管理員權限
+                        console.log("Admin token validated, setting admin permissions");
                         setRole("admin");
                         setPermissions([
                             "view_own_data",

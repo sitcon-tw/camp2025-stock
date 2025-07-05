@@ -66,6 +66,15 @@ export const AdminDashboard = ({ token }) => {
         );
     }
 
+    // 如果沒有 role 且有 token，繼續顯示載入中（可能在 fallback 驗證中）
+    if (!role && token) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <div className="text-lg text-gray-600">驗證權限中...</div>
+            </div>
+        );
+    }
+
     if (!isAdmin()) {
         return (
             <div className="flex items-center justify-center p-8">
