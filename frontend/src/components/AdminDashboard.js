@@ -3,7 +3,7 @@ import { PermissionGuard, AdminGuard, PermissionButton } from "./PermissionGuard
 import { PERMISSIONS, ROLES } from "@/contexts/PermissionContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RoleManagement } from "./RoleManagement";
-import { QuickRoleSetup } from "./QuickRoleSetup";
+// import { QuickRoleSetup } from "./QuickRoleSetup";
 import { AnnouncementManagement } from "./AnnouncementManagement";
 import { 
     givePoints, 
@@ -142,7 +142,7 @@ export const AdminDashboard = ({ token }) => {
                             fallback={<div className="text-red-600">權限不足：需要用戶管理權限</div>}
                         >
                             <div className="space-y-6">
-                                <QuickRoleSetup token={token} />
+                                {/* <QuickRoleSetup token={token} /> */}
                                 <RoleManagement token={token} />
                             </div>
                         </PermissionGuard>
