@@ -177,8 +177,10 @@ async def update_market_hours(
         操作結果
     """
     # 檢查市場管理權限
-    if not RBACService.has_permission(current_user, Permission.MANAGE_MARKET):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_MARKET not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要市場管理權限（目前角色：{user_role.value}）"
@@ -213,8 +215,10 @@ async def set_trading_limit(
         操作結果
     """
     # 檢查市場管理權限
-    if not RBACService.has_permission(current_user, Permission.MANAGE_MARKET):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_MARKET not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要市場管理權限（目前角色：{user_role.value}）"
@@ -295,8 +299,10 @@ async def delete_announcement(
         操作結果
     """
     # 檢查公告管理權限
-    if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.CREATE_ANNOUNCEMENT not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要公告管理權限（目前角色：{user_role.value}）"
@@ -382,8 +388,10 @@ async def get_system_stats(
 ):
     """取得系統統計資訊"""
     # 檢查系統管理權限
-    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -444,8 +452,10 @@ async def get_students(
 ):
     """取得所有學員資料"""
     # 檢查查看所有使用者權限
-    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
@@ -473,8 +483,10 @@ async def get_teams(
 ):
     """取得所有隊伍資料"""
     # 檢查查看所有使用者權限
-    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
@@ -516,8 +528,10 @@ async def final_settlement(
         操作結果
     """
     # 檢查系統管理權限
-    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -628,8 +642,10 @@ async def reset_ipo(
         操作結果
     """
     # 檢查系統管理權限
-    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -737,8 +753,10 @@ async def update_ipo(
         操作結果
     """
     # 檢查系統管理權限
-    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -853,8 +871,10 @@ async def reset_all_data(
         操作結果
     """
     # 檢查系統管理權限
-    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
-        user_role = RBACService.get_user_role(current_user)
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
