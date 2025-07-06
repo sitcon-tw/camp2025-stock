@@ -5,6 +5,7 @@ import {
     deleteAnnouncement,
     getAnnouncementsAdmin,
 } from "@/lib/api";
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Modal from "./Modal";
 import { PermissionButton } from "./PermissionGuard";
@@ -277,14 +278,13 @@ export const AnnouncementManagement = ({ token }) => {
                                             </p>
                                             <div className="flex items-center space-x-4 text-sm text-[#557797]">
                                                 <span>
-                                                    📅{" "}
                                                     {formatDate(
                                                         announcement.created_at,
                                                     )}
                                                 </span>
                                                 {announcement.broadcast && (
                                                     <span className="rounded bg-blue-600/20 px-2 py-1 text-xs text-blue-400">
-                                                        📢 已廣播
+                                                        Telegram 廣播
                                                     </span>
                                                 )}
                                             </div>
@@ -297,27 +297,13 @@ export const AnnouncementManagement = ({ token }) => {
                                                 }
                                                 token={token}
                                                 onClick={() =>
-                                                    openEditModal(
-                                                        announcement,
-                                                    )
-                                                }
-                                                className="rounded bg-[#469FD2] px-3 py-1 text-sm text-white hover:bg-[#5BAEE3]"
-                                            >
-                                                編輯
-                                            </PermissionButton>
-                                            <PermissionButton
-                                                requiredPermission={
-                                                    PERMISSIONS.CREATE_ANNOUNCEMENT
-                                                }
-                                                token={token}
-                                                onClick={() =>
                                                     openDeleteModal(
                                                         announcement,
                                                     )
                                                 }
-                                                className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
+                                                className="text-gray-600 transition-colors hover:text-red-500"
                                             >
-                                                刪除
+                                                <Trash2 className="h-5 w-5" />
                                             </PermissionButton>
                                         </div>
                                     </div>
