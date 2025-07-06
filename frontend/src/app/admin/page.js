@@ -254,22 +254,6 @@ export default function EnhancedAdminPage() {
                         <PermissionAudit token={adminToken} />
                     )}
                 </div>
-
-                {/* 頁腳資訊 */}
-                <div className="bg-[#1A325F] border-t border-[#294565] mt-12">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        <div className="text-center text-sm text-[#557797]">
-                            <p>權限驅動的管理系統 | 基於 RBAC 安全架構</p>
-                            <p className="mt-1">
-                                目前擁有權限：
-                                {permissions && permissions.length > 0 
-                                    ? permissions.slice(0, 3).join(", ") + (permissions.length > 3 ? ` 等 ${permissions.length} 項` : '')
-                                    : "載入中..."
-                                }
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </PermissionProvider>
     );
