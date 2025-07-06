@@ -18,6 +18,7 @@ import {
     updateIpo,
 } from "@/lib/api";
 import { AnnouncementManagement } from "./AnnouncementManagement";
+import Modal from "./Modal";
 
 /**
  * 管理員儀表板組件
@@ -237,61 +238,57 @@ export const AdminDashboard = ({ token }) => {
             </div>
 
             {/* 發放點數模態框 */}
-            {showPointsModal && (
-                <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-                    <div className="mx-4 w-full max-w-md rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                        <h3 className="mb-4 text-lg font-bold text-[#92cbf4]">
-                            💰 發放點數
-                        </h3>
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                placeholder="使用者名稱"
-                                value={pointsForm.username}
-                                onChange={(e) =>
-                                    setPointsForm({
-                                        ...pointsForm,
-                                        username: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
-                            />
-                            <input
-                                type="number"
-                                placeholder="點數數量"
-                                value={pointsForm.amount}
-                                onChange={(e) =>
-                                    setPointsForm({
-                                        ...pointsForm,
-                                        amount: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
-                            />
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() =>
-                                        setShowPointsModal(false)
-                                    }
-                                    className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={handleGivePoints}
-                                    disabled={
-                                        !pointsForm.username ||
-                                        !pointsForm.amount
-                                    }
-                                    className="flex-1 rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
-                                >
-                                    發放
-                                </button>
-                            </div>
-                        </div>
+            <Modal
+                isOpen={showPointsModal}
+                onClose={() => setShowPointsModal(false)}
+                title="💰 發放點數"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <input
+                        type="text"
+                        placeholder="使用者名稱"
+                        value={pointsForm.username}
+                        onChange={(e) =>
+                            setPointsForm({
+                                ...pointsForm,
+                                username: e.target.value,
+                            })
+                        }
+                        className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
+                    />
+                    <input
+                        type="number"
+                        placeholder="點數數量"
+                        value={pointsForm.amount}
+                        onChange={(e) =>
+                            setPointsForm({
+                                ...pointsForm,
+                                amount: e.target.value,
+                            })
+                        }
+                        className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
+                    />
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setShowPointsModal(false)}
+                            className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
+                        >
+                            取消
+                        </button>
+                        <button
+                            onClick={handleGivePoints}
+                            disabled={
+                                !pointsForm.username ||
+                                !pointsForm.amount
+                            }
+                            className="flex-1 rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+                        >
+                            發放
+                        </button>
                     </div>
                 </div>
-            )}
+            </Modal>
 
             {/* 發布公告模態框 */}
         </div>
@@ -873,152 +870,136 @@ const MarketManagementSection = ({ token, showNotification }) => {
             </div>
 
             {/* IPO 更新 Modal */}
-            {showIpoModal && (
-                <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-                    <div className="mx-4 w-full max-w-md rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                        <h3 className="mb-4 text-lg font-bold text-[#92cbf4]">
-                            更新 IPO 參數
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
-                                    剩餘股數 (留空則不更新)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={ipoForm.sharesRemaining}
-                                    onChange={(e) =>
-                                        setIpoForm({
-                                            ...ipoForm,
-                                            sharesRemaining:
-                                                e.target.value,
-                                        })
-                                    }
-                                    placeholder="例如: 0"
-                                    className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
-                                />
-                                {ipoStatus && (
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        目前:{" "}
-                                        {ipoStatus.sharesRemaining?.toLocaleString()}{" "}
-                                        股
-                                    </p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
-                                    IPO 價格 (留空則不更新)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={ipoForm.initialPrice}
-                                    onChange={(e) =>
-                                        setIpoForm({
-                                            ...ipoForm,
-                                            initialPrice:
-                                                e.target.value,
-                                        })
-                                    }
-                                    placeholder="例如: 25"
-                                    className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
-                                />
-                                {ipoStatus && (
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        目前: {ipoStatus.initialPrice}{" "}
-                                        點/股
-                                    </p>
-                                )}
-                            </div>
-                            <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-3">
-                                <p className="text-sm text-blue-200">
-                                    💡 提示：設定剩餘股數為 0
-                                    可以強制市價單使用限價單撮合，實現價格發現機制
-                                </p>
-                            </div>
-                            <div className="mt-4 flex gap-3">
-                                <button
-                                    onClick={() =>
-                                        setShowIpoModal(false)
-                                    }
-                                    className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={handleIpoUpdate}
-                                    className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                                >
-                                    更新
-                                </button>
-                            </div>
-                        </div>
+            <Modal
+                isOpen={showIpoModal}
+                onClose={() => setShowIpoModal(false)}
+                title="更新 IPO 參數"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
+                            剩餘股數 (留空則不更新)
+                        </label>
+                        <input
+                            type="number"
+                            value={ipoForm.sharesRemaining}
+                            onChange={(e) =>
+                                setIpoForm({
+                                    ...ipoForm,
+                                    sharesRemaining: e.target.value,
+                                })
+                            }
+                            placeholder="例如: 0"
+                            className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
+                        />
+                        {ipoStatus && (
+                            <p className="mt-1 text-xs text-gray-400">
+                                目前:{" "}
+                                {ipoStatus.sharesRemaining?.toLocaleString()}{" "}
+                                股
+                            </p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
+                            IPO 價格 (留空則不更新)
+                        </label>
+                        <input
+                            type="number"
+                            value={ipoForm.initialPrice}
+                            onChange={(e) =>
+                                setIpoForm({
+                                    ...ipoForm,
+                                    initialPrice: e.target.value,
+                                })
+                            }
+                            placeholder="例如: 25"
+                            className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
+                        />
+                        {ipoStatus && (
+                            <p className="mt-1 text-xs text-gray-400">
+                                目前: {ipoStatus.initialPrice} 點/股
+                            </p>
+                        )}
+                    </div>
+                    <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-3">
+                        <p className="text-sm text-blue-200">
+                            💡 提示：設定剩餘股數為 0
+                            可以強制市價單使用限價單撮合，實現價格發現機制
+                        </p>
+                    </div>
+                    <div className="mt-4 flex gap-3">
+                        <button
+                            onClick={() => setShowIpoModal(false)}
+                            className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
+                        >
+                            取消
+                        </button>
+                        <button
+                            onClick={handleIpoUpdate}
+                            className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                        >
+                            更新
+                        </button>
                     </div>
                 </div>
-            )}
+            </Modal>
 
             {/* 設定漲跌限制 Modal */}
-            {showTradingLimitModal && (
-                <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-                    <div className="mx-4 w-full max-w-md rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                        <h3 className="mb-4 text-lg font-bold text-[#92cbf4]">
-                            設定漲跌限制
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
-                                    漲跌限制百分比
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="10"
-                                        value={tradingLimitPercent}
-                                        onChange={(e) => {
-                                            const value =
-                                                e.target.value;
-                                            if (
-                                                value === "" ||
-                                                (!isNaN(value) &&
-                                                    parseFloat(
-                                                        value,
-                                                    ) >= 0)
-                                            ) {
-                                                setTradingLimitPercent(
-                                                    value,
-                                                );
-                                            }
-                                        }}
-                                        placeholder="輸入百分比數字 (0-100)"
-                                        className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 pr-8 text-white"
-                                    />
-                                    <span className="absolute top-2 right-3 text-[#7BC2E6]">
-                                        %
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="mt-4 flex gap-3">
-                                <button
-                                    onClick={() =>
-                                        setShowTradingLimitModal(
-                                            false,
-                                        )
+            <Modal
+                isOpen={showTradingLimitModal}
+                onClose={() => setShowTradingLimitModal(false)}
+                title="設定漲跌限制"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
+                            漲跌限制百分比
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="number"
+                                min="0"
+                                step="10"
+                                value={tradingLimitPercent}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (
+                                        value === "" ||
+                                        (!isNaN(value) &&
+                                            parseFloat(value) >= 0)
+                                    ) {
+                                        setTradingLimitPercent(value);
                                     }
-                                    className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={handleSetTradingLimit}
-                                    className="flex-1 rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-                                >
-                                    設定
-                                </button>
-                            </div>
+                                }}
+                                placeholder="輸入百分比數字 (0-100)"
+                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 pr-8 text-white"
+                            />
+                            <span className="absolute top-2 right-3 text-[#7BC2E6]">
+                                %
+                            </span>
                         </div>
                     </div>
+                    <div className="mt-4 flex gap-3">
+                        <button
+                            onClick={() =>
+                                setShowTradingLimitModal(false)
+                            }
+                            className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
+                        >
+                            取消
+                        </button>
+                        <button
+                            onClick={handleSetTradingLimit}
+                            className="flex-1 rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                        >
+                            設定
+                        </button>
+                    </div>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 };

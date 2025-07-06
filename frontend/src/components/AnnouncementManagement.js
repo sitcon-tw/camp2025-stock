@@ -318,92 +318,84 @@ export const AnnouncementManagement = ({ token }) => {
             <Modal
                 isOpen={createModal.isOpen}
                 onClose={createModal.closeModal}
+                title="📝 發布新公告"
                 size="lg"
             >
-                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    <h3 className="mb-4 text-xl font-bold text-[#92cbf4]">
-                        📝 發布新公告
-                    </h3>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                公告標題 *
-                            </label>
-                            <input
-                                type="text"
-                                value={publishForm.title}
-                                onChange={(e) =>
-                                    setPublishForm({
-                                        ...publishForm,
-                                        title: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
-                                placeholder="請輸入公告標題"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                公告內容 *
-                            </label>
-                            <textarea
-                                value={publishForm.message}
-                                onChange={(e) =>
-                                    setPublishForm({
-                                        ...publishForm,
-                                        message: e.target.value,
-                                    })
-                                }
-                                rows={5}
-                                className="w-full resize-none rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
-                                placeholder="請輸入公告內容"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    checked={publishForm.broadcast}
-                                    onChange={(e) =>
-                                        setPublishForm({
-                                            ...publishForm,
-                                            broadcast:
-                                                e.target.checked,
-                                        })
-                                    }
-                                    className="rounded border-[#294565] bg-[#0f203e] text-[#469FD2]"
-                                />
-                                <span className="text-[#7BC2E6]">
-                                    同時發送到 Telegram Bot
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button
-                            onClick={createModal.closeModal}
-                            className="rounded bg-[#294565] px-4 py-2 text-[#7BC2E6] hover:bg-[#3A5578]"
-                        >
-                            取消
-                        </button>
-                        <button
-                            onClick={handlePublishAnnouncement}
-                            disabled={
-                                publishLoading ||
-                                !publishForm.title.trim() ||
-                                !publishForm.message.trim()
+                <div className="space-y-4">
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                            公告標題 *
+                        </label>
+                        <input
+                            type="text"
+                            value={publishForm.title}
+                            onChange={(e) =>
+                                setPublishForm({
+                                    ...publishForm,
+                                    title: e.target.value,
+                                })
                             }
-                            className="rounded bg-[#469FD2] px-4 py-2 text-white hover:bg-[#5BAEE3] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {publishLoading
-                                ? "發布中..."
-                                : "發布公告"}
-                        </button>
+                            className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
+                            placeholder="請輸入公告標題"
+                        />
                     </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                            公告內容 *
+                        </label>
+                        <textarea
+                            value={publishForm.message}
+                            onChange={(e) =>
+                                setPublishForm({
+                                    ...publishForm,
+                                    message: e.target.value,
+                                })
+                            }
+                            rows={5}
+                            className="w-full resize-none rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
+                            placeholder="請輸入公告內容"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                checked={publishForm.broadcast}
+                                onChange={(e) =>
+                                    setPublishForm({
+                                        ...publishForm,
+                                        broadcast: e.target.checked,
+                                    })
+                                }
+                                className="rounded border-[#294565] bg-[#0f203e] text-[#469FD2]"
+                            />
+                            <span className="text-[#7BC2E6]">
+                                同時發送到 Telegram Bot
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={createModal.closeModal}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#7BC2E6] hover:bg-[#3A5578]"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handlePublishAnnouncement}
+                        disabled={
+                            publishLoading ||
+                            !publishForm.title.trim() ||
+                            !publishForm.message.trim()
+                        }
+                        className="rounded bg-[#469FD2] px-4 py-2 text-white hover:bg-[#5BAEE3] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {publishLoading ? "發布中..." : "發布公告"}
+                    </button>
                 </div>
             </Modal>
 
@@ -411,90 +403,84 @@ export const AnnouncementManagement = ({ token }) => {
             <Modal
                 isOpen={editModal.isOpen}
                 onClose={editModal.closeModal}
+                title="✏️ 編輯公告"
                 size="lg"
             >
-                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    <h3 className="mb-4 text-xl font-bold text-[#92cbf4]">
-                        ✏️ 編輯公告
-                    </h3>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                公告標題 *
-                            </label>
-                            <input
-                                type="text"
-                                value={editForm.title}
-                                onChange={(e) =>
-                                    setEditForm({
-                                        ...editForm,
-                                        title: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
-                                placeholder="請輸入公告標題"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                公告內容 *
-                            </label>
-                            <textarea
-                                value={editForm.message}
-                                onChange={(e) =>
-                                    setEditForm({
-                                        ...editForm,
-                                        message: e.target.value,
-                                    })
-                                }
-                                rows={5}
-                                className="w-full resize-none rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
-                                placeholder="請輸入公告內容"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="checkbox"
-                                    checked={editForm.broadcast}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            broadcast:
-                                                e.target.checked,
-                                        })
-                                    }
-                                    className="rounded border-[#294565] bg-[#0f203e] text-[#469FD2]"
-                                />
-                                <span className="text-[#7BC2E6]">
-                                    同時發送到 Telegram Bot
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button
-                            onClick={editModal.closeModal}
-                            className="rounded bg-[#294565] px-4 py-2 text-[#7BC2E6] hover:bg-[#3A5578]"
-                        >
-                            取消
-                        </button>
-                        <button
-                            onClick={handleEditAnnouncement}
-                            disabled={
-                                editLoading ||
-                                !editForm.title.trim() ||
-                                !editForm.message.trim()
+                <div className="space-y-4">
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                            公告標題 *
+                        </label>
+                        <input
+                            type="text"
+                            value={editForm.title}
+                            onChange={(e) =>
+                                setEditForm({
+                                    ...editForm,
+                                    title: e.target.value,
+                                })
                             }
-                            className="rounded bg-[#469FD2] px-4 py-2 text-white hover:bg-[#5BAEE3] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {editLoading ? "更新中..." : "更新公告"}
-                        </button>
+                            className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
+                            placeholder="請輸入公告標題"
+                        />
                     </div>
+
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                            公告內容 *
+                        </label>
+                        <textarea
+                            value={editForm.message}
+                            onChange={(e) =>
+                                setEditForm({
+                                    ...editForm,
+                                    message: e.target.value,
+                                })
+                            }
+                            rows={5}
+                            className="w-full resize-none rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-[#92cbf4] focus:border-[#469FD2] focus:outline-none"
+                            placeholder="請輸入公告內容"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                checked={editForm.broadcast}
+                                onChange={(e) =>
+                                    setEditForm({
+                                        ...editForm,
+                                        broadcast: e.target.checked,
+                                    })
+                                }
+                                className="rounded border-[#294565] bg-[#0f203e] text-[#469FD2]"
+                            />
+                            <span className="text-[#7BC2E6]">
+                                同時發送到 Telegram Bot
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={editModal.closeModal}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#7BC2E6] hover:bg-[#3A5578]"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleEditAnnouncement}
+                        disabled={
+                            editLoading ||
+                            !editForm.title.trim() ||
+                            !editForm.message.trim()
+                        }
+                        className="rounded bg-[#469FD2] px-4 py-2 text-white hover:bg-[#5BAEE3] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {editLoading ? "更新中..." : "更新公告"}
+                    </button>
                 </div>
             </Modal>
 
@@ -502,46 +488,41 @@ export const AnnouncementManagement = ({ token }) => {
             <Modal
                 isOpen={deleteModal.isOpen}
                 onClose={deleteModal.closeModal}
+                title="🗑️ 確認刪除"
                 size="md"
             >
-                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    <h3 className="mb-4 text-xl font-bold text-red-400">
-                        🗑️ 確認刪除
-                    </h3>
-
-                    {deleteTarget && (
-                        <div className="mb-6">
-                            <p className="mb-2 text-[#7BC2E6]">
-                                確定要刪除以下公告嗎？
-                            </p>
-                            <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
-                                <div className="font-medium text-[#92cbf4]">
-                                    {deleteTarget.title}
-                                </div>
-                                <div className="mt-1 line-clamp-2 text-sm text-[#7BC2E6]">
-                                    {deleteTarget.message}
-                                </div>
+                {deleteTarget && (
+                    <div className="mb-6">
+                        <p className="mb-2 text-[#7BC2E6]">
+                            確定要刪除以下公告嗎？
+                        </p>
+                        <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
+                            <div className="font-medium text-[#92cbf4]">
+                                {deleteTarget.title}
                             </div>
-                            <p className="mt-3 text-sm text-red-400">
-                                ⚠️ 此操作無法撤銷
-                            </p>
+                            <div className="mt-1 line-clamp-2 text-sm text-[#7BC2E6]">
+                                {deleteTarget.message}
+                            </div>
                         </div>
-                    )}
-
-                    <div className="flex justify-end space-x-3">
-                        <button
-                            onClick={deleteModal.closeModal}
-                            className="rounded bg-[#294565] px-4 py-2 text-[#7BC2E6] hover:bg-[#3A5578]"
-                        >
-                            取消
-                        </button>
-                        <button
-                            onClick={handleDeleteAnnouncement}
-                            className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-                        >
-                            確認刪除
-                        </button>
+                        <p className="mt-3 text-sm text-red-400">
+                            ⚠️ 此操作無法撤銷
+                        </p>
                     </div>
+                )}
+
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={deleteModal.closeModal}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#7BC2E6] hover:bg-[#3A5578]"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleDeleteAnnouncement}
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                    >
+                        確認刪除
+                    </button>
                 </div>
             </Modal>
         </div>
