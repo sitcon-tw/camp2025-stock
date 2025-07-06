@@ -151,8 +151,8 @@ export const AnnouncementManagement = ({ token }) => {
 
         try {
             setDeleteLoading(true);
-            await deleteAnnouncement(token, deleteTarget._id);
-            showNotification("公告已成功刪除", "success");
+            const response = await deleteAnnouncement(token, deleteTarget._id);
+            showNotification(response.message || "公告已標記為已刪除", "success");
             deleteModal.closeModal();
             setDeleteTarget(null);
             fetchAnnouncements(); // 重新獲取公告列表
@@ -258,14 +258,33 @@ export const AnnouncementManagement = ({ token }) => {
                             {announcements.map((announcement) => (
                                 <div
                                     key={announcement._id}
-                                    className="rounded-lg border border-[#294565] bg-[#0f203e] p-4"
+                                    className={`rounded-lg border p-4 ${
+                                        announcement.is_deleted
+                                            ? "border-red-500/30 bg-red-900/20 opacity-75"
+                                            : "border-[#294565] bg-[#0f203e]"
+                                    }`}
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
-                                            <h4 className="mb-2 text-lg font-semibold text-[#92cbf4]">
-                                                {announcement.title}
-                                            </h4>
-                                            <p className="mb-3 leading-relaxed text-[#7BC2E6]">
+                                            <div className="mb-2 flex items-center space-x-2">
+                                                <h4 className={`text-lg font-semibold ${
+                                                    announcement.is_deleted
+                                                        ? "text-red-400 line-through"
+                                                        : "text-[#92cbf4]"
+                                                }`}>
+                                                    {announcement.title}
+                                                </h4>
+                                                {announcement.is_deleted && (
+                                                    <span className="rounded bg-red-600/30 px-2 py-1 text-xs text-red-400">
+                                                        已刪除
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className={`mb-3 leading-relaxed ${
+                                                announcement.is_deleted
+                                                    ? "text-red-300/70 line-through"
+                                                    : "text-[#7BC2E6]"
+                                            }`}>
                                                 {announcement.message}
                                             </p>
                                             <div className="flex items-center space-x-4 text-sm text-[#557797]">
@@ -279,24 +298,31 @@ export const AnnouncementManagement = ({ token }) => {
                                                         Telegram 廣播
                                                     </span>
                                                 )}
+                                                {announcement.is_deleted && announcement.deleted_at && (
+                                                    <span className="rounded bg-red-600/20 px-2 py-1 text-xs text-red-400">
+                                                        刪除於 {formatDate(announcement.deleted_at)}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
                                         <div className="ml-4 flex space-x-2">
-                                            <PermissionButton
-                                                requiredPermission={
-                                                    PERMISSIONS.CREATE_ANNOUNCEMENT
-                                                }
-                                                token={token}
-                                                onClick={() =>
-                                                    openDeleteModal(
-                                                        announcement,
-                                                    )
-                                                }
-                                                className="text-gray-600 transition-colors hover:text-red-500"
-                                            >
-                                                <Trash2 className="h-5 w-5" />
-                                            </PermissionButton>
+                                            {!announcement.is_deleted && (
+                                                <PermissionButton
+                                                    requiredPermission={
+                                                        PERMISSIONS.CREATE_ANNOUNCEMENT
+                                                    }
+                                                    token={token}
+                                                    onClick={() =>
+                                                        openDeleteModal(
+                                                            announcement,
+                                                        )
+                                                    }
+                                                    className="text-gray-600 transition-colors hover:text-red-500"
+                                                >
+                                                    <Trash2 className="h-5 w-5" />
+                                                </PermissionButton>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -401,7 +427,7 @@ export const AnnouncementManagement = ({ token }) => {
                 {deleteTarget && (
                     <div className="mb-6">
                         <p className="mb-2 text-[#7BC2E6]">
-                            確定要刪除以下公告嗎？
+                            確定要標記以下公告為已刪除嗎？
                         </p>
                         <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
                             <div className="font-medium text-[#92cbf4]">
@@ -411,8 +437,8 @@ export const AnnouncementManagement = ({ token }) => {
                                 {deleteTarget.message}
                             </div>
                         </div>
-                        <p className="mt-3 text-sm text-red-400">
-                            ⚠️ 此操作無法撤銷
+                        <p className="mt-3 text-sm text-yellow-400">
+                            ⚠️ 公告將被標記為已刪除，但仍會保留在系統中
                         </p>
                     </div>
                 )}
@@ -429,7 +455,7 @@ export const AnnouncementManagement = ({ token }) => {
                         disabled={deleteLoading}
                         className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:cursor-not-allowed! disabled:opacity-50"
                     >
-                        {deleteLoading ? "刪除中..." : "確認刪除"}
+                        {deleteLoading ? "標記中..." : "確認標記為已刪除"}
                     </button>
                 </div>
             </Modal>

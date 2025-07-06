@@ -335,15 +335,24 @@ async def delete_announcement(
                 detail="找不到指定的公告"
             )
         
-        # 刪除公告
-        result = await db[Collections.ANNOUNCEMENTS].delete_one(
-            {"_id": obj_id}
+        # 軟刪除公告 - 標記為已刪除而非真正刪除
+        from datetime import datetime, timezone
+        
+        result = await db[Collections.ANNOUNCEMENTS].update_one(
+            {"_id": obj_id},
+            {
+                "$set": {
+                    "is_deleted": True,
+                    "deleted_at": datetime.now(timezone.utc),
+                    "deleted_by": current_user.get('user_id', 'unknown')
+                }
+            }
         )
         
-        if result.deleted_count == 0:
+        if result.matched_count == 0:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="刪除公告失敗"
+                detail="標記公告為已刪除失敗"
             )
         
         logger.info(f"Announcement deleted: {announcement_id} by user {current_user.get('user_id', 'unknown')}")
@@ -363,9 +372,10 @@ async def delete_announcement(
         
         return {
             "ok": True,
-            "message": "公告已成功刪除",
+            "message": "公告已標記為已刪除",
             "deletedAnnouncementId": announcement_id,
-            "deletedAnnouncementTitle": announcement.get("title", "")
+            "deletedAnnouncementTitle": announcement.get("title", ""),
+            "soft_deleted": True
         }
         
     except HTTPException:

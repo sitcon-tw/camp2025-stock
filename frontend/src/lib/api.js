@@ -194,7 +194,7 @@ export async function getAnnouncementsAdmin(token, limit = 50) {
     });
 }
 
-// 刪除公告
+// 刪除公告 (軟刪除)
 export async function deleteAnnouncement(token, announcementId) {
     return apiRequest(`/api/admin/announcement/${announcementId}`, {
         method: "DELETE",
