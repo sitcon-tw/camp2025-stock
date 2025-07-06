@@ -145,18 +145,15 @@ export const AdminDashboard = ({ token }) => {
                             {
                                 id: "overview",
                                 label: "功能概覽",
-                                icon: "🏠",
                             },
                             {
                                 id: "roles",
                                 label: "角色管理",
-                                icon: "👥",
                                 permission: PERMISSIONS.MANAGE_USERS,
                             },
                             {
                                 id: "system",
-                                label: "系統管理",
-                                icon: "⚙️",
+                                label: "超級恐怖的地方",
                                 permission: PERMISSIONS.SYSTEM_ADMIN,
                             },
                         ].map((section) => (
@@ -182,7 +179,6 @@ export const AdminDashboard = ({ token }) => {
                                             : "border-transparent text-[#557797] hover:text-[#92cbf4]"
                                     }`}
                                 >
-                                    <span>{section.icon}</span>
                                     <span>{section.label}</span>
                                 </button>
                             </PermissionGuard>
@@ -241,7 +237,7 @@ export const AdminDashboard = ({ token }) => {
             <Modal
                 isOpen={showPointsModal}
                 onClose={() => setShowPointsModal(false)}
-                title="💰 發放點數"
+                title="發放點數"
                 size="md"
             >
                 <div className="space-y-4">
@@ -463,8 +459,8 @@ const SystemManagementSection = ({ token, showNotification }) => {
 
     return (
         <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-            <h2 className="mb-4 text-xl font-bold text-red-400">
-                🔧 系統管理
+            <h2 className="mb-2 mb-4 text-center text-2xl font-bold text-red-400">
+                點底下兩個按鈕前請三思哦哦哦
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <PermissionButton
@@ -482,7 +478,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
                     className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
                     onClick={() => setShowSettlementModal(true)}
                 >
-                    強制結算
+                    全部學員股票結算
                 </PermissionButton>
             </div>
 
@@ -490,7 +486,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
             <Modal
                 isOpen={showResetModal}
                 onClose={() => setShowResetModal(false)}
-                title="⚠️ 確認重置所有資料"
+                title="確認重置所有資料？"
                 size="md"
             >
                 <div className="space-y-4">
@@ -546,7 +542,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
             <Modal
                 isOpen={showSettlementModal}
                 onClose={() => setShowSettlementModal(false)}
-                title="⚠️ 確認強制結算"
+                title="確認強制結算？"
                 size="md"
             >
                 <div className="space-y-4">
@@ -602,7 +598,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
 const UserManagementSection = ({ token }) => (
     <div className="rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-xl font-bold text-blue-600">
-            👥 用戶管理
+            用戶管理
         </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <PermissionButton
@@ -645,7 +641,7 @@ const PointManagementSection = ({
 }) => (
     <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
         <h2 className="mb-4 text-xl font-bold text-green-400">
-            💰 點數管理
+            點數管理
         </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <PermissionButton
@@ -825,7 +821,7 @@ const MarketManagementSection = ({ token, showNotification }) => {
     return (
         <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
             <h2 className="mb-4 text-xl font-bold text-orange-400">
-                📈 市場管理
+                市場管理
             </h2>
 
             {/* 市場狀態顯示 */}

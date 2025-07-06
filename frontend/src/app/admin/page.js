@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { usePermissions } from "@/hooks/usePermissions";
-import { PermissionProvider } from "@/contexts/PermissionContext";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { PermissionAudit } from "@/components/PermissionAudit";
 import { SystemConfig } from "@/components/SystemConfig";
+import { PermissionProvider } from "@/contexts/PermissionContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { debugAuth } from "@/utils/debugAuth";
+import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 /**
  * 增強版管理員頁面
@@ -19,42 +20,51 @@ export default function EnhancedAdminPage() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("dashboard");
-    
+
     // 使用權限 Hook
-    const { permissions, role, loading: permissionLoading, error } = usePermissions(adminToken);
+    const {
+        permissions,
+        role,
+        loading: permissionLoading,
+        error,
+    } = usePermissions(adminToken);
 
     // 檢查登入狀態和權限
     useEffect(() => {
         const checkAuthAndPermissions = async () => {
             console.log("=== ADMIN PAGE AUTH CHECK ===");
-            
+
             // === 路徑1: 檢查傳統管理員登入 (早期系統) ===
             const isAdminStored = localStorage.getItem("isAdmin");
             const adminToken = localStorage.getItem("adminToken");
-            
+
             if (isAdminStored && adminToken) {
                 console.log("Legacy admin login detected");
-                
+
                 // 檢查 admin token 內容
                 try {
-                    const tokenParts = adminToken.split('.');
+                    const tokenParts = adminToken.split(".");
                     if (tokenParts.length === 3) {
-                        const payload = JSON.parse(atob(tokenParts[1]));
+                        const payload = JSON.parse(
+                            atob(tokenParts[1]),
+                        );
                         console.log("Admin token payload:", payload);
                     }
                 } catch (e) {
                     console.error("Failed to parse admin token:", e);
                 }
-                
+
                 // 直接設置 token，不驗證 getSystemStats
                 // 因為後端可能已經改為 RBAC 驗證，讓 usePermissions hook 處理
-                console.log("Setting admin token, will validate via usePermissions hook");
+                console.log(
+                    "Setting admin token, will validate via usePermissions hook",
+                );
                 setAdminToken(adminToken);
                 setIsLoggedIn(true);
                 setLoading(false);
                 return;
             }
-            
+
             // === 路徑2: 檢查 Telegram 登入 (新系統) ===
             const isUser = localStorage.getItem("isUser");
             const userToken = localStorage.getItem("userToken");
@@ -65,19 +75,26 @@ export default function EnhancedAdminPage() {
                 try {
                     setAdminToken(userToken);
                     setIsLoggedIn(true);
-                    console.log("Telegram user token set, will check permissions via RBAC");
+                    console.log(
+                        "Telegram user token set, will check permissions via RBAC",
+                    );
                     // 權限檢查會在 usePermissions hook 中處理
                 } catch (error) {
-                    console.error("Telegram user validation failed:", error);
+                    console.error(
+                        "Telegram user validation failed:",
+                        error,
+                    );
                     router.push("/login");
                 } finally {
                     setLoading(false);
                 }
                 return;
             }
-            
+
             // === 沒有任何登入 ===
-            console.log("No valid login found, redirecting to login page");
+            console.log(
+                "No valid login found, redirecting to login page",
+            );
             router.push("/login");
         };
 
@@ -99,13 +116,17 @@ export default function EnhancedAdminPage() {
     // 權限錯誤
     if (error) {
         return (
-            <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
-                <div className="bg-red-600/20 border border-red-500/30 p-8 rounded-lg shadow-lg max-w-md">
+            <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+                <div className="max-w-md rounded-lg border border-red-500/30 bg-red-600/20 p-8 shadow-lg">
                     <div className="text-center">
-                        <div className="text-red-400 text-4xl mb-4">⚠️</div>
-                        <h2 className="text-xl font-bold text-red-400 mb-2">權限驗證失敗</h2>
-                        <p className="text-red-300 mb-2">{error}</p>
-                        <p className="text-red-300 text-sm mb-4">
+                        <div className="mb-4 text-4xl text-red-400">
+                            ⚠️
+                        </div>
+                        <h2 className="mb-2 text-xl font-bold text-red-400">
+                            權限驗證失敗
+                        </h2>
+                        <p className="mb-2 text-red-300">{error}</p>
+                        <p className="mb-4 text-sm text-red-300">
                             這可能是由於：
                             <br />• Token 已過期
                             <br />• 權限設定問題
@@ -113,8 +134,10 @@ export default function EnhancedAdminPage() {
                         </p>
                         <div className="space-y-3">
                             <button
-                                onClick={() => window.location.reload()}
-                                className="w-full bg-[#469FD2] text-white px-6 py-2 rounded hover:bg-[#357AB8]"
+                                onClick={() =>
+                                    window.location.reload()
+                                }
+                                className="w-full rounded bg-[#469FD2] px-6 py-2 text-white hover:bg-[#357AB8]"
                             >
                                 重新載入頁面
                             </button>
@@ -122,24 +145,34 @@ export default function EnhancedAdminPage() {
                                 onClick={() => {
                                     debugAuth(); // 在控制台顯示調試資訊
                                 }}
-                                className="w-full bg-[#294565] text-[#92cbf4] px-6 py-2 rounded hover:bg-[#1A325F] text-sm"
+                                className="w-full rounded bg-[#294565] px-6 py-2 text-sm text-[#92cbf4] hover:bg-[#1A325F]"
                             >
                                 顯示調試資訊 (請查看控制台)
                             </button>
                             <button
                                 onClick={() => {
                                     // 清除所有認證相關的 localStorage
-                                    localStorage.removeItem("isAdmin");
-                                    localStorage.removeItem("adminToken");
+                                    localStorage.removeItem(
+                                        "isAdmin",
+                                    );
+                                    localStorage.removeItem(
+                                        "adminToken",
+                                    );
                                     localStorage.removeItem("isUser");
-                                    localStorage.removeItem("userToken");
-                                    localStorage.removeItem("userData");
-                                    localStorage.removeItem("telegramData");
-                                    
+                                    localStorage.removeItem(
+                                        "userToken",
+                                    );
+                                    localStorage.removeItem(
+                                        "userData",
+                                    );
+                                    localStorage.removeItem(
+                                        "telegramData",
+                                    );
+
                                     // 強制重新載入頁面以清除所有狀態
                                     window.location.href = "/login";
                                 }}
-                                className="w-full bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
+                                className="w-full rounded bg-red-600 px-6 py-2 text-white hover:bg-red-700"
                             >
                                 重新登入
                             </button>
@@ -151,23 +184,33 @@ export default function EnhancedAdminPage() {
     }
 
     // 檢查是否有管理權限（admin、point_manager、announcer 都可以訪問）
-    const hasManagementAccess = role && ['admin', 'point_manager', 'announcer'].includes(role);
-    
+    const hasManagementAccess =
+        role &&
+        ["admin", "point_manager", "announcer"].includes(role);
+
     if (!hasManagementAccess) {
         return (
-            <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
-                <div className="bg-yellow-600/20 border border-yellow-500/30 p-8 rounded-lg shadow-lg max-w-md">
+            <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+                <div className="max-w-md rounded-lg border border-yellow-500/30 bg-yellow-600/20 p-8 shadow-lg">
                     <div className="text-center">
-                        <div className="text-yellow-400 text-4xl mb-4">🚫</div>
-                        <h2 className="text-xl font-bold text-yellow-400 mb-2">權限不足</h2>
-                        <p className="text-yellow-300 mb-2">您的角色是：{role || '未知'}</p>
-                        <p className="text-yellow-300 mb-4">需要管理相關權限才能存取此頁面</p>
-                        <p className="text-yellow-300 text-sm mb-4">
+                        <div className="mb-4 text-4xl text-yellow-400">
+                            🚫
+                        </div>
+                        <h2 className="mb-2 text-xl font-bold text-yellow-400">
+                            權限不足
+                        </h2>
+                        <p className="mb-2 text-yellow-300">
+                            您的角色是：{role || "未知"}
+                        </p>
+                        <p className="mb-4 text-yellow-300">
+                            需要管理相關權限才能存取此頁面
+                        </p>
+                        <p className="mb-4 text-sm text-yellow-300">
                             允許的角色：admin、point_manager、announcer
                         </p>
                         <button
                             onClick={() => router.push("/dashboard")}
-                            className="bg-yellow-600 text-white px-6 py-2 rounded hover:bg-yellow-700"
+                            className="rounded bg-yellow-600 px-6 py-2 text-white hover:bg-yellow-700"
                         >
                             返回儀表板
                         </button>
@@ -181,35 +224,49 @@ export default function EnhancedAdminPage() {
         <PermissionProvider token={adminToken}>
             <div className="min-h-screen bg-[#0f203e] pb-20">
                 {/* 頁面標題和用戶資訊 */}
-                <div className="bg-[#1A325F] shadow border-b border-[#294565]">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between items-center py-6">
+                <div className="border-b border-[#294565] bg-[#1A325F] shadow">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between py-6">
                             <div>
-                                <h1 className="text-3xl font-bold text-[#92cbf4]">管理員控制台</h1>
+                                <h1 className="mb-2 text-3xl font-bold text-[#92cbf4]">
+                                    管理員控制台
+                                </h1>
                                 <p className="text-[#557797]">
-                                    角色：{role} | 權限數量：{permissions ? permissions.length : 0}
+                                    角色：{role} | 權限數量：
+                                    {permissions
+                                        ? permissions.length
+                                        : 0}
                                 </p>
                             </div>
                             <div className="flex items-center space-x-4">
-                                <div className="text-sm text-[#557797]">
-                                    {new Date().toLocaleString()}
-                                </div>
                                 <button
                                     onClick={() => {
                                         // 清除所有認證相關的 localStorage
-                                        localStorage.removeItem("isAdmin");
-                                        localStorage.removeItem("adminToken");
-                                        localStorage.removeItem("isUser");
-                                        localStorage.removeItem("userToken");
-                                        localStorage.removeItem("userData");
-                                        localStorage.removeItem("telegramData");
-                                        
+                                        localStorage.removeItem(
+                                            "isAdmin",
+                                        );
+                                        localStorage.removeItem(
+                                            "adminToken",
+                                        );
+                                        localStorage.removeItem(
+                                            "isUser",
+                                        );
+                                        localStorage.removeItem(
+                                            "userToken",
+                                        );
+                                        localStorage.removeItem(
+                                            "userData",
+                                        );
+                                        localStorage.removeItem(
+                                            "telegramData",
+                                        );
+
                                         // 強制重新載入頁面以清除所有狀態
-                                        window.location.href = "/login";
+                                        window.location.href =
+                                            "/login";
                                     }}
-                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                                 >
-                                    登出
+                                    <LogOut className="h-5 w-5 text-[#92cbf4] transition-colors hover:text-red-700" />
                                 </button>
                             </div>
                         </div>
@@ -217,24 +274,34 @@ export default function EnhancedAdminPage() {
                 </div>
 
                 {/* 導航頁簽 */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+                <div className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="border-b border-[#294565]">
                         <nav className="flex space-x-8">
                             {[
-                                { id: "dashboard", label: "功能面板", icon: "🏠" },
-                                { id: "config", label: "系統設定", icon: "⚙️" },
-                                { id: "audit", label: "權限審查", icon: "🔍" },
-                            ].map(tab => (
+                                {
+                                    id: "dashboard",
+                                    label: "功能面板",
+                                },
+                                {
+                                    id: "config",
+                                    label: "系統設定",
+                                },
+                                {
+                                    id: "audit",
+                                    label: "權限審查",
+                                },
+                            ].map((tab) => (
                                 <button
                                     key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                                    onClick={() =>
+                                        setActiveTab(tab.id)
+                                    }
+                                    className={`flex items-center space-x-2 border-b-2 px-1 py-4 text-sm font-medium ${
                                         activeTab === tab.id
                                             ? "border-[#469FD2] text-[#92cbf4]"
                                             : "border-transparent text-[#557797] hover:text-[#92cbf4]"
                                     }`}
                                 >
-                                    <span>{tab.icon}</span>
                                     <span>{tab.label}</span>
                                 </button>
                             ))}
@@ -243,7 +310,7 @@ export default function EnhancedAdminPage() {
                 </div>
 
                 {/* 主要內容區域 */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                     {activeTab === "dashboard" && (
                         <AdminDashboard token={adminToken} />
                     )}
@@ -258,17 +325,3 @@ export default function EnhancedAdminPage() {
         </PermissionProvider>
     );
 }
-
-/**
- * 使用說明：
- * 
- * 1. 將此文件重命名為 page.js 以替換原有的管理員頁面
- * 2. 或者在原有頁面中引入權限檢查邏輯
- * 3. 確保所有管理員功能都有對應的權限檢查
- * 
- * 主要改進：
- * - 使用 usePermissions Hook 進行權限驗證
- * - 實施權限驅動的 UI 控制
- * - 加入權限審查工具
- * - 提供清晰的錯誤處理和用戶反饋
- */

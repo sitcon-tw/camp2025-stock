@@ -8,6 +8,7 @@ import {
     updateMarketTimes,
     updateTransferFeeConfig,
 } from "@/lib/api";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PermissionButton, PermissionGuard } from "./PermissionGuard";
 
@@ -602,24 +603,9 @@ export const SystemConfig = ({ token }) => {
                             {marketTimesForm.openTime.length === 0 ? (
                                 <div className="rounded-lg border-2 border-dashed border-[#294565] bg-[#0f203e] p-6 text-center">
                                     <div className="text-[#7BC2E6]">
-                                        <svg
-                                            className="mx-auto mb-3 h-12 w-12 text-[#557797]"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={1}
-                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                            />
-                                        </svg>
+                                        <Plus className="mx-auto h-12 w-12" />
                                         <p className="text-sm">
                                             尚未設定交易時段
-                                        </p>
-                                        <p className="mt-1 text-xs text-[#557797]">
-                                            點擊上方「新增時段」按鈕開始設定
                                         </p>
                                     </div>
                                 </div>
