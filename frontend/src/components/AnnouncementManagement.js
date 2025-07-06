@@ -45,6 +45,7 @@ export const AnnouncementManagement = ({ token }) => {
     // 刪除確認模態框
     const deleteModal = useModal();
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     useEffect(() => {
         fetchAnnouncements();
@@ -149,6 +150,7 @@ export const AnnouncementManagement = ({ token }) => {
         if (!deleteTarget) return;
 
         try {
+            setDeleteLoading(true);
             await deleteAnnouncement(token, deleteTarget._id);
             showNotification("公告已成功刪除", "success");
             deleteModal.closeModal();
@@ -159,6 +161,8 @@ export const AnnouncementManagement = ({ token }) => {
                 `刪除公告失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -422,9 +426,10 @@ export const AnnouncementManagement = ({ token }) => {
                     </button>
                     <button
                         onClick={handleDeleteAnnouncement}
-                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                        disabled={deleteLoading}
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:cursor-not-allowed! disabled:opacity-50"
                     >
-                        確認刪除
+                        {deleteLoading ? "刪除中..." : "確認刪除"}
                     </button>
                 </div>
             </Modal>
