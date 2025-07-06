@@ -26,6 +26,10 @@ cd backend
 uv venv           # Create virtual environment
 uv sync           # Install dependencies
 uv run ./main.py  # Start development server
+uv run main_refactored.py  # Start refactored version (Clean Architecture)
+
+# Environment setup
+python scripts/env_config.py --generate  # Generate .env.example
 ```
 
 ### Bot (Telegram)
@@ -89,18 +93,57 @@ mv .env.example .env                      # Rename and configure
 
 ### Test Scripts
 ```bash
+cd backend
+
 # Backend integration tests
 python test/integration/test_system_api.py
 
 # Admin API tests
 bash test/scripts/test_admin_api.sh
+
+# Run specific integration tests
+python test/integration/test_refactored_system.py
+python test/integration/complete_refactor_test.py
+
+# Trading simulation tests
+python test/simulation/market_simulation.py
 ```
 
 ## Key Files to Understand
 
-- `backend/app/main_refactored.py` - Main FastAPI application
+### Backend Core Files
+- `backend/app/main_refactored.py` - Main FastAPI application (Clean Architecture)
+- `backend/app/main.py` - Legacy main application
 - `backend/app/core/database.py` - MongoDB connection and setup
 - `backend/app/core/rbac.py` - Role-based access control implementation
-- `frontend/src/lib/api.js` - API client with error handling
-- `frontend/src/contexts/` - React context providers for state management
+- `backend/app/core/security.py` - JWT authentication and security
+- `backend/app/application/dependencies.py` - Dependency injection container
+- `backend/scripts/env_config.py` - Environment configuration utility
+
+### Frontend Core Files
+- `frontend/src/lib/api.js` - Centralized API client with error handling and retry logic
+- `frontend/src/contexts/PermissionContext.js` - RBAC permission system for frontend
+- `frontend/src/components/PermissionGuard.js` - Permission-based component rendering
+- `frontend/package.json` - Uses pnpm with Turbopack for fast development
+
+### Bot Files
 - `bot/main.py` - Telegram bot entry point
+- `bot/bot/handlers/` - Command and message handlers
+- `bot/api/` - FastAPI server for webhook and notifications
+
+## Important Implementation Details
+
+### Permission System
+- Backend uses MongoDB-based role checking for admin endpoints
+- Frontend uses React Context to minimize permission API calls
+- Permission checks are centralized through `PermissionGuard` components
+
+### Soft Delete Pattern
+- Announcements use soft delete (mark as `is_deleted: true`) instead of hard delete
+- Deleted items remain in database for audit purposes
+- Frontend displays deleted items with visual indicators
+
+### Error Handling
+- API client includes retry mechanisms for network errors
+- Comprehensive error categorization and user feedback
+- ObjectId validation for MongoDB document operations

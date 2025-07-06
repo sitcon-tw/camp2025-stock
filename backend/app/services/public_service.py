@@ -440,10 +440,13 @@ class PublicService:
             List[PublicAnnouncement]: 公告列表，按時間倒序排列
         """
         try:
-            # 查詢公告資料（按時間倒序）
-            announcements_cursor = self.db[Collections.ANNOUNCEMENTS].find().sort(
-                "created_at", -1
-            ).limit(limit)
+            # 查詢公告資料（按時間倒序），排除已刪除的公告
+            announcements_cursor = self.db[Collections.ANNOUNCEMENTS].find({
+                "$or": [
+                    {"is_deleted": {"$exists": False}},  # 舊資料沒有 is_deleted 欄位
+                    {"is_deleted": False}                # 新資料明確標記為未刪除
+                ]
+            }).sort("created_at", -1).limit(limit)
             
             announcements = await announcements_cursor.to_list(length=None)
             
