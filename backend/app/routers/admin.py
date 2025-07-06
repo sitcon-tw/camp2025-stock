@@ -270,6 +270,108 @@ async def get_announcements(
         )
 
 
+@router.delete(
+    "/announcement/{announcement_id}",
+    responses={
+        200: {"description": "公告刪除成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        404: {"model": ErrorResponse, "description": "公告不存在"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="刪除公告",
+    description="刪除指定的公告"
+)
+async def delete_announcement(
+    announcement_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """刪除公告
+    
+    Args:
+        announcement_id: 公告ID
+        current_user: 目前使用者（自動注入）
+        
+    Returns:
+        操作結果
+    """
+    # 檢查公告管理權限
+    if not RBACService.has_permission(current_user, Permission.CREATE_ANNOUNCEMENT):
+        user_role = RBACService.get_user_role(current_user)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要公告管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.core.database import get_database, Collections
+        from bson import ObjectId
+        from bson.errors import InvalidId
+        
+        db = get_database()
+        
+        # 驗證 ObjectId 格式
+        try:
+            obj_id = ObjectId(announcement_id)
+        except InvalidId:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的公告ID格式"
+            )
+        
+        # 查詢公告是否存在
+        announcement = await db[Collections.ANNOUNCEMENTS].find_one(
+            {"_id": obj_id}
+        )
+        
+        if not announcement:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="找不到指定的公告"
+            )
+        
+        # 刪除公告
+        result = await db[Collections.ANNOUNCEMENTS].delete_one(
+            {"_id": obj_id}
+        )
+        
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="刪除公告失敗"
+            )
+        
+        logger.info(f"Announcement deleted: {announcement_id} by user {current_user.get('user_id', 'unknown')}")
+        
+        # 傳送系統公告通知刪除操作
+        try:
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            
+            announcement_title = announcement.get("title", "未知標題")
+            await admin_service._send_system_announcement(
+                title="🗑️ 公告已刪除",
+                message=f"管理員已刪除公告：「{announcement_title}」"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send announcement deletion notification: {e}")
+        
+        return {
+            "ok": True,
+            "message": "公告已成功刪除",
+            "deletedAnnouncementId": announcement_id,
+            "deletedAnnouncementTitle": announcement.get("title", "")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete announcement: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="刪除公告時發生錯誤"
+        )
+
+
 @router.get(
     "/stats",
     summary="取得系統統計",
