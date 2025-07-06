@@ -1,5 +1,5 @@
 import { usePermissions } from "@/hooks/usePermissions";
-import { useEffect, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 /**
  * 權限守衛組件
@@ -14,9 +14,19 @@ export const PermissionGuard = ({
     token,
     fallback = null,
     showLoading = true,
-    loadingComponent = <div className="text-gray-500">檢查權限中...</div>,
+    loadingComponent = (
+        <div className="text-gray-500">檢查權限中...</div>
+    ),
 }) => {
-    const { permissions, role, loading, hasPermission, hasAnyPermission, hasAllPermissions, hasRole } = usePermissions(token);
+    const {
+        permissions,
+        role,
+        loading,
+        hasPermission,
+        hasAnyPermission,
+        hasAllPermissions,
+        hasRole,
+    } = usePermissions(token);
 
     // 檢查權限邏輯
     const checkAccess = () => {
@@ -26,7 +36,10 @@ export const PermissionGuard = ({
         }
 
         // 檢查單一權限
-        if (requiredPermission && !hasPermission(requiredPermission)) {
+        if (
+            requiredPermission &&
+            !hasPermission(requiredPermission)
+        ) {
             return false;
         }
 
@@ -66,13 +79,15 @@ export const PermissionGuard = ({
  * 角色守衛組件
  * 根據使用者角色決定是否渲染子組件
  */
-export const RoleGuard = ({ 
-    children, 
-    requiredRole, 
-    token, 
+export const RoleGuard = ({
+    children,
+    requiredRole,
+    token,
     fallback = null,
     showLoading = true,
-    loadingComponent = <div className="text-gray-500">檢查權限中...</div>,
+    loadingComponent = (
+        <div className="text-gray-500">檢查權限中...</div>
+    ),
 }) => {
     return (
         <PermissionGuard
@@ -91,9 +106,9 @@ export const RoleGuard = ({
  * 管理員守衛組件
  * 僅管理員可見
  */
-export const AdminGuard = ({ 
-    children, 
-    token, 
+export const AdminGuard = ({
+    children,
+    token,
     fallback = null,
     showLoading = true,
 }) => {
@@ -126,13 +141,20 @@ export const PermissionButton = ({
     onClick,
     ...props
 }) => {
-    const { hasPermission, hasAnyPermission, hasAllPermissions, hasRole, loading } = usePermissions(token);
-    
+    const {
+        hasPermission,
+        hasAnyPermission,
+        hasAllPermissions,
+        hasRole,
+        loading,
+    } = usePermissions(token);
+
     const checkAccess = () => {
         if (requiredRole && !hasRole(requiredRole)) return false;
-        if (requiredPermission && !hasPermission(requiredPermission)) return false;
+        if (requiredPermission && !hasPermission(requiredPermission))
+            return false;
         if (requiredPermissions.length > 0) {
-            return requireAll 
+            return requireAll
                 ? hasAllPermissions(requiredPermissions)
                 : hasAnyPermission(requiredPermissions);
         }
@@ -155,7 +177,10 @@ export const PermissionButton = ({
     return (
         <button
             {...props}
-            className={`${className} ${isDisabled ? disabledClassName : ""}`}
+            className={twMerge(
+                className,
+                isDisabled && disabledClassName,
+            )}
             disabled={isDisabled}
             onClick={handleClick}
         >
