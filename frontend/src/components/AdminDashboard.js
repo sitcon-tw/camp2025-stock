@@ -1,4 +1,7 @@
-import { PERMISSIONS, usePermissionContext } from "@/contexts/PermissionContext";
+import {
+    PERMISSIONS,
+    usePermissionContext,
+} from "@/contexts/PermissionContext";
 import { useEffect, useState } from "react";
 import { PermissionButton, PermissionGuard } from "./PermissionGuard";
 import { RoleManagement } from "./RoleManagement";
@@ -9,6 +12,7 @@ import {
     forceSettlement,
     getAdminMarketStatus,
     getIpoStatus,
+    getUserAssets,
     givePoints,
     openMarket,
     resetAllData,
@@ -24,7 +28,8 @@ import Modal from "./Modal";
  * 使用權限驅動的 UI 控制
  */
 export const AdminDashboard = ({ token }) => {
-    const { permissions, role, loading, isAdmin } = usePermissionContext();
+    const { permissions, role, loading, isAdmin } =
+        usePermissionContext();
     const [activeSection, setActiveSection] = useState("overview");
     const [notification, setNotification] = useState({
         show: false,
@@ -37,6 +42,81 @@ export const AdminDashboard = ({ token }) => {
         username: "",
         amount: "",
     });
+
+    // Auto-complete related state
+    const [students, setStudents] = useState([]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [studentsLoading, setStudentsLoading] = useState(false);
+
+    // Fetch students data when component mounts
+    useEffect(() => {
+        if (token) {
+            fetchStudents();
+        }
+    }, [token]);
+
+    // Fetch students for auto-complete
+    const fetchStudents = async () => {
+        try {
+            setStudentsLoading(true);
+            const data = await getUserAssets(token);
+            if (Array.isArray(data)) {
+                setStudents(data);
+            } else {
+                console.error("學生資料格式錯誤:", data);
+                setStudents([]);
+            }
+        } catch (error) {
+            console.error("獲取學生列表錯誤:", error);
+            setStudents([]);
+        } finally {
+            setStudentsLoading(false);
+        }
+    };
+
+    // Handle username input change with auto-complete
+    const handleUsernameChange = (value) => {
+        setPointsForm({
+            ...pointsForm,
+            username: value,
+        });
+
+        if (value.trim() === "" || studentsLoading) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        // Filter students based on input
+        const filteredSuggestions = students
+            .filter(
+                (student) =>
+                    student &&
+                    typeof student.username === "string" &&
+                    student.username
+                        .toLowerCase()
+                        .includes(value.toLowerCase()),
+            )
+            .map((student) => ({
+                value: student.username,
+                label: `${student.username}${student.team ? ` (${student.team})` : ""}`,
+            }))
+            .slice(0, 5); // Limit to 5 suggestions
+
+        setSuggestions(filteredSuggestions);
+        setShowSuggestions(filteredSuggestions.length > 0);
+    };
+
+    // Select a suggestion
+    const selectSuggestion = (suggestion) => {
+        setPointsForm({
+            ...pointsForm,
+            username: suggestion.value,
+        });
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
 
     // 顯示通知
     const showNotification = (message, type = "info") => {
@@ -234,38 +314,125 @@ export const AdminDashboard = ({ token }) => {
             {/* 發放點數模態框 */}
             <Modal
                 isOpen={showPointsModal}
-                onClose={() => setShowPointsModal(false)}
+                onClose={() => {
+                    setShowPointsModal(false);
+                    setPointsForm({ username: "", amount: "" });
+                    setShowSuggestions(false);
+                    setSuggestions([]);
+                }}
                 title="發放點數"
                 size="md"
             >
                 <div className="space-y-4">
-                    <input
-                        type="text"
-                        placeholder="使用者名稱"
-                        value={pointsForm.username}
-                        onChange={(e) =>
-                            setPointsForm({
-                                ...pointsForm,
-                                username: e.target.value,
-                            })
-                        }
-                        className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
-                    />
-                    <input
-                        type="number"
-                        placeholder="點數數量"
-                        value={pointsForm.amount}
-                        onChange={(e) =>
-                            setPointsForm({
-                                ...pointsForm,
-                                amount: e.target.value,
-                            })
-                        }
-                        className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white"
-                    />
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
+                            使用者名稱
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder={
+                                    studentsLoading
+                                        ? "正在載入使用者資料..."
+                                        : "搜尋學生姓名..."
+                                }
+                                value={pointsForm.username}
+                                onChange={(e) =>
+                                    handleUsernameChange(
+                                        e.target.value,
+                                    )
+                                }
+                                onFocus={() => {
+                                    // 重新觸發搜尋以顯示建議
+                                    if (
+                                        pointsForm.username.trim() !==
+                                        ""
+                                    ) {
+                                        handleUsernameChange(
+                                            pointsForm.username,
+                                        );
+                                    }
+                                }}
+                                onBlur={() => {
+                                    // 延遲隱藏建議，讓點選事件能夠觸發
+                                    setTimeout(
+                                        () =>
+                                            setShowSuggestions(false),
+                                        200,
+                                    );
+                                }}
+                                disabled={studentsLoading}
+                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                            {/* 自動完成建議 */}
+                            {showSuggestions &&
+                                suggestions.length > 0 && (
+                                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-[#294565] bg-[#0f203e] shadow-lg">
+                                        {suggestions.map(
+                                            (suggestion, index) => (
+                                                <div
+                                                    key={index}
+                                                    onMouseDown={(
+                                                        e,
+                                                    ) => {
+                                                        e.preventDefault(); // 防止blur事件影響點選
+                                                        selectSuggestion(
+                                                            suggestion,
+                                                        );
+                                                    }}
+                                                    className="cursor-pointer border-b border-[#294565] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span>
+                                                            {
+                                                                suggestion.label
+                                                            }
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">
+                                                            個人
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                )}
+                            {/* 載入提示 */}
+                            {studentsLoading && (
+                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#7BC2E6] border-t-transparent"></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
+                            點數數量
+                        </label>
+                        <input
+                            type="number"
+                            placeholder="點數數量"
+                            value={pointsForm.amount}
+                            onChange={(e) =>
+                                setPointsForm({
+                                    ...pointsForm,
+                                    amount: e.target.value,
+                                })
+                            }
+                            className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                    </div>
                     <div className="flex gap-3">
                         <button
-                            onClick={() => setShowPointsModal(false)}
+                            onClick={() => {
+                                setShowPointsModal(false);
+                                setPointsForm({
+                                    username: "",
+                                    amount: "",
+                                });
+                                setShowSuggestions(false);
+                                setSuggestions([]);
+                            }}
                             className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
                         >
                             取消
@@ -274,7 +441,8 @@ export const AdminDashboard = ({ token }) => {
                             onClick={handleGivePoints}
                             disabled={
                                 !pointsForm.username ||
-                                !pointsForm.amount
+                                !pointsForm.amount ||
+                                studentsLoading
                             }
                             className="flex-1 rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
                         >
