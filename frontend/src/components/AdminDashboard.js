@@ -426,66 +426,175 @@ const OverviewSection = ({
 /**
  * 系統管理區塊
  */
-const SystemManagementSection = ({ token, showNotification }) => (
-    <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-        <h2 className="mb-4 text-xl font-bold text-red-400">
-            🔧 系統管理
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <PermissionButton
-                requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
-                token={token}
-                className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-                onClick={async () => {
-                    if (
-                        confirm(
-                            "確定要重置所有資料嗎？這個操作不可復原！",
-                        )
-                    ) {
-                        try {
-                            await resetAllData(token);
-                            showNotification(
-                                "所有資料已成功重置",
-                                "success",
-                            );
-                        } catch (error) {
-                            showNotification(
-                                `重置失敗: ${error.message}`,
-                                "error",
-                            );
-                        }
-                    }
-                }}
-            >
-                重置所有資料
-            </PermissionButton>
+const SystemManagementSection = ({ token, showNotification }) => {
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [showSettlementModal, setShowSettlementModal] =
+        useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
-            <PermissionButton
-                requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
-                token={token}
-                className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
-                onClick={async () => {
-                    if (confirm("確定要強制結算嗎？")) {
-                        try {
-                            await forceSettlement(token);
-                            showNotification(
-                                "強制結算已完成",
-                                "success",
-                            );
-                        } catch (error) {
-                            showNotification(
-                                `強制結算失敗: ${error.message}`,
-                                "error",
-                            );
-                        }
-                    }
-                }}
+    const handleResetAllData = async () => {
+        try {
+            setIsProcessing(true);
+            await resetAllData(token);
+            showNotification("所有資料已成功重置", "success");
+            setShowResetModal(false);
+        } catch (error) {
+            showNotification(`重置失敗: ${error.message}`, "error");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleForceSettlement = async () => {
+        try {
+            setIsProcessing(true);
+            await forceSettlement(token);
+            showNotification("強制結算已完成", "success");
+            setShowSettlementModal(false);
+        } catch (error) {
+            showNotification(
+                `強制結算失敗: ${error.message}`,
+                "error",
+            );
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold text-red-400">
+                🔧 系統管理
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                    token={token}
+                    className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                    onClick={() => setShowResetModal(true)}
+                >
+                    重置所有資料
+                </PermissionButton>
+
+                <PermissionButton
+                    requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                    token={token}
+                    className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
+                    onClick={() => setShowSettlementModal(true)}
+                >
+                    強制結算
+                </PermissionButton>
+            </div>
+
+            {/* 重置所有資料確認模態框 */}
+            <Modal
+                isOpen={showResetModal}
+                onClose={() => setShowResetModal(false)}
+                title="⚠️ 確認重置所有資料"
+                size="md"
             >
-                強制結算
-            </PermissionButton>
+                <div className="space-y-4">
+                    <div className="rounded-lg border border-red-500/30 bg-red-600/10 p-4">
+                        <div className="flex items-start space-x-3">
+                            <span className="text-2xl">🚨</span>
+                            <div>
+                                <h4 className="font-semibold text-red-400">
+                                    危險操作警告
+                                </h4>
+                                <p className="mt-1 text-sm text-red-300">
+                                    這個操作將會：
+                                </p>
+                                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-300">
+                                    <li>
+                                        清除所有使用者的持股和點數資料
+                                    </li>
+                                    <li>刪除所有交易記錄和訂單</li>
+                                    <li>重置市場狀態和IPO設定</li>
+                                    <li>清空所有公告和系統記錄</li>
+                                </ul>
+                                <p className="mt-3 font-medium text-red-400">
+                                    ⚠️ 此操作無法撤銷！
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-[#7BC2E6]">
+                        請確認您真的要重置所有系統資料嗎？
+                    </p>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={() => setShowResetModal(false)}
+                        disabled={isProcessing}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleResetAllData}
+                        disabled={isProcessing}
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {isProcessing ? "重置中..." : "確認重置"}
+                    </button>
+                </div>
+            </Modal>
+
+            {/* 強制結算確認模態框 */}
+            <Modal
+                isOpen={showSettlementModal}
+                onClose={() => setShowSettlementModal(false)}
+                title="⚠️ 確認強制結算"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
+                        <div className="flex items-start space-x-3">
+                            <span className="text-2xl">💰</span>
+                            <div>
+                                <h4 className="font-semibold text-orange-400">
+                                    強制結算說明
+                                </h4>
+                                <p className="mt-1 text-sm text-orange-300">
+                                    這個操作將會：
+                                </p>
+                                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-orange-300">
+                                    <li>立即執行所有未結算的交易</li>
+                                    <li>強制撮合所有掛單</li>
+                                    <li>更新所有使用者的資產狀態</li>
+                                    <li>可能影響正在進行的交易</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-[#7BC2E6]">
+                        確定要執行強制結算嗎？這可能會影響正在進行的交易。
+                    </p>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={() => setShowSettlementModal(false)}
+                        disabled={isProcessing}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleForceSettlement}
+                        disabled={isProcessing}
+                        className="rounded bg-orange-600 px-4 py-2 text-white hover:bg-orange-700 disabled:opacity-50"
+                    >
+                        {isProcessing ? "結算中..." : "確認結算"}
+                    </button>
+                </div>
+            </Modal>
         </div>
-    </div>
-);
+    );
+};
 
 /**
  * 用戶管理區塊
