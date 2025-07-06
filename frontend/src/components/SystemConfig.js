@@ -12,6 +12,155 @@ import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PermissionButton, PermissionGuard } from "./PermissionGuard";
 
+// 時間可視化組件
+const TradingHoursVisualizer = ({
+    tradingHours,
+    marketTimesForm,
+}) => {
+    // 生成24小時的時間點
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+
+    // 獲取交易時段數據，處理不同的數據結構
+    const getTradingSessions = () => {
+        // 優先使用表單數據（實時更新）
+        if (
+            marketTimesForm &&
+            marketTimesForm.openTime &&
+            Array.isArray(marketTimesForm.openTime)
+        ) {
+            // 過濾出有效的時間段（開始和結束時間都已填入）
+            return marketTimesForm.openTime.filter(
+                (session) => session.start && session.end,
+            );
+        }
+
+        // 如果沒有表單數據，則使用已保存的數據
+        if (!tradingHours) return [];
+
+        // 檢查是否有 openTime 屬性
+        if (
+            tradingHours.openTime &&
+            Array.isArray(tradingHours.openTime)
+        ) {
+            return tradingHours.openTime;
+        }
+
+        // 檢查是否有 tradingHours 屬性（時間戳格式）
+        if (
+            tradingHours.tradingHours &&
+            Array.isArray(tradingHours.tradingHours)
+        ) {
+            return tradingHours.tradingHours.map((slot) => {
+                const startDate = new Date(slot.start * 1000);
+                const endDate = new Date(slot.end * 1000);
+                return {
+                    start: startDate.toTimeString().slice(0, 5),
+                    end: endDate.toTimeString().slice(0, 5),
+                };
+            });
+        }
+
+        return [];
+    };
+
+    // 檢查某个時間是否在交易時段內
+    const isMarketOpen = (hour) => {
+        const sessions = getTradingSessions();
+        if (sessions.length === 0) return false;
+
+        return sessions.some((session) => {
+            const startHour = parseInt(session.start.split(":")[0]);
+            const startMinute = parseInt(session.start.split(":")[1]);
+            const endHour = parseInt(session.end.split(":")[0]);
+            const endMinute = parseInt(session.end.split(":")[1]);
+
+            const startTime = startHour + startMinute / 60;
+            const endTime = endHour + endMinute / 60;
+
+            // 處理跨日情況
+            if (endTime < startTime) {
+                return hour >= startTime || hour < endTime;
+            } else {
+                return hour >= startTime && hour < endTime;
+            }
+        });
+    };
+
+    const tradingSessions = getTradingSessions();
+
+    return (
+        <div className="mb-4 rounded-lg border border-[#294565] bg-[#0f203e] p-4">
+            {/* 時間軸 */}
+            <div className="relative">
+                {/* 小時標記 */}
+                <div className="mb-2 flex justify-between text-xs text-[#557797]">
+                    {[0, 6, 12, 18, 24].map((hour) => (
+                        <span key={hour} className="w-8 text-center">
+                            {hour.toString().padStart(2, "0")}:00
+                        </span>
+                    ))}
+                </div>
+
+                {/* 時間條 */}
+                <div className="relative h-8 overflow-hidden rounded-lg bg-[#1A325F]">
+                    {/* 背景網格線 */}
+                    <div className="absolute inset-0 flex">
+                        {hours.map((hour) => (
+                            <div
+                                key={hour}
+                                className="flex-1 border-r border-[#294565] last:border-r-0"
+                            />
+                        ))}
+                    </div>
+
+                    {/* 交易時段標記 */}
+                    <div className="absolute inset-0 flex">
+                        {hours.map((hour) => (
+                            <div
+                                key={hour}
+                                className={`flex-1 transition-all duration-300 ${
+                                    isMarketOpen(hour)
+                                        ? "bg-green-500/80 shadow-lg"
+                                        : "bg-transparent"
+                                }`}
+                            />
+                        ))}
+                    </div>
+
+                    <div
+                        className="absolute top-0 h-full w-0.5 bg-yellow-400 shadow-lg"
+                        style={{
+                            left: `${(new Date().getHours() / 24) * 100}%`,
+                        }}
+                    ></div>
+                </div>
+
+                {/* 圖例 */}
+                <div className="mt-3 flex items-center justify-center space-x-4 text-xs">
+                    <div className="flex items-center space-x-2">
+                        <div className="h-3 w-3 rounded bg-green-500/80"></div>
+                        <span className="text-[#7BC2E6]">
+                            交易時段
+                        </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <div className="h-3 w-3 rounded bg-[#1A325F]"></div>
+                        <span className="text-[#7BC2E6]">
+                            非交易時段
+                        </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <div className="h-3 w-0.5 bg-yellow-400"></div>
+                        <span className="text-[#7BC2E6]">
+                            現在時間
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 /**
  * 系統設定管理組件
  * 統一管理所有可動態調整的系統參數
@@ -547,51 +696,11 @@ export const SystemConfig = ({ token }) => {
                     token={token}
                 >
                     <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-                        <h3 className="mb-4 text-xl font-bold text-blue-400">
-                            🕐 交易時間設定
-                        </h3>
-
-                        {tradingHours && tradingHours.openTime && (
-                            <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
-                                <div className="mb-2 text-sm text-[#7BC2E6]">
-                                    目前交易時段
-                                </div>
-                                {tradingHours.openTime.map(
-                                    (session, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center justify-between rounded-lg bg-[#1A325F] p-2 text-sm text-white"
-                                        >
-                                            <div className="flex items-center space-x-2">
-                                                <div className="text-yellow-400">
-                                                    <svg
-                                                        className="h-4 w-4"
-                                                        fill="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                                    </svg>
-                                                </div>
-                                                <span>
-                                                    時段 {index + 1}:{" "}
-                                                    {session.start} -{" "}
-                                                    {session.end}
-                                                </span>
-                                            </div>
-                                            <span className="text-xs text-[#7BC2E6]">
-                                                (UTC)
-                                            </span>
-                                        </div>
-                                    ),
-                                )}
-                            </div>
-                        )}
-
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between border-b border-[#294565] pb-3">
-                                <span className="font-medium text-[#7BC2E6]">
-                                    交易時段設定
-                                </span>
+                            <div className="flex place-items-center justify-between">
+                                <h3 className="text-xl font-bold text-blue-400">
+                                    交易時間設定
+                                </h3>
                                 <button
                                     onClick={addTradingSession}
                                     className="flex items-center space-x-2 rounded rounded-lg bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
@@ -619,10 +728,6 @@ export const SystemConfig = ({ token }) => {
                                             >
                                                 <div className="mb-3 flex items-center justify-between">
                                                     <div className="flex items-center space-x-2">
-                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-medium text-white">
-                                                            {index +
-                                                                1}
-                                                        </div>
                                                         <span className="font-medium text-white">
                                                             交易時段{" "}
                                                             {index +
@@ -691,28 +796,16 @@ export const SystemConfig = ({ token }) => {
                                                         />
                                                     </div>
                                                 </div>
-
-                                                {session.start &&
-                                                    session.end && (
-                                                        <div className="mt-3 rounded bg-[#1A325F] p-2 text-center">
-                                                            <span className="text-sm text-[#7BC2E6]">
-                                                                預覽:{" "}
-                                                                {
-                                                                    session.start
-                                                                }{" "}
-                                                                -{" "}
-                                                                {
-                                                                    session.end
-                                                                }{" "}
-                                                                (UTC)
-                                                            </span>
-                                                        </div>
-                                                    )}
                                             </div>
                                         ),
                                     )}
                                 </div>
                             )}
+
+                            <TradingHoursVisualizer
+                                tradingHours={tradingHours}
+                                marketTimesForm={marketTimesForm}
+                            />
 
                             <PermissionButton
                                 requiredPermission={
