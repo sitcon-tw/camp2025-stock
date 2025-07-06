@@ -1,0 +1,446 @@
+from __future__ import annotations
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.core.database import get_database, Collections
+from datetime import datetime, timezone, timedelta
+from bson import ObjectId
+from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+def get_game_service() -> GameService:
+    """GameService 的依賴注入函數"""
+    return GameService()
+
+class GameService:
+    """遊戲服務 - 負責處理 PvP 猜拳遊戲相關功能"""
+    
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        if db is None:
+            self.db = get_database()
+        else:
+            self.db = db
+    
+    async def create_pvp_challenge(self, from_user: str, amount: int, chat_id: str):
+        """建立 PVP 挑戰"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 檢查發起者是否存在且有足夠點數
+            user = await self.db[Collections.USERS].find_one({"telegram_id": from_user})
+            if not user:
+                return PVPResponse(
+                    success=False,
+                    message="使用者不存在，請先註冊"
+                )
+            
+            if user.get("points", 0) < amount:
+                return PVPResponse(
+                    success=False,
+                    message=f"點數不足！你的點數：{user.get('points', 0)}，需要：{amount}"
+                )
+            
+            # 檢查是否已有進行中的挑戰
+            existing_challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "challenger": from_user,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            })
+            
+            if existing_challenge:
+                # 檢查挑戰是否過期，如果過期則自動清理
+                expires_at = existing_challenge["expires_at"]
+                if not expires_at.tzinfo:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                if datetime.now(timezone.utc) > expires_at:
+                    await self.db[Collections.PVP_CHALLENGES].update_one(
+                        {"_id": existing_challenge["_id"]},
+                        {"$set": {"status": "expired"}}
+                    )
+                else:
+                    # 提供更詳細的訊息
+                    challenge_status = existing_challenge.get("status", "pending")
+                    if challenge_status == "waiting_accepter":
+                        return PVPResponse(
+                            success=False,
+                            message="你已經有一個等待接受的挑戰！請等待其他人接受或過期後再建立新挑戰。"
+                        )
+                    else:
+                        return PVPResponse(
+                            success=False,
+                            message="你已經有一個進行中的挑戰！請完成後再建立新挑戰。"
+                        )
+            
+            # 建立挑戰記錄
+            challenge_oid = ObjectId()
+            challenge_doc = {
+                "_id": challenge_oid,
+                "challenger": from_user,
+                "challenger_name": user.get("name", "未知使用者"),
+                "amount": amount,
+                "chat_id": chat_id,
+                "status": "pending",
+                "created_at": datetime.now(timezone.utc),
+                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)  # 5分鐘過期
+            }
+            
+            await self.db[Collections.PVP_CHALLENGES].insert_one(challenge_doc)
+            
+            return PVPResponse(
+                success=True,
+                message=f"🎯 {user.get('name', '未知使用者')} 發起了 {amount} 點的猜拳挑戰！\n傳送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
+                challenge_id=str(challenge_oid),
+                amount=amount
+            )
+            
+        except Exception as e:
+            logger.error(f"Error creating PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="建立挑戰失敗，請稍後再試"
+            )
+    
+    async def set_pvp_creator_choice(self, from_user: str, challenge_id: str, choice: str):
+        """設定 PVP 發起人的選擇"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_oid,
+                "status": "pending"
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在或已結束"
+                )
+            
+            # 檢查是否為發起者本人
+            if challenge["challenger"] != from_user:
+                return PVPResponse(
+                    success=False,
+                    message="只有發起者可以設定選擇！"
+                )
+            
+            # 檢查是否已設定過選擇
+            if challenge.get("challenger_choice"):
+                return PVPResponse(
+                    success=False,
+                    message="你已經設定過選擇了！"
+                )
+            
+            # 更新挑戰，設定發起人選擇
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_oid},
+                {
+                    "$set": {
+                        "challenger_choice": choice,
+                        "status": "waiting_accepter"
+                    }
+                }
+            )
+            
+            # 返回成功訊息，包含挑戰資訊供前端顯示
+            challenger_name = challenge["challenger_name"]
+            amount = challenge["amount"]
+            
+            return PVPResponse(
+                success=True,
+                message=f"🎯 {challenger_name} 發起了 {amount} 點的 PVP 挑戰！\n\n發起者已經選擇了他出的拳，有誰想來挑戰嗎？選擇你出的拳吧！\n⏰ 如果 3 小時沒有人接受，系統會重新提醒"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error setting PVP creator choice: {e}")
+            return PVPResponse(
+                success=False,
+                message="設定選擇失敗，請稍後再試"
+            )
+
+    async def accept_pvp_challenge(self, from_user: str, challenge_id: str, choice: str):
+        """接受 PVP 挑戰並進行猜拳遊戲"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_oid,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在或已結束"
+                )
+            
+            # 檢查發起人是否已選擇
+            if not challenge.get("challenger_choice"):
+                return PVPResponse(
+                    success=False,
+                    message="發起人尚未選擇猜拳，請稍後再試"
+                )
+            
+            # 檢查是否過期
+            expires_at = challenge["expires_at"]
+            if not expires_at.tzinfo:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires_at:
+                await self.db[Collections.PVP_CHALLENGES].update_one(
+                    {"_id": challenge_oid},
+                    {"$set": {"status": "expired"}}
+                )
+                return PVPResponse(
+                    success=False,
+                    message="挑戰已過期"
+                )
+            
+            # 檢查是否為發起者本人
+            if challenge["challenger"] == from_user:
+                return PVPResponse(
+                    success=False,
+                    message="不能接受自己的挑戰！"
+                )
+            
+            # 檢查接受者是否存在且有足夠點數
+            accepter = await self.db[Collections.USERS].find_one({"telegram_id": from_user})
+            if not accepter:
+                return PVPResponse(
+                    success=False,
+                    message="使用者不存在，請先註冊"
+                )
+            
+            amount = challenge["amount"]
+            if accepter.get("points", 0) < amount:
+                return PVPResponse(
+                    success=False,
+                    message=f"點數不足！你的點數：{accepter.get('points', 0)}，需要：{amount}"
+                )
+            
+            # 使用發起者預先選擇的猜拳
+            challenger_choice = challenge["challenger_choice"]
+            
+            # 判斷勝負
+            result = self._determine_winner(challenger_choice, choice)
+            
+            # 更新挑戰狀態
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_oid},
+                {
+                    "$set": {
+                        "accepter": from_user,
+                        "accepter_name": accepter.get("name", "未知使用者"),
+                        "accepter_choice": choice,
+                        "result": result,
+                        "status": "completed",
+                        "completed_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # 處理點數轉移
+            challenger_user = await self.db[Collections.USERS].find_one({"telegram_id": challenge["challenger"]})
+            
+            if result == "challenger_wins":
+                # 發起者勝利
+                winner_name = challenge["challenger_name"]
+                loser_name = accepter.get("name", "未知使用者")
+                
+                # 轉移點數
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": challenge["challenger"]},
+                    {"$inc": {"points": amount}}
+                )
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": from_user},
+                    {"$inc": {"points": -amount}}
+                )
+                
+                # 記錄點數變動
+                await self._log_point_change(
+                    user_id=challenger_user["_id"],
+                    change_type="pvp_win",
+                    amount=amount,
+                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                )
+                await self._log_point_change(
+                    user_id=accepter["_id"],
+                    change_type="pvp_lose",
+                    amount=-amount,
+                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                return PVPResponse(
+                    success=True,
+                    message=f"🎉 遊戲結束！\n{self._get_choice_emoji(challenger_choice)} {winner_name} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {loser_name} 出 {self._get_choice_name(choice)}\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！",
+                    winner=challenge["challenger"],
+                    loser=from_user,
+                    amount=amount
+                )
+                
+            elif result == "accepter_wins":
+                # 接受者勝利
+                winner_name = accepter.get("name", "未知使用者")
+                loser_name = challenge["challenger_name"]
+                
+                # 轉移點數
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": from_user},
+                    {"$inc": {"points": amount}}
+                )
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": challenge["challenger"]},
+                    {"$inc": {"points": -amount}}
+                )
+                
+                # 記錄點數變動
+                await self._log_point_change(
+                    user_id=accepter["_id"],
+                    change_type="pvp_win",
+                    amount=amount,
+                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                )
+                await self._log_point_change(
+                    user_id=challenger_user["_id"],
+                    change_type="pvp_lose",
+                    amount=-amount,
+                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                return PVPResponse(
+                    success=True,
+                    message=f"🎉 遊戲結束！\n{self._get_choice_emoji(challenger_choice)} {loser_name} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {winner_name} 出 {self._get_choice_name(choice)}\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！",
+                    winner=from_user,
+                    loser=challenge["challenger"],
+                    amount=amount
+                )
+                
+            else:  # tie
+                return PVPResponse(
+                    success=True,
+                    message=f"🤝 平手！\n{self._get_choice_emoji(challenger_choice)} {challenge['challenger_name']} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {accepter.get('name', '未知使用者')} 出 {self._get_choice_name(choice)}\n\n沒有點數變動！",
+                    amount=0
+                )
+                
+        except Exception as e:
+            logger.error(f"Error accepting PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="接受挑戰失敗，請稍後再試"
+            )
+    
+    async def cancel_pvp_challenge(self, user_id: str, challenge_id: str):
+        """取消 PVP 挑戰"""
+        from app.schemas.bot import PVPResponse
+        
+        try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_oid,
+                "challenger": user_id,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在、已結束或你不是發起者"
+                )
+            
+            # 更新挑戰狀態為取消
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_oid},
+                {
+                    "$set": {
+                        "status": "cancelled",
+                        "cancelled_at": datetime.now(timezone.utc),
+                        "cancel_reason": "使用者主動取消"
+                    }
+                }
+            )
+            
+            logger.info(f"PVP 挑戰 {challenge_id} 已被使用者 {user_id} 取消")
+            
+            return PVPResponse(
+                success=True,
+                message="PVP 挑戰已成功取消"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error cancelling PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="取消挑戰失敗，請稍後再試"
+            )
+    
+    def _determine_winner(self, choice1: str, choice2: str) -> str:
+        """判斷猜拳勝負"""
+        if choice1 == choice2:
+            return "tie"
+        
+        winning_combinations = {
+            ("rock", "scissors"): "challenger_wins",
+            ("paper", "rock"): "challenger_wins", 
+            ("scissors", "paper"): "challenger_wins",
+            ("scissors", "rock"): "accepter_wins",
+            ("rock", "paper"): "accepter_wins",
+            ("paper", "scissors"): "accepter_wins"
+        }
+        
+        return winning_combinations.get((choice1, choice2), "tie")
+    
+    def _get_choice_emoji(self, choice: str) -> str:
+        """獲取選擇對應的 emoji"""
+        emojis = {
+            "rock": "🪨",
+            "paper": "📄", 
+            "scissors": "✂️"
+        }
+        return emojis.get(choice, "❓")
+    
+    def _get_choice_name(self, choice: str) -> str:
+        """獲取選擇對應的中文名稱"""
+        names = {
+            "rock": "石頭",
+            "paper": "布",
+            "scissors": "剪刀"
+        }
+        return names.get(choice, "未知")
+    
+    async def _log_point_change(self, user_id, change_type: str, amount: int, note: str = ""):
+        """記錄點數變動"""
+        log_entry = {
+            "user_id": user_id,
+            "change_type": change_type,
+            "amount": amount,
+            "note": note,
+            "timestamp": datetime.now(timezone.utc)
+        }
+        await self.db[Collections.POINT_LOGS].insert_one(log_entry)
