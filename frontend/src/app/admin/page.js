@@ -222,7 +222,7 @@ export default function EnhancedAdminPage() {
                         <nav className="flex space-x-8">
                             {[
                                 { id: "dashboard", label: "功能面板", icon: "🏠" },
-                                { id: "config", label: "系統配置", icon: "⚙️" },
+                                { id: "config", label: "系統設定", icon: "⚙️" },
                                 { id: "audit", label: "權限審查", icon: "🔍" },
                             ].map(tab => (
                                 <button

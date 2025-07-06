@@ -12,14 +12,14 @@ import {
 } from "@/lib/api";
 
 /**
- * 系統配置管理組件
+ * 系統設定管理組件
  * 統一管理所有可動態調整的系統參數
  */
 export const SystemConfig = ({ token }) => {
     const [notification, setNotification] = useState({ show: false, message: "", type: "info" });
     const [loading, setLoading] = useState(true);
     
-    // 配置數據
+    // 設定數據
     const [transferFeeConfig, setTransferFeeConfig] = useState(null);
     const [tradingHours, setTradingHours] = useState(null);
     const [ipoDefaults, setIpoDefaults] = useState(null);
@@ -36,12 +36,12 @@ export const SystemConfig = ({ token }) => {
         setTimeout(() => setNotification({ show: false, message: "", type: "info" }), 4000);
     };
 
-    // 載入所有配置
+    // 載入所有設定
     const loadConfigs = async () => {
         try {
             setLoading(true);
             
-            // 並行載入所有配置
+            // 並行載入所有設定
             const [feeConfig, hours, defaults] = await Promise.allSettled([
                 getTransferFeeConfig(token),
                 getTradingHours(),
@@ -72,8 +72,8 @@ export const SystemConfig = ({ token }) => {
             }
 
         } catch (error) {
-            console.error("載入配置失敗:", error);
-            showNotification("載入配置失敗", "error");
+            console.error("載入設定失敗:", error);
+            showNotification("載入設定失敗", "error");
         } finally {
             setLoading(false);
         }
@@ -100,7 +100,7 @@ export const SystemConfig = ({ token }) => {
             );
             
             showNotification("轉帳手續費更新成功！", "success");
-            await loadConfigs(); // 重新載入配置
+            await loadConfigs(); // 重新載入設定
         } catch (error) {
             showNotification(`更新轉帳手續費失敗: ${error.message}`, "error");
         }
@@ -137,7 +137,7 @@ export const SystemConfig = ({ token }) => {
             );
             
             showNotification("IPO預設值更新成功！", "success");
-            await loadConfigs(); // 重新載入配置
+            await loadConfigs(); // 重新載入設定
         } catch (error) {
             showNotification(`更新IPO預設值失敗: ${error.message}`, "error");
         }
@@ -181,7 +181,7 @@ export const SystemConfig = ({ token }) => {
 
             await updateMarketTimes(token, validSessions);
             showNotification("交易時間更新成功！", "success");
-            await loadConfigs(); // 重新載入配置
+            await loadConfigs(); // 重新載入設定
         } catch (error) {
             showNotification(`更新交易時間失敗: ${error.message}`, "error");
         }
@@ -192,7 +192,7 @@ export const SystemConfig = ({ token }) => {
             <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                     <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
-                    <p className="text-[#92cbf4]">載入系統配置中...</p>
+                    <p className="text-[#92cbf4]">載入系統設定中...</p>
                 </div>
             </div>
         );
@@ -214,15 +214,15 @@ export const SystemConfig = ({ token }) => {
             )}
 
             <div>
-                <h2 className="text-2xl font-bold text-[#92cbf4] mb-2">⚙️ 系統配置管理</h2>
+                <h2 className="text-2xl font-bold text-[#92cbf4] mb-2">⚙️ 系統設定管理</h2>
                 <p className="text-[#557797]">統一管理所有可動態調整的系統參數</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* 轉帳手續費配置 */}
+                {/* 轉帳手續費設定 */}
                 <PermissionGuard requiredPermission={PERMISSIONS.SYSTEM_ADMIN} token={token}>
                     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-                        <h3 className="text-xl font-bold mb-4 text-orange-400">💰 轉帳手續費配置</h3>
+                        <h3 className="text-xl font-bold mb-4 text-orange-400">💰 轉帳手續費設定</h3>
                         
                         {transferFeeConfig && (
                             <div className="mb-4 p-3 bg-[#0f203e] rounded border border-[#294565]">
@@ -274,10 +274,10 @@ export const SystemConfig = ({ token }) => {
                     </div>
                 </PermissionGuard>
 
-                {/* 交易限制配置 */}
+                {/* 交易限制設定 */}
                 <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_MARKET} token={token}>
                     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-                        <h3 className="text-xl font-bold mb-4 text-red-400">📊 交易限制配置</h3>
+                        <h3 className="text-xl font-bold mb-4 text-red-400">📊 交易限制設定</h3>
                         
                         <div className="space-y-4">
                             <div>
@@ -310,10 +310,10 @@ export const SystemConfig = ({ token }) => {
                     </div>
                 </PermissionGuard>
 
-                {/* IPO預設值配置 */}
+                {/* IPO預設值設定 */}
                 <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_MARKET} token={token}>
                     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-                        <h3 className="text-xl font-bold mb-4 text-green-400">🚀 IPO預設值配置</h3>
+                        <h3 className="text-xl font-bold mb-4 text-green-400">🚀 IPO預設值設定</h3>
                         
                         {ipoDefaults && (
                             <div className="mb-4 p-3 bg-[#0f203e] rounded border border-[#294565]">
@@ -364,10 +364,10 @@ export const SystemConfig = ({ token }) => {
                     </div>
                 </PermissionGuard>
 
-                {/* 交易時間配置 */}
+                {/* 交易時間設定 */}
                 <PermissionGuard requiredPermission={PERMISSIONS.MANAGE_MARKET} token={token}>
                     <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-                        <h3 className="text-xl font-bold mb-4 text-blue-400">🕐 交易時間配置</h3>
+                        <h3 className="text-xl font-bold mb-4 text-blue-400">🕐 交易時間設定</h3>
                         
                         {tradingHours && tradingHours.openTime && (
                             <div className="mb-4 p-3 bg-[#0f203e] rounded border border-[#294565]">
@@ -439,7 +439,7 @@ export const SystemConfig = ({ token }) => {
 
             {/* 說明區域 */}
             <div className="bg-[#1A325F] p-6 rounded-lg shadow border border-[#294565]">
-                <h3 className="text-lg font-bold mb-3 text-[#92cbf4]">📖 配置說明</h3>
+                <h3 className="text-lg font-bold mb-3 text-[#92cbf4]">📖 設定說明</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[#7BC2E6]">
                     <div>
                         <h4 className="font-semibold mb-2">轉帳手續費</h4>
