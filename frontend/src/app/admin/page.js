@@ -6,6 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { PermissionAudit } from "@/components/PermissionAudit";
+import { SystemConfig } from "@/components/SystemConfig";
 import { debugAuth } from "@/utils/debugAuth";
 
 /**
@@ -221,6 +222,7 @@ export default function EnhancedAdminPage() {
                         <nav className="flex space-x-8">
                             {[
                                 { id: "dashboard", label: "功能面板", icon: "🏠" },
+                                { id: "config", label: "系統配置", icon: "⚙️" },
                                 { id: "audit", label: "權限審查", icon: "🔍" },
                             ].map(tab => (
                                 <button
@@ -244,6 +246,9 @@ export default function EnhancedAdminPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {activeTab === "dashboard" && (
                         <AdminDashboard token={adminToken} />
+                    )}
+                    {activeTab === "config" && (
+                        <SystemConfig token={adminToken} />
                     )}
                     {activeTab === "audit" && (
                         <PermissionAudit token={adminToken} />
