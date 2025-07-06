@@ -179,7 +179,7 @@ export default function EnhancedAdminPage() {
 
     return (
         <PermissionProvider token={adminToken}>
-            <div className="min-h-screen bg-[#0f203e]">
+            <div className="min-h-screen bg-[#0f203e] pb-20">
                 {/* 頁面標題和用戶資訊 */}
                 <div className="bg-[#1A325F] shadow border-b border-[#294565]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
