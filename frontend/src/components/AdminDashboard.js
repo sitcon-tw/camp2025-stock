@@ -28,8 +28,7 @@ import Modal from "./Modal";
  * 使用權限驅動的 UI 控制
  */
 export const AdminDashboard = ({ token }) => {
-    const { permissions, role, loading, isAdmin } =
-        usePermissionContext();
+    const { role, loading, isAdmin } = usePermissionContext();
     const [activeSection, setActiveSection] = useState("overview");
     const [notification, setNotification] = useState({
         show: false,
