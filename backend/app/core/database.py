@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from app.config import settings
+from app.core.config_refactored import config
 import logging
 
 # 設定 pymongo 日誌等級為 WARNING 以減少 heartbeat 輸出
@@ -18,13 +18,13 @@ db = Database()
 # 連線到 MongoDB
 async def connect_to_mongo():
     try:
-        logger.info(f"Trying Connecting to MongoDB at: {settings.CAMP_MONGO_URI}")
-        db.client = AsyncIOMotorClient(settings.CAMP_MONGO_URI)
-        db.database = db.client[settings.CAMP_DATABASE_NAME]
+        logger.info(f"Trying Connecting to MongoDB at: {config.database.mongo_uri}")
+        db.client = AsyncIOMotorClient(config.database.mongo_uri)
+        db.database = db.client[config.database.database_name]
         
         # 測試連線
         await db.client.admin.command('ismaster')
-        logger.info(f"Successfully connected to MongoDB database: {settings.CAMP_DATABASE_NAME}")
+        logger.info(f"Successfully connected to MongoDB database: {config.database.database_name}")
         
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
@@ -49,7 +49,7 @@ def get_database() -> AsyncIOMotorDatabase:
 
 # 取得資料庫名稱
 def get_CAMP_DATABASE_NAME() -> str:
-    return settings.CAMP_DATABASE_NAME
+    return config.database.database_name
 
 
 # 集合名稱常數

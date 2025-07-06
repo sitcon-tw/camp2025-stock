@@ -558,7 +558,7 @@ async def reset_ipo(
                     try:
                         initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
                     except (ValueError, TypeError):
-                        initial_shares = 1000000000
+                        initial_shares = 1000000
                         
                 if initial_price is None:
                     try:

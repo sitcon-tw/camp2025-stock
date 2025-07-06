@@ -11,7 +11,7 @@ from app.schemas.user import (
     UserPointLog, UserStockOrder
 )
 from app.core.security import create_access_token
-from app.config import settings
+from app.core.config_refactored import config
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
@@ -261,7 +261,7 @@ class UserService:
         try:
             # 取得今日開始時間 (使用 Asia/Taipei 時區)
             from app.config import settings
-            today_start = datetime.now(settings.timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             yesterday_end = today_start - timedelta(seconds=1)
             
             # 查找昨日最後一筆成交記錄作為前日收盤價
@@ -3429,12 +3429,12 @@ class UserService:
                                             price: float, total_amount: float, order_id: str):
         """傳送單一交易通知"""
         try:
-            if not settings.CAMP_TELEGRAM_BOT_API_URL or not settings.CAMP_INTERNAL_API_KEY:
+            if not config.external_services.telegram_bot_api_url or not config.security.internal_api_key:
                 logger.warning("Telegram Bot API 設定不完整，跳過通知傳送")
                 return
             
             # 構建通知請求
-            notification_url = f"{settings.CAMP_TELEGRAM_BOT_API_URL.rstrip('/')}/bot/notification/trade"
+            notification_url = f"{config.external_services.telegram_bot_api_url.rstrip('/')}/bot/notification/trade"
             
             payload = {
                 "user_id": user_telegram_id,
@@ -3447,7 +3447,7 @@ class UserService:
             
             headers = {
                 "Content-Type": "application/json",
-                "token": settings.CAMP_INTERNAL_API_KEY
+                "token": config.security.internal_api_key
             }
             
             # 傳送通知（設定短超時避免阻塞交易）
@@ -3655,7 +3655,7 @@ class UserService:
                                                    price: float, reason: str):
         """發送取消訂單通知 (舊架構版本)"""
         try:
-            if not settings.CAMP_TELEGRAM_BOT_API_URL or not settings.CAMP_INTERNAL_API_KEY:
+            if not config.external_services.telegram_bot_api_url or not config.security.internal_api_key:
                 logger.warning("Telegram Bot API 設定不完整，跳過取消通知傳送")
                 return
             
@@ -3671,7 +3671,7 @@ class UserService:
             
             message = f"🚫 您的訂單已取消\n\n• 訂單號碼：{order_id}\n• 類型：{type_text}\n• 操作：{action_text}\n• 數量：{quantity}\n• 價格：{price:.2f}\n• 取消原因：{reason}"
             
-            notification_url = f"{settings.CAMP_TELEGRAM_BOT_API_URL.rstrip('/')}/bot/direct/send"
+            notification_url = f"{config.external_services.telegram_bot_api_url.rstrip('/')}/bot/direct/send"
             
             payload = {
                 "user_id": user["telegram_id"],
@@ -3681,7 +3681,7 @@ class UserService:
             
             headers = {
                 "Content-Type": "application/json",
-                "token": settings.CAMP_INTERNAL_API_KEY
+                "token": config.security.internal_api_key
             }
             
             response = requests.post(

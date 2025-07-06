@@ -3,7 +3,7 @@ from app.application.services import AuthenticationApplicationService
 from app.application.dependencies import get_authentication_application_service
 from app.schemas.user import TelegramOAuthRequest, TelegramOAuthResponse
 from app.core.security import create_user_token
-from app.config import settings
+from app.core.config_refactored import config
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,23 +33,11 @@ async def telegram_oauth(
         認證結果和 JWT Token
     """
     try:
-        # 驗證設定
-        if not settings.CAMP_TELEGRAM_BOT_TOKEN:
-            logger.error("Telegram bot token not configured")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Telegram authentication not configured"
-            )
-        
-        # Debug：顯示 token 是否有設定（隱藏完整內容）
-        token_preview = settings.CAMP_TELEGRAM_BOT_TOKEN[:10] + "..." if len(settings.CAMP_TELEGRAM_BOT_TOKEN) > 10 else "短於10字符"
-        logger.info(f"Bot token configured: {token_preview}")
-        
-        # 委託給應用服務處理業務邏輯
+        # 委託給應用服務處理業務邏輯 (不再需要 bot token)
         auth_data = auth_request.dict()
         success, user_info, message = await auth_service.telegram_oauth_login(
             auth_data, 
-            settings.CAMP_TELEGRAM_BOT_TOKEN
+            None  # Bot token no longer required
         )
         
         if not success:
@@ -84,5 +72,5 @@ async def auth_health_check():
     return {
         "status": "healthy",
         "service": "Authentication API",
-        "telegram_oauth": "enabled" if settings.CAMP_TELEGRAM_BOT_TOKEN else "disabled"
+        "telegram_oauth": "enabled"
     }

@@ -3,7 +3,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.config import settings
+from app.core.config_refactored import config
 import hashlib
 import hmac
 import urllib.parse
@@ -32,19 +32,19 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=int(settings.CAMP_JWT_EXPIRE_MINUTES))
+        expire = datetime.utcnow() + timedelta(minutes=int(config.jwt.expire_minutes))
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode, settings.CAMP_JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+        to_encode, config.jwt.secret_key, algorithm=config.jwt.algorithm)
     return encoded_jwt
 
 
 def verify_token(token: str) -> dict:
     """驗證 JWT Token"""
     try:
-        payload = jwt.decode(token, settings.CAMP_JWT_SECRET,
-                             algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, config.jwt.secret_key,
+                             algorithms=[config.jwt.algorithm])
         return payload
     except JWTError:
         raise HTTPException(
@@ -57,7 +57,7 @@ def verify_token(token: str) -> dict:
 def verify_CAMP_ADMIN_PASSWORD(password: str) -> bool:
     """驗證管理員密碼（簡單版本，實際應該用雜湊）"""
     # TODO: 實際應該用雜湊
-    return password == settings.CAMP_ADMIN_PASSWORD
+    return password == config.security.admin_password
 
 
 async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -105,12 +105,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 def verify_bot_api_key(api_key: str) -> bool:
     """驗證內部 API 金鑰"""
-    return api_key == settings.CAMP_INTERNAL_API_KEY
+    return api_key == config.security.internal_api_key
 
 
 def verify_bot_token(token: str = Header(..., alias="token")) -> bool:
     """BOT API 驗證機制 - 驗證 token"""
-    if token != settings.CAMP_INTERNAL_API_KEY:
+    if token != config.security.internal_api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"

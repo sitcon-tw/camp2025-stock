@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 import logging
 import os
 import requests
-from app.config import settings
+from app.core.config_refactored import config
 
 
 logger = logging.getLogger(__name__)
@@ -211,7 +211,7 @@ class AdminService:
 
             # 如果需要廣播，這裡可以加入 Telegram Bot 推送邏輯
             if request.broadcast:
-                CAMP_TELEGRAM_BOT_API_URL = settings.CAMP_TELEGRAM_BOT_API_URL
+                CAMP_TELEGRAM_BOT_API_URL = config.external_services.telegram_bot_api_url
                 if not CAMP_TELEGRAM_BOT_API_URL:
                     raise AdminException("Telegram Bot API URL not configured")
                 # 使用 requests 傳送 POST 請求到 Telegram Bot API
@@ -221,7 +221,7 @@ class AdminService:
                 }
                 headers = {
                     "Content-Type": "application/json",
-                    "token": settings.CAMP_INTERNAL_API_KEY
+                    "token": config.security.internal_api_key
                 }
                 logger.info(
                     f"Broadcasting announcement: {request.title} - {request.message} to Telegram Bot API {CAMP_TELEGRAM_BOT_API_URL}")
@@ -262,8 +262,8 @@ class AdminService:
                 f"Announcement saved to database with ID: {result.inserted_id}")
 
             # 廣播到 Telegram Bot
-            CAMP_TELEGRAM_BOT_API_URL = settings.CAMP_TELEGRAM_BOT_API_URL
-            CAMP_INTERNAL_API_KEY = settings.CAMP_INTERNAL_API_KEY
+            CAMP_TELEGRAM_BOT_API_URL = config.external_services.telegram_bot_api_url
+            CAMP_INTERNAL_API_KEY = config.security.internal_api_key
 
             logger.info(f"Bot API URL: {CAMP_TELEGRAM_BOT_API_URL}")
             logger.info(

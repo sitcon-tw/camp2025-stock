@@ -247,19 +247,24 @@ export async function getIpoStatus(token) {
 // 重置IPO狀態
 export async function resetIpo(
     token,
-    initialShares = 1000000,
-    initialPrice = 20,
+    initialShares = null,
+    initialPrice = null,
 ) {
-    return apiRequest(
-        `/api/admin/ipo/reset?initial_shares=${initialShares}&initial_price=${initialPrice}`,
-        {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
+    // 如果沒有提供參數，後端會使用資料庫中的預設設定
+    const params = new URLSearchParams();
+    if (initialShares !== null) params.append("initial_shares", initialShares);
+    if (initialPrice !== null) params.append("initial_price", initialPrice);
+    
+    const queryString = params.toString();
+    const url = queryString ? `/api/admin/ipo/reset?${queryString}` : "/api/admin/ipo/reset";
+    
+    return apiRequest(url, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
         },
-    );
+    });
 }
 
 // 更新IPO參數
