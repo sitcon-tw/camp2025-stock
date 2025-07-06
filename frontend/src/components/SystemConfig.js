@@ -81,9 +81,33 @@ export const SystemConfig = ({ token }) => {
 
             if (hours.status === "fulfilled") {
                 setTradingHours(hours.value);
-                setMarketTimesForm({
-                    openTime: hours.value.openTime || [],
-                });
+                if (
+                    hours.value.tradingHours &&
+                    hours.value.tradingHours.length > 0
+                ) {
+                    const formattedTimes =
+                        hours.value.tradingHours.map((slot) => {
+                            const startDate = new Date(
+                                slot.start * 1000,
+                            );
+                            const endDate = new Date(slot.end * 1000);
+                            return {
+                                start: startDate
+                                    .toTimeString()
+                                    .slice(0, 5), // 轉 HH:MM Format
+                                end: endDate
+                                    .toTimeString()
+                                    .slice(0, 5),
+                            };
+                        });
+                    setMarketTimesForm({
+                        openTime: formattedTimes,
+                    });
+                } else {
+                    setMarketTimesForm({
+                        openTime: hours.value.openTime || [],
+                    });
+                }
             }
 
             if (defaults.status === "fulfilled") {
@@ -220,7 +244,22 @@ export const SystemConfig = ({ token }) => {
                 return;
             }
 
-            await updateMarketTimes(token, validSessions);
+            const openTime = validSessions.map((time) => {
+                const today = new Date();
+                const startTime = new Date(
+                    today.toDateString() + " " + time.start,
+                );
+                const endTime = new Date(
+                    today.toDateString() + " " + time.end,
+                );
+
+                return {
+                    start: Math.floor(startTime.getTime() / 1000),
+                    end: Math.floor(endTime.getTime() / 1000),
+                };
+            });
+
+            await updateMarketTimes(token, openTime);
             showNotification("交易時間更新成功！", "success");
             await loadConfigs(); // 重新載入設定
         } catch (error) {
@@ -520,11 +559,27 @@ export const SystemConfig = ({ token }) => {
                                     (session, index) => (
                                         <div
                                             key={index}
-                                            className="text-sm text-white"
+                                            className="flex items-center justify-between rounded-lg bg-[#1A325F] p-2 text-sm text-white"
                                         >
-                                            時段 {index + 1}:{" "}
-                                            {session.start} -{" "}
-                                            {session.end} (UTC)
+                                            <div className="flex items-center space-x-2">
+                                                <div className="text-yellow-400">
+                                                    <svg
+                                                        className="h-4 w-4"
+                                                        fill="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                                    </svg>
+                                                </div>
+                                                <span>
+                                                    時段 {index + 1}:{" "}
+                                                    {session.start} -{" "}
+                                                    {session.end}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs text-[#7BC2E6]">
+                                                (UTC)
+                                            </span>
                                         </div>
                                     ),
                                 )}
@@ -532,69 +587,160 @@ export const SystemConfig = ({ token }) => {
                         )}
 
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#7BC2E6]">
+                            <div className="flex items-center justify-between border-b border-[#294565] pb-3">
+                                <span className="font-medium text-[#7BC2E6]">
                                     交易時段設定
                                 </span>
                                 <button
                                     onClick={addTradingSession}
-                                    className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600"
+                                    className="flex items-center space-x-2 rounded rounded-lg bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
                                 >
-                                    + 新增時段
+                                    <span>新增時段</span>
                                 </button>
                             </div>
 
-                            {marketTimesForm.openTime.map(
-                                (session, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center gap-2 rounded border border-[#294565] bg-[#0f203e] p-3"
-                                    >
-                                        <div className="flex-1">
-                                            <input
-                                                type="time"
-                                                value={session.start}
-                                                onChange={(e) =>
-                                                    updateTradingSession(
-                                                        index,
-                                                        "start",
-                                                        e.target
-                                                            .value,
-                                                    )
-                                                }
-                                                className="w-full rounded border border-[#294565] bg-[#1A325F] p-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                            />
-                                        </div>
-                                        <span className="text-[#7BC2E6]">
-                                            至
-                                        </span>
-                                        <div className="flex-1">
-                                            <input
-                                                type="time"
-                                                value={session.end}
-                                                onChange={(e) =>
-                                                    updateTradingSession(
-                                                        index,
-                                                        "end",
-                                                        e.target
-                                                            .value,
-                                                    )
-                                                }
-                                                className="w-full rounded border border-[#294565] bg-[#1A325F] p-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={() =>
-                                                removeTradingSession(
-                                                    index,
-                                                )
-                                            }
-                                            className="rounded bg-red-500 px-2 py-1 text-sm text-white hover:bg-red-600"
+                            {marketTimesForm.openTime.length === 0 ? (
+                                <div className="rounded-lg border-2 border-dashed border-[#294565] bg-[#0f203e] p-6 text-center">
+                                    <div className="text-[#7BC2E6]">
+                                        <svg
+                                            className="mx-auto mb-3 h-12 w-12 text-[#557797]"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
                                         >
-                                            刪除
-                                        </button>
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={1}
+                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                            />
+                                        </svg>
+                                        <p className="text-sm">
+                                            尚未設定交易時段
+                                        </p>
+                                        <p className="mt-1 text-xs text-[#557797]">
+                                            點擊上方「新增時段」按鈕開始設定
+                                        </p>
                                     </div>
-                                ),
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {marketTimesForm.openTime.map(
+                                        (session, index) => (
+                                            <div
+                                                key={index}
+                                                className="rounded-lg border border-[#294565] bg-[#0f203e] p-4"
+                                            >
+                                                <div className="mb-3 flex items-center justify-between">
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-medium text-white">
+                                                            {index +
+                                                                1}
+                                                        </div>
+                                                        <span className="font-medium text-white">
+                                                            交易時段{" "}
+                                                            {index +
+                                                                1}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() =>
+                                                            removeTradingSession(
+                                                                index,
+                                                            )
+                                                        }
+                                                        className="flex items-center space-x-1 rounded-lg bg-red-500 px-3 py-1 text-sm text-white transition-colors hover:bg-red-600"
+                                                    >
+                                                        <svg
+                                                            className="h-4 w-4"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={
+                                                                    2
+                                                                }
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                            />
+                                                        </svg>
+                                                        <span>
+                                                            刪除
+                                                        </span>
+                                                    </button>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                                            開始時間
+                                                        </label>
+                                                        <input
+                                                            type="time"
+                                                            value={
+                                                                session.start
+                                                            }
+                                                            onChange={(
+                                                                e,
+                                                            ) =>
+                                                                updateTradingSession(
+                                                                    index,
+                                                                    "start",
+                                                                    e
+                                                                        .target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            className="w-full rounded-lg border border-[#294565] bg-[#1A325F] p-3 text-white focus:border-[#469FD2] focus:outline-none"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                                            結束時間
+                                                        </label>
+                                                        <input
+                                                            type="time"
+                                                            value={
+                                                                session.end
+                                                            }
+                                                            onChange={(
+                                                                e,
+                                                            ) =>
+                                                                updateTradingSession(
+                                                                    index,
+                                                                    "end",
+                                                                    e
+                                                                        .target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            className="w-full rounded-lg border border-[#294565] bg-[#1A325F] p-3 text-white focus:border-[#469FD2] focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {session.start &&
+                                                    session.end && (
+                                                        <div className="mt-3 rounded bg-[#1A325F] p-2 text-center">
+                                                            <span className="text-sm text-[#7BC2E6]">
+                                                                預覽:{" "}
+                                                                {
+                                                                    session.start
+                                                                }{" "}
+                                                                -{" "}
+                                                                {
+                                                                    session.end
+                                                                }{" "}
+                                                                (UTC)
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
                             )}
 
                             <PermissionButton
@@ -603,15 +749,14 @@ export const SystemConfig = ({ token }) => {
                                 }
                                 token={token}
                                 onClick={handleUpdateTradingHours}
-                                className="w-full rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                                disabled={
+                                    marketTimesForm.openTime
+                                        .length === 0
+                                }
+                                className="w-full rounded bg-blue-500 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400"
                             >
                                 更新交易時間
                             </PermissionButton>
-                        </div>
-
-                        <div className="mt-4 text-xs text-[#557797]">
-                            * 時間格式為 24 小時制，使用 UTC 時區
-                            <br />* 交易時段不可重疊，系統會自動驗證
                         </div>
                     </div>
                 </PermissionGuard>
