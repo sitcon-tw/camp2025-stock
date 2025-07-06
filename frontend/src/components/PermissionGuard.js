@@ -1,4 +1,5 @@
 import { usePermissions } from "@/hooks/usePermissions";
+import { usePermissionContext } from "@/contexts/PermissionContext";
 import { twMerge } from "tailwind-merge";
 
 /**
@@ -18,6 +19,15 @@ export const PermissionGuard = ({
         <div className="text-gray-500">檢查權限中...</div>
     ),
 }) => {
+    // Try to use context first, fallback to direct hook call if context not available
+    let permissionData;
+    try {
+        permissionData = usePermissionContext();
+    } catch (error) {
+        // Context not available, use direct hook call
+        permissionData = usePermissions(token);
+    }
+
     const {
         permissions,
         role,
@@ -26,7 +36,7 @@ export const PermissionGuard = ({
         hasAnyPermission,
         hasAllPermissions,
         hasRole,
-    } = usePermissions(token);
+    } = permissionData;
 
     // 檢查權限邏輯
     const checkAccess = () => {
@@ -141,13 +151,22 @@ export const PermissionButton = ({
     onClick,
     ...props
 }) => {
+    // Try to use context first, fallback to direct hook call if context not available
+    let permissionData;
+    try {
+        permissionData = usePermissionContext();
+    } catch (error) {
+        // Context not available, use direct hook call
+        permissionData = usePermissions(token);
+    }
+
     const {
         hasPermission,
         hasAnyPermission,
         hasAllPermissions,
         hasRole,
         loading,
-    } = usePermissions(token);
+    } = permissionData;
 
     const checkAccess = () => {
         if (requiredRole && !hasRole(requiredRole)) return false;

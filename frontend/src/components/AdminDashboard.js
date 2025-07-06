@@ -1,5 +1,4 @@
-import { PERMISSIONS } from "@/contexts/PermissionContext";
-import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS, usePermissionContext } from "@/contexts/PermissionContext";
 import { useEffect, useState } from "react";
 import { PermissionButton, PermissionGuard } from "./PermissionGuard";
 import { RoleManagement } from "./RoleManagement";
@@ -25,8 +24,7 @@ import Modal from "./Modal";
  * 使用權限驅動的 UI 控制
  */
 export const AdminDashboard = ({ token }) => {
-    const { permissions, role, loading, isAdmin } =
-        usePermissions(token);
+    const { permissions, role, loading, isAdmin } = usePermissionContext();
     const [activeSection, setActiveSection] = useState("overview");
     const [notification, setNotification] = useState({
         show: false,
