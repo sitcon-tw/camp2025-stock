@@ -178,6 +178,7 @@ export const PermissionButton = ({
         <button
             {...props}
             className={twMerge(
+                "disabled:cursor-not-allowed!",
                 className,
                 isDisabled && disabledClassName,
             )}
