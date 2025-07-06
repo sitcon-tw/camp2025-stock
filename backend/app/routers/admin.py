@@ -355,20 +355,9 @@ async def delete_announcement(
                 detail="標記公告為已刪除失敗"
             )
         
-        logger.info(f"Announcement deleted: {announcement_id} by user {current_user.get('user_id', 'unknown')}")
+        logger.info(f"Announcement soft deleted: {announcement_id} by user {current_user.get('user_id', 'unknown')}")
         
-        # 傳送系統公告通知刪除操作
-        try:
-            from app.services.admin_service import AdminService
-            admin_service = AdminService(db)
-            
-            announcement_title = announcement.get("title", "未知標題")
-            await admin_service._send_system_announcement(
-                title="🗑️ 公告已刪除",
-                message=f"管理員已刪除公告：「{announcement_title}」"
-            )
-        except Exception as e:
-            logger.error(f"Failed to send announcement deletion notification: {e}")
+        # 軟刪除不發送系統通知，因為公告仍然存在於系統中，只是標記為已刪除
         
         return {
             "ok": True,
