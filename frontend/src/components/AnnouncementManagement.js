@@ -23,6 +23,11 @@ export const AnnouncementManagement = ({ token }) => {
         type: "info",
     });
 
+    // 分頁和過濾狀態
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5); // 每頁顯示5個公告
+    const [showDeleted, setShowDeleted] = useState(false);
+
     // 發布公告相關狀態
     const createModal = useModal();
     const [publishForm, setPublishForm] = useState({
@@ -63,6 +68,27 @@ export const AnnouncementManagement = ({ token }) => {
                 }),
             3000,
         );
+    };
+
+    // 過濾公告
+    const filteredAnnouncements = announcements.filter((announcement) => {
+        if (showDeleted) {
+            return announcement.is_deleted; // 只顯示已刪除的
+        } else {
+            return !announcement.is_deleted; // 只顯示未刪除的
+        }
+    });
+
+    // 分頁邏輯
+    const totalPages = Math.ceil(filteredAnnouncements.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentAnnouncements = filteredAnnouncements.slice(startIndex, endIndex);
+
+    // 重置分頁當過濾條件改變
+    const handleFilterChange = (deleted) => {
+        setShowDeleted(deleted);
+        setCurrentPage(1);
     };
 
     // 獲取公告列表
@@ -235,6 +261,38 @@ export const AnnouncementManagement = ({ token }) => {
                 </div>
             </div>
 
+            {/* 過濾控制 */}
+            <div className="flex items-center justify-between rounded-lg border border-[#294565] bg-[#1A325F] p-4">
+                <div className="flex items-center space-x-4">
+                    <span className="text-sm font-medium text-[#7BC2E6]">顯示：</span>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => handleFilterChange(false)}
+                            className={`rounded px-3 py-1 text-sm transition-colors ${
+                                !showDeleted
+                                    ? "bg-blue-500 text-white"
+                                    : "bg-[#294565] text-[#7BC2E6] hover:bg-[#3A5578]"
+                            }`}
+                        >
+                            有效公告
+                        </button>
+                        <button
+                            onClick={() => handleFilterChange(true)}
+                            className={`rounded px-3 py-1 text-sm transition-colors ${
+                                showDeleted
+                                    ? "bg-red-500 text-white"
+                                    : "bg-[#294565] text-[#7BC2E6] hover:bg-[#3A5578]"
+                            }`}
+                        >
+                            已刪除公告
+                        </button>
+                    </div>
+                </div>
+                <div className="text-sm text-[#557797]">
+                    共 {filteredAnnouncements.length} 個公告
+                </div>
+            </div>
+
             {/* 公告列表 */}
             <div className="rounded-lg border border-[#294565] bg-[#1A325F]">
                 <div className="p-6">
@@ -244,18 +302,21 @@ export const AnnouncementManagement = ({ token }) => {
                                 載入中...
                             </div>
                         </div>
-                    ) : announcements.length === 0 ? (
+                    ) : currentAnnouncements.length === 0 ? (
                         <div className="p-8 text-center">
                             <div className="mb-2 text-lg text-[#7BC2E6]">
-                                📝 暫無公告
+                                📝 {showDeleted ? "暫無已刪除公告" : "暫無有效公告"}
                             </div>
                             <div className="text-sm text-[#557797]">
-                                點擊上方「發布公告」按鈕來創建第一個公告
+                                {showDeleted 
+                                    ? "沒有找到已刪除的公告" 
+                                    : "點擊上方「發布公告」按鈕來創建第一個公告"
+                                }
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {announcements.map((announcement) => (
+                            {currentAnnouncements.map((announcement) => (
                                 <div
                                     key={announcement._id}
                                     className={`rounded-lg border p-4 ${
@@ -330,6 +391,47 @@ export const AnnouncementManagement = ({ token }) => {
                         </div>
                     )}
                 </div>
+
+                {/* 分頁控制 */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-[#294565] p-4">
+                        <div className="text-sm text-[#557797]">
+                            第 {startIndex + 1} - {Math.min(endIndex, filteredAnnouncements.length)} 項，
+                            共 {filteredAnnouncements.length} 項
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="rounded bg-[#294565] px-3 py-1 text-sm text-[#7BC2E6] hover:bg-[#3A5578] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                上一頁
+                            </button>
+                            <div className="flex items-center space-x-1">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`rounded px-3 py-1 text-sm transition-colors ${
+                                            currentPage === page
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-[#294565] text-[#7BC2E6] hover:bg-[#3A5578]"
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="rounded bg-[#294565] px-3 py-1 text-sm text-[#7BC2E6] hover:bg-[#3A5578] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                下一頁
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 發布公告模態框 */}
