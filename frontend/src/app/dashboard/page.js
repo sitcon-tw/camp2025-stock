@@ -579,6 +579,55 @@ export default function Dashboard() {
                     </div>
                 )}
 
+                {/* 管理員後台入口 */}
+                {userPermissions && 
+                 userPermissions.permissions && 
+                 (userPermissions.role === "admin" || 
+                  userPermissions.role === "point_manager" || 
+                  userPermissions.role === "announcer" ||
+                  userPermissions.permissions.includes("manage_users") ||
+                  userPermissions.permissions.includes("manage_market") ||
+                  userPermissions.permissions.includes("system_admin") ||
+                  userPermissions.permissions.includes("give_points") ||
+                  userPermissions.permissions.includes("create_announcement")) && (
+                    <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                            管理功能
+                        </h3>
+                        <div className="text-center">
+                            <p className="mb-4 text-sm text-[#557797]">
+                                您擁有管理權限，可以進入管理員後台
+                            </p>
+                            <button
+                                onClick={() => router.push("/admin")}
+                                className="inline-flex items-center rounded-lg bg-gradient-to-r from-[#469FD2] to-[#357AB8] px-6 py-3 font-medium text-white transition-all duration-200 hover:from-[#357AB8] hover:to-[#2B5A8B] hover:shadow-lg active:scale-95"
+                            >
+                                <svg
+                                    className="mr-2 h-5 w-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                                    />
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                </svg>
+                                進入管理員後台
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* TODO: Blocked due to API */}
                 {/*<div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                     <div className="relative">
