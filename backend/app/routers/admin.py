@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.services.admin_service import AdminService, get_admin_service
 from app.services.user_service import UserService, get_user_service
 from app.schemas.public import (
@@ -235,7 +235,7 @@ async def set_trading_limit(
     description="取得所有系統公告"
 )
 async def get_announcements(
-    limit: int = 20,
+    limit: int = Query(50, ge=1, le=200, description="查詢筆數限制（1-200筆）"),
     current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ):
