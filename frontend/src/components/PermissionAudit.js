@@ -66,8 +66,8 @@ export const PermissionAudit = ({ token }) => {
     const checkInconsistencies = (userPermissions, userRole, matrix) => {
         const issues = [];
         
-        // 檢查是否有權限不符合角色
-        const expectedPermissions = matrix[userRole] || [];
+        // 使用前端定義的角色權限作為預期權限，這是最準確的來源
+        const expectedPermissions = ROLE_PERMISSIONS[userRole] || [];
         
         // 缺少的權限
         const missingPermissions = expectedPermissions.filter(
