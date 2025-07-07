@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  backup-service:
+    build: .
+    container_name: mongodb-backup
+    volumes:
+      - ./backup:/app/backup
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ps", "aux", "|", "grep", "bun"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
