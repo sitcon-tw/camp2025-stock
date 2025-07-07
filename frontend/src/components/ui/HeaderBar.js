@@ -1,3 +1,5 @@
+"use client";
+
 import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
