@@ -383,7 +383,7 @@ export const SystemConfig = ({ token }) => {
                                         </span>
                                         <span className="font-semibold">
                                             {
-                                                transferFeeConfig.feeRate
+                                                transferFeeConfig.fee_rate || transferFeeConfig.feeRate || 'N/A'
                                             }
                                             %
                                         </span>
@@ -393,7 +393,7 @@ export const SystemConfig = ({ token }) => {
                                             最低費用
                                         </span>
                                         <span className="font-semibold">
-                                            {transferFeeConfig.minFee}{" "}
+                                            {transferFeeConfig.min_fee || transferFeeConfig.minFee || 'N/A'}{" "}
                                             點
                                         </span>
                                     </div>
@@ -525,7 +525,7 @@ export const SystemConfig = ({ token }) => {
                                             預設股數
                                         </span>
                                         <span className="font-semibold">
-                                            {ipoDefaults.defaultInitialShares?.toLocaleString()}
+                                            {(ipoDefaults.default_initial_shares || ipoDefaults.defaultInitialShares)?.toLocaleString() || 'N/A'}
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-start">
@@ -534,7 +534,7 @@ export const SystemConfig = ({ token }) => {
                                         </span>
                                         <span className="font-semibold">
                                             {
-                                                ipoDefaults.defaultInitialPrice
+                                                ipoDefaults.default_initial_price || ipoDefaults.defaultInitialPrice || 'N/A'
                                             }
                                         </span>
                                     </div>
@@ -635,11 +635,11 @@ export const SystemConfig = ({ token }) => {
                                     <div className="text-center">
                                         <div className="text-xs text-[#7BC2E6]">狀態</div>
                                         <div className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${
-                                            ipoStatus.sharesRemaining > 0 
+                                            (ipoStatus.sharesRemaining || 0) > 0 
                                                 ? "bg-green-600 text-green-100"
                                                 : "bg-red-600 text-red-100"
                                         }`}>
-                                            {ipoStatus.sharesRemaining > 0 ? "進行中" : "已結束"}
+                                            {(ipoStatus.sharesRemaining || 0) > 0 ? "進行中" : "已結束"}
                                         </div>
                                     </div>
                                 </div>

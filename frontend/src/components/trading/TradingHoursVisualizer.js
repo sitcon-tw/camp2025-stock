@@ -55,10 +55,16 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
         if (sessions.length === 0) return false;
 
         return sessions.some((session) => {
+            if (!session.start || !session.end) return false;
+            
             const startHour = parseInt(session.start.split(":")[0]);
             const startMinute = parseInt(session.start.split(":")[1]);
             const endHour = parseInt(session.end.split(":")[0]);
             const endMinute = parseInt(session.end.split(":")[1]);
+
+            if (isNaN(startHour) || isNaN(startMinute) || isNaN(endHour) || isNaN(endMinute)) {
+                return false;
+            }
 
             const startTime = startHour + startMinute / 60;
             const endTime = endHour + endMinute / 60;

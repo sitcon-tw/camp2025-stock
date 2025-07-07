@@ -5,4 +5,4 @@ export { default as PermissionAudit } from './PermissionAudit';
 export { PermissionGuard, PermissionButton } from './PermissionGuard';
 export { default as QuickRoleSetup } from './QuickRoleSetup';
 export { default as RoleManagement } from './RoleManagement';
-export { default as SystemConfig } from './SystemConfig';
+export { SystemConfig } from './SystemConfig';
