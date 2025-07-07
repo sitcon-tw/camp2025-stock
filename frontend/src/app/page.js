@@ -2,6 +2,7 @@
 
 import botAvatar from "@/assets/uwu.svg";
 import Modal from "@/components/Modal";
+import TradingHoursVisualizer from "@/components/TradingHoursVisualizer";
 import useModal from "@/hooks/useModal";
 import { getAnnouncements, getTradingHours } from "@/lib/api";
 import { apiService } from "@/services/apiService";
@@ -58,7 +59,6 @@ export default function Home() {
             return [{ start: "00:00", end: "23:59" }];
         }
 
-        const now = new Date();
         const closedTimes = [];
 
         // 將時間戳轉換為今天的時間
@@ -119,139 +119,6 @@ export default function Home() {
 
     const latestAnnouncement =
         announcements.length > 0 ? announcements[0] : null;
-
-    // 時間可視化組件
-    const TradingHoursVisualizer = ({ tradingHours }) => {
-        // 生成24小時的時間點
-        const hours = Array.from({ length: 24 }, (_, i) => i);
-
-        // 獲取交易時段數據，處理不同的數據結構
-        const getTradingSessions = () => {
-            // 如果沒有交易時間數據，返回空陣列
-            if (!tradingHours) return [];
-
-            // 檢查是否有 openTime 屬性
-            if (
-                tradingHours.openTime &&
-                Array.isArray(tradingHours.openTime)
-            ) {
-                return tradingHours.openTime;
-            }
-
-            // 檢查是否有 tradingHours 屬性（時間戳格式）
-            if (
-                tradingHours.tradingHours &&
-                Array.isArray(tradingHours.tradingHours)
-            ) {
-                return tradingHours.tradingHours.map((slot) => {
-                    const startDate = new Date(slot.start * 1000);
-                    const endDate = new Date(slot.end * 1000);
-                    return {
-                        start: startDate.toTimeString().slice(0, 5),
-                        end: endDate.toTimeString().slice(0, 5),
-                    };
-                });
-            }
-
-            return [];
-        };
-
-        // 檢查某個時間是否在交易時段內
-        const isMarketOpen = (hour) => {
-            const sessions = getTradingSessions();
-            if (sessions.length === 0) return false;
-
-            return sessions.some((session) => {
-                const startHour = parseInt(session.start.split(":")[0]);
-                const startMinute = parseInt(session.start.split(":")[1]);
-                const endHour = parseInt(session.end.split(":")[0]);
-                const endMinute = parseInt(session.end.split(":")[1]);
-
-                const startTime = startHour + startMinute / 60;
-                const endTime = endHour + endMinute / 60;
-
-                // 處理跨日情況
-                if (endTime < startTime) {
-                    return hour >= startTime || hour < endTime;
-                } else {
-                    return hour >= startTime && hour < endTime;
-                }
-            });
-        };
-
-        return (
-            <div className="mb-4 rounded-lg border border-[#294565] bg-[#0f203e] p-4">
-                {/* 時間軸 */}
-                <div className="relative">
-                    {/* 小時標記 */}
-                    <div className="mb-2 flex justify-between text-xs text-[#557797]">
-                        {[0, 6, 12, 18, 24].map((hour) => (
-                            <span key={hour} className="w-8 text-center">
-                                {hour.toString().padStart(2, "0")}:00
-                            </span>
-                        ))}
-                    </div>
-
-                    {/* 時間條 */}
-                    <div className="relative h-8 overflow-hidden rounded-lg bg-[#1A325F]">
-                        {/* 背景網格線 */}
-                        <div className="absolute inset-0 flex">
-                            {hours.map((hour) => (
-                                <div
-                                    key={hour}
-                                    className="flex-1 border-r border-[#294565] last:border-r-0"
-                                />
-                            ))}
-                        </div>
-
-                        {/* 交易時段標記 */}
-                        <div className="absolute inset-0 flex">
-                            {hours.map((hour) => (
-                                <div
-                                    key={hour}
-                                    className={`flex-1 transition-all duration-300 ${
-                                        isMarketOpen(hour)
-                                            ? "bg-green-500/80 shadow-lg"
-                                            : "bg-transparent"
-                                    }`}
-                                />
-                            ))}
-                        </div>
-
-                        {/* 現在時間指示器 */}
-                        <div
-                            className="absolute top-0 h-full w-0.5 bg-yellow-400 shadow-lg"
-                            style={{
-                                left: `${(new Date().getHours() / 24) * 100}%`,
-                            }}
-                        ></div>
-                    </div>
-
-                    {/* 圖例 */}
-                    <div className="mt-3 flex items-center justify-center space-x-4 text-xs">
-                        <div className="flex items-center space-x-2">
-                            <div className="h-3 w-3 rounded bg-green-500/80"></div>
-                            <span className="text-[#7BC2E6]">
-                                交易時段
-                            </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="h-3 w-3 rounded bg-[#1A325F]"></div>
-                            <span className="text-[#7BC2E6]">
-                                非交易時段
-                            </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="h-3 w-0.5 bg-yellow-400"></div>
-                            <span className="text-[#7BC2E6]">
-                                現在時間
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
