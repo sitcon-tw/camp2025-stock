@@ -57,6 +57,9 @@ export default function Dashboard() {
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("adminToken");
 
+        // 觸發自定義事件通知其他組件登入狀態已變更
+        window.dispatchEvent(new Event("authStateChanged"));
+
         // 強制重新載入頁面以清除所有狀態
         window.location.href = "/telegram-login";
     };
@@ -871,8 +874,7 @@ export default function Dashboard() {
                                                             i,
                                                             i.order_type,
                                                             i.quantity -
-                                                                (i.filled_quantity ||
-                                                                    0),
+                                                                (i.filled_quantity || 0),
                                                         )
                                                     }
                                                     disabled={

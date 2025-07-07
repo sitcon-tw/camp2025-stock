@@ -30,8 +30,15 @@ export default function NavBar() {
         // 監聽 storage 變化
         window.addEventListener("storage", checkLoginStatus);
 
+        // 監聽自定義的登入狀態變化事件 (同 tab)
+        const handleAuthChange = () => {
+            checkLoginStatus();
+        };
+        window.addEventListener("authStateChanged", handleAuthChange);
+
         return () => {
             window.removeEventListener("storage", checkLoginStatus);
+            window.removeEventListener("authStateChanged", handleAuthChange);
         };
     }, []);
 
