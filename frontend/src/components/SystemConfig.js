@@ -1,6 +1,9 @@
 import { PERMISSIONS } from "@/contexts/PermissionContext";
 import {
     getIpoDefaults,
+    getIpoStatus,
+    resetIpo,
+    updateIpo,
     getTradingHours,
     getTransferFeeConfig,
     setTradingLimit,
@@ -177,6 +180,7 @@ export const SystemConfig = ({ token }) => {
     const [transferFeeConfig, setTransferFeeConfig] = useState(null);
     const [tradingHours, setTradingHours] = useState(null);
     const [ipoDefaults, setIpoDefaults] = useState(null);
+    const [ipoStatus, setIpoStatus] = useState(null);
 
     // 表單狀態
     const [feeForm, setFeeForm] = useState({
@@ -192,6 +196,10 @@ export const SystemConfig = ({ token }) => {
     });
     const [marketTimesForm, setMarketTimesForm] = useState({
         openTime: [],
+    });
+    const [ipoUpdateForm, setIpoUpdateForm] = useState({
+        sharesRemaining: "",
+        initialPrice: "",
     });
 
     // 顯示通知
@@ -214,11 +222,12 @@ export const SystemConfig = ({ token }) => {
             setLoading(true);
 
             // 並行載入所有設定
-            const [feeConfig, hours, defaults] =
+            const [feeConfig, hours, defaults, ipoCurrentStatus] =
                 await Promise.allSettled([
                     getTransferFeeConfig(token),
                     getTradingHours(),
                     getIpoDefaults(token),
+                    getIpoStatus(token),
                 ]);
 
             if (feeConfig.status === "fulfilled") {
@@ -267,6 +276,14 @@ export const SystemConfig = ({ token }) => {
                         defaults.value.default_initial_shares || "",
                     initialPrice:
                         defaults.value.default_initial_price || "",
+                });
+            }
+
+            if (ipoCurrentStatus.status === "fulfilled") {
+                setIpoStatus(ipoCurrentStatus.value);
+                setIpoUpdateForm({
+                    sharesRemaining: ipoCurrentStatus.value.sharesRemaining || "",
+                    initialPrice: ipoCurrentStatus.value.initialPrice || "",
                 });
             }
         } catch (error) {
@@ -379,6 +396,50 @@ export const SystemConfig = ({ token }) => {
                     : session,
             ),
         }));
+    };
+
+    // 更新IPO狀態
+    const handleUpdateIpoStatus = async () => {
+        try {
+            const sharesRemaining =
+                ipoUpdateForm.sharesRemaining !== ""
+                    ? parseInt(ipoUpdateForm.sharesRemaining)
+                    : null;
+            const initialPrice =
+                ipoUpdateForm.initialPrice !== ""
+                    ? parseInt(ipoUpdateForm.initialPrice)
+                    : null;
+
+            const result = await updateIpo(
+                token,
+                sharesRemaining,
+                initialPrice,
+            );
+
+            showNotification(result.message, "success");
+            await loadConfigs(); // 重新載入設定
+        } catch (error) {
+            showNotification(
+                `更新IPO狀態失敗: ${error.message}`,
+                "error",
+            );
+        }
+    };
+
+    // 重置IPO
+    const handleResetIpo = async () => {
+        try {
+            if (confirm("確定要重置IPO嗎？這將使用預設值重新開始IPO。")) {
+                const result = await resetIpo(token);
+                showNotification(result.message, "success");
+                await loadConfigs(); // 重新載入設定
+            }
+        } catch (error) {
+            showNotification(
+                `重置IPO失敗: ${error.message}`,
+                "error",
+            );
+        }
     };
 
     // 儲存交易時間
@@ -690,6 +751,116 @@ export const SystemConfig = ({ token }) => {
                     </div>
                 </PermissionGuard>
 
+                {/* IPO 狀態管理 */}
+                <PermissionGuard
+                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                    token={token}
+                >
+                    <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+                        <h3 className="mb-4 text-xl font-bold text-purple-400">
+                            IPO 狀態管理
+                        </h3>
+
+                        {/* 當前IPO狀態顯示 */}
+                        {ipoStatus && (
+                            <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-4">
+                                <h4 className="mb-3 text-sm font-medium text-[#7BC2E6]">
+                                    當前 IPO 狀態
+                                </h4>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div className="text-center">
+                                        <div className="text-xs text-[#7BC2E6]">剩餘股數</div>
+                                        <div className="text-lg font-semibold text-white">
+                                            {ipoStatus.sharesRemaining?.toLocaleString() || 'N/A'}
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xs text-[#7BC2E6]">IPO 價格</div>
+                                        <div className="text-lg font-semibold text-white">
+                                            {ipoStatus.initialPrice || 'N/A'} 點
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xs text-[#7BC2E6]">狀態</div>
+                                        <div className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${
+                                            ipoStatus.sharesRemaining > 0 
+                                                ? "bg-green-600 text-green-100"
+                                                : "bg-red-600 text-red-100"
+                                        }`}>
+                                            {ipoStatus.sharesRemaining > 0 ? "進行中" : "已結束"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                    剩餘股數 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={ipoUpdateForm.sharesRemaining}
+                                    onChange={(e) =>
+                                        setIpoUpdateForm((prev) => ({
+                                            ...prev,
+                                            sharesRemaining: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full rounded border border-[#294565] bg-[#0f203e] p-3 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder="例: 500000"
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                    IPO 價格 (留空則不更新)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={ipoUpdateForm.initialPrice}
+                                    onChange={(e) =>
+                                        setIpoUpdateForm((prev) => ({
+                                            ...prev,
+                                            initialPrice: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full rounded border border-[#294565] bg-[#0f203e] p-3 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder="例: 25"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <PermissionButton
+                                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                                    token={token}
+                                    onClick={handleUpdateIpoStatus}
+                                    className="w-full rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
+                                >
+                                    更新 IPO 狀態
+                                </PermissionButton>
+                                <PermissionButton
+                                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                                    token={token}
+                                    onClick={handleResetIpo}
+                                    className="w-full rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
+                                >
+                                    重置 IPO
+                                </PermissionButton>
+                            </div>
+                            <div className="rounded-lg border border-purple-600 bg-purple-900/20 p-3">
+                                <p className="text-sm text-purple-200">
+                                    💡 提示：
+                                    <br />• 設定剩餘股數為 0 可停止 IPO 發行
+                                    <br />• 重置 IPO 會使用預設值重新開始
+                                    <br />• 空白欄位將不會更新對應值
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </PermissionGuard>
+
                 {/* 交易時間設定 */}
                 <PermissionGuard
                     requiredPermission={PERMISSIONS.MANAGE_MARKET}
@@ -860,6 +1031,16 @@ export const SystemConfig = ({ token }) => {
                             <li>• 設定重置IPO時的預設參數</li>
                             <li>• 簡化IPO管理流程</li>
                             <li>• 可隨時調整以適應活動需求</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="mb-2 font-semibold">
+                            IPO狀態管理
+                        </h4>
+                        <ul className="space-y-1 text-[#557797]">
+                            <li>• 即時調整當前IPO的剩餘股數和價格</li>
+                            <li>• 可以停止或重新開始IPO發行</li>
+                            <li>• 重置功能會使用預設值重新初始化</li>
                         </ul>
                     </div>
                     <div>
