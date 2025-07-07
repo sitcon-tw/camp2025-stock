@@ -3,8 +3,8 @@ import { usePermissionContext } from "@/contexts/PermissionContext";
 import { twMerge } from "tailwind-merge";
 
 /**
- * 權限守衛組件
- * 根據使用者權限決定是否渲染子組件
+ * 權限守衛設定
+ * 根據使用者權限決定是否渲染子設定
  */
 export const PermissionGuard = ({
     children,
@@ -86,8 +86,8 @@ export const PermissionGuard = ({
 };
 
 /**
- * 角色守衛組件
- * 根據使用者角色決定是否渲染子組件
+ * 角色守衛設定
+ * 根據使用者角色決定是否渲染子設定
  */
 export const RoleGuard = ({
     children,
@@ -113,7 +113,7 @@ export const RoleGuard = ({
 };
 
 /**
- * 管理員守衛組件
+ * 管理員守衛設定
  * 僅管理員可見
  */
 export const AdminGuard = ({
@@ -135,7 +135,7 @@ export const AdminGuard = ({
 };
 
 /**
- * 權限按鈕組件
+ * 權限按鈕設定
  * 根據權限控制按鈕是否可用
  */
 export const PermissionButton = ({

@@ -5,7 +5,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 const PermissionContext = createContext();
 
 /**
- * 權限提供者組件
+ * 權限提供者設定
  * 為整個應用提供權限狀態管理
  */
 export const PermissionProvider = ({ children, token }) => {
@@ -20,7 +20,7 @@ export const PermissionProvider = ({ children, token }) => {
 
 /**
  * 使用權限上下文的 Hook
- * 在組件中使用此 Hook 來獲取權限資訊
+ * 在設定中使用此 Hook 來獲取權限資訊
  */
 export const usePermissionContext = () => {
     const context = useContext(PermissionContext);

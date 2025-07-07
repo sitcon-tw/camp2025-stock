@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "../ui";
 
 /**
- * 角色管理組件
+ * 角色管理設定
  * 管理員可以查看和修改使用者角色
  */
 export const RoleManagement = ({ token }) => {

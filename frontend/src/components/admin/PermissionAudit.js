@@ -3,7 +3,7 @@ import { getAvailableRoles, getUserRole, getMyPermissions } from "@/lib/api";
 import { PERMISSIONS, ROLES, ROLE_PERMISSIONS } from "@/contexts/PermissionContext";
 
 /**
- * 權限審查工具組件
+ * 權限審查工具設定
  * 用於審查和管理系統權限
  */
 export const PermissionAudit = ({ token }) => {

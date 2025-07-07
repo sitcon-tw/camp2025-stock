@@ -1,5 +1,5 @@
 /**
- * 交易時間可視化組件
+ * 交易時間可視化設定
  * 顯示24小時交易時段的視覺化圖表
  */
 const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {

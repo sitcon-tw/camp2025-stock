@@ -110,7 +110,7 @@ export default function TelegramLogin() {
                     JSON.stringify(authDataToUse),
                 );
 
-                // 觸發自定義事件通知其他組件登入狀態已變更
+                // 觸發自定義事件通知其他設定登入狀態已變更
                 window.dispatchEvent(new Event("authStateChanged"));
 
                 router.push("/dashboard");

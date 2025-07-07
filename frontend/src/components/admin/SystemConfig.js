@@ -17,7 +17,7 @@ import { PermissionButton, PermissionGuard } from "./PermissionGuard";
 import { TradingHoursVisualizer } from "../trading";
 
 /**
- * 系統設定管理組件
+ * 系統設定管理設定
  * 統一管理所有可動態調整的系統參數
  */
 export const SystemConfig = ({ token }) => {

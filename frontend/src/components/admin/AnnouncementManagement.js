@@ -11,7 +11,7 @@ import { Modal } from "../ui";
 import { PermissionButton } from "./PermissionGuard";
 
 /**
- * 公告管理組件 - 包含發布公告和管理公告功能
+ * 公告管理設定 - 包含發布公告和管理公告功能
  */
 export const AnnouncementManagement = ({ token }) => {
     const [activeTab, setActiveTab] = useState("manage");
