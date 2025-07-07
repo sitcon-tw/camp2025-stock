@@ -569,12 +569,12 @@ const OverviewSection = ({
                 <AnnouncementManagement token={token} />
             </PermissionGuard>
 
-            {/* 市場管理區塊 */}
+            {/* IPO 狀態區塊 */}
             <PermissionGuard
                 requiredPermission={PERMISSIONS.MANAGE_MARKET}
                 token={token}
             >
-                <MarketManagementSection
+                <IpoStatusSection
                     token={token}
                     showNotification={showNotification}
                 />
@@ -591,250 +591,8 @@ const SystemManagementSection = ({ token, showNotification }) => {
     const [showSettlementModal, setShowSettlementModal] =
         useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-
-    const handleResetAllData = async () => {
-        try {
-            setIsProcessing(true);
-            await resetAllData(token);
-            showNotification("所有資料已成功重置", "success");
-            setShowResetModal(false);
-        } catch (error) {
-            showNotification(`重置失敗: ${error.message}`, "error");
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    const handleForceSettlement = async () => {
-        try {
-            setIsProcessing(true);
-            await forceSettlement(token);
-            showNotification("強制結算已完成", "success");
-            setShowSettlementModal(false);
-        } catch (error) {
-            showNotification(
-                `強制結算失敗: ${error.message}`,
-                "error",
-            );
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    return (
-        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-            <h2 className="mb-2 mb-4 text-center text-2xl font-bold text-red-400">
-                點底下兩個按鈕前請三思哦哦哦
-            </h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
-                    token={token}
-                    className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-                    onClick={() => setShowResetModal(true)}
-                >
-                    重置所有資料
-                </PermissionButton>
-
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
-                    token={token}
-                    className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
-                    onClick={() => setShowSettlementModal(true)}
-                >
-                    全部學員股票結算
-                </PermissionButton>
-            </div>
-
-            {/* 重置所有資料確認模態框 */}
-            <Modal
-                isOpen={showResetModal}
-                onClose={() => setShowResetModal(false)}
-                title="確認重置所有資料？"
-                size="md"
-            >
-                <div className="space-y-4">
-                    <div className="rounded-lg border border-red-500/30 bg-red-600/10 p-4">
-                        <div className="flex items-start space-x-3">
-                            <span className="text-2xl">🚨</span>
-                            <div>
-                                <h4 className="font-semibold text-red-400">
-                                    危險操作警告
-                                </h4>
-                                <p className="mt-1 text-sm text-red-300">
-                                    這個操作將會：
-                                </p>
-                                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-300">
-                                    <li>
-                                        清除所有使用者的持股和點數資料
-                                    </li>
-                                    <li>刪除所有交易記錄和訂單</li>
-                                    <li>重置市場狀態和IPO設定</li>
-                                    <li>清空所有公告和系統記錄</li>
-                                </ul>
-                                <p className="mt-3 font-medium text-red-400">
-                                    ⚠️ 此操作無法撤銷！
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p className="text-[#7BC2E6]">
-                        請確認您真的要重置所有系統資料嗎？
-                    </p>
-                </div>
-
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                        onClick={() => setShowResetModal(false)}
-                        disabled={isProcessing}
-                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
-                    >
-                        取消
-                    </button>
-                    <button
-                        onClick={handleResetAllData}
-                        disabled={isProcessing}
-                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
-                    >
-                        {isProcessing ? "重置中..." : "確認重置"}
-                    </button>
-                </div>
-            </Modal>
-
-            {/* 強制結算確認模態框 */}
-            <Modal
-                isOpen={showSettlementModal}
-                onClose={() => setShowSettlementModal(false)}
-                title="確認強制結算？"
-                size="md"
-            >
-                <div className="space-y-4">
-                    <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
-                        <div className="flex items-start space-x-3">
-                            <span className="text-2xl">💰</span>
-                            <div>
-                                <h4 className="font-semibold text-orange-400">
-                                    強制結算說明
-                                </h4>
-                                <p className="mt-1 text-sm text-orange-300">
-                                    這個操作將會：
-                                </p>
-                                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-orange-300">
-                                    <li>立即執行所有未結算的交易</li>
-                                    <li>強制撮合所有掛單</li>
-                                    <li>更新所有使用者的資產狀態</li>
-                                    <li>可能影響正在進行的交易</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p className="text-[#7BC2E6]">
-                        確定要執行強制結算嗎？這可能會影響正在進行的交易。
-                    </p>
-                </div>
-
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                        onClick={() => setShowSettlementModal(false)}
-                        disabled={isProcessing}
-                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
-                    >
-                        取消
-                    </button>
-                    <button
-                        onClick={handleForceSettlement}
-                        disabled={isProcessing}
-                        className="rounded bg-orange-600 px-4 py-2 text-white hover:bg-orange-700 disabled:opacity-50"
-                    >
-                        {isProcessing ? "結算中..." : "確認結算"}
-                    </button>
-                </div>
-            </Modal>
-        </div>
-    );
-};
-
-/**
- * 用戶管理區塊
- */
-const UserManagementSection = ({ token }) => (
-    <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-xl font-bold text-blue-600">
-            用戶管理
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <PermissionButton
-                requiredPermission={PERMISSIONS.VIEW_ALL_USERS}
-                token={token}
-                className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-                onClick={() => console.log("查看所有用戶")}
-            >
-                查看所有用戶
-            </PermissionButton>
-
-            <PermissionButton
-                requiredPermission={PERMISSIONS.MANAGE_USERS}
-                token={token}
-                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-                onClick={() => console.log("管理用戶角色")}
-            >
-                管理用戶角色
-            </PermissionButton>
-
-            <PermissionButton
-                requiredPermission={PERMISSIONS.VIEW_ALL_USERS}
-                token={token}
-                className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
-                onClick={() => console.log("查看用戶統計")}
-            >
-                查看用戶統計
-            </PermissionButton>
-        </div>
-    </div>
-);
-
-/**
- * 點數管理區塊
- */
-const PointManagementSection = ({
-    token,
-    onGivePoints,
-    showNotification,
-}) => (
-    <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-        <h2 className="mb-4 text-xl font-bold text-green-400">
-            點數管理
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <PermissionButton
-                requiredPermission={PERMISSIONS.GIVE_POINTS}
-                token={token}
-                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-                onClick={onGivePoints}
-            >
-                發放點數
-            </PermissionButton>
-
-            <PermissionButton
-                requiredPermission={PERMISSIONS.GIVE_POINTS}
-                token={token}
-                className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
-                onClick={() =>
-                    showNotification("點數記錄功能尚未實作", "info")
-                }
-            >
-                查看點數記錄
-            </PermissionButton>
-        </div>
-    </div>
-);
-
-/**
- * 市場管理區塊
- */
-const MarketManagementSection = ({ token, showNotification }) => {
+    
+    // 市場管理相關狀態
     const [marketStatus, setMarketStatus] = useState(null);
     const [ipoStatus, setIpoStatus] = useState(null);
     const [showIpoModal, setShowIpoModal] = useState(false);
@@ -871,6 +629,34 @@ const MarketManagementSection = ({ token, showNotification }) => {
         fetchIpoStatus();
     }, [token]);
 
+    const handleResetAllData = async () => {
+        try {
+            setIsProcessing(true);
+            await resetAllData(token);
+            showNotification("所有資料已成功重置", "success");
+            setShowResetModal(false);
+        } catch (error) {
+            showNotification(`重置失敗: ${error.message}`, "error");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleForceSettlement = async () => {
+        try {
+            setIsProcessing(true);
+            await forceSettlement(token);
+            showNotification("強制結算已完成", "success");
+            setShowSettlementModal(false);
+        } catch (error) {
+            showNotification(
+                `強制結算失敗: ${error.message}`,
+                "error",
+            );
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     // 更新IPO
     const handleIpoUpdate = async () => {
@@ -947,7 +733,7 @@ const MarketManagementSection = ({ token, showNotification }) => {
     return (
         <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
             <h2 className="mb-4 text-xl font-bold text-orange-400">
-                市場管理
+                系統設定
             </h2>
 
             {/* 市場狀態顯示 */}
@@ -969,125 +755,113 @@ const MarketManagementSection = ({ token, showNotification }) => {
                                 : "已收盤"}
                         </span>
                     </div>
-                    {marketStatus.last_updated && (
-                        <div className="text-sm text-gray-400">
-                            最後更新:{" "}
-                            {new Date(
-                                marketStatus.last_updated,
-                            ).toLocaleString("zh-TW")}
-                        </div>
-                    )}
                 </div>
             )}
 
-            {/* IPO狀態顯示 */}
-            {ipoStatus && (
-                <div className="mb-6 rounded-lg border border-[#294565] bg-[#0f203e] p-4">
-                    <h3 className="mb-2 text-lg font-medium text-[#7BC2E6]">
-                        IPO 狀態
-                    </h3>
-                    <div className="mb-4 grid grid-cols-3 gap-4">
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-white">
-                                {ipoStatus.initialShares?.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                                初始股數
-                            </div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-orange-400">
-                                {ipoStatus.sharesRemaining?.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                                剩餘股數
-                            </div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-lg font-bold text-green-400">
-                                {ipoStatus.initialPrice}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                                每股價格
-                            </div>
-                        </div>
-                    </div>
+            {/* 市場管理操作區 */}
+            <div className="mb-6">
+                <h3 className="mb-3 text-lg font-semibold text-blue-400">市場管理</h3>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                        token={token}
+                        className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                        onClick={async () => {
+                            try {
+                                await openMarket(token);
+                                showNotification("市場已開盤", "success");
+                                const status = await getAdminMarketStatus(token);
+                                setMarketStatus(status);
+                            } catch (error) {
+                                showNotification(
+                                    `開盤失敗: ${error.message}`,
+                                    "error",
+                                );
+                            }
+                        }}
+                        disabled={marketStatus?.is_open}
+                    >
+                        手動開盤
+                    </PermissionButton>
+
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                        token={token}
+                        className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                        onClick={async () => {
+                            try {
+                                await closeMarket(token);
+                                showNotification("市場已收盤", "success");
+                                const status = await getAdminMarketStatus(token);
+                                setMarketStatus(status);
+                            } catch (error) {
+                                showNotification(
+                                    `收盤失敗: ${error.message}`,
+                                    "error",
+                                );
+                            }
+                        }}
+                        disabled={marketStatus && !marketStatus.is_open}
+                    >
+                        手動收盤
+                    </PermissionButton>
+
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                        token={token}
+                        className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                        onClick={() => setShowIpoModal(true)}
+                    >
+                        更新 IPO 參數
+                    </PermissionButton>
+
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                        token={token}
+                        className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
+                        onClick={handleIpoReset}
+                    >
+                        重置 IPO
+                    </PermissionButton>
+
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                        token={token}
+                        className="rounded bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600"
+                        onClick={() => setShowTradingLimitModal(true)}
+                    >
+                        設定漲跌限制
+                    </PermissionButton>
                 </div>
-            )}
+            </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                    token={token}
-                    className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-                    onClick={async () => {
-                        try {
-                            await openMarket(token);
-                            showNotification("市場已開盤", "success");
-                            const status =
-                                await getAdminMarketStatus(token);
-                            setMarketStatus(status);
-                        } catch (error) {
-                            showNotification(
-                                `開盤失敗: ${error.message}`,
-                                "error",
-                            );
-                        }
-                    }}
-                    disabled={marketStatus?.is_open}
-                >
-                    手動開盤
-                </PermissionButton>
+            {/* 危險操作區 */}
+            <div className="border-t border-[#294565] pt-6">
+                <h3 className="mb-2 text-center text-lg font-bold text-red-400">
+                    ⚠️ 危險操作區域
+                </h3>
+                <p className="mb-4 text-center text-sm text-red-300">
+                    點底下兩個按鈕前請三思哦哦哦
+                </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                        token={token}
+                        className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                        onClick={() => setShowResetModal(true)}
+                    >
+                        重置所有資料
+                    </PermissionButton>
 
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                    token={token}
-                    className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-                    onClick={async () => {
-                        try {
-                            await closeMarket(token);
-                            showNotification("市場已收盤", "success");
-                            const status =
-                                await getAdminMarketStatus(token);
-                            setMarketStatus(status);
-                        } catch (error) {
-                            showNotification(
-                                `收盤失敗: ${error.message}`,
-                                "error",
-                            );
-                        }
-                    }}
-                    disabled={marketStatus && !marketStatus.is_open}
-                >
-                    手動收盤
-                </PermissionButton>
-
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                    token={token}
-                    className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-                    onClick={() => setShowIpoModal(true)}
-                >
-                    更新 IPO 參數
-                </PermissionButton>
-
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                    token={token}
-                    className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
-                    onClick={handleIpoReset}
-                >
-                    重置 IPO
-                </PermissionButton>
-
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                    token={token}
-                    className="rounded bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600"
-                    onClick={() => setShowTradingLimitModal(true)}
-                >
-                    設定漲跌限制
-                </PermissionButton>
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                        token={token}
+                        className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
+                        onClick={() => setShowSettlementModal(true)}
+                    >
+                        全部學員股票結算
+                    </PermissionButton>
+                </div>
             </div>
 
             {/* IPO 更新 Modal */}
@@ -1116,9 +890,7 @@ const MarketManagementSection = ({ token, showNotification }) => {
                         />
                         {ipoStatus && (
                             <p className="mt-1 text-xs text-gray-400">
-                                目前:{" "}
-                                {ipoStatus.sharesRemaining?.toLocaleString()}{" "}
-                                股
+                                目前: {ipoStatus.sharesRemaining?.toLocaleString()} 股
                             </p>
                         )}
                     </div>
@@ -1146,8 +918,7 @@ const MarketManagementSection = ({ token, showNotification }) => {
                     </div>
                     <div className="rounded-lg border border-blue-600 bg-blue-900/20 p-3">
                         <p className="text-sm text-blue-200">
-                            💡 提示：設定剩餘股數為 0
-                            可以強制市價單使用限價單撮合，實現價格發現機制
+                            💡 提示：設定剩餘股數為 0 可停止 IPO 發行
                         </p>
                     </div>
                     <div className="mt-4 flex gap-3">
@@ -1167,7 +938,7 @@ const MarketManagementSection = ({ token, showNotification }) => {
                 </div>
             </Modal>
 
-            {/* 設定漲跌限制 Modal */}
+            {/* 交易限制設定 Modal */}
             <Modal
                 isOpen={showTradingLimitModal}
                 onClose={() => setShowTradingLimitModal(false)}
@@ -1183,31 +954,23 @@ const MarketManagementSection = ({ token, showNotification }) => {
                             <input
                                 type="number"
                                 min="0"
-                                step="10"
+                                step="1"
                                 value={tradingLimitPercent}
                                 onChange={(e) => {
                                     const value = e.target.value;
-                                    if (
-                                        value === "" ||
-                                        (!isNaN(value) &&
-                                            parseFloat(value) >= 0)
-                                    ) {
+                                    if (value === "" || (!isNaN(value) && parseFloat(value) >= 0)) {
                                         setTradingLimitPercent(value);
                                     }
                                 }}
                                 placeholder="輸入百分比數字 (0-100)"
                                 className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 pr-8 text-white"
                             />
-                            <span className="absolute top-2 right-3 text-[#7BC2E6]">
-                                %
-                            </span>
+                            <span className="absolute top-2 right-3 text-[#7BC2E6]">%</span>
                         </div>
                     </div>
                     <div className="mt-4 flex gap-3">
                         <button
-                            onClick={() =>
-                                setShowTradingLimitModal(false)
-                            }
+                            onClick={() => setShowTradingLimitModal(false)}
                             className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
                         >
                             取消
@@ -1221,8 +984,186 @@ const MarketManagementSection = ({ token, showNotification }) => {
                     </div>
                 </div>
             </Modal>
+
+            {/* 重置所有資料確認模態框 */}
+            <Modal
+                isOpen={showResetModal}
+                onClose={() => setShowResetModal(false)}
+                title="確認重置所有資料？"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div className="rounded-lg border border-red-500/30 bg-red-600/10 p-4">
+                        <div className="flex items-start space-x-3">
+                            <span className="text-2xl">🚨</span>
+                            <div>
+                                <h4 className="font-semibold text-red-400">
+                                    危險操作警告
+                                </h4>
+                                <p className="mt-1 text-sm text-red-300">
+                                    這個操作將會：
+                                </p>
+                                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-300">
+                                    <li>清除所有使用者的持股和點數資料</li>
+                                    <li>刪除所有交易記錄和訂單</li>
+                                    <li>重置市場狀態和IPO設定</li>
+                                    <li>清空所有公告和系統記錄</li>
+                                </ul>
+                                <p className="mt-3 font-medium text-red-400">
+                                    ⚠️ 此操作無法撤銷！
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-[#7BC2E6]">
+                        請確認您真的要重置所有系統資料嗎？
+                    </p>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={() => setShowResetModal(false)}
+                        disabled={isProcessing}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleResetAllData}
+                        disabled={isProcessing}
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {isProcessing ? "處理中..." : "確認重置"}
+                    </button>
+                </div>
+            </Modal>
+
+            {/* 強制結算確認模態框 */}
+            <Modal
+                isOpen={showSettlementModal}
+                onClose={() => setShowSettlementModal(false)}
+                title="確認強制結算？"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
+                        <div className="flex items-start space-x-3">
+                            <span className="text-2xl">⚠️</span>
+                            <div>
+                                <h4 className="font-semibold text-orange-400">
+                                    強制結算警告
+                                </h4>
+                                <p className="mt-1 text-sm text-orange-300">
+                                    這個操作將會：
+                                </p>
+                                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-orange-300">
+                                    <li>將所有學員的股票按固定價格轉換為點數</li>
+                                    <li>清除所有學員的持股</li>
+                                    <li>取消所有進行中的掛單</li>
+                                </ul>
+                                <p className="mt-3 font-medium text-orange-400">
+                                    ⚠️ 此操作無法撤銷！
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-[#7BC2E6]">
+                        請確認您真的要執行強制結算嗎？
+                    </p>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={() => setShowSettlementModal(false)}
+                        disabled={isProcessing}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleForceSettlement}
+                        disabled={isProcessing}
+                        className="rounded bg-orange-600 px-4 py-2 text-white hover:bg-orange-700 disabled:opacity-50"
+                    >
+                        {isProcessing ? "處理中..." : "確認結算"}
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 };
+
+/**
+ * 用戶管理區塊 (暫時未使用)
+ */
+const UserManagementSection = ({ token }) => (
+    <div className="rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-xl font-bold text-blue-600">
+            用戶管理
+        </h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <PermissionButton
+                requiredPermission={PERMISSIONS.VIEW_ALL_USERS}
+                token={token}
+                className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                onClick={() => console.log("查看所有用戶")}
+            >
+                查看所有用戶
+            </PermissionButton>
+
+            <PermissionButton
+                requiredPermission={PERMISSIONS.MANAGE_USERS}
+                token={token}
+                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                onClick={() => console.log("管理用戶角色")}
+            >
+                管理用戶角色
+            </PermissionButton>
+
+            <PermissionButton
+                requiredPermission={PERMISSIONS.VIEW_ALL_USERS}
+                token={token}
+                className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
+                onClick={() => console.log("查看用戶統計")}
+            >
+                查看用戶統計
+            </PermissionButton>
+        </div>
+    </div>
+);
+
+/**
+ * 點數管理區塊
+ */
+const PointManagementSection = ({
+    token,
+    onGivePoints,
+    showNotification,
+}) => (
+    <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+        <h2 className="mb-4 text-xl font-bold text-green-400">
+            點數管理
+        </h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <PermissionButton
+                requiredPermission={PERMISSIONS.GIVE_POINTS}
+                token={token}
+                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                onClick={onGivePoints}
+            >
+                發放點數
+            </PermissionButton>
+
+            <PermissionButton
+                requiredPermission={PERMISSIONS.GIVE_POINTS}
+                token={token}
+                className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
+                onClick={() =>
+                    showNotification("點數記錄功能尚未實作", "info")
+                }
+            >
+                查看點數記錄
+            </PermissionButton>
+        </div>
+    </div>
+);
 
 export default AdminDashboard;
