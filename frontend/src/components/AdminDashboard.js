@@ -569,6 +569,17 @@ const OverviewSection = ({
                 <AnnouncementManagement token={token} />
             </PermissionGuard>
 
+            {/* IPO 狀態區塊 */}
+            <PermissionGuard
+                requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                token={token}
+            >
+                <IpoStatusSection
+                    token={token}
+                    showNotification={showNotification}
+                />
+            </PermissionGuard>
+
         </div>
     </div>
 );
@@ -1155,5 +1166,129 @@ const PointManagementSection = ({
         </div>
     </div>
 );
+
+/**
+ * IPO 狀態區塊
+ */
+const IpoStatusSection = ({ token, showNotification }) => {
+    const [ipoStatus, setIpoStatus] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // 獲取 IPO 狀態
+    useEffect(() => {
+        const fetchIpoStatus = async () => {
+            try {
+                setLoading(true);
+                const status = await getIpoStatus(token);
+                setIpoStatus(status);
+            } catch (error) {
+                console.error("獲取IPO狀態失敗:", error);
+                showNotification(`獲取IPO狀態失敗: ${error.message}`, "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchIpoStatus();
+        }
+    }, [token, showNotification]);
+
+    if (loading) {
+        return (
+            <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+                <h2 className="mb-4 text-xl font-bold text-purple-400">
+                    IPO 狀態
+                </h2>
+                <div className="flex items-center justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold text-purple-400">
+                IPO 狀態
+            </h2>
+            
+            {ipoStatus ? (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {/* 剩餘股數 */}
+                        <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-[#7BC2E6]">剩餘股數</span>
+                                <span className="text-lg font-semibold text-white">
+                                    {ipoStatus.sharesRemaining?.toLocaleString() || 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* IPO 價格 */}
+                        <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-[#7BC2E6]">IPO 價格</span>
+                                <span className="text-lg font-semibold text-white">
+                                    {ipoStatus.initialPrice || 'N/A'} 點/股
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* IPO 狀態 */}
+                        <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-[#7BC2E6]">IPO 狀態</span>
+                                <span className={`rounded-full px-3 py-1 text-sm font-medium ${
+                                    ipoStatus.sharesRemaining > 0 
+                                        ? "bg-green-600 text-green-100"
+                                        : "bg-red-600 text-red-100"
+                                }`}>
+                                    {ipoStatus.sharesRemaining > 0 ? "進行中" : "已結束"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 詳細資訊 */}
+                    <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
+                        <h3 className="mb-3 text-lg font-semibold text-[#7BC2E6]">詳細資訊</h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">初始總股數:</span>
+                                <span className="text-white">
+                                    {ipoStatus.initialShares?.toLocaleString() || 'N/A'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">已售出股數:</span>
+                                <span className="text-white">
+                                    {ipoStatus.initialShares && ipoStatus.sharesRemaining 
+                                        ? (ipoStatus.initialShares - ipoStatus.sharesRemaining).toLocaleString()
+                                        : 'N/A'
+                                    }
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">完成度:</span>
+                                <span className="text-white">
+                                    {ipoStatus.initialShares && ipoStatus.sharesRemaining 
+                                        ? `${((ipoStatus.initialShares - ipoStatus.sharesRemaining) / ipoStatus.initialShares * 100).toFixed(1)}%`
+                                        : 'N/A'
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="text-center py-8">
+                    <p className="text-gray-400">無法獲取 IPO 狀態資訊</p>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export default AdminDashboard;
