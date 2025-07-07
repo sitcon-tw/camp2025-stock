@@ -11,6 +11,7 @@ import {
     forceSettlement,
     getAdminMarketStatus,
     getIpoStatus,
+    getTeams,
     getUserAssets,
     givePoints,
     openMarket,
@@ -35,87 +36,6 @@ export const AdminDashboard = ({ token }) => {
         type: "info",
     });
 
-    const [showPointsModal, setShowPointsModal] = useState(false);
-    const [pointsForm, setPointsForm] = useState({
-        username: "",
-        amount: "",
-    });
-
-    // Auto-complete related state
-    const [students, setStudents] = useState([]);
-    const [suggestions, setSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [studentsLoading, setStudentsLoading] = useState(false);
-
-    // Fetch students data when component mounts
-    useEffect(() => {
-        if (token) {
-            fetchStudents();
-        }
-    }, [token]);
-
-    // Fetch students for auto-complete
-    const fetchStudents = async () => {
-        try {
-            setStudentsLoading(true);
-            const data = await getUserAssets(token);
-            if (Array.isArray(data)) {
-                setStudents(data);
-            } else {
-                console.error("學生資料格式錯誤:", data);
-                setStudents([]);
-            }
-        } catch (error) {
-            console.error("獲取學生列表錯誤:", error);
-            setStudents([]);
-        } finally {
-            setStudentsLoading(false);
-        }
-    };
-
-    // Handle username input change with auto-complete
-    const handleUsernameChange = (value) => {
-        setPointsForm({
-            ...pointsForm,
-            username: value,
-        });
-
-        if (value.trim() === "" || studentsLoading) {
-            setSuggestions([]);
-            setShowSuggestions(false);
-            return;
-        }
-
-        // Filter students based on input
-        const filteredSuggestions = students
-            .filter(
-                (student) =>
-                    student &&
-                    typeof student.username === "string" &&
-                    student.username
-                        .toLowerCase()
-                        .includes(value.toLowerCase()),
-            )
-            .map((student) => ({
-                value: student.username,
-                label: `${student.username}${student.team ? ` (${student.team})` : ""}`,
-            }))
-            .slice(0, 5); // Limit to 5 suggestions
-
-        setSuggestions(filteredSuggestions);
-        setShowSuggestions(filteredSuggestions.length > 0);
-    };
-
-    // Select a suggestion
-    const selectSuggestion = (suggestion) => {
-        setPointsForm({
-            ...pointsForm,
-            username: suggestion.value,
-        });
-        setShowSuggestions(false);
-        setSuggestions([]);
-    };
-
     // 顯示通知
     const showNotification = (message, type = "info") => {
         setNotification({ show: true, message, type });
@@ -128,29 +48,6 @@ export const AdminDashboard = ({ token }) => {
                 }),
             3000,
         );
-    };
-
-    // 發放點數
-    const handleGivePoints = async () => {
-        try {
-            await givePoints(
-                token,
-                pointsForm.username,
-                "user",
-                parseInt(pointsForm.amount),
-            );
-            showNotification(
-                `成功發放 ${pointsForm.amount} 點給 ${pointsForm.username}`,
-                "success",
-            );
-            setShowPointsModal(false);
-            setPointsForm({ username: "", amount: "" });
-        } catch (error) {
-            showNotification(
-                `發放點數失敗: ${error.message}`,
-                "error",
-            );
-        }
     };
 
     if (loading) {
@@ -201,7 +98,7 @@ export const AdminDashboard = ({ token }) => {
             {/* 通知提示 */}
             {notification.show && (
                 <div
-                    className={`rounded-lg border p-4 ${
+                    className={`fixed top-4 right-4 z-50 max-w-md rounded-lg border p-4 shadow-lg transition-all duration-300 ${
                         notification.type === "success"
                             ? "border-green-500/30 bg-green-600/20 text-green-400"
                             : notification.type === "error"
@@ -209,7 +106,24 @@ export const AdminDashboard = ({ token }) => {
                               : "border-blue-500/30 bg-blue-600/20 text-blue-400"
                     }`}
                 >
-                    {notification.message}
+                    <div className="flex items-center space-x-2">
+                        {notification.type === "success" && (
+                            <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        )}
+                        {notification.type === "error" && (
+                            <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        )}
+                        {notification.type === "info" && (
+                            <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        )}
+                        <span className="break-words">{notification.message}</span>
+                    </div>
                 </div>
             )}
 
@@ -266,7 +180,6 @@ export const AdminDashboard = ({ token }) => {
                     {activeSection === "overview" && (
                         <OverviewSection
                             token={token}
-                            setShowPointsModal={setShowPointsModal}
                             showNotification={showNotification}
                         />
                     )}
@@ -309,146 +222,6 @@ export const AdminDashboard = ({ token }) => {
                 </div>
             </div>
 
-            {/* 發放點數模態框 */}
-            <Modal
-                isOpen={showPointsModal}
-                onClose={() => {
-                    setShowPointsModal(false);
-                    setPointsForm({ username: "", amount: "" });
-                    setShowSuggestions(false);
-                    setSuggestions([]);
-                }}
-                title="發放點數"
-                size="md"
-            >
-                <div className="space-y-4">
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
-                            使用者名稱
-                        </label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder={
-                                    studentsLoading
-                                        ? "正在載入使用者資料..."
-                                        : "搜尋學生姓名..."
-                                }
-                                value={pointsForm.username}
-                                onChange={(e) =>
-                                    handleUsernameChange(
-                                        e.target.value,
-                                    )
-                                }
-                                onFocus={() => {
-                                    // 重新觸發搜尋以顯示建議
-                                    if (
-                                        pointsForm.username.trim() !==
-                                        ""
-                                    ) {
-                                        handleUsernameChange(
-                                            pointsForm.username,
-                                        );
-                                    }
-                                }}
-                                onBlur={() => {
-                                    // 延遲隱藏建議，讓點選事件能夠觸發
-                                    setTimeout(
-                                        () =>
-                                            setShowSuggestions(false),
-                                        200,
-                                    );
-                                }}
-                                disabled={studentsLoading}
-                                className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                            />
-                            {/* 自動完成建議 */}
-                            {showSuggestions &&
-                                suggestions.length > 0 && (
-                                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-[#294565] bg-[#0f203e] shadow-lg">
-                                        {suggestions.map(
-                                            (suggestion, index) => (
-                                                <div
-                                                    key={index}
-                                                    onMouseDown={(
-                                                        e,
-                                                    ) => {
-                                                        e.preventDefault(); // 防止blur事件影響點選
-                                                        selectSuggestion(
-                                                            suggestion,
-                                                        );
-                                                    }}
-                                                    className="cursor-pointer border-b border-[#294565] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <span>
-                                                            {
-                                                                suggestion.label
-                                                            }
-                                                        </span>
-                                                        <span className="text-xs text-gray-400">
-                                                            個人
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ),
-                                        )}
-                                    </div>
-                                )}
-                            {/* 載入提示 */}
-                            {studentsLoading && (
-                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#7BC2E6] border-t-transparent"></div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div>
-                        <label className="mb-1 block text-sm font-medium text-[#7BC2E6]">
-                            點數數量
-                        </label>
-                        <input
-                            type="number"
-                            placeholder="點數數量"
-                            value={pointsForm.amount}
-                            onChange={(e) =>
-                                setPointsForm({
-                                    ...pointsForm,
-                                    amount: e.target.value,
-                                })
-                            }
-                            className="w-full rounded border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
-                    </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => {
-                                setShowPointsModal(false);
-                                setPointsForm({
-                                    username: "",
-                                    amount: "",
-                                });
-                                setShowSuggestions(false);
-                                setSuggestions([]);
-                            }}
-                            className="flex-1 rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F]"
-                        >
-                            取消
-                        </button>
-                        <button
-                            onClick={handleGivePoints}
-                            disabled={
-                                !pointsForm.username ||
-                                !pointsForm.amount ||
-                                studentsLoading
-                            }
-                            className="flex-1 rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
-                        >
-                            發放
-                        </button>
-                    </div>
-                </div>
-            </Modal>
 
             {/* 發布公告模態框 */}
         </div>
@@ -460,7 +233,6 @@ export const AdminDashboard = ({ token }) => {
  */
 const OverviewSection = ({
     token,
-    setShowPointsModal,
     showNotification,
 }) => (
     <div className="space-y-6">
@@ -473,79 +245,6 @@ const OverviewSection = ({
             </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* 角色管理卡片 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.MANAGE_USERS}
-                token={token}
-            >
-                <div className="rounded-lg border border-blue-500/30 bg-blue-600/20 p-6">
-                    <div className="mb-4 flex items-center">
-                        <span className="mr-3 text-2xl">👥</span>
-                        <h3 className="text-lg font-semibold text-blue-400">
-                            角色管理
-                        </h3>
-                    </div>
-                    <p className="mb-4 text-sm text-blue-300">
-                        管理使用者角色和權限，將使用者從學員提升為管理員角色
-                    </p>
-                    <div className="text-xs text-blue-300">
-                        • 查看所有使用者
-                        <br />
-                        • 變更使用者角色
-                        <br />• 權限狀態檢視
-                    </div>
-                </div>
-            </PermissionGuard>
-
-            {/* 系統管理卡片 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
-                token={token}
-            >
-                <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-6">
-                    <div className="mb-4 flex items-center">
-                        <span className="mr-3 text-2xl">⚙️</span>
-                        <h3 className="text-lg font-semibold text-red-400">
-                            系統管理
-                        </h3>
-                    </div>
-                    <p className="mb-4 text-sm text-red-300">
-                        危險操作區域，包含系統重置和強制結算功能
-                    </p>
-                    <div className="text-xs text-red-300">
-                        • 重置所有資料
-                        <br />
-                        • 強制結算
-                        <br />• 系統設定
-                    </div>
-                </div>
-            </PermissionGuard>
-
-            {/* 點數管理卡片 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.GIVE_POINTS}
-                token={token}
-            >
-                <div className="rounded-lg border border-green-500/30 bg-green-600/20 p-6">
-                    <div className="mb-4 flex items-center">
-                        <span className="mr-3 text-2xl">💰</span>
-                        <h3 className="text-lg font-semibold text-green-400">
-                            點數管理
-                        </h3>
-                    </div>
-                    <p className="mb-4 text-sm text-green-300">
-                        發放點數給使用者，查看點數交易記錄
-                    </p>
-                    <div className="text-xs text-green-300">
-                        • 發放點數
-                        <br />
-                        • 查看記錄
-                        <br />• 點數統計
-                    </div>
-                </div>
-            </PermissionGuard>
-        </div>
 
         {/* 其他管理功能 */}
         <div className="space-y-6">
@@ -556,7 +255,6 @@ const OverviewSection = ({
             >
                 <PointManagementSection
                     token={token}
-                    onGivePoints={() => setShowPointsModal(true)}
                     showNotification={showNotification}
                 />
             </PermissionGuard>
@@ -1136,36 +834,445 @@ const UserManagementSection = ({ token }) => (
  */
 const PointManagementSection = ({
     token,
-    onGivePoints,
     showNotification,
-}) => (
-    <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-        <h2 className="mb-4 text-xl font-bold text-green-400">
-            點數管理
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <PermissionButton
-                requiredPermission={PERMISSIONS.GIVE_POINTS}
-                token={token}
-                className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-                onClick={onGivePoints}
-            >
-                發放點數
-            </PermissionButton>
+}) => {
+    const [pointsForm, setPointsForm] = useState({
+        type: "user", // 'user', 'group', 'all_users', 'all_groups', 'multi_users', 'multi_groups'
+        username: "",
+        amount: "",
+        multiTargets: [], // 多選目標列表
+    });
+    const [pointsLoading, setPointsLoading] = useState(false);
+    const [students, setStudents] = useState([]);
+    const [teams, setTeams] = useState([]);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [studentsLoading, setStudentsLoading] = useState(false);
 
-            <PermissionButton
-                requiredPermission={PERMISSIONS.GIVE_POINTS}
-                token={token}
-                className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
-                onClick={() =>
-                    showNotification("點數記錄功能尚未實作", "info")
+    // 獲取學生和隊伍數據
+    useEffect(() => {
+        if (token) {
+            fetchStudentsAndTeams();
+        }
+    }, [token]);
+
+    const fetchStudentsAndTeams = async () => {
+        try {
+            setStudentsLoading(true);
+            
+            // 獲取學生資料
+            const studentsData = await getUserAssets(token);
+            if (Array.isArray(studentsData)) {
+                setStudents(studentsData);
+            } else {
+                setStudents([]);
+            }
+            
+            // 嘗試獲取隊伍資料
+            try {
+                const teamsData = await getTeams(token);
+                if (Array.isArray(teamsData)) {
+                    setTeams(teamsData);
+                } else {
+                    setTeams([]);
                 }
-            >
-                查看點數記錄
-            </PermissionButton>
+            } catch (teamsError) {
+                console.warn("獲取隊伍資料失敗:", teamsError);
+                setTeams([]);
+            }
+        } catch (error) {
+            console.error("獲取學生資料失敗:", error);
+            setStudents([]);
+            setTeams([]);
+        } finally {
+            setStudentsLoading(false);
+        }
+    };
+
+    // 處理使用者名稱輸入變化
+    const handleUsernameChange = (value) => {
+        setPointsForm({
+            ...pointsForm,
+            username: value,
+        });
+
+        if (value.trim() === "" || studentsLoading) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        // 根據模式篩選建議
+        const targetList = pointsForm.type === "user" || pointsForm.type === "multi_users" ? students : teams;
+        const filteredSuggestions = targetList
+            .filter((item) => {
+                const searchTerm = pointsForm.type === "user" || pointsForm.type === "multi_users" 
+                    ? item.username 
+                    : item.name;
+                return searchTerm && searchTerm.toLowerCase().includes(value.toLowerCase());
+            })
+            .map((item) => ({
+                value: pointsForm.type === "user" || pointsForm.type === "multi_users" 
+                    ? item.username 
+                    : item.name,
+                label: pointsForm.type === "user" || pointsForm.type === "multi_users" 
+                    ? `${item.username}${item.team ? ` (${item.team})` : ""}`
+                    : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ""}`,
+                type: pointsForm.type === "user" || pointsForm.type === "multi_users" ? "user" : "group",
+            }));
+
+        setSuggestions(filteredSuggestions);
+        setShowSuggestions(filteredSuggestions.length > 0);
+    };
+
+    // 選擇建議項目
+    const selectSuggestion = (suggestion) => {
+        setPointsForm({
+            ...pointsForm,
+            username: suggestion.value,
+        });
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
+
+    // 添加多選目標
+    const addMultiTarget = (suggestion) => {
+        if (!pointsForm.multiTargets.some(target => target.value === suggestion.value)) {
+            setPointsForm({
+                ...pointsForm,
+                multiTargets: [...pointsForm.multiTargets, suggestion],
+                username: "",
+            });
+        }
+        setShowSuggestions(false);
+        setSuggestions([]);
+    };
+
+    // 移除多選目標
+    const removeMultiTarget = (value) => {
+        setPointsForm({
+            ...pointsForm,
+            multiTargets: pointsForm.multiTargets.filter(target => target.value !== value),
+        });
+    };
+
+    // 處理點數發放
+    const handleGivePoints = async () => {
+        setPointsLoading(true);
+        try {
+            const amount = parseInt(pointsForm.amount);
+
+            if (pointsForm.type === "all_users") {
+                // 發放給全部使用者
+                const promises = students.map((student) =>
+                    givePoints(token, student.username, "user", amount)
+                );
+                await Promise.all(promises);
+                showNotification(
+                    `成功發放 ${amount} 點給 ${students.length} 位使用者！`,
+                    "success"
+                );
+            } else if (pointsForm.type === "all_groups") {
+                // 發放給全部團隊
+                const promises = teams.map((team) =>
+                    givePoints(token, team.name, "group", amount)
+                );
+                await Promise.all(promises);
+                showNotification(
+                    `成功發放 ${amount} 點給 ${teams.length} 個團隊！`,
+                    "success"
+                );
+            } else if (
+                pointsForm.type === "multi_users" ||
+                pointsForm.type === "multi_groups"
+            ) {
+                // 多選模式
+                const targetType = pointsForm.type === "multi_users" ? "user" : "group";
+                const promises = pointsForm.multiTargets.map((target) =>
+                    givePoints(token, target.value, targetType, amount)
+                );
+                await Promise.all(promises);
+                showNotification(
+                    `成功發放 ${amount} 點給 ${pointsForm.multiTargets.length} 個目標！`,
+                    "success"
+                );
+            } else {
+                // 單一目標模式
+                await givePoints(token, pointsForm.username, pointsForm.type, amount);
+                showNotification("點數發放成功！", "success");
+            }
+
+            // 重置表單
+            setPointsForm({
+                type: pointsForm.type,
+                username: "",
+                amount: "",
+                multiTargets: [],
+            });
+            setSuggestions([]);
+            setShowSuggestions(false);
+        } catch (error) {
+            showNotification(`發放點數失敗: ${error.message}`, "error");
+        }
+        setPointsLoading(false);
+    };
+
+    return (
+        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold text-green-400">
+                點數管理
+            </h2>
+            <div className="space-y-4">
+                {/* 發放模式選擇 */}
+                <div className="space-y-4">
+                    <label className="block text-sm font-medium text-[#7BC2E6]">
+                        發放模式
+                    </label>
+
+                    {/* 個人/團隊切換 */}
+                    <div className="flex items-center space-x-4">
+                        <span className="text-[#7BC2E6]">個人</span>
+                        <label className="relative inline-flex cursor-pointer items-center">
+                            <input
+                                type="checkbox"
+                                checked={pointsForm.type === "group" || pointsForm.type === "multi_groups"}
+                                onChange={(e) => {
+                                    const isMulti = pointsForm.type.startsWith("multi_");
+                                    let newType;
+
+                                    if (isMulti) {
+                                        newType = e.target.checked ? "multi_groups" : "multi_users";
+                                    } else {
+                                        newType = e.target.checked ? "group" : "user";
+                                    }
+
+                                    setPointsForm({
+                                        ...pointsForm,
+                                        type: newType,
+                                        username: "",
+                                        multiTargets: [],
+                                    });
+                                    setShowSuggestions(false);
+                                    setSuggestions([]);
+                                }}
+                                className="peer sr-only"
+                            />
+                            <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                        </label>
+                        <span className="text-[#7BC2E6]">團隊</span>
+                    </div>
+
+                    {/* 多選開關 */}
+                    <div className="flex items-center space-x-4">
+                        <span className="text-[#7BC2E6]">單選</span>
+                        <label className="relative inline-flex cursor-pointer items-center">
+                            <input
+                                type="checkbox"
+                                checked={pointsForm.type.startsWith("multi_")}
+                                onChange={(e) => {
+                                    const isGroup = pointsForm.type === "group" || pointsForm.type === "multi_groups";
+                                    const newType = e.target.checked
+                                        ? isGroup ? "multi_groups" : "multi_users"
+                                        : isGroup ? "group" : "user";
+
+                                    setPointsForm({
+                                        ...pointsForm,
+                                        type: newType,
+                                        username: "",
+                                        multiTargets: [],
+                                    });
+                                    setShowSuggestions(false);
+                                    setSuggestions([]);
+                                }}
+                                className="peer sr-only"
+                            />
+                            <div className="peer h-6 w-11 rounded-full border border-gray-600 bg-[#0f203e] peer-checked:bg-[#7BC2E6] peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                        </label>
+                        <span className="text-[#7BC2E6]">多選</span>
+                    </div>
+
+                    {/* 全選按鈕 - 只在多選模式下顯示 */}
+                    {pointsForm.type.startsWith("multi_") && (
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const targetList = pointsForm.type === "multi_users" ? students : teams;
+                                    const allTargets = targetList.map((item) => ({
+                                        value: pointsForm.type === "multi_users" ? item.username : item.name,
+                                        label: pointsForm.type === "multi_users" 
+                                            ? `${item.username}${item.team ? ` (${item.team})` : ""}`
+                                            : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ""}`,
+                                        type: pointsForm.type === "multi_users" ? "user" : "group",
+                                    }));
+
+                                    setPointsForm({
+                                        ...pointsForm,
+                                        multiTargets: allTargets,
+                                        username: "",
+                                    });
+                                    setShowSuggestions(false);
+                                    setSuggestions([]);
+                                }}
+                                className="rounded-lg bg-[#7BC2E6] px-4 py-2 text-sm text-black transition-colors hover:bg-[#6bb0d4]"
+                            >
+                                全選 {pointsForm.type === "multi_users" 
+                                    ? `所有個人 (${students.length})` 
+                                    : `所有團隊 (${teams.length})`}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPointsForm({
+                                        ...pointsForm,
+                                        multiTargets: [],
+                                        username: "",
+                                    });
+                                    setShowSuggestions(false);
+                                    setSuggestions([]);
+                                }}
+                                disabled={pointsForm.multiTargets.length === 0}
+                                className="rounded-lg bg-red-700/80 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700/70 disabled:cursor-not-allowed disabled:bg-gray-600"
+                            >
+                                全部移除 ({pointsForm.multiTargets.length})
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* 條件顯示搜尋框 */}
+                {(pointsForm.type.startsWith("multi_") || ["user", "group"].includes(pointsForm.type)) && (
+                    <div className="relative">
+                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                            {pointsForm.type.startsWith("multi_") ? "新增目標（搜尋選擇）" : "給誰（搜尋選擇）"}
+                        </label>
+                        <input
+                            type="text"
+                            value={pointsForm.username}
+                            onChange={(e) => handleUsernameChange(e.target.value)}
+                            onFocus={() => {
+                                if (pointsForm.username.trim() !== "") {
+                                    handleUsernameChange(pointsForm.username);
+                                }
+                            }}
+                            onBlur={() => {
+                                setTimeout(() => setShowSuggestions(false), 200);
+                            }}
+                            disabled={studentsLoading}
+                            className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#0f203e] disabled:opacity-50"
+                            placeholder={
+                                studentsLoading ? "正在載入使用者資料..." 
+                                : pointsForm.type === "user" || pointsForm.type === "multi_users" 
+                                  ? "搜尋學生姓名..." 
+                                  : "搜尋團隊名稱..."
+                            }
+                        />
+
+                        {/* 搜尋建議下拉 */}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[#469FD2] bg-[#0f203e] shadow-lg">
+                                {suggestions.map((suggestion, index) => (
+                                    <div
+                                        key={index}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            if (pointsForm.type.startsWith("multi_")) {
+                                                addMultiTarget(suggestion);
+                                            } else {
+                                                selectSuggestion(suggestion);
+                                            }
+                                        }}
+                                        className="cursor-pointer border-b border-[#469FD2] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>{suggestion.label}</span>
+                                            <span className="text-xs text-gray-400">
+                                                {suggestion.type === "user" ? "個人" : "團隊"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* 多選模式的已選目標列表 */}
+                {pointsForm.type.startsWith("multi_") && pointsForm.multiTargets.length > 0 && (
+                    <div>
+                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                            已選擇的目標 ({pointsForm.multiTargets.length})
+                        </label>
+                        <div className="max-h-32 space-y-2 overflow-y-auto">
+                            {pointsForm.multiTargets.map((target, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center justify-between rounded-lg bg-[#0f203e] px-3 py-2"
+                                >
+                                    <span className="text-sm text-white">{target.label}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeMultiTarget(target.value)}
+                                        className="text-sm text-red-400 hover:text-red-300"
+                                    >
+                                        移除
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 全部模式的說明 */}
+                {["all_users", "all_groups"].includes(pointsForm.type) && (
+                    <div className="rounded-lg border border-[#469FD2] bg-[#0f203e] p-3">
+                        <p className="text-sm text-[#7BC2E6]">
+                            {pointsForm.type === "all_users" 
+                                ? `將發放給所有 ${students.length} 位使用者`
+                                : `將發放給所有 ${teams.length} 個團隊`}
+                        </p>
+                    </div>
+                )}
+
+                {/* 點數數量輸入 */}
+                <div>
+                    <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                        給多少
+                    </label>
+                    <input
+                        type="number"
+                        value={pointsForm.amount}
+                        onChange={(e) => setPointsForm({
+                            ...pointsForm,
+                            amount: e.target.value,
+                        })}
+                        className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="輸入點數數量"
+                    />
+                </div>
+
+                {/* 發放按鈕 */}
+                <div className="flex w-full items-center justify-center">
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.GIVE_POINTS}
+                        token={token}
+                        onClick={handleGivePoints}
+                        disabled={
+                            pointsLoading ||
+                            !pointsForm.amount ||
+                            (["user", "group"].includes(pointsForm.type) && !pointsForm.username) ||
+                            (pointsForm.type.startsWith("multi_") && pointsForm.multiTargets.length === 0)
+                        }
+                        className="w-full rounded-xl bg-green-600 px-6 py-3 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+                    >
+                        {pointsLoading ? "發放中..." : "發放點數"}
+                    </PermissionButton>
+                </div>
+
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /**
  * IPO 狀態區塊
