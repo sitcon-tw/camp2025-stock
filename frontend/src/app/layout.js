@@ -1,7 +1,7 @@
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
-import NavBar from "@/components/NavBar";
+import { NavBar } from "@/components/ui";
 import { DataCacheProvider } from "@/contexts/DataCacheContext";
 import { twMerge } from "tailwind-merge";
 

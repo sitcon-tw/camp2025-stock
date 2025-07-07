@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { twMerge } from "tailwind-merge";
 import KLineChart from "./KLineChart";
-import Modal from "./Modal";
+import { Modal } from "../ui";
 
 ChartJS.register(
     CategoryScale,
