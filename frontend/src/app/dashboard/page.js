@@ -1,16 +1,15 @@
 "use client";
 
+import Modal from "@/components/Modal";
 import {
     cancelWebStockOrder,
+    getMyPermissions,
     getWebPointHistory,
     getWebPortfolio,
     getWebStockOrders,
-    getMyPermissions,
 } from "@/lib/api";
-import Modal from "@/components/Modal";
 import dayjs from "dayjs";
 import { LogOut } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
@@ -30,9 +29,23 @@ export default function Dashboard() {
     const [cancelSuccess, setCancelSuccess] = useState("");
     const [cancelError, setCancelError] = useState("");
     const [showCancelModal, setShowCancelModal] = useState(false);
-    const [pendingCancelOrder, setPendingCancelOrder] = useState(null);
+    const [pendingCancelOrder, setPendingCancelOrder] =
+        useState(null);
     const [userPermissions, setUserPermissions] = useState(null);
+    const [useAvatarFallback, setUseAvatarFallback] = useState(false);
     const router = useRouter();
+
+    // 檢查頭像圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
+    const handleAvatarLoad = (event) => {
+        const img = event.target;
+
+        // 如果圖片太小，使用文字頭像
+        if (img.naturalWidth <= 10 || img.naturalHeight <= 10) {
+            setUseAvatarFallback(true);
+        } else {
+            setUseAvatarFallback(false);
+        }
+    };
 
     // 登出功能
     const handleLogout = () => {
@@ -43,7 +56,7 @@ export default function Dashboard() {
         localStorage.removeItem("telegramData");
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("adminToken");
-        
+
         // 強制重新載入頁面以清除所有狀態
         window.location.href = "/telegram-login";
     };
@@ -95,7 +108,7 @@ export default function Dashboard() {
             orderData,
             orderType,
             quantity,
-            orderId
+            orderId,
         });
         setShowCancelModal(true);
     };
@@ -104,7 +117,8 @@ export default function Dashboard() {
     const confirmCancelOrder = async () => {
         if (!pendingCancelOrder) return;
 
-        const { orderData, orderType, quantity, orderId } = pendingCancelOrder;
+        const { orderData, orderType, quantity, orderId } =
+            pendingCancelOrder;
 
         const token = localStorage.getItem("userToken");
         if (!token) {
@@ -241,12 +255,13 @@ export default function Dashboard() {
                     return;
                 }
                 setAuthData(parsedTelegramData);
+                setUseAvatarFallback(false);
 
                 console.log("開始載入使用者資料...");
 
                 // 載入使用者資料
-                const [portfolio, points, stocks, permissions] = await Promise.all(
-                    [
+                const [portfolio, points, stocks, permissions] =
+                    await Promise.all([
                         getWebPortfolio(token),
                         getWebPointHistory(token),
                         getWebStockOrders(token),
@@ -254,8 +269,7 @@ export default function Dashboard() {
                             console.warn("無法載入權限資訊:", error);
                             return null;
                         }),
-                    ],
-                );
+                    ]);
 
                 console.log("資料載入成功:", {
                     portfolio,
@@ -356,13 +370,15 @@ export default function Dashboard() {
         <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
             <div className="w-full space-y-4 p-4">
                 <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    {authData?.photo_url ? (
-                        <Image
+                    {authData?.photo_url && !useAvatarFallback ? (
+                        <img
                             src={authData.photo_url}
                             alt="Telegram 頭貼"
-                            width={80}
-                            height={80}
                             className="h-20 w-20 rounded-full"
+                            onLoad={handleAvatarLoad}
+                            onError={() => {
+                                setUseAvatarFallback(true);
+                            }}
                         />
                     ) : (
                         <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#264173] text-xl font-bold text-[#92cbf4]">
@@ -462,39 +478,97 @@ export default function Dashboard() {
                         </h3>
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-[#557797]">角色</span>
+                                <span className="text-sm text-[#557797]">
+                                    角色
+                                </span>
                                 <span className="rounded bg-[#294565] px-2 py-1 text-sm font-medium text-[#92cbf4]">
-                                    {userPermissions.role === 'student' && '一般學員'}
-                                    {userPermissions.role === 'point_manager' && '點數管理員'}
-                                    {userPermissions.role === 'announcer' && '公告員'}
-                                    {userPermissions.role === 'admin' && '系統管理員'}
-                                    {!['student', 'point_manager', 'announcer', 'admin'].includes(userPermissions.role) && userPermissions.role}
+                                    {userPermissions.role ===
+                                        "student" && "一般學員"}
+                                    {userPermissions.role ===
+                                        "point_manager" &&
+                                        "點數管理員"}
+                                    {userPermissions.role ===
+                                        "announcer" && "公告員"}
+                                    {userPermissions.role ===
+                                        "admin" && "系統管理員"}
+                                    {![
+                                        "student",
+                                        "point_manager",
+                                        "announcer",
+                                        "admin",
+                                    ].includes(
+                                        userPermissions.role,
+                                    ) && userPermissions.role}
                                 </span>
                             </div>
-                            
+
                             <div>
-                                <p className="mb-2 text-sm text-[#557797]">可用權限</p>
+                                <p className="mb-2 text-sm text-[#557797]">
+                                    可用權限
+                                </p>
                                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                                    {userPermissions.permissions && userPermissions.permissions.length > 0 ? (
-                                        userPermissions.permissions.map((permission, index) => (
-                                            <div key={index} className="flex items-center space-x-2">
-                                                <span className="text-green-400">✓</span>
-                                                <span className="text-xs text-white">
-                                                    {permission === 'view_own_data' && '查看自己的資料'}
-                                                    {permission === 'trade_stocks' && '股票交易'}
-                                                    {permission === 'transfer_points' && '轉帳點數'}
-                                                    {permission === 'view_all_users' && '查看所有使用者'}
-                                                    {permission === 'give_points' && '發放點數'}
-                                                    {permission === 'create_announcement' && '發布公告'}
-                                                    {permission === 'manage_users' && '管理使用者'}
-                                                    {permission === 'manage_market' && '管理市場'}
-                                                    {permission === 'system_admin' && '系統管理'}
-                                                    {!['view_own_data', 'trade_stocks', 'transfer_points', 'view_all_users', 'give_points', 'create_announcement', 'manage_users', 'manage_market', 'system_admin'].includes(permission) && permission}
-                                                </span>
-                                            </div>
-                                        ))
+                                    {userPermissions.permissions &&
+                                    userPermissions.permissions
+                                        .length > 0 ? (
+                                        userPermissions.permissions.map(
+                                            (permission, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center space-x-2"
+                                                >
+                                                    <span className="text-green-400">
+                                                        ✓
+                                                    </span>
+                                                    <span className="text-xs text-white">
+                                                        {permission ===
+                                                            "view_own_data" &&
+                                                            "查看自己的資料"}
+                                                        {permission ===
+                                                            "trade_stocks" &&
+                                                            "股票交易"}
+                                                        {permission ===
+                                                            "transfer_points" &&
+                                                            "轉帳點數"}
+                                                        {permission ===
+                                                            "view_all_users" &&
+                                                            "查看所有使用者"}
+                                                        {permission ===
+                                                            "give_points" &&
+                                                            "發放點數"}
+                                                        {permission ===
+                                                            "create_announcement" &&
+                                                            "發布公告"}
+                                                        {permission ===
+                                                            "manage_users" &&
+                                                            "管理使用者"}
+                                                        {permission ===
+                                                            "manage_market" &&
+                                                            "管理市場"}
+                                                        {permission ===
+                                                            "system_admin" &&
+                                                            "系統管理"}
+                                                        {![
+                                                            "view_own_data",
+                                                            "trade_stocks",
+                                                            "transfer_points",
+                                                            "view_all_users",
+                                                            "give_points",
+                                                            "create_announcement",
+                                                            "manage_users",
+                                                            "manage_market",
+                                                            "system_admin",
+                                                        ].includes(
+                                                            permission,
+                                                        ) &&
+                                                            permission}
+                                                    </span>
+                                                </div>
+                                            ),
+                                        )
                                     ) : (
-                                        <p className="text-xs text-[#557797]">暫無特殊權限</p>
+                                        <p className="text-xs text-[#557797]">
+                                            暫無特殊權限
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -598,9 +672,11 @@ export default function Dashboard() {
                                         key={i.created_at}
                                     >
                                         <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
-                                            {dayjs(
-                                                i.created_at,
-                                            ).add(8, "hour").format("MM/DD HH:mm")}
+                                            {dayjs(i.created_at)
+                                                .add(8, "hour")
+                                                .format(
+                                                    "MM/DD HH:mm",
+                                                )}
                                         </p>
                                         <div className="col-span-5 md:col-span-4 md:flex">
                                             <p className="font-bold text-[#92cbf4]">
@@ -699,7 +775,7 @@ export default function Dashboard() {
                                                 </span>
                                                 <span className="rounded bg-[#294565] px-2 py-1 text-xs text-[#92cbf4]">
                                                     {i.order_type ===
-                                                        "market"
+                                                    "market"
                                                         ? "市價單"
                                                         : "限價單"}
                                                 </span>
@@ -709,21 +785,21 @@ export default function Dashboard() {
                                         {/* Debug訊息 - 可以在生產環境中移除 */}
                                         {process.env.NODE_ENV ===
                                             "development" && (
-                                                <div className="mb-2 rounded bg-gray-800 p-2 text-xs">
-                                                    <details>
-                                                        <summary className="cursor-pointer text-gray-400">
-                                                            Debug：訂單物件結構
-                                                        </summary>
-                                                        <pre className="mt-1 overflow-auto text-gray-300">
-                                                            {JSON.stringify(
-                                                                i,
-                                                                null,
-                                                                2,
-                                                            )}
-                                                        </pre>
-                                                    </details>
-                                                </div>
-                                            )}
+                                            <div className="mb-2 rounded bg-gray-800 p-2 text-xs">
+                                                <details>
+                                                    <summary className="cursor-pointer text-gray-400">
+                                                        Debug：訂單物件結構
+                                                    </summary>
+                                                    <pre className="mt-1 overflow-auto text-gray-300">
+                                                        {JSON.stringify(
+                                                            i,
+                                                            null,
+                                                            2,
+                                                        )}
+                                                    </pre>
+                                                </details>
+                                            </div>
+                                        )}
 
                                         {/* 訂單狀態和詳情 */}
                                         <div className="mb-3">
@@ -732,19 +808,19 @@ export default function Dashboard() {
                                                     ? `✅ 已成交${i.price ? ` → ${i.price}元` : ""}`
                                                     : i.status ===
                                                         "cancelled"
-                                                        ? "❌ 已取消"
+                                                      ? "❌ 已取消"
+                                                      : i.status ===
+                                                          "pending_limit"
+                                                        ? "⏳ 等待中 (限制)"
                                                         : i.status ===
-                                                            "pending_limit"
-                                                            ? "⏳ 等待中 (限制)"
-                                                            : i.status ===
                                                                 "partial" ||
-                                                                i.status ===
+                                                            i.status ===
                                                                 "pending"
-                                                                ? i.filled_quantity >
-                                                                    0
-                                                                    ? `🔄 部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
-                                                                    : "⏳ 等待成交"
-                                                                : i.status}
+                                                          ? i.filled_quantity >
+                                                            0
+                                                              ? `🔄 部分成交 (${i.filled_quantity}/${i.quantity} 股已成交@${i.filled_price ?? i.price}元，剩餘${i.quantity - i.filled_quantity}股等待)`
+                                                              : "⏳ 等待成交"
+                                                          : i.status}
                                             </p>
 
                                             {/* 訂單詳情 */}
@@ -771,18 +847,18 @@ export default function Dashboard() {
                                                 )}
                                                 {i.filled_quantity >
                                                     0 && (
-                                                        <div>
-                                                            <span>
-                                                                已成交：
-                                                            </span>
-                                                            <span className="text-green-400">
-                                                                {
-                                                                    i.filled_quantity
-                                                                }{" "}
-                                                                股
-                                                            </span>
-                                                        </div>
-                                                    )}
+                                                    <div>
+                                                        <span>
+                                                            已成交：
+                                                        </span>
+                                                        <span className="text-green-400">
+                                                            {
+                                                                i.filled_quantity
+                                                            }{" "}
+                                                            股
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -795,8 +871,8 @@ export default function Dashboard() {
                                                             i,
                                                             i.order_type,
                                                             i.quantity -
-                                                            (i.filled_quantity ||
-                                                                0),
+                                                                (i.filled_quantity ||
+                                                                    0),
                                                         )
                                                     }
                                                     disabled={
@@ -837,7 +913,7 @@ export default function Dashboard() {
                 {pendingCancelOrder && (
                     <div className="space-y-4">
                         <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="mb-3 flex items-center gap-2">
                                 <h3 className="text-lg font-semibold text-orange-400">
                                     你確定要取消這張訂單？
                                 </h3>
@@ -847,18 +923,22 @@ export default function Dashboard() {
                                 <div className="flex justify-between">
                                     <span>訂單類型：</span>
                                     <span className="text-white">
-                                        {pendingCancelOrder.orderType === "market" ? "市價單" : "限價單"}
+                                        {pendingCancelOrder.orderType ===
+                                        "market"
+                                            ? "市價單"
+                                            : "限價單"}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>數量：</span>
                                     <span className="text-white">
-                                        {pendingCancelOrder.quantity} 股
+                                        {pendingCancelOrder.quantity}{" "}
+                                        股
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>訂單 ID：</span>
-                                    <span className="font-mono text-white text-xs">
+                                    <span className="font-mono text-xs text-white">
                                         {pendingCancelOrder.orderId}
                                     </span>
                                 </div>
