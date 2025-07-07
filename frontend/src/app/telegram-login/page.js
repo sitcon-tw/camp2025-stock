@@ -3,8 +3,6 @@
 import { telegramOAuth } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import loginSvg from "@/assets/undraw_authentication_tbfc.svg";
 
 export default function TelegramLogin() {
     const [isLoading, setIsLoading] = useState(false);
@@ -21,13 +19,16 @@ export default function TelegramLogin() {
             if (isUser === "true" && token) {
                 try {
                     // 驗證 token 是否仍然有效
-                    const response = await fetch(`${window.location.origin}/api/web/profile`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
+                    const response = await fetch(
+                        `${window.location.origin}/api/web/profile`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                            },
                         },
-                    });
-                    
+                    );
+
                     if (response.ok) {
                         router.push("/dashboard");
                     } else {
@@ -38,7 +39,9 @@ export default function TelegramLogin() {
                         localStorage.removeItem("telegramData");
                     }
                 } catch (error) {
-                    console.log("Token validation failed, clearing auth data");
+                    console.log(
+                        "Token validation failed, clearing auth data",
+                    );
                     // 清除認證資料
                     localStorage.removeItem("isUser");
                     localStorage.removeItem("userToken");
@@ -133,7 +136,8 @@ export default function TelegramLogin() {
         }
 
         // 移除載入中的 placeholder
-        const placeholder = widgetContainer.querySelector('.animate-pulse');
+        const placeholder =
+            widgetContainer.querySelector(".animate-pulse");
         if (placeholder) {
             placeholder.remove();
         }
@@ -173,9 +177,9 @@ export default function TelegramLogin() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+            <div className="flex min-h-screen items-center justify-center bg-[#0f203e] px-4">
                 <div className="text-center">
-                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#294565] border-t-[#92cbf4]"></div>
                     <p className="text-[#92cbf4]">
                         正在驗證 Telegram 登入...
                     </p>
@@ -185,79 +189,50 @@ export default function TelegramLogin() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[#0f203e] px-4">
-            <div className="w-full max-w-md">
+        <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
+            <div className="w-full max-w-md px-6">
                 <div className="mb-12 text-center">
-                    <div className="mb-8 flex justify-center">
-                        <Image
-                            src={loginSvg}
-                            alt="登入圖示"
-                            className="h-32 w-auto"
-                        />
-                    </div>
-                    <h1 className="mb-4 text-2xl font-bold tracking-wider text-[#92cbf4]">
+                    <h1 className="text-2xl font-bold tracking-wider text-[#92cbf4]">
                         使用者登入
                     </h1>
-                    <p className="text-sm text-[#557797]">
-                        使用您的 Telegram
-                        帳號登入來進行交易
+                    <p className="mt-2 text-sm text-[#557797]">
+                        使用 Telegram 帳號登入系統
                     </p>
                 </div>
 
                 <div className="space-y-6">
+                    <div className="text-center">
+                        <div className="rounded-lg border border-[#294565] bg-[#1a3356] p-4">
+                            <div className="text-4xl mb-2">📱</div>
+                            <p className="text-sm text-[#92cbf4] mb-4">
+                                使用您的 Telegram 帳號登入系統
+                            </p>
+                            <p className="text-xs text-[#557797] mb-4">
+                                點擊下方按鈕開始 Telegram 登入流程
+                            </p>
+
+                            <div id="telegram-widget-container" className="flex justify-center">
+                                {!authData && (
+                                    <div className="animate-pulse space-y-2">
+                                        <div className="h-10 bg-[#294565] rounded w-40"></div>
+                                        <p className="text-xs text-[#557797]">載入中...</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {error && (
                         <div className="rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
                             {error}
                         </div>
                     )}
 
-                    {!authData && (
-                        <div className="text-center">
-                            <div className="mb-6">
-                                <p className="mb-4 text-sm text-[#557797]">
-                                    點選下方按鈕使用 Telegram 登入
-                                </p>
-                                <div
-                                    id="telegram-widget-container"
-                                    className="flex justify-center min-h-[52px] items-center"
-                                >
-                                    <div className="animate-pulse rounded-lg bg-[#1A325F] px-6 py-3 text-sm text-[#557797]">
-                                        載入中...
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 border-t border-[#294565] pt-6">
-                                <p className="text-xs text-[#557797]">
-                                    首次使用請先透過 Telegram Bot
-                                    註冊帳號
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {authData && (
-                        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-4">
-                            <p className="mb-2 text-sm text-[#92cbf4]">
-                                檢測到 Telegram 認證資料
-                            </p>
-                            <p className="text-xs text-[#557797]">
-                                使用者: {authData.first_name}{" "}
-                                {authData.last_name}
-                                {authData.username &&
-                                    ` (@${authData.username})`}
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                <div className="mt-8 text-center">
-                    <button
-                        onClick={() => router.push("/")}
-                        className="text-sm text-[#557797] transition-colors duration-200 hover:text-[#92cbf4]"
-                    >
-                        ← 返回首頁
-                    </button>
+                    <div className="rounded-lg border border-[#92cbf4]/20 bg-[#92cbf4]/5 p-3">
+                        <p className="text-xs text-center text-[#557797]">
+                            登入之前請先使用 Telegram bot 綁定學員帳號
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
