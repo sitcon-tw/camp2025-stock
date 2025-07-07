@@ -33,11 +33,11 @@ async def telegram_oauth(
         認證結果和 JWT Token
     """
     try:
-        # 委託給應用服務處理業務邏輯 (不再需要 bot token)
+        # 委託給應用服務處理業務邏輯
         auth_data = auth_request.dict()
         success, user_info, message = await auth_service.telegram_oauth_login(
             auth_data, 
-            None  # Bot token no longer required
+            config.external_services.telegram_bot_token
         )
         
         if not success:

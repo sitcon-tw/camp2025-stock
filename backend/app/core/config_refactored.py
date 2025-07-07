@@ -3,6 +3,7 @@
 # Clean Code 原則：清晰的命名、常數管理、類型提示
 
 import os
+import logging
 from datetime import timezone, timedelta
 from typing import List, Optional
 from dataclasses import dataclass
@@ -117,6 +118,7 @@ class ExternalServiceConfig:
     SRP 原則：專注於外部服務相關設定
     """
     telegram_bot_api_url: str
+    telegram_bot_token: str
     notification_timeout: int = 30
     
     @classmethod
@@ -127,6 +129,7 @@ class ExternalServiceConfig:
                 "CAMP_TELEGRAM_BOT_API_URL", 
                 "https://camp.sitcon.party/bot/broadcast/"
             ),
+            telegram_bot_token=os.getenv("CAMP_TELEGRAM_BOT_TOKEN", ""),
             notification_timeout=int(os.getenv("CAMP_NOTIFICATION_TIMEOUT", "30"))
         )
 
@@ -199,6 +202,12 @@ class ApplicationConfig:
         
         if self.trading.ipo_initial_price <= 0:
             raise ValueError("IPO initial price must be positive")
+        
+        if not self.external_services.telegram_bot_token:
+            if self.is_production:
+                raise ValueError("Telegram bot token is required for OAuth verification in production")
+            else:
+                logging.getLogger(__name__).warning("Telegram bot token not set - OAuth verification will fail")
     
     def _log_env_vars(self) -> None:
         """
