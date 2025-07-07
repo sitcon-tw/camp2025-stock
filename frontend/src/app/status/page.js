@@ -1,9 +1,8 @@
 "use client";
 
-import HeaderBar from "@/components/HeaderBar";
-import Modal from "@/components/Modal";
-import StockChart from "@/components/StockChart";
-import TradingTabs from "@/components/TradingTabs";
+import { StockChart } from "@/components/charts";
+import { TradingTabs } from "@/components/trading";
+import { HeaderBar, Modal } from "@/components/ui";
 import useModal from "@/hooks/useModal";
 import { placeWebStockOrder } from "@/lib/api";
 import { apiService } from "@/services/apiService";

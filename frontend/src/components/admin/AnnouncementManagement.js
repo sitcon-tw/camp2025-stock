@@ -7,7 +7,7 @@ import {
 } from "@/lib/api";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import Modal from "./Modal";
+import { Modal } from "../ui";
 import { PermissionButton } from "./PermissionGuard";
 
 /**

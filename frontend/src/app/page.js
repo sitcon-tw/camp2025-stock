@@ -1,8 +1,8 @@
 "use client";
 
 import botAvatar from "@/assets/uwu.svg";
-import Modal from "@/components/Modal";
-import TradingHoursVisualizer from "@/components/TradingHoursVisualizer";
+import { Modal } from "@/components/ui";
+import { TradingHoursVisualizer } from "@/components/trading";
 import useModal from "@/hooks/useModal";
 import { getAnnouncements, getTradingHours } from "@/lib/api";
 import { apiService } from "@/services/apiService";

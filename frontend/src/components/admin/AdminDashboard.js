@@ -21,7 +21,7 @@ import {
     updateIpo,
 } from "@/lib/api";
 import { AnnouncementManagement } from "./AnnouncementManagement";
-import Modal from "./Modal";
+import { Modal } from "../ui";
 
 /**
  * 管理員儀表板組件

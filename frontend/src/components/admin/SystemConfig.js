@@ -14,7 +14,7 @@ import {
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PermissionButton, PermissionGuard } from "./PermissionGuard";
-import TradingHoursVisualizer from "./TradingHoursVisualizer";
+import { TradingHoursVisualizer } from "../trading";
 
 /**
  * 系統設定管理組件

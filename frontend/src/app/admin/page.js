@@ -1,8 +1,6 @@
 "use client";
 
-import { AdminDashboard } from "@/components/AdminDashboard";
-import { PermissionAudit } from "@/components/PermissionAudit";
-import { SystemConfig } from "@/components/SystemConfig";
+import { AdminDashboard, PermissionAudit, SystemConfig } from "@/components/admin";
 import { PermissionProvider, usePermissionContext } from "@/contexts/PermissionContext";
 import { debugAuth } from "@/utils/debugAuth";
 import { LogOut } from "lucide-react";

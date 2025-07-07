@@ -6,7 +6,7 @@ import {
 } from "@/lib/api";
 import { formatRoleName } from "@/utils/permissionHelper";
 import { useEffect, useState } from "react";
-import Modal from "./Modal";
+import { Modal } from "../ui";
 
 /**
  * 角色管理組件
