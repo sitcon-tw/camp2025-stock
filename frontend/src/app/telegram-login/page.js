@@ -1,6 +1,7 @@
 "use client";
 
 import { telegramOAuth } from "@/lib/api";
+import { Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -189,49 +190,70 @@ export default function TelegramLogin() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[#0f203e]">
-            <div className="w-full max-w-md px-6">
-                <div className="mb-12 text-center">
-                    <h1 className="text-2xl font-bold tracking-wider text-[#92cbf4]">
-                        使用者登入
-                    </h1>
-                    <p className="mt-2 text-sm text-[#557797]">
-                        使用 Telegram 帳號登入系統
-                    </p>
-                </div>
+        <div className="flex min-h-screen items-center justify-center bg-[#0f203e] p-4">
+            <div className="w-full max-w-sm">
+                {/* Main Login Card */}
+                <div className="rounded-2xl border border-[#294565] bg-[#1A325F] p-6 shadow-xl">
+                    <div className="mb-6 text-center">
+                        <div className="bg-opacity-10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#92cbf4]/30 text-xl">
+                            👋
+                        </div>
+                        <h2 className="mb-1 text-lg font-semibold text-[#92cbf4]">
+                            Telegram 帳號登入
+                        </h2>
+                        <p className="text-sm text-[#557797]">
+                            用你的 Telegram 帳號登入 SITCON Camp 2025
+                            點數系統
+                        </p>
+                    </div>
 
-                <div className="space-y-6">
-                    <div className="text-center">
-                        <div className="rounded-lg border border-[#294565] bg-[#1a3356] p-4">
-                            <div className="text-4xl mb-2">📱</div>
-                            <p className="text-sm text-[#92cbf4] mb-4">
-                                使用您的 Telegram 帳號登入系統
-                            </p>
-                            <p className="text-xs text-[#557797] mb-4">
-                                點擊下方按鈕開始 Telegram 登入流程
-                            </p>
-
-                            <div id="telegram-widget-container" className="flex justify-center">
-                                {!authData && (
-                                    <div className="animate-pulse space-y-2">
-                                        <div className="h-10 bg-[#294565] rounded w-40"></div>
-                                        <p className="text-xs text-[#557797]">載入中...</p>
-                                    </div>
-                                )}
-                            </div>
+                    {/* Login Widget Container */}
+                    <div className="mb-4 rounded-xl bg-[#0f203e] p-4">
+                        <div
+                            id="telegram-widget-container"
+                            className="flex justify-center"
+                        >
+                            {!authData && (
+                                <div className="animate-pulse text-center">
+                                    <div className="mb-2 h-12 w-48 rounded-lg bg-[#294565]"></div>
+                                    <p className="text-xs text-[#557797]">
+                                        載入登入按鈕...
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
+                    {/* Error Display */}
                     {error && (
-                        <div className="rounded-lg border border-red-500/30 bg-red-900/20 p-3 text-center text-sm text-red-400">
-                            {error}
+                        <div className="bg-opacity-10 border-opacity-30 mb-4 rounded-lg border border-red-500 bg-red-500 p-3">
+                            <div className="flex items-start space-x-2">
+                                <svg
+                                    className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                <p className="text-sm text-red-300">
+                                    {error}
+                                </p>
+                            </div>
                         </div>
                     )}
 
-                    <div className="rounded-lg border border-[#92cbf4]/20 bg-[#92cbf4]/5 p-3">
-                        <p className="text-xs text-center text-[#557797]">
-                            登入之前請先使用 Telegram bot 綁定學員帳號
-                        </p>
+                    {/* Info Notice */}
+                    <div className="border-opacity-10 rounded-lg border border-[#92cbf4] bg-[#0f203e] p-3 text-[#92cbf4]">
+                        <div className="flex items-center justify-center space-x-2">
+                            <Info className="h-4 w-4" />
+                            <p className="text-xs">
+                                登入之前需要先用喵券機機器人註冊帳號
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
