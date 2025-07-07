@@ -569,16 +569,6 @@ const OverviewSection = ({
                 <AnnouncementManagement token={token} />
             </PermissionGuard>
 
-            {/* IPO 狀態區塊 */}
-            <PermissionGuard
-                requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                token={token}
-            >
-                <IpoStatusSection
-                    token={token}
-                    showNotification={showNotification}
-                />
-            </PermissionGuard>
         </div>
     </div>
 );
