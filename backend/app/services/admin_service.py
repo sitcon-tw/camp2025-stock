@@ -560,15 +560,9 @@ class AdminService:
             logger.error(f"Failed during final settlement: {e}")
             raise AdminException("Failed during final settlement")
 
-    # 手動開盤（包含集合競價）
+    # 手動開盤
     async def open_market(self) -> Dict[str, any]:
         try:
-            # 首先執行集合競價
-            from app.services.user_service import UserService
-            user_service = UserService()
-
-            call_auction_result = await user_service.call_auction_matching()
-
             # 更新市場狀態為開盤
             await self.db[Collections.MARKET_CONFIG].update_one(
                 {"type": "manual_control"},
@@ -584,25 +578,17 @@ class AdminService:
             )
 
             # 傳送開盤公告
-            if call_auction_result.get("success"):
-                announcement_message = f"🔔 市場開盤公告\n\n"
-                announcement_message += f"📈 集合競價結果：{call_auction_result.get('matched_volume', 0)} 股於 {call_auction_result.get('auction_price', 0)} 元成交\n"
-                announcement_message += f"🎯 市場現已開放交易！"
-            else:
-                announcement_message = f"🔔 市場開盤公告\n\n"
-                announcement_message += f"📊 集合競價：{call_auction_result.get('message', '無成交')}\n"
-                announcement_message += f"🎯 市場現已開放交易！"
+            announcement_message = f"🔔 市場開盤公告\n\n🎯 市場現已開放交易！"
 
             await self._send_system_announcement(
                 title="🔔 市場開盤",
                 message=announcement_message
             )
 
-            logger.info("Market opened successfully with call auction")
+            logger.info("Market opened successfully")
             return {
                 "success": True,
-                "message": "市場開盤成功",
-                "call_auction_result": call_auction_result
+                "message": "市場開盤成功"
             }
 
         except Exception as e:

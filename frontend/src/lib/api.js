@@ -288,16 +288,6 @@ export async function updateIpo(
     });
 }
 
-// 執行集合競價
-export async function executeCallAuction(token) {
-    return apiRequest("/api/admin/market/call-auction", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    });
-}
 
 // IPO 預設設定管理
 // 查詢IPO預設設定

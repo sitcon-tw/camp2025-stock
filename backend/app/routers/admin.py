@@ -1027,47 +1027,6 @@ async def test_announcement(
         )
 
 
-@router.post(
-    "/market/call-auction",
-    responses={
-        200: {"description": "集合競價完成"},
-        401: {"model": ErrorResponse, "description": "未授權"},
-        500: {"model": ErrorResponse, "description": "系統錯誤"}
-    },
-    summary="執行集合競價",
-    description="執行集合競價撮合，將所有待成交的限價單以最佳價格批量撮合"
-)
-async def execute_call_auction(
-    current_user: dict = Depends(get_current_user)
-):
-    """執行集合競價撮合"""
-    try:
-        from app.services.user_service import UserService
-        user_service = UserService()
-        
-        result = await user_service.call_auction_matching()
-        
-        if result["success"]:
-            logger.info(f"Call auction executed successfully: {result['message']}")
-            return {
-                "ok": True,
-                "message": result["message"],
-                "auctionPrice": result.get("auction_price"),
-                "matchedVolume": result.get("matched_volume")
-            }
-        else:
-            return {
-                "ok": False,
-                "message": result["message"]
-            }
-        
-    except Exception as e:
-        logger.error(f"Failed to execute call auction: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"執行集合競價失敗: {str(e)}"
-        )
-
 
 @router.get(
     "/ipo/defaults",

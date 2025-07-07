@@ -8,7 +8,6 @@ import { RoleManagement } from "./RoleManagement";
 // import { QuickRoleSetup } from "./QuickRoleSetup";
 import {
     closeMarket,
-    executeCallAuction,
     forceSettlement,
     getAdminMarketStatus,
     getIpoStatus,
@@ -839,8 +838,6 @@ const MarketManagementSection = ({ token, showNotification }) => {
     const [marketStatus, setMarketStatus] = useState(null);
     const [ipoStatus, setIpoStatus] = useState(null);
     const [showIpoModal, setShowIpoModal] = useState(false);
-    const [callAuctionLoading, setCallAuctionLoading] =
-        useState(false);
     const [showTradingLimitModal, setShowTradingLimitModal] =
         useState(false);
     const [tradingLimitPercent, setTradingLimitPercent] =
@@ -874,42 +871,6 @@ const MarketManagementSection = ({ token, showNotification }) => {
         fetchIpoStatus();
     }, [token]);
 
-    // 執行集合競價
-    const handleCallAuction = async () => {
-        try {
-            setCallAuctionLoading(true);
-            const result = await executeCallAuction(token);
-
-            if (result.success) {
-                let message = result.message;
-
-                // 如果有詳細統計，新增到通知中
-                if (result.order_stats) {
-                    const stats = result.order_stats;
-                    const totalBuy =
-                        (stats.pending_buy || 0) +
-                        (stats.limit_buy || 0);
-                    const totalSell =
-                        (stats.pending_sell || 0) +
-                        (stats.limit_sell || 0);
-                    message += ` (處理了 ${totalBuy} 張買單、${totalSell} 張賣單)`;
-                }
-
-                showNotification(message, "success");
-            } else {
-                let errorMessage =
-                    result.message || "集合競價執行失敗";
-                showNotification(errorMessage, "error");
-            }
-        } catch (error) {
-            showNotification(
-                `集合競價失敗: ${error.message}`,
-                "error",
-            );
-        } finally {
-            setCallAuctionLoading(false);
-        }
-    };
 
     // 更新IPO
     const handleIpoUpdate = async () => {
@@ -1054,7 +1015,7 @@ const MarketManagementSection = ({ token, showNotification }) => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <PermissionButton
                     requiredPermission={PERMISSIONS.MANAGE_MARKET}
                     token={token}
@@ -1099,16 +1060,6 @@ const MarketManagementSection = ({ token, showNotification }) => {
                     disabled={marketStatus && !marketStatus.is_open}
                 >
                     手動收盤
-                </PermissionButton>
-
-                <PermissionButton
-                    requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                    token={token}
-                    className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
-                    onClick={handleCallAuction}
-                    disabled={callAuctionLoading}
-                >
-                    {callAuctionLoading ? "撮合中..." : "集合競價"}
                 </PermissionButton>
 
                 <PermissionButton

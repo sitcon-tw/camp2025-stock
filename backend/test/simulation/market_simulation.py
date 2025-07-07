@@ -415,30 +415,6 @@ class MarketSimulator:
         await asyncio.sleep(3)
         await self.show_market_overview()
     
-    async def simulate_call_auction(self):
-        """模擬集合競價"""
-        self.log("⚖️ 執行集合競價撮合", "ADMIN")
-        
-        try:
-            headers = {"Authorization": f"Bearer {self.admin_token}"}
-            async with self.session.post(
-                f"{BASE_URL}/api/admin/market/call-auction",
-                headers=headers
-            ) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    self.log(f"集合競價完成: {data.get('message')}", "ADMIN")
-                    if data.get('auctionPrice'):
-                        self.log(f"成交價: {data.get('auctionPrice')} 元", "MARKET")
-                    if data.get('matchedVolume'):
-                        self.log(f"成交量: {data.get('matchedVolume')} 股", "MARKET")
-                else:
-                    self.log(f"集合競價失敗: {resp.status}", "ERROR")
-        except Exception as e:
-            self.log(f"集合競價錯誤: {e}", "ERROR")
-        
-        await asyncio.sleep(2)
-        await self.show_market_overview()
     
     async def show_leaderboard(self):
         """顯示排行榜"""
@@ -502,7 +478,6 @@ class MarketSimulator:
         
         # 6. 集合競價
         self.log("⚖️ 階段 6: 集合競價", "ADMIN")
-        await self.simulate_call_auction()
         
         await asyncio.sleep(3)
         
