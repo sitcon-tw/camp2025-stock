@@ -7,12 +7,15 @@ import {
     getWebPointHistory,
     getWebPortfolio,
     getWebStockOrders,
+    webTransferPoints,
 } from "@/lib/api";
 import dayjs from "dayjs";
-import { LogOut } from "lucide-react";
+import { LogOut, QrCode, Camera, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { twMerge } from "tailwind-merge";
+import QRCode from "react-qr-code";
+import QrScanner from "qr-scanner";
 
 export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +36,19 @@ export default function Dashboard() {
         useState(null);
     const [userPermissions, setUserPermissions] = useState(null);
     const [useAvatarFallback, setUseAvatarFallback] = useState(false);
+    const [showQRCode, setShowQRCode] = useState(false);
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [showQRScanner, setShowQRScanner] = useState(false);
+    const [transferForm, setTransferForm] = useState({
+        to_username: "",
+        amount: "",
+        note: ""
+    });
+    const [transferLoading, setTransferLoading] = useState(false);
+    const [transferError, setTransferError] = useState("");
+    const [transferSuccess, setTransferSuccess] = useState("");
+    const videoRef = useRef(null);
+    const qrScannerRef = useRef(null);
     const router = useRouter();
 
     // 檢查頭像圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
@@ -182,6 +198,152 @@ export default function Dashboard() {
         setShowCancelModal(false);
         setPendingCancelOrder(null);
     };
+
+    // QR Code 和轉帳相關函數
+    const openQRCode = () => {
+        setShowQRCode(true);
+    };
+
+    const closeQRCode = () => {
+        setShowQRCode(false);
+    };
+
+    const openTransferModal = () => {
+        setTransferForm({ to_username: "", amount: "", note: "" });
+        setTransferError("");
+        setTransferSuccess("");
+        setShowTransferModal(true);
+    };
+
+    const closeTransferModal = () => {
+        setShowTransferModal(false);
+        setTransferForm({ to_username: "", amount: "", note: "" });
+        setTransferError("");
+        setTransferSuccess("");
+    };
+
+    const startQRScanner = async () => {
+        setShowQRScanner(true);
+        setTransferError("");
+        
+        try {
+            await new Promise(resolve => setTimeout(resolve, 100)); // 等待DOM更新
+            
+            if (videoRef.current) {
+                qrScannerRef.current = new QrScanner(
+                    videoRef.current,
+                    result => {
+                        console.log('QR Code 掃描結果:', result.data);
+                        try {
+                            const qrData = JSON.parse(result.data);
+                            if (qrData.type === 'transfer' && qrData.username) {
+                                setTransferForm(prev => ({
+                                    ...prev,
+                                    to_username: qrData.username
+                                }));
+                                stopQRScanner();
+                            } else {
+                                setTransferError('無效的轉帳 QR Code');
+                            }
+                        } catch (e) {
+                            setTransferError('QR Code 格式錯誤');
+                        }
+                    },
+                    {
+                        returnDetailedScanResult: true,
+                        highlightScanRegion: true,
+                        highlightCodeOutline: true,
+                    }
+                );
+                
+                await qrScannerRef.current.start();
+            }
+        } catch (error) {
+            console.error('啟動相機失敗:', error);
+            setTransferError('無法啟動相機，請檢查權限設定');
+            setShowQRScanner(false);
+        }
+    };
+
+    const stopQRScanner = () => {
+        if (qrScannerRef.current) {
+            qrScannerRef.current.stop();
+            qrScannerRef.current.destroy();
+            qrScannerRef.current = null;
+        }
+        setShowQRScanner(false);
+    };
+
+    const handleTransferSubmit = async (e) => {
+        e.preventDefault();
+        setTransferError("");
+        setTransferSuccess("");
+        
+        if (!transferForm.to_username || !transferForm.amount) {
+            setTransferError('請填寫收款人和轉帳金額');
+            return;
+        }
+        
+        const amount = parseInt(transferForm.amount);
+        if (isNaN(amount) || amount <= 0) {
+            setTransferError('請輸入有效的轉帳金額');
+            return;
+        }
+        
+        if (amount > user.points) {
+            setTransferError('點數不足，無法完成轉帳');
+            return;
+        }
+        
+        setTransferLoading(true);
+        
+        try {
+            const token = localStorage.getItem('userToken');
+            const result = await webTransferPoints(token, {
+                to_username: transferForm.to_username,
+                amount: amount,
+                note: transferForm.note || `轉帳給 ${transferForm.to_username}`
+            });
+            
+            if (result.success) {
+                setTransferSuccess(`轉帳成功！手續費: ${result.fee} 點`);
+                
+                // 重新載入用戶資料
+                try {
+                    const [portfolio, points] = await Promise.all([
+                        getWebPortfolio(token),
+                        getWebPointHistory(token)
+                    ]);
+                    setUser(portfolio);
+                    setPointHistory(points);
+                } catch (refreshError) {
+                    console.error('重新載入資料失敗:', refreshError);
+                }
+                
+                // 3秒後關閉 Modal
+                setTimeout(() => {
+                    closeTransferModal();
+                }, 3000);
+            } else {
+                setTransferError(result.message || '轉帳失敗');
+            }
+        } catch (error) {
+            console.error('轉帳失敗:', error);
+            setTransferError(error.message || '轉帳時發生錯誤');
+        } finally {
+            setTransferLoading(false);
+        }
+    };
+
+    // 清理 QR Scanner
+    useEffect(() => {
+        return () => {
+            if (qrScannerRef.current) {
+                qrScannerRef.current.stop();
+                qrScannerRef.current.destroy();
+            }
+        };
+    }, []);
 
     // 檢查訂單是否可以取消
     const canCancelOrder = (order) => {
@@ -472,6 +634,41 @@ export default function Dashboard() {
                         </div>
                     )}
                 </div>
+
+                {/* 點數轉帳功能 */}
+                {userPermissions && userPermissions.permissions && userPermissions.permissions.includes('transfer_points') && (
+                    <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                            點數轉帳
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="text-center">
+                                <p className="mb-3 text-sm text-[#557797]">
+                                    顯示你的收款 QR Code
+                                </p>
+                                <button
+                                    onClick={openQRCode}
+                                    className="inline-flex items-center rounded-lg bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                >
+                                    <QrCode className="mr-2 h-4 w-4" />
+                                    顯示我的 QR Code
+                                </button>
+                            </div>
+                            <div className="text-center">
+                                <p className="mb-3 text-sm text-[#557797]">
+                                    轉帳給其他人
+                                </p>
+                                <button
+                                    onClick={openTransferModal}
+                                    className="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
+                                >
+                                    <Camera className="mr-2 h-4 w-4" />
+                                    點數轉帳
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 權限資訊 */}
                 {userPermissions && (
@@ -1016,6 +1213,172 @@ export default function Dashboard() {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* QR Code 顯示 Modal */}
+            <Modal
+                isOpen={showQRCode}
+                onClose={closeQRCode}
+                title="我的收款 QR Code"
+                size="md"
+            >
+                <div className="space-y-4 text-center">
+                    <div className="mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
+                        <QRCode
+                            value={JSON.stringify({
+                                type: 'transfer',
+                                username: user?.username || '',
+                                id: authData?.id || ''
+                            })}
+                            size={200}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <p className="text-sm text-[#92cbf4]">
+                            讓別人掃描這個 QR Code 來轉帳給你
+                        </p>
+                        <p className="text-xs text-[#557797]">
+                            用戶名：{user?.username || ''}
+                        </p>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* 轉帳 Modal */}
+            <Modal
+                isOpen={showTransferModal}
+                onClose={closeTransferModal}
+                title="點數轉帳"
+                size="md"
+            >
+                <div className="space-y-4">
+                    {/* 成功和錯誤訊息 */}
+                    {transferSuccess && (
+                        <div className="rounded-lg border border-green-500/30 bg-green-600/20 p-3">
+                            <p className="text-sm text-green-400">
+                                ✅ {transferSuccess}
+                            </p>
+                        </div>
+                    )}
+                    {transferError && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                            <p className="text-sm text-red-400">
+                                ❌ {transferError}
+                            </p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleTransferSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                收款人用戶名
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={transferForm.to_username}
+                                    onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
+                                    className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder="輸入收款人用戶名"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={startQRScanner}
+                                    className="rounded-lg bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                >
+                                    <QrCode className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                轉帳金額
+                            </label>
+                            <input
+                                type="number"
+                                value={transferForm.amount}
+                                onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
+                                className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                placeholder="輸入轉帳金額"
+                                min="1"
+                                max={user?.points || 0}
+                                required
+                            />
+                            <p className="mt-1 text-xs text-[#557797]">
+                                可用點數：{user?.points?.toLocaleString() || '0'} 點
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                備註（可選）
+                            </label>
+                            <input
+                                type="text"
+                                value={transferForm.note}
+                                onChange={(e) => setTransferForm(prev => ({ ...prev, note: e.target.value }))}
+                                className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                placeholder="輸入備註訊息"
+                                maxLength="200"
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={closeTransferModal}
+                                className="flex-1 rounded-lg border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                            >
+                                取消
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={transferLoading}
+                                className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+                            >
+                                {transferLoading ? '轉帳中...' : '確認轉帳'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
+
+            {/* QR Scanner Modal */}
+            <Modal
+                isOpen={showQRScanner}
+                onClose={stopQRScanner}
+                title="掃描 QR Code"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div className="relative">
+                        <video
+                            ref={videoRef}
+                            className="w-full rounded-lg bg-black"
+                            style={{ maxHeight: '300px' }}
+                        />
+                        <button
+                            onClick={stopQRScanner}
+                            className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white hover:bg-red-700"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                    <p className="text-sm text-center text-[#92cbf4]">
+                        請對準收款人的 QR Code 進行掃描
+                    </p>
+                    {transferError && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                            <p className="text-sm text-red-400">
+                                ❌ {transferError}
+                            </p>
+                        </div>
+                    )}
+                </div>
             </Modal>
         </div>
     );

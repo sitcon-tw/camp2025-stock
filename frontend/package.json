@@ -22,10 +22,13 @@
     "next": "15.3.2",
     "next-pwa": "^5.6.0",
     "postcss": "^8.5.4",
+    "qr-scanner": "^1.4.2",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
     "react-financial-charts": "^2.0.1",
+    "react-qr-code": "^2.0.18",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.8"
   },
