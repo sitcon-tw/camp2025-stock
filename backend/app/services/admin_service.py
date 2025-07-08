@@ -741,9 +741,67 @@ class AdminService:
 
     async def get_all_trades(self, limit: int) -> List[Trade]:
         try:
-            trades_cursor = self.db[Collections.TRADES].find().sort("timestamp", -1).limit(limit)
+            # 使用聚合管道來聯接使用者資料並轉換字段
+            pipeline = [
+                # 排序：最新的交易在前
+                {"$sort": {"created_at": -1}},
+                # 限制結果數量
+                {"$limit": limit},
+                # 聯接買方使用者資料
+                {
+                    "$lookup": {
+                        "from": Collections.USERS,
+                        "localField": "buy_user_id", 
+                        "foreignField": "_id",
+                        "as": "buyer_info"
+                    }
+                },
+                # 聯接賣方使用者資料 (排除系統賣方)
+                {
+                    "$lookup": {
+                        "from": Collections.USERS,
+                        "localField": "sell_user_id",
+                        "foreignField": "_id", 
+                        "as": "seller_info"
+                    }
+                },
+                # 轉換為期望的格式
+                {
+                    "$project": {
+                        "id": {"$toString": "$_id"},
+                        "buyer_username": {
+                            "$cond": {
+                                "if": {"$eq": [{"$size": "$buyer_info"}, 0]},
+                                "then": "未知使用者",
+                                "else": {"$arrayElemAt": ["$buyer_info.name", 0]}
+                            }
+                        },
+                        "seller_username": {
+                            "$cond": {
+                                "if": {"$in": ["$sell_user_id", ["SYSTEM", "MARKET"]]},
+                                "then": "$sell_user_id",
+                                "else": {
+                                    "$cond": {
+                                        "if": {"$eq": [{"$size": "$seller_info"}, 0]},
+                                        "then": "未知使用者", 
+                                        "else": {"$arrayElemAt": ["$seller_info.name", 0]}
+                                    }
+                                }
+                            }
+                        },
+                        "price": 1,
+                        "amount": "$quantity",
+                        "timestamp": "$created_at"
+                    }
+                }
+            ]
+            
+            trades_cursor = self.db[Collections.TRADES].aggregate(pipeline)
             trades = await trades_cursor.to_list(length=None)
+            
+            # 轉換為 Trade 物件
             return [Trade(**trade) for trade in trades]
+            
         except Exception as e:
             logger.error(f"Failed to get all trades: {e}")
             raise AdminException("Failed to retrieve trades")
