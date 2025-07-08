@@ -10,7 +10,7 @@ import {
     webTransferPoints,
 } from "@/lib/api";
 import dayjs from "dayjs";
-import { LogOut, QrCode, Camera, X } from "lucide-react";
+import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { twMerge } from "tailwind-merge";
@@ -39,6 +39,8 @@ export default function Dashboard() {
     const [showQRCode, setShowQRCode] = useState(false);
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [showQRScanner, setShowQRScanner] = useState(false);
+    const [showQuickTransfer, setShowQuickTransfer] = useState(false);
+    const [quickTransferData, setQuickTransferData] = useState(null);
     const [transferForm, setTransferForm] = useState({
         to_username: "",
         amount: "",
@@ -241,11 +243,13 @@ export default function Dashboard() {
                         try {
                             const qrData = JSON.parse(result.data);
                             if (qrData.type === 'transfer' && qrData.username) {
-                                setTransferForm(prev => ({
-                                    ...prev,
-                                    to_username: qrData.username
-                                }));
+                                // 設置快速轉帳資料並顯示快速轉帳視窗
+                                setQuickTransferData({
+                                    username: qrData.username,
+                                    id: qrData.id || ''
+                                });
                                 stopQRScanner();
+                                setShowQuickTransfer(true);
                             } else {
                                 setTransferError('無效的轉帳 QR Code');
                             }
@@ -278,7 +282,72 @@ export default function Dashboard() {
         setShowQRScanner(false);
     };
 
+    // 快速轉帳相關函數
+    const closeQuickTransfer = () => {
+        setShowQuickTransfer(false);
+        setQuickTransferData(null);
+        setTransferError("");
+        setTransferSuccess("");
+    };
 
+    const handleQuickTransferSubmit = async (e) => {
+        e.preventDefault();
+        setTransferError("");
+        setTransferSuccess("");
+        
+        const formData = new FormData(e.target);
+        const amount = parseInt(formData.get('amount'));
+        const note = formData.get('note') || `轉帳給 ${quickTransferData.username}`;
+        
+        if (isNaN(amount) || amount <= 0) {
+            setTransferError('請輸入有效的轉帳金額');
+            return;
+        }
+        
+        if (amount > user.points) {
+            setTransferError('點數不足，無法完成轉帳');
+            return;
+        }
+        
+        setTransferLoading(true);
+        
+        try {
+            const token = localStorage.getItem('userToken');
+            const result = await webTransferPoints(token, {
+                to_username: quickTransferData.username,
+                amount: amount,
+                note: note
+            });
+            
+            if (result.success) {
+                setTransferSuccess(`轉帳成功！手續費: ${result.fee} 點`);
+                
+                // 重新載入用戶資料
+                try {
+                    const [portfolio, points] = await Promise.all([
+                        getWebPortfolio(token),
+                        getWebPointHistory(token)
+                    ]);
+                    setUser(portfolio);
+                    setPointHistory(points);
+                } catch (refreshError) {
+                    console.error('重新載入資料失敗:', refreshError);
+                }
+                
+                // 3秒後關閉 Modal
+                setTimeout(() => {
+                    closeQuickTransfer();
+                }, 3000);
+            } else {
+                setTransferError(result.message || '轉帳失敗');
+            }
+        } catch (error) {
+            console.error('轉帳失敗:', error);
+            setTransferError(error.message || '轉帳時發生錯誤');
+        } finally {
+            setTransferLoading(false);
+        }
+    };
 
     const handleTransferSubmit = async (e) => {
         e.preventDefault();
@@ -1580,6 +1649,105 @@ export default function Dashboard() {
                         </div>
                     )}
                 </div>
+            </Modal>
+
+            {/* 快速轉帳 Modal */}
+            <Modal
+                isOpen={showQuickTransfer}
+                onClose={closeQuickTransfer}
+                title="快速轉帳"
+                size="md"
+            >
+                {quickTransferData && (
+                    <div className="space-y-4">
+                        {/* 成功和錯誤訊息 */}
+                        {transferSuccess && (
+                            <div className="rounded-lg border border-green-500/30 bg-green-600/20 p-3">
+                                <p className="text-sm text-green-400">
+                                    ✅ {transferSuccess}
+                                </p>
+                            </div>
+                        )}
+                        {transferError && (
+                            <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                                <p className="text-sm text-red-400">
+                                    ❌ {transferError}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* 收款人資訊確認 */}
+                        <div className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-full bg-[#469FD2]/20 p-2">
+                                    <QrCode className="h-6 w-6 text-[#469FD2]" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-[#92cbf4]">轉帳給</p>
+                                    <p className="text-xl font-bold text-white">
+                                        {quickTransferData.username}
+                                    </p>
+                                    {quickTransferData.id && (
+                                        <p className="text-xs text-[#557797]">
+                                            ID: {quickTransferData.id}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleQuickTransferSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                    轉帳金額 <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    name="amount"
+                                    className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder="輸入轉帳金額"
+                                    min="1"
+                                    max={user?.points || 0}
+                                    required
+                                    autoFocus
+                                />
+                                <p className="mt-1 text-xs text-[#557797]">
+                                    可用點數：{user?.points?.toLocaleString() || '0'} 點
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                    備註（可選）
+                                </label>
+                                <input
+                                    type="text"
+                                    name="note"
+                                    className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder={`轉帳給 ${quickTransferData.username}`}
+                                    maxLength="200"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeQuickTransfer}
+                                    className="flex-1 rounded-lg border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={transferLoading}
+                                    className="flex-1 rounded-lg bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8] disabled:cursor-not-allowed disabled:bg-gray-600"
+                                >
+                                    {transferLoading ? '轉帳中...' : '確認轉帳'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </Modal>
 
             {/* 收款通知彈出視窗 */}
