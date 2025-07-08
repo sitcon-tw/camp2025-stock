@@ -3,13 +3,14 @@
 SITCON Camp 2025 學員啟用與交易模擬腳本 (含股票交易)
 
 功能：
-1. 自動檢查市場開放狀態，可選擇自動開啟市場
-2. 啟用所有學員（通過給予初始點數）
-3. 模擬隨機的點數轉帳交易
-4. 模擬隨機的股票買賣交易
-5. IPO股票發行和購買測試
-6. 查詢投資組合和市場狀態
-7. 完整資料庫重置功能
+1. 動態獲取最新學員資料（從API自動更新）
+2. 自動檢查市場開放狀態，可選擇自動開啟市場
+3. 啟用所有學員（通過給予初始點數）
+4. 模擬隨機的點數轉帳交易
+5. 模擬隨機的股票買賣交易
+6. IPO股票發行和購買測試
+7. 查詢投資組合和市場狀態
+8. 完整資料庫重置功能
 
 需要安裝的套件：
 pip install requests
@@ -40,89 +41,22 @@ BASE_URL = "http://localhost:8000"  # 請根據實際情況修改
 ADMIN_PASSWORD = "admin123"
 BOT_TOKEN = "neverGonnaGiveYouUp"
 
-# 學員資料（從您提供的JSON文件）
-STUDENTS_DATA = [
+# 學員資料（將從API動態獲取）
+STUDENTS_DATA = []  # 這將在程式啟動時從API獲取
+
+# 預設測試資料（僅在API無法使用時作為備用）
+FALLBACK_STUDENTS_DATA = [
     {"id": 6179851991, "name": "毛哥EM", "team": "第一組"},
-    {"id": 1681526140, "name": "KoukeNeko", "team": "第一組測試更新"},
+    {"id": 1681526140, "name": "KoukeNeko", "team": "第一組"},
     {"id": 2189572562, "name": "Wolf", "team": "第一組"},
-    {"id": 6027605121, "name": "Denny Huang", "team": "第一組"},
-    {"id": 7345251950, "name": "Leo Lee", "team": "第一組"},
-    {"id": 4262256661, "name": "康 康", "team": "第一組"},
-    {"id": 5836830293, "name": "Sky Hong", "team": "第一組"},
-    {"id": 4847225996, "name": "皮蛋", "team": "第一組"},
     {"id": 3000259327, "name": "Zhuyuan", "team": "第二組"},
     {"id": 2933649958, "name": "Mina", "team": "第二組"},
-    {"id": 5293586656, "name": "qian🐾", "team": "第二組"},
-    {"id": 9164694505, "name": "邱 子洺", "team": "第二組"},
-    {"id": 8449838999, "name": "OsGa", "team": "第二組"},
-    {"id": 9609223894, "name": "Yorukot", "team": "第二組"},
-    {"id": 6889818510, "name": "Ya", "team": "第二組"},
-    {"id": 9283937785, "name": "末 夜", "team": "第二組"},
     {"id": 1287779434, "name": "魚 章", "team": "第三組"},
     {"id": 7649822961, "name": "Terry Chung", "team": "第三組"},
-    {"id": 1666353438, "name": "Hex Zeng", "team": "第三組"},
-    {"id": 9443699832, "name": "yimang", "team": "第三組"},
-    {"id": 8450934833, "name": "🍊 橘子", "team": ""},
-    {"id": 9207866388, "name": "曾 兆翌", "team": "第三組"},
-    {"id": 2221857365, "name": "Ben Chueh", "team": "第三組"},
-    {"id": 4301530116, "name": "ffting", "team": "第三組"},
-    {"id": 2024083999, "name": "阿 六", "team": "第五組"},
-    {"id": 4034849899, "name": "Windless", "team": "第五組"},
-    {"id": 6117747728, "name": "W", "team": "第五組"},
-    {"id": 3683764508, "name": "EHDW Pan", "team": "第五組"},
-    {"id": 3027783575, "name": "開根號", "team": "第五組"},
-    {"id": 6840016852, "name": "Fearnot", "team": "第五組"},
-    {"id": 3793321529, "name": "Yuto", "team": "第五組"},
-    {"id": 3048374304, "name": "Limu S", "team": "第五組"},
     {"id": 9099883062, "name": "Poren Chiang", "team": "第四組"},
     {"id": 2179555812, "name": "Hao Cheng Yang", "team": "第四組"},
-    {"id": 2100155397, "name": "Hans", "team": "第四組"},
-    {"id": 5247487669, "name": "Panda Wu", "team": "第四組"},
-    {"id": 1864321953, "name": "qiqi _77", "team": "第四組"},
-    {"id": 1526124507, "name": "Alvin Chen", "team": "第四組"},
-    {"id": 2449263859, "name": "AC", "team": "第四組"},
-    {"id": 7171752714, "name": "Kevinowo", "team": "第四組"},
-    {"id": 6615396167, "name": "cheng", "team": "第六組"},
-    {"id": 8695899481, "name": "kyle chen", "team": "第六組"},
-    {"id": 2092802196, "name": "Hugo Wang", "team": "第六組"},
-    {"id": 8065456402, "name": "Lindy", "team": "第六組"},
-    {"id": 4182490650, "name": "Helena L.", "team": "第六組"},
-    {"id": 6859268520, "name": "滷味 LowV", "team": "第六組"},
-    {"id": 4767432557, "name": "crab", "team": "第六組"},
-    {"id": 1940625703, "name": ":D 阿玉騎士", "team": "第六組"},
-    {"id": 9649065380, "name": "OnCloud", "team": "第七組"},
-    {"id": 6941268369, "name": "T. 庭", "team": "第七組"},
-    {"id": 1440402751, "name": "Kiki Yang", "team": "第七組"},
-    {"id": 4836647852, "name": "KY", "team": "第七組"},
-    {"id": 4230397197, "name": "拾弎", "team": "第七組"},
-    {"id": 5627985223, "name": "椰 花", "team": "第七組"},
-    {"id": 6879681869, "name": "Sam Liu", "team": "第七組"},
-    {"id": 5270449810, "name": "Yuru", "team": "第七組"},
-    {"id": 6249238790, "name": "Kang Kason", "team": "第八組"},
-    {"id": 7160192821, "name": "Sean Wei", "team": "第八組"},
-    {"id": 9111529055, "name": "Leaf Tseng", "team": "第八組"},
-    {"id": 7270129811, "name": "Arnoldsky", "team": "第八組"},
-    {"id": 9638449803, "name": "Ricky Lu", "team": "第八組"},
-    {"id": 4247512694, "name": "nelsonGX", "team": "第八組"},
-    {"id": 2048973433, "name": "咪路", "team": "第八組"},
-    {"id": 2732641150, "name": "Andrew Kuo", "team": "第八組"},
-    {"id": 3085998690, "name": "AK", "team": "第九組"},
-    {"id": 4068012480, "name": "Jasmine Kao", "team": "第九組"},
-    {"id": 5554687314, "name": "pU yUeh", "team": "第九組"},
-    {"id": 2501542103, "name": "小婕", "team": "第九組"},
-    {"id": 5104840283, "name": "小", "team": "第九組"},
-    {"id": 2478489903, "name": "xiunG 翔", "team": "第九組"},
-    {"id": 6994583294, "name": "x翔", "team": "第九組"},
-    {"id": 8117668223, "name": "Yuan' OR 1=1; -- #", "team": "第九組"},
-    {"id": 9804697237, "name": "henry heute", "team": "第十組"},
-    {"id": 7373939096, "name": "hh", "team": "第十組"},
-    {"id": 9453611846, "name": "Tony2100", "team": "第十組"},
-    {"id": 2254757472, "name": "Camel", "team": "第十組"},
-    {"id": 2941650133, "name": "小徐", "team": "第十組"},
-    {"id": 3298232482, "name": "小", "team": "第十組"},
-    {"id": 4483416927, "name": "Xin Qi", "team": "第十組"},
-    {"id": 1731762105, "name": "SITCON Camp 2025 行政好夥伴", "team": "第十組"},
-    {"id": 3536132809, "name": "S行", "team": "第十組"}
+    {"id": 2024083999, "name": "阿 六", "team": "第五組"},
+    {"id": 4034849899, "name": "Windless", "team": "第五組"}
 ]
 
 class CampTradingSimulator:
@@ -348,6 +282,65 @@ class CampTradingSimulator:
             'Content-Type': 'application/json',
             'token': BOT_TOKEN
         }
+    
+    def fetch_students_from_api(self) -> List[Dict]:
+        """從API動態獲取學員列表"""
+        try:
+            self.log("正在從API獲取學員列表...")
+            
+            # 使用Bot API獲取學員資料
+            response = self.session.get(
+                f"{self.base_url}/api/bot/students",
+                headers=self.get_bot_headers()
+            )
+            
+            if response.status_code == 200:
+                api_students = response.json()
+                
+                # 轉換為腳本使用的格式
+                students_data = []
+                for student in api_students:
+                    students_data.append({
+                        "id": student.get("telegram_id", student.get("id")),
+                        "name": student.get("name", "Unknown"),
+                        "team": student.get("team", "")
+                    })
+                
+                self.log(f"✅ 成功獲取 {len(students_data)} 位學員資料")
+                return students_data
+            else:
+                self.log(f"❌ API獲取學員列表失敗: {response.status_code} - {response.text}", "ERROR")
+                return []
+                
+        except Exception as e:
+            self.log(f"API獲取學員列表異常: {e}", "ERROR")
+            return []
+    
+    def update_students_data(self) -> bool:
+        """更新全域學員資料"""
+        global STUDENTS_DATA
+        
+        # 從API獲取最新學員資料
+        fresh_students = self.fetch_students_from_api()
+        if fresh_students:
+            STUDENTS_DATA = fresh_students
+            self.log(f"✅ 全域學員資料已更新，共 {len(STUDENTS_DATA)} 位學員")
+            
+            # 顯示團隊統計
+            team_stats = {}
+            for student in STUDENTS_DATA:
+                team = student.get("team", "無團隊")
+                if team:
+                    team_stats[team] = team_stats.get(team, 0) + 1
+            
+            self.log("📊 團隊統計:")
+            for team, count in sorted(team_stats.items()):
+                self.log(f"   {team}: {count} 人")
+            
+            return True
+        else:
+            self.log("❌ 無法獲取學員資料，將使用現有資料", "WARNING")
+            return False
     
     # ========== 市場狀態查詢 ==========
     
@@ -1331,6 +1324,19 @@ def main():
         print("❌ 管理員登入失敗，程式結束")
         sys.exit(1)
     
+    # 獲取最新學員資料
+    print("\n👥 正在獲取學員資料...")
+    if not simulator.update_students_data():
+        print("⚠️ 無法從API獲取學員資料，程式仍可繼續執行")
+        # 可以選擇提供預設資料或者繼續
+        fallback_choice = input("是否使用預設測試資料繼續？ (y/N): ").strip().lower()
+        if fallback_choice != 'y':
+            print("❌ 程式結束")
+            sys.exit(1)
+        else:
+            STUDENTS_DATA = FALLBACK_STUDENTS_DATA.copy()
+            print(f"⚠️ 使用預設測試資料繼續（{len(STUDENTS_DATA)} 位學員）")
+    
     # 檢查並確保市場開放
     print("\n🏪 檢查市場狀態...")
     if not simulator.check_and_ensure_market_open():
@@ -1350,11 +1356,12 @@ def main():
     print("9. 深度Debug - 檢查成交和撮合機制")
     print("10. 重置IPO狀態")
     print("11. 重置所有資料")
-    print("12. 退出")
+    print("12. 重新獲取學員資料")
+    print("13. 退出")
     
     while True:
         try:
-            choice = input("\n請輸入選項 (1-12): ").strip()
+            choice = input("\n請輸入選項 (1-13): ").strip()
             
             if choice == "1":
                 initial_points = input("請輸入初始點數 (預設 1000): ").strip()
@@ -1536,6 +1543,15 @@ def main():
                 break
                 
             elif choice == "12":
+                # 重新獲取學員資料
+                print("\n👥 重新獲取學員資料...")
+                if simulator.update_students_data():
+                    print("✅ 學員資料已更新")
+                else:
+                    print("❌ 學員資料更新失敗")
+                break
+                
+            elif choice == "13":
                 print("👋 程式結束")
                 sys.exit(0)
                 
