@@ -121,8 +121,8 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     }
                     .qr-grid {
                         display: grid;
-                        grid-template-columns: repeat(3, 1fr);
-                        gap: 20px;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 15px;
                         margin-bottom: 20px;
                     }
                     .qr-item {
@@ -161,8 +161,11 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     }
                     @media print {
                         body { margin: 0; padding: 10px; }
-                        .qr-grid { gap: 15px; }
-                        .qr-item { break-inside: avoid; }
+                        .qr-grid { gap: 12px; }
+                        .qr-item { 
+                            break-inside: avoid; 
+                            padding: 10px;
+                        }
                     }
                 </style>
             </head>
