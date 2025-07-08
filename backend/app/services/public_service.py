@@ -291,31 +291,8 @@ class PublicService:
             else:
                 open_times = default_open_times
             
-            # 檢查目前是否在開放時間內
-            taipei_tz = timezone(timedelta(hours=8))
-            current_taipei_time = current_time.astimezone(taipei_tz)
-            current_seconds_of_day = current_taipei_time.hour * 3600 + current_taipei_time.minute * 60 + current_taipei_time.second
-            
-            is_open = False
-            for slot in open_times:
-                # 將儲存的時間戳轉換為當日的秒數
-                start_dt = datetime.fromtimestamp(slot.start, tz=timezone.utc).astimezone(taipei_tz)
-                end_dt = datetime.fromtimestamp(slot.end, tz=timezone.utc).astimezone(taipei_tz)
-                
-                start_seconds = start_dt.hour * 3600 + start_dt.minute * 60 + start_dt.second
-                end_seconds = end_dt.hour * 3600 + end_dt.minute * 60 + end_dt.second
-                
-                # 處理跨日情況（例如 23:00 到 01:00）
-                if start_seconds <= end_seconds:
-                    # 同一天內的時間段
-                    if start_seconds <= current_seconds_of_day <= end_seconds:
-                        is_open = True
-                        break
-                else:
-                    # 跨日時間段
-                    if current_seconds_of_day >= start_seconds or current_seconds_of_day <= end_seconds:
-                        is_open = True
-                        break
+            # 使用統一的市場開放檢查邏輯
+            is_open = await self._is_market_open()
             
             return MarketStatus(
                 isOpen=is_open,
@@ -436,31 +413,8 @@ class PublicService:
             else:
                 trading_hours = default_open_times
             
-            # 檢查目前是否在交易時間內
-            taipei_tz = timezone(timedelta(hours=8))
-            current_taipei_time = current_time.astimezone(taipei_tz)
-            current_seconds_of_day = current_taipei_time.hour * 3600 + current_taipei_time.minute * 60 + current_taipei_time.second
-            
-            is_currently_open = False
-            for slot in trading_hours:
-                # 將儲存的時間戳轉換為當日的秒數
-                start_dt = datetime.fromtimestamp(slot.start, tz=timezone.utc).astimezone(taipei_tz)
-                end_dt = datetime.fromtimestamp(slot.end, tz=timezone.utc).astimezone(taipei_tz)
-                
-                start_seconds = start_dt.hour * 3600 + start_dt.minute * 60 + start_dt.second
-                end_seconds = end_dt.hour * 3600 + end_dt.minute * 60 + end_dt.second
-                
-                # 處理跨日情況（例如 23:00 到 01:00）
-                if start_seconds <= end_seconds:
-                    # 同一天內的時間段
-                    if start_seconds <= current_seconds_of_day <= end_seconds:
-                        is_currently_open = True
-                        break
-                else:
-                    # 跨日時間段
-                    if current_seconds_of_day >= start_seconds or current_seconds_of_day <= end_seconds:
-                        is_currently_open = True
-                        break
+            # 使用統一的市場開放檢查邏輯
+            is_currently_open = await self._is_market_open()
             
             return TradingHoursResponse(
                 tradingHours=trading_hours,
@@ -627,6 +581,65 @@ class PublicService:
                 detail="Failed to retrieve IPO status"
             )
     
+    # 檢查市場是否開放（與 user_service 邏輯一致）
+    async def _is_market_open(self) -> bool:
+        """檢查市場是否開放交易"""
+        try:
+            from datetime import datetime, timezone, timedelta
+            
+            # 首先檢查手動控制覆蓋（最高優先權）
+            manual_control = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "manual_control"}
+            )
+            
+            if manual_control:
+                # 如果存在手動控制設定，以此為準
+                is_manually_open = manual_control.get("is_open", False)
+                logger.info(f"Manual market control active: is_open={is_manually_open}")
+                return is_manually_open
+            
+            # 如果沒有手動控制，則檢查預定時間
+            market_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "market_hours"}
+            )
+            
+            if not market_config or "openTime" not in market_config:
+                # 如果沒有設定，預設市場開放
+                return True
+            
+            # 取得目前台北時間 (UTC+8)
+            taipei_tz = timezone(timedelta(hours=8))
+            current_time = datetime.now(timezone.utc).astimezone(taipei_tz)
+            current_hour = current_time.hour
+            current_minute = current_time.minute
+            current_seconds_of_day = current_hour * 3600 + current_minute * 60 + current_time.second
+            
+            # 檢查目前是否在任何一個開放時間段內
+            for slot in market_config["openTime"]:
+                # 將儲存的時間戳轉換為當日的秒數
+                start_dt = datetime.fromtimestamp(slot["start"], tz=timezone.utc).astimezone(taipei_tz)
+                end_dt = datetime.fromtimestamp(slot["end"], tz=timezone.utc).astimezone(taipei_tz)
+                
+                start_seconds = start_dt.hour * 3600 + start_dt.minute * 60 + start_dt.second
+                end_seconds = end_dt.hour * 3600 + end_dt.minute * 60 + end_dt.second
+                
+                # 處理跨日情況（例如 23:00 到 01:00）
+                if start_seconds <= end_seconds:
+                    # 同一天內的時間段
+                    if start_seconds <= current_seconds_of_day <= end_seconds:
+                        return True
+                else:
+                    # 跨日時間段
+                    if current_seconds_of_day >= start_seconds or current_seconds_of_day <= end_seconds:
+                        return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Failed to check market status: {e}")
+            # 出錯時預設開放，避免影響交易
+            return True
+
     # 取得市場價格資訊
     async def get_market_price_info(self) -> MarketPriceInfo:
         try:
@@ -648,8 +661,8 @@ class PublicService:
             if latest_trade and latest_trade.get("created_at"):
                 last_trade_time = latest_trade["created_at"].isoformat()
             
-            # 市場狀態
-            market_is_open = market_config.get("is_open", False) if market_config else False
+            # 市場狀態 - 使用與 user_service 一致的邏輯
+            market_is_open = await self._is_market_open()
             
             # 收盤價和收盤時間
             closing_price = None
