@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getPendingOrders } from "@/lib/api";
+import { getPendingOrders, triggerManualMatching } from "@/lib/api";
 
 /**
  * 等待撮合訂單查看器組件
@@ -13,6 +13,7 @@ export const PendingOrdersViewer = ({ token }) => {
     const [limit, setLimit] = useState(100);
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [matchingInProgress, setMatchingInProgress] = useState(false);
 
     // 獲取等待撮合的訂單
     const fetchPendingOrders = async () => {
@@ -34,6 +35,28 @@ export const PendingOrdersViewer = ({ token }) => {
             setError(error.message || "獲取訂單失敗");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // 手動觸發撮合
+    const handleManualMatching = async () => {
+        try {
+            setMatchingInProgress(true);
+            setError(null);
+            
+            const result = await triggerManualMatching(token);
+            
+            if (result.ok) {
+                // 撮合成功後，等待一下再刷新數據
+                setTimeout(() => {
+                    fetchPendingOrders();
+                }, 1000);
+            }
+        } catch (error) {
+            console.error("Manual matching failed:", error);
+            setError(`手動撮合失敗: ${error.message}`);
+        } finally {
+            setMatchingInProgress(false);
         }
     };
 
@@ -163,6 +186,16 @@ export const PendingOrdersViewer = ({ token }) => {
                             className="rounded bg-[#469FD2] px-4 py-2 text-sm text-white hover:bg-[#357AB8] disabled:opacity-50"
                         >
                             {loading ? "刷新中..." : "刷新"}
+                        </button>
+
+                        {/* 手動撮合按鈕 */}
+                        <button
+                            onClick={handleManualMatching}
+                            disabled={matchingInProgress || loading}
+                            className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
+                            title="立即執行一次訂單撮合"
+                        >
+                            {matchingInProgress ? "撮合中..." : "手動撮合"}
                         </button>
                     </div>
                 </div>

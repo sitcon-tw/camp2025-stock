@@ -501,6 +501,17 @@ export async function getPendingOrders(token, limit = 100) {
     });
 }
 
+// 手動觸發訂單撮合
+export async function triggerManualMatching(token) {
+    return apiRequest("/api/admin/trigger-matching", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // ========== RBAC 權限管理 API ==========
 
 // 取得目前使用者的權限資訊

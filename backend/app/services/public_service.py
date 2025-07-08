@@ -122,15 +122,18 @@ class PublicService:
     async def get_price_depth(self) -> PriceDepth:
         try:
             # 取得買方掛單（價格從高到低）
+            # 修復：應該查詢所有等待撮合的狀態，並使用 side 欄位判斷買賣方向
             buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "status": "pending",
-                "stock_amount": {"$gt": 0}  # 買單
+                "status": {"$in": ["pending", "partial", "pending_limit"]},
+                "side": "buy",  # 使用 side 欄位而不是 stock_amount
+                "quantity": {"$gt": 0}  # 確保還有剩餘數量
             }).sort("price", -1).limit(5)
             
             # 取得賣方掛單（價格從低到高）
             sell_orders_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "status": "pending",
-                "stock_amount": {"$lt": 0}  # 賣單
+                "status": {"$in": ["pending", "partial", "pending_limit"]},
+                "side": "sell",  # 使用 side 欄位而不是 stock_amount
+                "quantity": {"$gt": 0}  # 確保還有剩餘數量
             }).sort("price", 1).limit(5)
             
             buy_orders = await buy_orders_cursor.to_list(length=5)
@@ -140,14 +143,18 @@ class PublicService:
             buy_aggregated = {}
             for order in buy_orders:
                 price = order.get("price", 0)
-                quantity = abs(order.get("stock_amount", 0))
-                buy_aggregated[price] = buy_aggregated.get(price, 0) + quantity
+                # 修復：使用 quantity 欄位，這是剩餘待撮合的數量
+                quantity = order.get("quantity", 0)
+                if quantity > 0:  # 只聚合有效的數量
+                    buy_aggregated[price] = buy_aggregated.get(price, 0) + quantity
             
             sell_aggregated = {}
             for order in sell_orders:
                 price = order.get("price", 0)
-                quantity = abs(order.get("stock_amount", 0))
-                sell_aggregated[price] = sell_aggregated.get(price, 0) + quantity
+                # 修復：使用 quantity 欄位，這是剩餘待撮合的數量
+                quantity = order.get("quantity", 0)
+                if quantity > 0:  # 只聚合有效的數量
+                    sell_aggregated[price] = sell_aggregated.get(price, 0) + quantity
             
             # 轉換為回應格式
             buy_entries = [

@@ -1864,3 +1864,76 @@ async def get_pending_orders(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"查詢等待撮合訂單失敗: {str(e)}"
         )
+
+
+@router.post(
+    "/trigger-matching",
+    responses={
+        200: {"description": "手動觸發撮合成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="手動觸發訂單撮合",
+    description="立即執行一次訂單撮合，用於解決撮合延遲或測試撮合功能"
+)
+async def trigger_manual_matching(
+    current_user: dict = Depends(get_current_user)
+):
+    """手動觸發訂單撮合
+    
+    Args:
+        current_user: 目前使用者（自動注入）
+    
+    Returns:
+        撮合執行結果
+    """
+    # 檢查系統管理權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.services.matching_scheduler import get_matching_scheduler
+        from datetime import datetime, timezone
+        
+        # 獲取撮合調度器
+        scheduler = get_matching_scheduler()
+        if not scheduler:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="撮合調度器未初始化"
+            )
+        
+        # 檢查調度器狀態
+        scheduler_status = scheduler.get_status()
+        
+        start_time = datetime.now(timezone.utc)
+        
+        # 觸發撮合
+        await scheduler.trigger_matching("admin_manual_trigger")
+        
+        end_time = datetime.now(timezone.utc)
+        duration = (end_time - start_time).total_seconds()
+        
+        logger.info(f"Admin {current_user.get('username')} manually triggered order matching, duration: {duration:.2f}s")
+        
+        return {
+            "ok": True,
+            "message": "手動撮合執行完成",
+            "execution_time": f"{duration:.2f}s",
+            "triggered_at": start_time.isoformat(),
+            "completed_at": end_time.isoformat(),
+            "scheduler_status": scheduler_status
+        }
+        
+    except Exception as e:
+        logger.error(f"Manual matching trigger failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"手動觸發撮合失敗: {str(e)}"
+        )
