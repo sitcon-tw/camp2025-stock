@@ -10,7 +10,7 @@ import {
     webTransferPoints,
 } from "@/lib/api";
 import dayjs from "dayjs";
-import { LogOut, QrCode, Camera, X, CheckCircle2, DollarSign } from "lucide-react";
+import { LogOut, QrCode, Camera, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { twMerge } from "tailwind-merge";
@@ -39,7 +39,6 @@ export default function Dashboard() {
     const [showQRCode, setShowQRCode] = useState(false);
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [showQRScanner, setShowQRScanner] = useState(false);
-    const [scannedUser, setScannedUser] = useState(null);
     const [transferForm, setTransferForm] = useState({
         to_username: "",
         amount: "",
@@ -213,17 +212,11 @@ export default function Dashboard() {
         setShowQRCode(false);
     };
 
-    const openTransferModal = (username = "") => {
-        setTransferForm({ to_username: username, amount: "", note: "" });
+    const openTransferModal = () => {
+        setTransferForm({ to_username: "", amount: "", note: "" });
         setTransferError("");
         setTransferSuccess("");
         setShowTransferModal(true);
-    };
-
-    const openQRScannerDirectly = () => {
-        setShowQRScanner(true);
-        setTransferError("");
-        setScannedUser(null);
     };
 
     const closeTransferModal = () => {
@@ -231,99 +224,47 @@ export default function Dashboard() {
         setTransferForm({ to_username: "", amount: "", note: "" });
         setTransferError("");
         setTransferSuccess("");
-        setScannedUser(null); // 清除掃描的用戶資訊
     };
 
     const startQRScanner = async () => {
+        setShowQRScanner(true);
         setTransferError("");
         
-        // 先停止現有的掃描器
-        if (qrScannerRef.current) {
-            qrScannerRef.current.stop();
-            qrScannerRef.current.destroy();
-            qrScannerRef.current = null;
-        }
-        
-        setShowQRScanner(true);
-        
         try {
-            // 等待 DOM 更新
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 100)); // 等待DOM更新
             
-            if (!videoRef.current) {
-                throw new Error('Video element not found');
-            }
-            
-            console.log('開始初始化 QR Scanner...');
-            console.log('Video element:', videoRef.current);
-            
-            // 創建 QR Scanner 實例
-            qrScannerRef.current = new QrScanner(
-                videoRef.current,
-                result => {
-                    console.log('QR Code 掃描結果:', result.data);
-                    try {
-                        const qrData = JSON.parse(result.data);
-                        if (qrData.type === 'transfer' && qrData.username) {
-                            setScannedUser({
-                                username: qrData.username,
-                                id: qrData.id || ''
-                            });
-                            stopQRScanner();
-                            openTransferModal(qrData.username);
-                        } else {
-                            setTransferError('無效的轉帳 QR Code');
+            if (videoRef.current) {
+                qrScannerRef.current = new QrScanner(
+                    videoRef.current,
+                    result => {
+                        console.log('QR Code 掃描結果:', result.data);
+                        try {
+                            const qrData = JSON.parse(result.data);
+                            if (qrData.type === 'transfer' && qrData.username) {
+                                setTransferForm(prev => ({
+                                    ...prev,
+                                    to_username: qrData.username
+                                }));
+                                stopQRScanner();
+                            } else {
+                                setTransferError('無效的轉帳 QR Code');
+                            }
+                        } catch (e) {
+                            setTransferError('QR Code 格式錯誤');
                         }
-                    } catch (e) {
-                        setTransferError('QR Code 格式錯誤');
+                    },
+                    {
+                        returnDetailedScanResult: true,
+                        highlightScanRegion: true,
+                        highlightCodeOutline: true,
                     }
-                },
-                {
-                    returnDetailedScanResult: true,
-                    highlightScanRegion: true,
-                    highlightCodeOutline: true,
-                    preferredCamera: 'environment',
-                }
-            );
-            
-            console.log('QR Scanner 實例創建成功');
-            
-            // 啟動掃描器
-            await qrScannerRef.current.start();
-            console.log('QR Scanner 啟動成功');
-            
-            // 檢查影像流
-            setTimeout(() => {
-                if (videoRef.current) {
-                    console.log('Video srcObject:', videoRef.current.srcObject);
-                    console.log('Video readyState:', videoRef.current.readyState);
-                    console.log('Video videoWidth:', videoRef.current.videoWidth);
-                    console.log('Video videoHeight:', videoRef.current.videoHeight);
-                    
-                    if (!videoRef.current.srcObject) {
-                        console.error('視頻流未連接');
-                        setTransferError('相機初始化失敗，請重新嘗試');
-                    }
-                }
-            }, 1000);
-            
-        } catch (error) {
-            console.error('QR Scanner 啟動失敗:', error);
-            let errorMessage = '無法啟動相機';
-            
-            if (error.name === 'NotAllowedError') {
-                errorMessage = '相機權限被拒絕，請允許相機權限後重試';
-            } else if (error.name === 'NotFoundError') {
-                errorMessage = '未找到相機設備';
-            } else if (error.name === 'NotSupportedError') {
-                errorMessage = '瀏覽器不支援相機功能';
-            } else if (error.name === 'SecurityError') {
-                errorMessage = '需要 HTTPS 連接才能使用相機';
-            } else {
-                errorMessage = `相機啟動失敗: ${error.message}`;
+                );
+                
+                await qrScannerRef.current.start();
             }
-            
-            setTransferError(errorMessage);
+        } catch (error) {
+            console.error('啟動相機失敗:', error);
+            setTransferError('無法啟動相機，請檢查權限設定');
             setShowQRScanner(false);
         }
     };
@@ -337,11 +278,6 @@ export default function Dashboard() {
         setShowQRScanner(false);
     };
 
-    const closeQRScanner = () => {
-        stopQRScanner();
-        setTransferError("");
-        setScannedUser(null);
-    };
 
 
     const handleTransferSubmit = async (e) => {
@@ -875,7 +811,7 @@ export default function Dashboard() {
                                 </p>
                                 <div className="flex flex-col gap-2">
                                     <button
-                                        onClick={openQRScannerDirectly}
+                                        onClick={startQRScanner}
                                         className="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
                                     >
                                         <Camera className="mr-2 h-4 w-4" />
@@ -1498,49 +1434,23 @@ export default function Dashboard() {
                             <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                                 收款人用戶名
                             </label>
-                            {scannedUser ? (
-                                <div className="rounded-lg border border-green-500/30 bg-green-600/10 p-3">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle2 className="h-5 w-5 text-green-400" />
-                                        <div>
-                                            <p className="text-green-100 font-medium">
-                                                {scannedUser.username}
-                                            </p>
-                                            <p className="text-xs text-green-300">
-                                                已掃描 QR Code 確認收款人
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setScannedUser(null);
-                                            setTransferForm(prev => ({ ...prev, to_username: '' }));
-                                        }}
-                                        className="mt-2 text-xs text-green-300 hover:text-green-200 underline"
-                                    >
-                                        重新選擇收款人
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={transferForm.to_username}
-                                        onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
-                                        className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                        placeholder="輸入收款人用戶名"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={openQRScannerDirectly}
-                                        className="rounded-lg bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
-                                    >
-                                        <QrCode className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            )}
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={transferForm.to_username}
+                                    onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
+                                    className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder="輸入收款人用戶名"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={startQRScanner}
+                                    className="rounded-lg bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                >
+                                    <QrCode className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
 
                         <div>
@@ -1599,7 +1509,7 @@ export default function Dashboard() {
             {/* QR Scanner Modal */}
             <Modal
                 isOpen={showQRScanner}
-                onClose={closeQRScanner}
+                onClose={stopQRScanner}
                 title="掃描 QR Code"
                 size="md"
             >
@@ -1618,7 +1528,7 @@ export default function Dashboard() {
                             muted
                         />
                         <button
-                            onClick={closeQRScanner}
+                            onClick={stopQRScanner}
                             className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white hover:bg-red-700"
                         >
                             <X className="h-4 w-4" />
