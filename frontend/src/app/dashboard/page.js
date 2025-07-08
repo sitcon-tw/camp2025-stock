@@ -243,7 +243,25 @@ export default function Dashboard() {
             await new Promise(resolve => setTimeout(resolve, 200));
             
             if (videoRef.current) {
-                // 檢查相機權限
+                console.log('開始初始化 QR Scanner...');
+                
+                // 先直接嘗試請求相機權限
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'environment' // 嘗試使用後置相機
+                        } 
+                    });
+                    console.log('相機權限獲得成功');
+                    
+                    // 停止測試流
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (permissionError) {
+                    console.error('相機權限請求失敗:', permissionError);
+                    throw permissionError;
+                }
+                
+                // 檢查相機是否可用
                 const hasCamera = await QrScanner.hasCamera();
                 if (!hasCamera) {
                     setTransferError('未檢測到相機設備');
@@ -251,6 +269,7 @@ export default function Dashboard() {
                     return;
                 }
                 
+                console.log('創建 QR Scanner 實例...');
                 qrScannerRef.current = new QrScanner(
                     videoRef.current,
                     result => {
@@ -281,19 +300,33 @@ export default function Dashboard() {
                     }
                 );
                 
+                console.log('啟動 QR Scanner...');
                 await qrScannerRef.current.start();
                 console.log('QR Scanner 啟動成功');
+                
+                // 確保視頻元素有內容
+                setTimeout(() => {
+                    if (videoRef.current && videoRef.current.srcObject) {
+                        console.log('視頻流已連接');
+                    } else {
+                        console.warn('視頻流未連接');
+                    }
+                }, 1000);
             }
         } catch (error) {
             console.error('啟動相機失敗:', error);
             let errorMessage = '無法啟動相機';
             
             if (error.name === 'NotAllowedError') {
-                errorMessage = '相機權限被拒絕，請在瀏覽器設定中允許相機權限';
+                errorMessage = '相機權限被拒絕，請點擊瀏覽器地址欄的相機圖示允許權限';
             } else if (error.name === 'NotFoundError') {
                 errorMessage = '未找到相機設備';
             } else if (error.name === 'NotSupportedError') {
-                errorMessage = '瀏覽器不支援相機功能';
+                errorMessage = '瀏覽器不支援相機功能，請使用 Chrome 或 Safari';
+            } else if (error.name === 'SecurityError') {
+                errorMessage = '安全限制，請使用 HTTPS 連接';
+            } else {
+                errorMessage = `相機啟動失敗: ${error.message}`;
             }
             
             setTransferError(errorMessage);
@@ -1585,6 +1618,14 @@ export default function Dashboard() {
                         <p className="text-xs text-[#557797]">
                             掃描成功後將自動跳轉到轉帳表單
                         </p>
+                        
+                        {/* 如果視頻還沒有內容，顯示重新啟動按鈕 */}
+                        <button
+                            onClick={startQRScanner}
+                            className="mt-2 px-4 py-2 bg-[#469FD2] text-white rounded-lg hover:bg-[#3A8BC0] transition-colors"
+                        >
+                            重新啟動掃描
+                        </button>
                     </div>
                     
                     {transferError && (
