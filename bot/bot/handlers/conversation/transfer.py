@@ -132,7 +132,7 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHOOSE_PERSON
 
     if telegram_id == str(update.effective_user.id):
-        await update.message.reply_text("❌ 不能轉給自己！", show_alert=True)
+        await update.message.reply_text("❌ 不能轉給自己！")
         await query.answer()
         return CHOOSE_PERSON
 
