@@ -170,7 +170,16 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                 {activeTab === "pending-orders" && <PendingOrdersViewer token={adminToken} />}
                 {activeTab === "transactions" && <TransactionHistory token={adminToken} />}
                 {activeTab === "point-history" && <PointHistory token={adminToken} />}
-                {activeTab === "qr-generator" && <QRCodeGenerator token={adminToken} />}
+                {activeTab === "qr-generator" && <QRCodeGenerator token={adminToken} showNotification={(message, type) => {
+                    // 簡單的通知實現，可以後續改進
+                    if (type === "error") {
+                        alert("錯誤：" + message);
+                    } else if (type === "success") {
+                        alert("成功：" + message);
+                    } else {
+                        alert(message);
+                    }
+                }} />}
                 {activeTab === "config" && <SystemConfig token={adminToken} />}
                 {activeTab === "audit" && <PermissionAudit token={adminToken} />}
             </div>

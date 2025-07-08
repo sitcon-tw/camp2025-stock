@@ -127,6 +127,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                         font-size: 10px;
                         color: #666;
                         font-family: monospace;
+                        word-break: break-all;
                     }
                     .print-header {
                         text-align: center;
@@ -164,20 +165,34 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                 </div>
                 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
                 <script>
-                    // 生成所有QR Code
-                    ${qrCodes.map(qr => `
-                        QRCode.toCanvas(document.getElementById('qr-${qr.id}'), '${qr.data}', {
-                            width: 120,
-                            height: 120,
-                            margin: 1,
-                            color: { dark: '#000000', light: '#ffffff' }
+                    // 等待 QRCode 庫載入完成
+                    window.onload = function() {
+                        // 逐個生成QR Code
+                        const qrData = ${JSON.stringify(qrCodes.map(qr => ({
+                            id: qr.id,
+                            data: qr.data,
+                            points: qr.points
+                        })))};
+                        
+                        qrData.forEach(qr => {
+                            const canvas = document.getElementById('qr-' + qr.id);
+                            if (canvas) {
+                                QRCode.toCanvas(canvas, qr.data, {
+                                    width: 120,
+                                    height: 120,
+                                    margin: 1,
+                                    color: { dark: '#000000', light: '#ffffff' }
+                                }, function(error) {
+                                    if (error) console.error('QR Code generation error:', error);
+                                });
+                            }
                         });
-                    `).join('')}
-                    
-                    // 等待QR Code生成完成後自動列印
-                    setTimeout(() => {
-                        window.print();
-                    }, 1000);
+                        
+                        // 等待QR Code生成完成後自動列印
+                        setTimeout(() => {
+                            window.print();
+                        }, 1500);
+                    };
                 </script>
             </body>
             </html>
