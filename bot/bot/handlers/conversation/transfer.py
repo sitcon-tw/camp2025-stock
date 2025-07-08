@@ -114,7 +114,6 @@ async def choose_team(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     telegram_id = query.data.split(":")[2]
 
     if telegram_id == "back":
@@ -123,6 +122,7 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
         buttons = [[InlineKeyboardButton(text=team, callback_data=f"transfer:team:{team}")] for team in teams]
         buttons.append([InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")])
 
+        await query.answer()
         await query.edit_message_text("😺 請選擇隊伍：", reply_markup=InlineKeyboardMarkup(buttons))
         return CHOOSE_TEAM
 
@@ -145,6 +145,7 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")
     ]]
 
+    await query.answer()
     await query.edit_message_text(
         f"😺 確認轉帳 {amount} 點給 {nickname} 嗎？",
         parse_mode=ParseMode.MARKDOWN_V2,
