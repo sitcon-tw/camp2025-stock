@@ -188,3 +188,22 @@ class PublicAnnouncement(BaseModel):
 # 錯誤回應
 class ErrorResponse(BaseModel):
     detail: str = Field(..., description="錯誤詳情")
+
+
+# 交易紀錄
+class Trade(BaseModel):
+    id: str
+    buyer_username: str
+    seller_username: str
+    price: int
+    amount: int
+    timestamp: datetime
+
+# 點數紀錄
+class PointLog(BaseModel):
+    user_id: str
+    type: str
+    amount: int
+    note: str
+    created_at: datetime
+    balance_after: int

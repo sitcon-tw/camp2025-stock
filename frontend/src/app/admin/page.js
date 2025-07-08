@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer, MembersList, TransactionHistory } from "@/components/admin";
+import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer, MembersList, TransactionHistory, PointHistory } from "@/components/admin";
 import { PermissionProvider, usePermissionContext } from "@/contexts/PermissionContext";
 import { debugAuth } from "@/utils/debugAuth";
 import { LogOut } from "lucide-react";
@@ -142,6 +142,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                             { id: "members", label: "所有成員" },
                             { id: "pending-orders", label: "等待撮合訂單" },
                             { id: "transactions", label: "交易紀錄" },
+                            { id: "point-history", label: "點數紀錄" },
                             { id: "config", label: "系統設定" },
                             { id: "audit", label: "權限審查" },
                         ].map((tab) => (
@@ -167,6 +168,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                 {activeTab === "members" && <MembersList token={adminToken} />}
                 {activeTab === "pending-orders" && <PendingOrdersViewer token={adminToken} />}
                 {activeTab === "transactions" && <TransactionHistory token={adminToken} />}
+                {activeTab === "point-history" && <PointHistory token={adminToken} />}
                 {activeTab === "config" && <SystemConfig token={adminToken} />}
                 {activeTab === "audit" && <PermissionAudit token={adminToken} />}
             </div>

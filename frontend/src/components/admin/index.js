@@ -9,3 +9,4 @@ export { default as QuickRoleSetup } from './QuickRoleSetup';
 export { default as RoleManagement } from './RoleManagement';
 export { SystemConfig } from './SystemConfig';
 export { TransactionHistory } from './TransactionHistory';
+export { PointHistory } from './PointHistory';

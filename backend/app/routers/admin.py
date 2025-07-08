@@ -5,7 +5,7 @@ from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
-    MarketLimitRequest, MarketLimitResponse, ErrorResponse, Trade
+    MarketLimitRequest, MarketLimitResponse, ErrorResponse, Trade, PointLog
 )
 from app.core.security import get_current_user
 from app.core.rbac import RBACService, Permission, require_admin_role, ROLE_PERMISSIONS
@@ -1945,6 +1945,32 @@ async def get_all_trades(
         )
     
     return await admin_service.get_all_trades(limit)
+
+
+@router.get(
+    "/points/history",
+    response_model=List[PointLog],
+    responses={
+        401: {"model": ErrorResponse, "description": "未授權"},
+    },
+    summary="查詢所有點數紀錄",
+    description="查詢系統中所有的點數交易紀錄"
+)
+async def get_all_point_logs(
+    limit: int = Query(1000, ge=1, le=5000),
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> List[PointLog]:
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+        )
+    
+    return await admin_service.get_all_point_logs(limit)
 
 
 # 動態價格級距功能已移除，改為固定漲跌限制

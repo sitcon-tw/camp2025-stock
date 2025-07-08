@@ -5,7 +5,7 @@ from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest,
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
-    MarketLimitRequest, MarketLimitResponse, Trade
+    MarketLimitRequest, MarketLimitResponse, Trade, PointLog
 )
 from app.schemas.user import UserBasicInfo
 from app.core.security import verify_CAMP_ADMIN_PASSWORD, create_access_token
@@ -747,3 +747,12 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to get all trades: {e}")
             raise AdminException("Failed to retrieve trades")
+
+    async def get_all_point_logs(self, limit: int) -> List[PointLog]:
+        try:
+            logs_cursor = self.db[Collections.POINT_LOGS].find().sort("created_at", -1).limit(limit)
+            logs = await logs_cursor.to_list(length=None)
+            return [PointLog(**log) for log in logs]
+        except Exception as e:
+            logger.error(f"Failed to get all point logs: {e}")
+            raise AdminException("Failed to retrieve point logs")
