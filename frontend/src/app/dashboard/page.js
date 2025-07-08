@@ -297,7 +297,41 @@ export default function Dashboard() {
             const result = await redeemQRCode(token, qrData);
             
             if (result.ok) {
-                setTransferSuccess(`成功兌換 ${result.points} 點數！`);
+                const qrInfo = JSON.parse(qrData);
+                setTransferSuccess(`🎉 QR Code 兌換成功！獲得 ${result.points} 點數！`);
+                
+                // 觸發收款通知動畫
+                const redemptionData = {
+                    amount: result.points,
+                    from: 'QR Code 兌換',
+                    note: `QR Code 兌換 (${qrInfo.id})`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                setReceivedPayment(redemptionData);
+                setShowPaymentNotification(true);
+                
+                // 播放收款音效
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2);
+                    
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.3);
+                } catch (e) {
+                    console.log('音效播放失敗:', e);
+                }
                 
                 // 重新載入使用者資料
                 try {
@@ -406,7 +440,7 @@ export default function Dashboard() {
             });
             
             if (result.success) {
-                setTransferSuccess(`轉帳成功！手續費: ${result.fee} 點`);
+                setTransferSuccess(`💸 轉帳成功！轉給 ${quickTransferData.username} ${amount} 點，手續費: ${result.fee} 點`);
                 
                 // 重新載入使用者資料
                 try {
@@ -467,7 +501,7 @@ export default function Dashboard() {
             });
             
             if (result.success) {
-                setTransferSuccess(`轉帳成功！手續費: ${result.fee} 點`);
+                setTransferSuccess(`💸 轉帳成功！轉給 ${transferForm.to_username} ${amount} 點，手續費: ${result.fee} 點`);
                 
                 // 重新載入使用者資料
                 try {
@@ -516,24 +550,30 @@ export default function Dashboard() {
                 });
                 
                 for (const transaction of newTransactions) {
-                    // 檢查是否為轉帳收入（根據後端的標準格式）
+                    // 檢查是否為轉帳收入或 QR Code 兌換
                     const isTransferIn = transaction.amount > 0 && transaction.note && 
                         (transaction.type === 'transfer_in' || 
                          transaction.note.includes('收到來自') || 
                          transaction.note.includes('的轉帳'));
+                         
+                    const isQRCodeRedemption = transaction.amount > 0 && transaction.note && 
+                        transaction.note.includes('QR Code 兌換');
                     
                     console.log('檢查交易:', {
                         amount: transaction.amount,
                         type: transaction.type,
                         note: transaction.note,
-                        isTransferIn: isTransferIn
+                        isTransferIn: isTransferIn,
+                        isQRCodeRedemption: isQRCodeRedemption
                     });
                     
-                    if (isTransferIn) {
+                    if (isTransferIn || isQRCodeRedemption) {
                         
-                        // 提取轉帳人名稱（根據後端格式："收到來自 [sender] 的轉帳"）
+                        // 提取轉帳人名稱或標示為 QR Code 兌換
                         let fromUser = '未知使用者';
-                        if (transaction.note.includes('收到來自') && transaction.note.includes('的轉帳')) {
+                        if (isQRCodeRedemption) {
+                            fromUser = 'QR Code 兌換';
+                        } else if (transaction.note.includes('收到來自') && transaction.note.includes('的轉帳')) {
                             const match = transaction.note.match(/收到來自\s*(.+?)\s*的轉帳/);
                             fromUser = match?.[1]?.trim() || '未知使用者';
                         }
