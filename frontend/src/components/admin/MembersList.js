@@ -15,6 +15,7 @@ export const MembersList = ({ token }) => {
     const [sortBy, setSortBy] = useState("username");
     const [sortOrder, setSortOrder] = useState("asc");
     const [selectedMember, setSelectedMember] = useState(null);
+    const [showDebugInfo, setShowDebugInfo] = useState(false);
 
     // 獲取所有成員數據
     const fetchMembers = async () => {
@@ -134,6 +135,15 @@ export const MembersList = ({ token }) => {
                             <div className="text-sm text-[#7BC2E6]">
                                 顯示 {filteredMembers.length} / {members.length} 位成員
                             </div>
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={showDebugInfo}
+                                    onChange={(e) => setShowDebugInfo(e.target.checked)}
+                                    className="rounded border-[#294565] bg-[#0f203e] text-[#469FD2] focus:ring-2 focus:ring-[#469FD2]"
+                                />
+                                <span className="text-sm text-[#7BC2E6]">Debug模式</span>
+                            </label>
                         </div>
                     </div>
 
@@ -221,6 +231,13 @@ export const MembersList = ({ token }) => {
                                         >
                                             總資產 {getSortIcon("total_value")}
                                         </th>
+                                        {showDebugInfo && (
+                                            <>
+                                                <th className="px-4 py-3 text-left text-sm font-medium text-[#7BC2E6]">狀態</th>
+                                                <th className="px-4 py-3 text-left text-sm font-medium text-[#7BC2E6]">註冊時間</th>
+                                                <th className="px-4 py-3 text-left text-sm font-medium text-[#7BC2E6]">最後活動</th>
+                                            </>
+                                        )}
                                         <th className="px-4 py-3 text-center text-sm font-medium text-[#7BC2E6]">操作</th>
                                     </tr>
                                 </thead>
@@ -260,6 +277,53 @@ export const MembersList = ({ token }) => {
                                             <td className="px-4 py-3 text-right text-sm font-semibold text-yellow-400">
                                                 {formatNumber(member.total_value)}
                                             </td>
+                                            {showDebugInfo && (
+                                                <>
+                                                    <td className="px-4 py-3 text-sm">
+                                                        <div className="space-y-1">
+                                                            <div className={`inline-block px-2 py-1 rounded text-xs ${
+                                                                member.is_active !== false ? 'bg-green-600 text-green-100' : 'bg-red-600 text-red-100'
+                                                            }`}>
+                                                                {member.is_active !== false ? '啟用' : '停用'}
+                                                            </div>
+                                                            {member.enabled !== undefined && (
+                                                                <div className={`inline-block px-2 py-1 rounded text-xs ml-1 ${
+                                                                    member.enabled ? 'bg-blue-600 text-blue-100' : 'bg-gray-600 text-gray-100'
+                                                                }`}>
+                                                                    {member.enabled ? '已驗證' : '未驗證'}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-gray-400">
+                                                        {member.created_at ? 
+                                                            new Date(member.created_at).toLocaleString('zh-TW', {
+                                                                month: '2-digit',
+                                                                day: '2-digit',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            }) : 'N/A'
+                                                        }
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-gray-400">
+                                                        {member.last_login ? 
+                                                            new Date(member.last_login).toLocaleString('zh-TW', {
+                                                                month: '2-digit',
+                                                                day: '2-digit',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            }) : 
+                                                            member.updated_at ?
+                                                                new Date(member.updated_at).toLocaleString('zh-TW', {
+                                                                    month: '2-digit',
+                                                                    day: '2-digit',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                }) : 'N/A'
+                                                        }
+                                                    </td>
+                                                </>
+                                            )}
                                             <td className="px-4 py-3 text-center">
                                                 <button
                                                     onClick={() => setSelectedMember(member)}
@@ -280,6 +344,7 @@ export const MembersList = ({ token }) => {
                 {selectedMember && (
                     <MemberDetailModal 
                         member={selectedMember} 
+                        showDebugInfo={showDebugInfo}
                         onClose={() => setSelectedMember(null)} 
                     />
                 )}
@@ -291,7 +356,7 @@ export const MembersList = ({ token }) => {
 /**
  * 成員詳細資料彈窗組件
  */
-const MemberDetailModal = ({ member, onClose }) => {
+const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="max-w-2xl w-full mx-4 rounded-lg border border-[#294565] bg-[#1A325F] shadow-xl">
@@ -377,6 +442,70 @@ const MemberDetailModal = ({ member, onClose }) => {
                                         <div className="text-white">{new Date(member.last_login).toLocaleString('zh-TW')}</div>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Debug 資訊 */}
+                    {showDebugInfo && (
+                        <div>
+                            <h4 className="text-lg font-semibold text-yellow-400 mb-3">🔧 Debug 資訊</h4>
+                            <div className="space-y-4">
+                                {/* 帳號狀態 */}
+                                <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
+                                    <div className="text-sm text-[#7BC2E6] mb-2">帳號狀態</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className={`inline-block px-2 py-1 rounded text-xs ${
+                                            member.is_active !== false ? 'bg-green-600 text-green-100' : 'bg-red-600 text-red-100'
+                                        }`}>
+                                            {member.is_active !== false ? '啟用' : '停用'}
+                                        </div>
+                                        {member.enabled !== undefined && (
+                                            <div className={`inline-block px-2 py-1 rounded text-xs ${
+                                                member.enabled ? 'bg-blue-600 text-blue-100' : 'bg-gray-600 text-gray-100'
+                                            }`}>
+                                                {member.enabled ? '已驗證' : '未驗證'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 內部 ID */}
+                                <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
+                                    <div className="text-sm text-[#7BC2E6]">內部 ID</div>
+                                    <div className="text-white font-mono text-sm">{member.user_id || 'N/A'}</div>
+                                </div>
+
+                                {/* 資料庫記錄 */}
+                                <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
+                                    <div className="text-sm text-[#7BC2E6] mb-2">資料庫記錄</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                        <div>
+                                            <div className="text-gray-400">建立時間</div>
+                                            <div className="text-white">
+                                                {member.created_at ? 
+                                                    new Date(member.created_at).toLocaleString('zh-TW') : 'N/A'
+                                                }
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="text-gray-400">最後更新</div>
+                                            <div className="text-white">
+                                                {member.updated_at ? 
+                                                    new Date(member.updated_at).toLocaleString('zh-TW') : 'N/A'
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 原始資料 */}
+                                <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
+                                    <div className="text-sm text-[#7BC2E6] mb-2">原始資料 (JSON)</div>
+                                    <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-32 bg-black p-2 rounded">
+                                        {JSON.stringify(member, null, 2)}
+                                    </pre>
+                                </div>
                             </div>
                         </div>
                     )}
