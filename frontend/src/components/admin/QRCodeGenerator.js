@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PermissionButton } from "./PermissionGuard";
 import { PERMISSIONS } from "@/contexts/PermissionContext";
-import { givePoints } from "@/lib/api";
+import { createQRCode, listQRCodes } from "@/lib/api";
 import QRCode from "react-qr-code";
 
 /**
@@ -13,6 +13,39 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
     const [qrCodes, setQrCodes] = useState([]);
     const [generateCount, setGenerateCount] = useState(10);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [filterUsed, setFilterUsed] = useState(null); // null=全部, true=已使用, false=未使用
+
+    // 載入 QR Code 記錄
+    const loadQRCodes = async () => {
+        try {
+            setIsLoading(true);
+            const records = await listQRCodes(token, 100, filterUsed);
+            // 轉換後端格式為前端格式
+            const formattedQRCodes = records.map(record => ({
+                id: record.id,
+                data: record.qr_data,
+                points: record.points,
+                created_at: record.created_at,
+                used: record.used,
+                used_by: record.used_by,
+                used_at: record.used_at
+            }));
+            setQrCodes(formattedQRCodes);
+        } catch (error) {
+            console.error('載入 QR Code 記錄失敗:', error);
+            showNotification('載入 QR Code 記錄失敗', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 初始載入和過濾變更時重新載入
+    useEffect(() => {
+        if (token) {
+            loadQRCodes();
+        }
+    }, [token, filterUsed]);
 
     // 生成QR Code
     const generateQRCodes = async () => {
@@ -28,7 +61,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
 
         setIsGenerating(true);
         try {
-            const newQRCodes = [];
+            const createdQRCodes = [];
             
             for (let i = 0; i < generateCount; i++) {
                 // 生成唯一的QR Code ID
@@ -43,17 +76,29 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     used: false
                 };
 
-                newQRCodes.push({
-                    id: qrId,
-                    data: JSON.stringify(qrData),
-                    points: pointsPerQR,
-                    created_at: new Date().toISOString(),
-                    used: false
-                });
+                const qrDataString = JSON.stringify(qrData);
+
+                // 保存到後端
+                try {
+                    const record = await createQRCode(token, qrDataString, pointsPerQR);
+                    createdQRCodes.push({
+                        id: record.id,
+                        data: qrDataString,
+                        points: record.points,
+                        created_at: record.created_at,
+                        used: record.used,
+                        used_by: record.used_by,
+                        used_at: record.used_at
+                    });
+                } catch (saveError) {
+                    console.error(`保存 QR Code ${qrId} 失敗:`, saveError);
+                    // 繼續生成其他 QR Code
+                }
             }
 
-            setQrCodes(prev => [...prev, ...newQRCodes]);
-            showNotification(`成功生成 ${generateCount} 個 QR Code，每個 ${pointsPerQR} 點`, "success");
+            // 重新載入所有記錄以確保同步
+            await loadQRCodes();
+            showNotification(`成功生成 ${createdQRCodes.length} 個 QR Code，每個 ${pointsPerQR} 點`, "success");
         } catch (error) {
             showNotification(`生成 QR Code 失敗: ${error.message}`, "error");
         } finally {
@@ -61,18 +106,10 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
         }
     };
 
-    // 清空所有QR Code
-    const clearAllQRCodes = () => {
-        if (confirm("確定要清空所有 QR Code 嗎？")) {
-            setQrCodes([]);
-            showNotification("已清空所有 QR Code", "info");
-        }
-    };
-
-    // 刪除單個QR Code
-    const deleteQRCode = (id) => {
-        setQrCodes(prev => prev.filter(qr => qr.id !== id));
-        showNotification("QR Code 已刪除", "info");
+    // 重新載入QR Code記錄
+    const refreshQRCodes = () => {
+        loadQRCodes();
+        showNotification("已重新載入 QR Code 記錄", "info");
     };
 
     // 列印功能
@@ -216,7 +253,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                 {/* 設定區 */}
                 <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
                     <h3 className="mb-3 text-lg font-semibold text-[#7BC2E6]">生成設定</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div>
                             <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
                                 每個 QR Code 點數
@@ -245,6 +282,23 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                                 placeholder="例如: 10"
                             />
                         </div>
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                狀態篩選
+                            </label>
+                            <select
+                                value={filterUsed === null ? 'all' : filterUsed ? 'used' : 'unused'}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setFilterUsed(value === 'all' ? null : value === 'used');
+                                }}
+                                className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            >
+                                <option value="all">全部</option>
+                                <option value="unused">未使用</option>
+                                <option value="used">已使用</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="mt-4 flex gap-3">
                         <PermissionButton
@@ -256,21 +310,20 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                         >
                             {isGenerating ? "生成中..." : "生成 QR Code"}
                         </PermissionButton>
+                        <button
+                            onClick={refreshQRCodes}
+                            disabled={isLoading}
+                            className="rounded-xl bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+                        >
+                            {isLoading ? "載入中..." : "重新載入"}
+                        </button>
                         {qrCodes.length > 0 && (
-                            <>
-                                <button
-                                    onClick={printQRCodes}
-                                    className="rounded-xl bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-                                >
-                                    列印全部
-                                </button>
-                                <button
-                                    onClick={clearAllQRCodes}
-                                    className="rounded-xl bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
-                                >
-                                    清空全部
-                                </button>
-                            </>
+                            <button
+                                onClick={printQRCodes}
+                                className="rounded-xl bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                            >
+                                列印全部
+                            </button>
                         )}
                     </div>
                 </div>
@@ -279,7 +332,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                 {qrCodes.length > 0 && (
                     <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
                         <h3 className="mb-3 text-lg font-semibold text-[#7BC2E6]">統計資訊</h3>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-white">{qrCodes.length}</div>
                                 <div className="text-sm text-gray-400">總QR Code數</div>
@@ -289,6 +342,12 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                                     {qrCodes.filter(qr => !qr.used).length}
                                 </div>
                                 <div className="text-sm text-gray-400">未使用</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-red-400">
+                                    {qrCodes.filter(qr => qr.used).length}
+                                </div>
+                                <div className="text-sm text-gray-400">已使用</div>
                             </div>
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-blue-400">
@@ -309,35 +368,53 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                         <div className="max-h-96 overflow-y-auto">
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {qrCodes.map((qr) => (
-                                    <div key={qr.id} className="rounded-lg border border-[#469FD2] bg-[#1A325F] p-4">
+                                    <div key={qr.id} className={`rounded-lg border p-4 ${
+                                        qr.used 
+                                            ? 'border-red-400 bg-red-900/20' 
+                                            : 'border-[#469FD2] bg-[#1A325F]'
+                                    }`}>
                                         <div className="text-center">
-                                            <div className="mb-2 inline-block rounded-lg bg-white p-2">
+                                            <div className="mb-2 inline-block rounded-lg bg-white p-2 relative">
                                                 <QRCode
                                                     value={qr.data}
                                                     size={100}
                                                     bgColor="#ffffff"
                                                     fgColor="#000000"
                                                 />
+                                                {qr.used && (
+                                                    <div className="absolute inset-0 bg-red-600/60 rounded-lg flex items-center justify-center">
+                                                        <span className="text-white font-bold text-sm">已使用</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="text-lg font-bold text-yellow-400">
                                                     {qr.points} 點
                                                 </div>
+                                                <div className={`text-sm font-medium ${
+                                                    qr.used ? 'text-red-400' : 'text-green-400'
+                                                }`}>
+                                                    {qr.used ? '已使用' : '未使用'}
+                                                </div>
+                                                {qr.used && qr.used_by && (
+                                                    <div className="text-xs text-red-300">
+                                                        使用者: {qr.used_by}
+                                                    </div>
+                                                )}
+                                                {qr.used && qr.used_at && (
+                                                    <div className="text-xs text-red-300">
+                                                        使用時間: {new Date(qr.used_at).toLocaleString('zh-TW', { 
+                                                            timeZone: 'Asia/Taipei' 
+                                                        })}
+                                                    </div>
+                                                )}
                                                 <div className="text-xs text-gray-400 font-mono">
                                                     {qr.id}
                                                 </div>
                                                 <div className="text-xs text-gray-400">
-                                                    {new Date(qr.created_at).toLocaleString('zh-TW', { 
+                                                    建立: {new Date(qr.created_at).toLocaleString('zh-TW', { 
                                                         timeZone: 'Asia/Taipei' 
                                                     })}
-                                                </div>
-                                                <div className="flex gap-2 mt-2">
-                                                    <button
-                                                        onClick={() => deleteQRCode(qr.id)}
-                                                        className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                                                    >
-                                                        刪除
-                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -354,10 +431,12 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     <ul className="space-y-1 text-sm text-green-300">
                         <li>• 設定每個 QR Code 要給的點數量</li>
                         <li>• 設定要生成的 QR Code 數量</li>
-                        <li>• 點擊「生成 QR Code」按鈕</li>
+                        <li>• 點擊「生成 QR Code」按鈕生成並保存到資料庫</li>
+                        <li>• 使用狀態篩選可以查看未使用或已使用的 QR Code</li>
                         <li>• 使用「列印全部」功能可以列印所有 QR Code</li>
                         <li>• 學生可以在個人面板掃描 QR Code 來獲得點數</li>
-                        <li>• 每個 QR Code 只能使用一次</li>
+                        <li>• 每個 QR Code 只能使用一次，使用後會顯示使用者和時間</li>
+                        <li>• 重新整理頁面後 QR Code 記錄會保留，不會消失</li>
                     </ul>
                 </div>
             </div>

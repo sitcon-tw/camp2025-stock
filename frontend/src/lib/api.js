@@ -502,6 +502,34 @@ export async function redeemQRCode(token, qrData) {
     });
 }
 
+// 創建 QR Code 記錄
+export async function createQRCode(token, qrData, points) {
+    return apiRequest("/api/web/qr/create", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ qr_data: qrData, points: points }),
+    });
+}
+
+// 查詢 QR Code 記錄列表
+export async function listQRCodes(token, limit = 100, used = null) {
+    const params = new URLSearchParams();
+    params.append("limit", limit);
+    if (used !== null) {
+        params.append("used", used);
+    }
+    
+    return apiRequest(`/api/web/qr/list?${params.toString()}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // 查詢使用者資料
 export async function getWebUserProfile(token) {
     return apiRequest("/api/web/profile", {

@@ -6,6 +6,8 @@ from app.schemas.user import (
     TransferRequest, TransferResponse, UserPointLog, UserStockOrder, UserBasicInfo
 )
 from app.schemas.public import UserAssetDetail, ErrorResponse, QRCodeRedeemRequest, QRCodeRedeemResponse, GivePointsRequest
+from pydantic import BaseModel, Field
+from datetime import datetime
 from app.core.security import get_current_user
 from typing import List, Dict, Any, Optional
 import logging
@@ -13,6 +15,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# ========== QR Code 管理 Schemas ==========
+
+class QRCodeCreateRequest(BaseModel):
+    qr_data: str = Field(..., description="QR Code 資料")
+    points: int = Field(..., description="點數數量")
+
+class QRCodeRecord(BaseModel):
+    id: str = Field(..., description="QR Code ID")
+    qr_data: str = Field(..., description="QR Code 資料")
+    points: int = Field(..., description="點數數量")
+    created_at: datetime = Field(..., description="創建時間")
+    used: bool = Field(default=False, description="是否已使用")
+    used_by: Optional[str] = Field(None, description="使用者ID")
+    used_at: Optional[datetime] = Field(None, description="使用時間")
+    created_by: str = Field(..., description="創建者ID")
 
 
 # ========== 使用者資產管理 ==========
@@ -510,27 +529,19 @@ async def redeem_qr_code(
         from app.core.database import get_database, Collections
         db = get_database()
         
-        # 檢查是否已經兌換過
-        existing_redemption = await db[Collections.POINT_LOGS].find_one({
-            "qr_id": qr_id,
-            "user_id": current_user["user_id"]
-        })
+        # 檢查 QR Code 記錄是否存在且未使用
+        qr_record = await db[Collections.QR_CODES].find_one({"id": qr_id})
         
-        if existing_redemption:
+        if not qr_record:
             return QRCodeRedeemResponse(
                 ok=False,
-                message="此 QR Code 已經兌換過了"
+                message="無效的 QR Code"
             )
         
-        # 檢查是否有其他人兌換過
-        other_redemption = await db[Collections.POINT_LOGS].find_one({
-            "qr_id": qr_id
-        })
-        
-        if other_redemption:
+        if qr_record.get("used", False):
             return QRCodeRedeemResponse(
                 ok=False,
-                message="此 QR Code 已經被其他人兌換過了"
+                message=f"此 QR Code 已經被 {qr_record.get('used_by', '其他人')} 兌換過了"
             )
         
         # 給予點數
@@ -542,6 +553,18 @@ async def redeem_qr_code(
         
         # 給予點數
         await admin_service.give_points(give_points_request)
+        
+        # 標記 QR Code 為已使用
+        await db[Collections.QR_CODES].update_one(
+            {"id": qr_id},
+            {
+                "$set": {
+                    "used": True,
+                    "used_by": current_user["user_id"],
+                    "used_at": datetime.now()
+                }
+            }
+        )
         
         # 記錄兌換日誌
         await db[Collections.POINT_LOGS].insert_one({
@@ -569,6 +592,127 @@ async def redeem_qr_code(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="兌換失敗，請稍後再試"
+        )
+
+
+# ========== QR Code 管理 API ==========
+
+@router.post(
+    "/qr/create",
+    response_model=QRCodeRecord,
+    summary="創建 QR Code 記錄",
+    description="創建並保存 QR Code 記錄到資料庫"
+)
+async def create_qr_code(
+    request: QRCodeCreateRequest,
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> QRCodeRecord:
+    """
+    創建 QR Code 記錄
+    
+    Args:
+        request: QR Code 創建請求
+        current_user: 目前使用者資訊（從 JWT Token 解析）
+        admin_service: 管理員服務（自動注入）
+        
+    Returns:
+        創建的 QR Code 記錄
+    """
+    import json
+    
+    try:
+        # 解析 QR Code 資料以驗證格式
+        qr_data = json.loads(request.qr_data)
+        qr_id = qr_data.get("id")
+        
+        if not qr_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="QR Code 資料中缺少 ID"
+            )
+        
+        # 保存到資料庫
+        from app.core.database import get_database, Collections
+        db = get_database()
+        
+        qr_record = {
+            "id": qr_id,
+            "qr_data": request.qr_data,
+            "points": request.points,
+            "created_at": datetime.now(),
+            "used": False,
+            "used_by": None,
+            "used_at": None,
+            "created_by": current_user["user_id"]
+        }
+        
+        await db[Collections.QR_CODES].insert_one(qr_record)
+        
+        return QRCodeRecord(**qr_record)
+        
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QR Code 格式錯誤"
+        )
+    except Exception as e:
+        logger.error(f"創建 QR Code 記錄失敗: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="創建 QR Code 記錄失敗"
+        )
+
+
+@router.get(
+    "/qr/list",
+    response_model=List[QRCodeRecord],
+    summary="查詢 QR Code 記錄",
+    description="查詢所有 QR Code 記錄及使用狀況"
+)
+async def list_qr_codes(
+    limit: int = 100,
+    used: Optional[bool] = None,
+    current_user: dict = Depends(get_current_user)
+) -> List[QRCodeRecord]:
+    """
+    查詢 QR Code 記錄列表
+    
+    Args:
+        limit: 查詢筆數限制（預設 100）
+        used: 篩選條件：True=已使用, False=未使用, None=全部
+        current_user: 目前使用者資訊（從 JWT Token 解析）
+        
+    Returns:
+        QR Code 記錄列表
+    """
+    try:
+        from app.core.database import get_database, Collections
+        db = get_database()
+        
+        # 構建查詢條件
+        query = {"created_by": current_user["user_id"]}
+        if used is not None:
+            query["used"] = used
+        
+        # 查詢記錄
+        cursor = db[Collections.QR_CODES].find(query).sort("created_at", -1).limit(limit)
+        records = await cursor.to_list(length=limit)
+        
+        # 轉換為 Pydantic 模型
+        qr_records = []
+        for record in records:
+            # 移除 MongoDB 的 _id 字段
+            record.pop("_id", None)
+            qr_records.append(QRCodeRecord(**record))
+        
+        return qr_records
+        
+    except Exception as e:
+        logger.error(f"查詢 QR Code 記錄失敗: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="查詢 QR Code 記錄失敗"
         )
 
 

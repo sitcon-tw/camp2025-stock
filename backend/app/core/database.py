@@ -63,6 +63,7 @@ class Collections:
     ANNOUNCEMENTS = "announcements"
     MARKET_CONFIG = "market_config"
     PVP_CHALLENGES = "pvp_challenges"
+    QR_CODES = "qr_codes"
     
     @classmethod
     def all_collections(cls) -> list:
@@ -70,7 +71,8 @@ class Collections:
         return [
             cls.USERS, cls.GROUPS, cls.POINT_LOGS,
             cls.STOCKS, cls.STOCK_ORDERS, cls.TRADES,
-            cls.ANNOUNCEMENTS, cls.MARKET_CONFIG, cls.PVP_CHALLENGES
+            cls.ANNOUNCEMENTS, cls.MARKET_CONFIG, cls.PVP_CHALLENGES,
+            cls.QR_CODES
         ]
 
 
