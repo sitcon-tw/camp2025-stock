@@ -59,8 +59,16 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
         fetchInitialData();
 
+        // 添加自動更新機制，每3秒更新一次
+        const interval = setInterval(() => {
+            if (isMounted) {
+                fetchData();
+            }
+        }, 3000);
+
         return () => {
             isMounted = false;
+            clearInterval(interval);
         };
     }, []);
     const OrderBookTab = () => {
@@ -90,6 +98,17 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
                 {!loading && (
                     <>
+                        {/* 刷新按鈕 */}
+                        <div className="mb-3 flex justify-end">
+                            <button
+                                onClick={fetchData}
+                                className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 transition-colors"
+                                disabled={loading}
+                            >
+                                🔄 刷新五檔
+                            </button>
+                        </div>
+                        
                         {/* 表頭 */}
                         <div className="text-md mb-2 grid grid-cols-4 border-b border-[#469FD2] pb-2 text-white">
                             <div className="text-center">

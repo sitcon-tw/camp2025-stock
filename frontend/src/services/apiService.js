@@ -75,7 +75,7 @@ class ApiService {
     }
 
     async getOrderBookData() {
-        return this.request("price-depth", getPriceDepth, 5000);
+        return this.request("price-depth", getPriceDepth, 1000);
     }
 
     async getTradeHistory(limit = 20) {
