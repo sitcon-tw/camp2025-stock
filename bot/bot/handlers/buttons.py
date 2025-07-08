@@ -16,15 +16,16 @@ logger = setup_logger(__name__)
 async def handle_zombie_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         callback_data = update.callback_query.data
-        
-        # 排除PVP相關的按鈕，這些應該由專門的handler處理，待觀察
+
         if (callback_data.startswith("pvp_creator_") or 
             callback_data.startswith("pvp_accept_") or 
             callback_data.startswith("pvp_conflict_") or
             callback_data.startswith("orders_")):
             logger.warning(f"Zombie handler caught valid callback: {callback_data}")
             return
-            
+
+        context.user_data["in_transfer_convo"] = False
+        context.user_data["in_stock_convo"] = False
         await update.callback_query.answer("⚠️ 此按鈕無效，請重新輸入指令來開始新的操作", show_alert=True)
     except BadRequest as e:
         if "too old" in str(e) or "expired" in str(e) or "invalid" in str(e):
