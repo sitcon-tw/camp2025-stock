@@ -252,6 +252,17 @@ export async function resetAllData(token) {
     });
 }
 
+// 重置所有資料但保留使用者 (Danger Zone)
+export async function resetAllDataExceptUsers(token) {
+    return apiRequest("/api/admin/reset/except-users", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // 強制結算 (Force Settlement)
 export async function forceSettlement(token) {
     return apiRequest("/api/admin/final-settlement", {

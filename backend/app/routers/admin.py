@@ -996,6 +996,167 @@ async def reset_all_data(
 
 
 @router.post(
+    "/reset/except-users",
+    responses={
+        200: {"description": "清除成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="清除所有資料（保留使用者）",
+    description="⚠️ 危險操作：清除所有資料庫集合，但保留使用者資料和隊伍資料（包括 Telegram 綁定和大頭貼）"
+)
+async def reset_all_data_except_users(
+    current_user: dict = Depends(get_current_user)
+):
+    """清除所有資料（保留使用者）
+    
+    Args:
+        current_user: 目前使用者（自動注入）
+
+    Returns:
+        操作結果
+    """
+    # 檢查系統管理權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        import os
+        
+        db = get_database()
+        
+        logger.warning("Starting database reset - clearing all data except users")
+        
+        # 要清除的集合（排除使用者和群組相關資料）
+        collections_to_clear = [
+            Collections.POINT_LOGS,
+            Collections.STOCKS,
+            Collections.STOCK_ORDERS,
+            Collections.TRADES,
+            Collections.ANNOUNCEMENTS,
+            Collections.MARKET_CONFIG,
+            Collections.PVP_CHALLENGES
+        ]
+        
+        # 記錄清除前的統計
+        reset_stats = {}
+        for collection_name in collections_to_clear:
+            try:
+                count = await db[collection_name].count_documents({})
+                reset_stats[collection_name] = count
+                logger.info(f"Collection {collection_name}: {count} documents")
+            except Exception as e:
+                logger.warning(f"Could not count {collection_name}: {e}")
+                reset_stats[collection_name] = "unknown"
+        
+        # 清空指定集合
+        total_deleted = 0
+        for collection_name in collections_to_clear:
+            try:
+                result = await db[collection_name].delete_many({})
+                deleted_count = result.deleted_count
+                total_deleted += deleted_count
+                logger.info(f"Deleted {deleted_count} documents from {collection_name}")
+            except Exception as e:
+                logger.error(f"Failed to delete from {collection_name}: {e}")
+        
+        # 重新初始化基本設定
+        try:
+            # 初始化IPO狀態
+            initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
+            initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
+        except (ValueError, TypeError):
+            initial_shares = 1000000
+            initial_price = 20
+        
+        # 建立初始IPO設定
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "ipo_status",
+            "initial_shares": initial_shares,
+            "shares_remaining": initial_shares,
+            "initial_price": initial_price,
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        # 建立預設市場開放時間 (9:00-17:00 UTC)
+        current_time = datetime.now(timezone.utc)
+        start_time = int(current_time.replace(hour=9, minute=0, second=0).timestamp())
+        end_time = int(current_time.replace(hour=17, minute=0, second=0).timestamp())
+        
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "market_hours",
+            "openTime": [
+                {"start": start_time, "end": end_time}
+            ],
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        # 建立預設漲跌限制 (20%)
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "trading_limit",
+            "limitPercent": 2000,  # 20% = 2000 basis points
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        # 重置目前價格為 IPO 初始價格
+        await db[Collections.MARKET_CONFIG].insert_one({
+            "type": "current_price",
+            "price": initial_price,
+            "updated_at": datetime.now(timezone.utc)
+        })
+        
+        # 重置所有使用者的點數和持股
+        users_reset_result = await db[Collections.USERS].update_many(
+            {},
+            {"$set": {"points": 0}}
+        )
+        
+        logger.warning(f"Database reset (except users) completed: {total_deleted} documents deleted, {users_reset_result.modified_count} users reset")
+        
+        # 傳送系統公告到 Telegram Bot
+        try:
+            from app.services.admin_service import AdminService
+            admin_service = AdminService(db)
+            await admin_service._send_system_announcement(
+                title="🔄 系統資料重置完成（保留使用者）",
+                message=f"管理員已執行部分系統重置作業，共清除 {total_deleted} 筆記錄。使用者資料和隊伍資料（包括 Telegram 綁定和大頭貼）已保留，但所有使用者點數已重置為 0。"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send reset announcement: {e}")
+        
+        return {
+            "ok": True,
+            "message": f"資料庫已部分重置（保留使用者），共刪除 {total_deleted} 筆記錄，重置 {users_reset_result.modified_count} 位使用者點數",
+            "deletedDocuments": total_deleted,
+            "resetUsers": users_reset_result.modified_count,
+            "clearedCollections": collections_to_clear,
+            "preservedCollections": [Collections.USERS, Collections.GROUPS],
+            "collectionStats": reset_stats,
+            "initializedConfigs": {
+                "ipo": {"shares": initial_shares, "price": initial_price},
+                "market_hours": {"start": start_time, "end": end_time},
+                "trading_limit": 2000
+            },
+            "resetAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to reset data except users: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"重置資料失敗: {str(e)}"
+        )
+
+
+@router.post(
     "/test-announcement",
     responses={
         200: {"description": "測試公告成功"},

@@ -13,6 +13,7 @@ import {
     getUserAssets,
     givePoints,
     resetAllData,
+    resetAllDataExceptUsers,
     resetIpo,
     setTradingLimit,
     updateIpo,
@@ -282,6 +283,7 @@ const OverviewSection = ({
  */
 const SystemManagementSection = ({ token, showNotification }) => {
     const [showResetModal, setShowResetModal] = useState(false);
+    const [showResetExceptUsersModal, setShowResetExceptUsersModal] = useState(false);
     const [showSettlementModal, setShowSettlementModal] =
         useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -318,6 +320,19 @@ const SystemManagementSection = ({ token, showNotification }) => {
             await resetAllData(token);
             showNotification("所有資料已成功重置", "success");
             setShowResetModal(false);
+        } catch (error) {
+            showNotification(`重置失敗: ${error.message}`, "error");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleResetAllDataExceptUsers = async () => {
+        try {
+            setIsProcessing(true);
+            await resetAllDataExceptUsers(token);
+            showNotification("所有資料已成功重置（保留使用者和隊伍）", "success");
+            setShowResetExceptUsersModal(false);
         } catch (error) {
             showNotification(`重置失敗: ${error.message}`, "error");
         } finally {
@@ -421,9 +436,9 @@ const SystemManagementSection = ({ token, showNotification }) => {
                     ⚠️ 危險操作區域
                 </h3>
                 <p className="mb-4 text-center text-sm text-red-300">
-                    點底下兩個按鈕前請三思哦哦哦
+                    點底下按鈕前請三思哦哦哦
                 </p>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <PermissionButton
                         requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
                         token={token}
@@ -431,6 +446,15 @@ const SystemManagementSection = ({ token, showNotification }) => {
                         onClick={() => setShowResetModal(true)}
                     >
                         重置所有資料
+                    </PermissionButton>
+
+                    <PermissionButton
+                        requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                        token={token}
+                        className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
+                        onClick={() => setShowResetExceptUsersModal(true)}
+                    >
+                        清除資料（保留使用者）
                     </PermissionButton>
 
                     <PermissionButton
@@ -613,6 +637,61 @@ const SystemManagementSection = ({ token, showNotification }) => {
                         className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
                     >
                         {isProcessing ? "處理中..." : "確認重置"}
+                    </button>
+                </div>
+            </Modal>
+
+            {/* 清除資料但保留使用者確認模態框 */}
+            <Modal
+                isOpen={showResetExceptUsersModal}
+                onClose={() => setShowResetExceptUsersModal(false)}
+                title="確認清除資料（保留使用者）？"
+                size="md"
+            >
+                <div className="space-y-4">
+                    <div className="rounded-lg border border-purple-500/30 bg-purple-600/10 p-4">
+                        <div className="flex items-start space-x-3">
+                            <span className="text-2xl">⚠️</span>
+                            <div>
+                                <h4 className="font-semibold text-purple-400">
+                                    部分資料清除警告
+                                </h4>
+                                <p className="mt-1 text-sm text-purple-300">
+                                    此操作將會清除以下資料：
+                                </p>
+                                <ul className="mt-2 space-y-1 text-sm text-purple-200">
+                                    <li>• 清除所有點數紀錄</li>
+                                    <li>• 清除所有股票持有記錄</li>
+                                    <li>• 清除所有交易訂單</li>
+                                    <li>• 清除所有成交紀錄</li>
+                                    <li>• 清除所有公告</li>
+                                    <li>• 清除所有 PVP 挑戰</li>
+                                    <li>• 重置市場狀態和IPO設定</li>
+                                    <li>• 🔒 保留使用者資料（包括 Telegram 綁定和大頭貼）</li>
+                                    <li>• 🔒 保留隊伍資料</li>
+                                    <li>• 🔒 將所有使用者點數重置為 0</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-[#7BC2E6]">
+                        請確認您真的要清除資料但保留使用者嗎？
+                    </p>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                        onClick={() => setShowResetExceptUsersModal(false)}
+                        disabled={isProcessing}
+                        className="rounded bg-[#294565] px-4 py-2 text-[#92cbf4] hover:bg-[#1A325F] disabled:opacity-50"
+                    >
+                        取消
+                    </button>
+                    <button
+                        onClick={handleResetAllDataExceptUsers}
+                        disabled={isProcessing}
+                        className="rounded bg-purple-600 px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-50"
+                    >
+                        {isProcessing ? "處理中..." : "確認清除"}
                     </button>
                 </div>
             </Modal>
