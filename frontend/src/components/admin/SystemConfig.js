@@ -318,20 +318,26 @@ export const SystemConfig = ({ token }) => {
             }
 
             const openTime = validSessions.map((time) => {
-                // 建立今天的日期，但使用 UTC 時間來避免時區問題
                 const today = new Date();
-                const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-                
-                // 建立台北時間的時間戳
-                const startTime = new Date(`${dateStr}T${time.start}:00+08:00`);
-                const endTime = new Date(`${dateStr}T${time.end}:00+08:00`);
+                const startTime = new Date(
+                    today.toDateString() + " " + time.start,
+                );
+                const endTime = new Date(
+                    today.toDateString() + " " + time.end,
+                );
 
-                return {
+                const result = {
                     start: Math.floor(startTime.getTime() / 1000),
                     end: Math.floor(endTime.getTime() / 1000),
                 };
+                
+                console.log(`Time ${time.start}-${time.end} converted to:`, result);
+                console.log(`Readable: ${new Date(result.start * 1000).toLocaleString('zh-TW', {timeZone: 'Asia/Taipei'})} - ${new Date(result.end * 1000).toLocaleString('zh-TW', {timeZone: 'Asia/Taipei'})}`);
+                
+                return result;
             });
 
+            console.log('Sending openTime to API:', openTime);
             await updateMarketTimes(token, openTime);
             showNotification("交易時間更新成功！", "success");
             
@@ -740,7 +746,7 @@ export const SystemConfig = ({ token }) => {
                                 </h3>
                                 <button
                                     onClick={addTradingSession}
-                                    className="flex items-center space-x-2 rounded rounded-lg bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
+                                    className="flex items-center space-x-2 rounded-lg bg-blue-500 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-600"
                                 >
                                     <span>新增時段</span>
                                 </button>
