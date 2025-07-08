@@ -39,6 +39,7 @@ export default function Dashboard() {
     const [showQRCode, setShowQRCode] = useState(false);
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [showQRScanner, setShowQRScanner] = useState(false);
+    const [scannedUser, setScannedUser] = useState(null);
     const [transferForm, setTransferForm] = useState({
         to_username: "",
         amount: "",
@@ -212,11 +213,17 @@ export default function Dashboard() {
         setShowQRCode(false);
     };
 
-    const openTransferModal = () => {
-        setTransferForm({ to_username: "", amount: "", note: "" });
+    const openTransferModal = (username = "") => {
+        setTransferForm({ to_username: username, amount: "", note: "" });
         setTransferError("");
         setTransferSuccess("");
         setShowTransferModal(true);
+    };
+
+    const openQRScannerDirectly = () => {
+        setShowQRScanner(true);
+        setTransferError("");
+        setScannedUser(null);
     };
 
     const closeTransferModal = () => {
@@ -224,6 +231,7 @@ export default function Dashboard() {
         setTransferForm({ to_username: "", amount: "", note: "" });
         setTransferError("");
         setTransferSuccess("");
+        setScannedUser(null); // 清除掃描的用戶資訊
     };
 
     const startQRScanner = async () => {
@@ -241,11 +249,14 @@ export default function Dashboard() {
                         try {
                             const qrData = JSON.parse(result.data);
                             if (qrData.type === 'transfer' && qrData.username) {
-                                setTransferForm(prev => ({
-                                    ...prev,
-                                    to_username: qrData.username
-                                }));
+                                // 掃描成功後設置用戶資訊並停止掃描
+                                setScannedUser({
+                                    username: qrData.username,
+                                    id: qrData.id || ''
+                                });
                                 stopQRScanner();
+                                // 直接開啟轉帳表單
+                                openTransferModal(qrData.username);
                             } else {
                                 setTransferError('無效的轉帳 QR Code');
                             }
@@ -276,6 +287,12 @@ export default function Dashboard() {
             qrScannerRef.current = null;
         }
         setShowQRScanner(false);
+    };
+
+    const closeQRScanner = () => {
+        stopQRScanner();
+        setTransferError("");
+        setScannedUser(null);
     };
 
     const handleTransferSubmit = async (e) => {
@@ -787,13 +804,21 @@ export default function Dashboard() {
                                 <p className="mb-3 text-sm text-[#557797]">
                                     轉帳給其他人
                                 </p>
-                                <button
-                                    onClick={openTransferModal}
-                                    className="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
-                                >
-                                    <Camera className="mr-2 h-4 w-4" />
-                                    點數轉帳
-                                </button>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={openQRScannerDirectly}
+                                        className="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
+                                    >
+                                        <Camera className="mr-2 h-4 w-4" />
+                                        掃描 QR Code 轉帳
+                                    </button>
+                                    <button
+                                        onClick={() => openTransferModal()}
+                                        className="inline-flex items-center rounded-lg border border-green-600 bg-transparent px-4 py-1 text-sm text-green-600 transition-colors hover:bg-green-600/10"
+                                    >
+                                        手動輸入
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1404,23 +1429,49 @@ export default function Dashboard() {
                             <label className="block text-sm font-medium text-[#92cbf4] mb-2">
                                 收款人用戶名
                             </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={transferForm.to_username}
-                                    onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
-                                    className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                    placeholder="輸入收款人用戶名"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={startQRScanner}
-                                    className="rounded-lg bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
-                                >
-                                    <QrCode className="h-4 w-4" />
-                                </button>
-                            </div>
+                            {scannedUser ? (
+                                <div className="rounded-lg border border-green-500/30 bg-green-600/10 p-3">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                        <div>
+                                            <p className="text-green-100 font-medium">
+                                                {scannedUser.username}
+                                            </p>
+                                            <p className="text-xs text-green-300">
+                                                已掃描 QR Code 確認收款人
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setScannedUser(null);
+                                            setTransferForm(prev => ({ ...prev, to_username: '' }));
+                                        }}
+                                        className="mt-2 text-xs text-green-300 hover:text-green-200 underline"
+                                    >
+                                        重新選擇收款人
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={transferForm.to_username}
+                                        onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
+                                        className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                        placeholder="輸入收款人用戶名"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={openQRScannerDirectly}
+                                        className="rounded-lg bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                    >
+                                        <QrCode className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -1479,7 +1530,7 @@ export default function Dashboard() {
             {/* QR Scanner Modal */}
             <Modal
                 isOpen={showQRScanner}
-                onClose={stopQRScanner}
+                onClose={closeQRScanner}
                 title="掃描 QR Code"
                 size="md"
             >
@@ -1491,15 +1542,20 @@ export default function Dashboard() {
                             style={{ maxHeight: '300px' }}
                         />
                         <button
-                            onClick={stopQRScanner}
+                            onClick={closeQRScanner}
                             className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white hover:bg-red-700"
                         >
                             <X className="h-4 w-4" />
                         </button>
                     </div>
-                    <p className="text-sm text-center text-[#92cbf4]">
-                        請對準收款人的 QR Code 進行掃描
-                    </p>
+                    <div className="text-center space-y-2">
+                        <p className="text-sm text-[#92cbf4]">
+                            請對準收款人的 QR Code 進行掃描
+                        </p>
+                        <p className="text-xs text-[#557797]">
+                            掃描成功後將自動跳轉到轉帳表單
+                        </p>
+                    </div>
                     {transferError && (
                         <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
                             <p className="text-sm text-red-400">
