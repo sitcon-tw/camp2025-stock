@@ -366,7 +366,7 @@ export const SystemConfig = ({ token }) => {
         if (updating) return; // 防止重複提交
         
         try {
-            setUpdating(true); // 在開始時就設置更新狀態
+            setUpdating(true); // 在開始時就設定更新狀態
             
             // 驗證時間格式
             const validSessions = marketTimesForm.openTime.filter(
