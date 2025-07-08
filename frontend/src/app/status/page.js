@@ -3,6 +3,7 @@
 import { StockChart } from "@/components/charts";
 import { TradingTabs } from "@/components/trading";
 import { HeaderBar, Modal } from "@/components/ui";
+import UpdateBanner from "@/components/ui/UpdateBanner";
 import useModal from "@/hooks/useModal";
 import { placeWebStockOrder } from "@/lib/api";
 import { apiService } from "@/services/apiService";
@@ -131,7 +132,8 @@ export default function Status() {
     const changePercent = parseFloat(stockData.changePercent) || 0;
 
     return (
-        <div className="min-h-screen w-full bg-[#0f203e] pb-28 md:pb-0">
+        <div className="min-h-screen w-full bg-[#0f203e] pb-28 md:pb-0 pt-8">
+            <UpdateBanner />
             <div className="flex w-full max-w-none flex-col px-4 lg:px-8">
                 <HeaderBar />
 

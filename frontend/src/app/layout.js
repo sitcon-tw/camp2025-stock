@@ -2,7 +2,6 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
 import { NavBar } from "@/components/ui";
-import UpdateBanner from "@/components/ui/UpdateBanner";
 import { DataCacheProvider } from "@/contexts/DataCacheContext";
 import { twMerge } from "tailwind-merge";
 
@@ -99,7 +98,6 @@ export default function RootLayout({ children }) {
                 )}
             >
                 <DataCacheProvider>
-                    <UpdateBanner />
                     <div className="w-full bg-[#0f203e]">
                         {children}
                     </div>
