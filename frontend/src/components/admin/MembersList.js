@@ -317,6 +317,7 @@ export const MembersList = ({ token }) => {
                                                     <td className="px-4 py-3 text-xs text-gray-400">
                                                         {member.created_at ? 
                                                             new Date(member.created_at).toLocaleString('zh-TW', {
+                                                                timeZone: 'Asia/Taipei',
                                                                 month: '2-digit',
                                                                 day: '2-digit',
                                                                 hour: '2-digit',
@@ -327,6 +328,7 @@ export const MembersList = ({ token }) => {
                                                     <td className="px-4 py-3 text-xs text-gray-400">
                                                         {member.last_login ? 
                                                             new Date(member.last_login).toLocaleString('zh-TW', {
+                                                                timeZone: 'Asia/Taipei',
                                                                 month: '2-digit',
                                                                 day: '2-digit',
                                                                 hour: '2-digit',
@@ -334,6 +336,7 @@ export const MembersList = ({ token }) => {
                                                             }) : 
                                                             member.updated_at ?
                                                                 new Date(member.updated_at).toLocaleString('zh-TW', {
+                                                                    timeZone: 'Asia/Taipei',
                                                                     month: '2-digit',
                                                                     day: '2-digit',
                                                                     hour: '2-digit',
@@ -471,13 +474,13 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                                 {member.created_at && (
                                     <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
                                         <div className="text-sm text-[#7BC2E6]">註冊時間</div>
-                                        <div className="text-white">{new Date(member.created_at).toLocaleString('zh-TW')}</div>
+                                        <div className="text-white">{new Date(member.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</div>
                                     </div>
                                 )}
                                 {member.last_login && (
                                     <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
                                         <div className="text-sm text-[#7BC2E6]">最後登入</div>
-                                        <div className="text-white">{new Date(member.last_login).toLocaleString('zh-TW')}</div>
+                                        <div className="text-white">{new Date(member.last_login).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</div>
                                     </div>
                                 )}
                             </div>
@@ -522,7 +525,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                                             <div className="text-gray-400">建立時間</div>
                                             <div className="text-white">
                                                 {member.created_at ? 
-                                                    new Date(member.created_at).toLocaleString('zh-TW') : 'N/A'
+                                                    new Date(member.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : 'N/A'
                                                 }
                                             </div>
                                         </div>
@@ -530,7 +533,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                                             <div className="text-gray-400">最後更新</div>
                                             <div className="text-white">
                                                 {member.updated_at ? 
-                                                    new Date(member.updated_at).toLocaleString('zh-TW') : 'N/A'
+                                                    new Date(member.updated_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : 'N/A'
                                                 }
                                             </div>
                                         </div>

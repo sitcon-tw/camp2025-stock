@@ -553,7 +553,7 @@ export const SystemConfig = ({ token }) => {
                     </div>
                     {systemStats.generated_at && (
                         <div className="mt-4 text-xs text-gray-400 text-center">
-                            最後更新：{new Date(systemStats.generated_at).toLocaleString('zh-TW')}
+                            最後更新：{new Date(systemStats.generated_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}
                         </div>
                     )}
                 </div>

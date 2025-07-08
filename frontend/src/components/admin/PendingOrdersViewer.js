@@ -102,6 +102,7 @@ export const PendingOrdersViewer = ({ token }) => {
         try {
             const date = new Date(timeString);
             return date.toLocaleString('zh-TW', {
+                timeZone: 'Asia/Taipei',
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',

@@ -17,6 +17,7 @@ export const formatPercent = (percent) => {
 export const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleString("zh-TW", {
+        timeZone: 'Asia/Taipei',
         month: "numeric",
         day: "numeric",
         hour: "2-digit",

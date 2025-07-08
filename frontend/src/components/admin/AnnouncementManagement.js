@@ -214,6 +214,7 @@ export const AnnouncementManagement = ({ token }) => {
         if (!dateString) return "未知時間";
         try {
             return new Date(dateString).toLocaleString("zh-TW", {
+                timeZone: 'Asia/Taipei',
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",
