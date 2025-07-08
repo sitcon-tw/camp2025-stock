@@ -98,13 +98,12 @@ export const AdminDashboard = ({ token }) => {
             {/* 通知提示 */}
             {notification.show && (
                 <div
-                    className={`fixed top-4 right-4 z-50 max-w-md rounded-lg border p-4 shadow-lg transition-all duration-300 ${
-                        notification.type === "success"
+                    className={`fixed top-4 right-4 z-50 max-w-md rounded-lg border p-4 shadow-lg transition-all duration-300 ${notification.type === "success"
                             ? "border-green-500/30 bg-green-600/20 text-green-400"
                             : notification.type === "error"
-                              ? "border-red-500/30 bg-red-600/20 text-red-400"
-                              : "border-blue-500/30 bg-blue-600/20 text-blue-400"
-                    }`}
+                                ? "border-red-500/30 bg-red-600/20 text-red-400"
+                                : "border-blue-500/30 bg-blue-600/20 text-blue-400"
+                        }`}
                 >
                     <div className="flex items-center space-x-2">
                         {notification.type === "success" && (
@@ -163,11 +162,10 @@ export const AdminDashboard = ({ token }) => {
                                     onClick={() =>
                                         setActiveSection(section.id)
                                     }
-                                    className={`flex items-center space-x-2 border-b-2 px-1 py-4 text-sm font-medium ${
-                                        activeSection === section.id
+                                    className={`flex items-center space-x-2 border-b-2 px-1 py-4 text-sm font-medium ${activeSection === section.id
                                             ? "border-[#469FD2] text-[#92cbf4]"
                                             : "border-transparent text-[#557797] hover:text-[#92cbf4]"
-                                    }`}
+                                        }`}
                                 >
                                     <span>{section.label}</span>
                                 </button>
@@ -290,7 +288,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
     const [showSettlementModal, setShowSettlementModal] =
         useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-    
+
     // 市場管理相關狀態
     const [marketStatus, setMarketStatus] = useState(null);
     const [ipoStatus, setIpoStatus] = useState(null);
@@ -443,11 +441,10 @@ const SystemManagementSection = ({ token, showNotification }) => {
                             市場狀態:
                         </span>
                         <span
-                            className={`rounded-full px-3 py-1 text-sm font-medium ${
-                                marketStatus.is_open
+                            className={`rounded-full px-3 py-1 text-sm font-medium ${marketStatus.is_open
                                     ? "bg-green-600 text-green-100"
                                     : "bg-red-600 text-red-100"
-                            }`}
+                                }`}
                         >
                             {marketStatus.is_open
                                 ? "開盤中"
@@ -508,7 +505,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
                     <PermissionButton
                         requiredPermission={PERMISSIONS.MANAGE_MARKET}
                         token={token}
-                        className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                        className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 hidden"
                         onClick={() => setShowIpoModal(true)}
                     >
                         更新 IPO 參數
@@ -517,7 +514,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
                     <PermissionButton
                         requiredPermission={PERMISSIONS.MANAGE_MARKET}
                         token={token}
-                        className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
+                        className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600 hidden"
                         onClick={handleIpoReset}
                     >
                         重置 IPO
@@ -526,7 +523,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
                     <PermissionButton
                         requiredPermission={PERMISSIONS.MANAGE_MARKET}
                         token={token}
-                        className="rounded bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600"
+                        className="rounded bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600 hidden"
                         onClick={() => setShowTradingLimitModal(true)}
                     >
                         設定漲跌限制
@@ -859,7 +856,7 @@ const PointManagementSection = ({
     const fetchStudentsAndTeams = async () => {
         try {
             setStudentsLoading(true);
-            
+
             // 獲取學生資料
             const studentsData = await getUserAssets(token);
             if (Array.isArray(studentsData)) {
@@ -867,7 +864,7 @@ const PointManagementSection = ({
             } else {
                 setStudents([]);
             }
-            
+
             // 嘗試獲取隊伍資料
             try {
                 const teamsData = await getTeams(token);
@@ -906,16 +903,16 @@ const PointManagementSection = ({
         const targetList = pointsForm.type === "user" || pointsForm.type === "multi_users" ? students : teams;
         const filteredSuggestions = targetList
             .filter((item) => {
-                const searchTerm = pointsForm.type === "user" || pointsForm.type === "multi_users" 
-                    ? item.username 
+                const searchTerm = pointsForm.type === "user" || pointsForm.type === "multi_users"
+                    ? item.username
                     : item.name;
                 return searchTerm && searchTerm.toLowerCase().includes(value.toLowerCase());
             })
             .map((item) => ({
-                value: pointsForm.type === "user" || pointsForm.type === "multi_users" 
-                    ? item.username 
+                value: pointsForm.type === "user" || pointsForm.type === "multi_users"
+                    ? item.username
                     : item.name,
-                label: pointsForm.type === "user" || pointsForm.type === "multi_users" 
+                label: pointsForm.type === "user" || pointsForm.type === "multi_users"
                     ? `${item.username}${item.team ? ` (${item.team})` : ""}`
                     : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ""}`,
                 type: pointsForm.type === "user" || pointsForm.type === "multi_users" ? "user" : "group",
@@ -1100,7 +1097,7 @@ const PointManagementSection = ({
                                     const targetList = pointsForm.type === "multi_users" ? students : teams;
                                     const allTargets = targetList.map((item) => ({
                                         value: pointsForm.type === "multi_users" ? item.username : item.name,
-                                        label: pointsForm.type === "multi_users" 
+                                        label: pointsForm.type === "multi_users"
                                             ? `${item.username}${item.team ? ` (${item.team})` : ""}`
                                             : `${item.name}${item.member_count ? ` (${item.member_count}人)` : ""}`,
                                         type: pointsForm.type === "multi_users" ? "user" : "group",
@@ -1116,8 +1113,8 @@ const PointManagementSection = ({
                                 }}
                                 className="rounded-lg bg-[#7BC2E6] px-4 py-2 text-sm text-black transition-colors hover:bg-[#6bb0d4]"
                             >
-                                全選 {pointsForm.type === "multi_users" 
-                                    ? `所有個人 (${students.length})` 
+                                全選 {pointsForm.type === "multi_users"
+                                    ? `所有個人 (${students.length})`
                                     : `所有團隊 (${teams.length})`}
                             </button>
                             <button
@@ -1161,10 +1158,10 @@ const PointManagementSection = ({
                             disabled={studentsLoading}
                             className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#0f203e] disabled:opacity-50"
                             placeholder={
-                                studentsLoading ? "正在載入使用者資料..." 
-                                : pointsForm.type === "user" || pointsForm.type === "multi_users" 
-                                  ? "搜尋學生姓名..." 
-                                  : "搜尋團隊名稱..."
+                                studentsLoading ? "正在載入使用者資料..."
+                                    : pointsForm.type === "user" || pointsForm.type === "multi_users"
+                                        ? "搜尋學生姓名..."
+                                        : "搜尋團隊名稱..."
                             }
                         />
 
@@ -1227,7 +1224,7 @@ const PointManagementSection = ({
                 {["all_users", "all_groups"].includes(pointsForm.type) && (
                     <div className="rounded-lg border border-[#469FD2] bg-[#0f203e] p-3">
                         <p className="text-sm text-[#7BC2E6]">
-                            {pointsForm.type === "all_users" 
+                            {pointsForm.type === "all_users"
                                 ? `將發放給所有 ${students.length} 位使用者`
                                 : `將發放給所有 ${teams.length} 個團隊`}
                         </p>
@@ -1319,7 +1316,7 @@ const IpoStatusSection = ({ token, showNotification }) => {
             <h2 className="mb-4 text-xl font-bold text-purple-400">
                 IPO 狀態
             </h2>
-            
+
             {ipoStatus ? (
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1347,11 +1344,10 @@ const IpoStatusSection = ({ token, showNotification }) => {
                         <div className="rounded-lg border border-[#294565] bg-[#0f203e] p-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-[#7BC2E6]">IPO 狀態</span>
-                                <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-                                    ipoStatus.sharesRemaining > 0 
+                                <span className={`rounded-full px-3 py-1 text-sm font-medium ${ipoStatus.sharesRemaining > 0
                                         ? "bg-green-600 text-green-100"
                                         : "bg-red-600 text-red-100"
-                                }`}>
+                                    }`}>
                                     {ipoStatus.sharesRemaining > 0 ? "進行中" : "已結束"}
                                 </span>
                             </div>
@@ -1371,7 +1367,7 @@ const IpoStatusSection = ({ token, showNotification }) => {
                             <div className="flex justify-between">
                                 <span className="text-gray-400">已售出股數:</span>
                                 <span className="text-white">
-                                    {ipoStatus.initialShares && ipoStatus.sharesRemaining 
+                                    {ipoStatus.initialShares && ipoStatus.sharesRemaining
                                         ? (ipoStatus.initialShares - ipoStatus.sharesRemaining).toLocaleString()
                                         : 'N/A'
                                     }
@@ -1380,7 +1376,7 @@ const IpoStatusSection = ({ token, showNotification }) => {
                             <div className="flex justify-between">
                                 <span className="text-gray-400">完成度:</span>
                                 <span className="text-white">
-                                    {ipoStatus.initialShares && ipoStatus.sharesRemaining 
+                                    {ipoStatus.initialShares && ipoStatus.sharesRemaining
                                         ? `${((ipoStatus.initialShares - ipoStatus.sharesRemaining) / ipoStatus.initialShares * 100).toFixed(1)}%`
                                         : 'N/A'
                                     }
