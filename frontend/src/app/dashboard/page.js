@@ -235,96 +235,90 @@ export default function Dashboard() {
     };
 
     const startQRScanner = async () => {
-        setShowQRScanner(true);
         setTransferError("");
+        
+        // 先停止現有的掃描器
+        if (qrScannerRef.current) {
+            qrScannerRef.current.stop();
+            qrScannerRef.current.destroy();
+            qrScannerRef.current = null;
+        }
+        
+        setShowQRScanner(true);
         
         try {
             // 等待 DOM 更新
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            if (videoRef.current) {
-                console.log('開始初始化 QR Scanner...');
-                
-                // 先直接嘗試請求相機權限
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            facingMode: 'environment' // 嘗試使用後置相機
-                        } 
-                    });
-                    console.log('相機權限獲得成功');
-                    
-                    // 停止測試流
-                    stream.getTracks().forEach(track => track.stop());
-                } catch (permissionError) {
-                    console.error('相機權限請求失敗:', permissionError);
-                    throw permissionError;
-                }
-                
-                // 檢查相機是否可用
-                const hasCamera = await QrScanner.hasCamera();
-                if (!hasCamera) {
-                    setTransferError('未檢測到相機設備');
-                    setShowQRScanner(false);
-                    return;
-                }
-                
-                console.log('創建 QR Scanner 實例...');
-                qrScannerRef.current = new QrScanner(
-                    videoRef.current,
-                    result => {
-                        console.log('QR Code 掃描結果:', result.data);
-                        try {
-                            const qrData = JSON.parse(result.data);
-                            if (qrData.type === 'transfer' && qrData.username) {
-                                // 掃描成功後設定用戶資訊並停止掃描
-                                setScannedUser({
-                                    username: qrData.username,
-                                    id: qrData.id || ''
-                                });
-                                stopQRScanner();
-                                // 直接開啟轉帳表單
-                                openTransferModal(qrData.username);
-                            } else {
-                                setTransferError('無效的轉帳 QR Code');
-                            }
-                        } catch (e) {
-                            setTransferError('QR Code 格式錯誤');
-                        }
-                    },
-                    {
-                        returnDetailedScanResult: true,
-                        highlightScanRegion: true,
-                        highlightCodeOutline: true,
-                        preferredCamera: 'environment', // 使用後置相機
-                    }
-                );
-                
-                console.log('啟動 QR Scanner...');
-                await qrScannerRef.current.start();
-                console.log('QR Scanner 啟動成功');
-                
-                // 確保視頻元素有內容
-                setTimeout(() => {
-                    if (videoRef.current && videoRef.current.srcObject) {
-                        console.log('視頻流已連接');
-                    } else {
-                        console.warn('視頻流未連接');
-                    }
-                }, 1000);
+            if (!videoRef.current) {
+                throw new Error('Video element not found');
             }
+            
+            console.log('開始初始化 QR Scanner...');
+            console.log('Video element:', videoRef.current);
+            
+            // 創建 QR Scanner 實例
+            qrScannerRef.current = new QrScanner(
+                videoRef.current,
+                result => {
+                    console.log('QR Code 掃描結果:', result.data);
+                    try {
+                        const qrData = JSON.parse(result.data);
+                        if (qrData.type === 'transfer' && qrData.username) {
+                            setScannedUser({
+                                username: qrData.username,
+                                id: qrData.id || ''
+                            });
+                            stopQRScanner();
+                            openTransferModal(qrData.username);
+                        } else {
+                            setTransferError('無效的轉帳 QR Code');
+                        }
+                    } catch (e) {
+                        setTransferError('QR Code 格式錯誤');
+                    }
+                },
+                {
+                    returnDetailedScanResult: true,
+                    highlightScanRegion: true,
+                    highlightCodeOutline: true,
+                    preferredCamera: 'environment',
+                }
+            );
+            
+            console.log('QR Scanner 實例創建成功');
+            
+            // 啟動掃描器
+            await qrScannerRef.current.start();
+            console.log('QR Scanner 啟動成功');
+            
+            // 檢查視頻流
+            setTimeout(() => {
+                if (videoRef.current) {
+                    console.log('Video srcObject:', videoRef.current.srcObject);
+                    console.log('Video readyState:', videoRef.current.readyState);
+                    console.log('Video videoWidth:', videoRef.current.videoWidth);
+                    console.log('Video videoHeight:', videoRef.current.videoHeight);
+                    
+                    if (!videoRef.current.srcObject) {
+                        console.error('視頻流未連接');
+                        setTransferError('相機初始化失敗，請重新嘗試');
+                    }
+                }
+            }, 1000);
+            
         } catch (error) {
-            console.error('啟動相機失敗:', error);
+            console.error('QR Scanner 啟動失敗:', error);
             let errorMessage = '無法啟動相機';
             
             if (error.name === 'NotAllowedError') {
-                errorMessage = '相機權限被拒絕，請點擊瀏覽器地址欄的相機圖示允許權限';
+                errorMessage = '相機權限被拒絕，請允許相機權限後重試';
             } else if (error.name === 'NotFoundError') {
                 errorMessage = '未找到相機設備';
             } else if (error.name === 'NotSupportedError') {
-                errorMessage = '瀏覽器不支援相機功能，請使用 Chrome 或 Safari';
+                errorMessage = '瀏覽器不支援相機功能';
             } else if (error.name === 'SecurityError') {
-                errorMessage = '安全限制，請使用 HTTPS 連接';
+                errorMessage = '需要 HTTPS 連接才能使用相機';
             } else {
                 errorMessage = `相機啟動失敗: ${error.message}`;
             }
@@ -1619,13 +1613,33 @@ export default function Dashboard() {
                             掃描成功後將自動跳轉到轉帳表單
                         </p>
                         
-                        {/* 如果視頻還沒有內容，顯示重新啟動按鈕 */}
-                        <button
-                            onClick={startQRScanner}
-                            className="mt-2 px-4 py-2 bg-[#469FD2] text-white rounded-lg hover:bg-[#3A8BC0] transition-colors"
-                        >
-                            重新啟動掃描
-                        </button>
+                        {/* 測試相機按鈕 */}
+                        <div className="flex gap-2 justify-center">
+                            <button
+                                onClick={startQRScanner}
+                                className="px-3 py-1 bg-[#469FD2] text-white rounded hover:bg-[#3A8BC0] transition-colors text-sm"
+                            >
+                                重新啟動掃描
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                                        if (videoRef.current) {
+                                            videoRef.current.srcObject = stream;
+                                            videoRef.current.play();
+                                        }
+                                        console.log('直接相機測試成功');
+                                    } catch (e) {
+                                        console.error('直接相機測試失敗:', e);
+                                        setTransferError('相機測試失敗: ' + e.message);
+                                    }
+                                }}
+                                className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm"
+                            >
+                                測試相機
+                            </button>
+                        </div>
                     </div>
                     
                     {transferError && (
