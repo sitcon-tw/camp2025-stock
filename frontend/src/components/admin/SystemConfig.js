@@ -36,6 +36,7 @@ export const SystemConfig = ({ token }) => {
     const [ipoDefaults, setIpoDefaults] = useState(null);
     const [ipoStatus, setIpoStatus] = useState(null);
     const [systemStats, setSystemStats] = useState(null);
+    const [currentTradingLimit, setCurrentTradingLimit] = useState(null);
 
     // 表單狀態
     const [feeForm, setFeeForm] = useState({
@@ -526,12 +527,13 @@ export const SystemConfig = ({ token }) => {
 
                         {transferFeeConfig && (
                             <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
+                                <div className="text-sm text-[#7BC2E6] mb-2">目前設定</div>
                                 <div className="flex gap-6 text-white">
                                     <div className="flex flex-col items-start">
                                         <span className="mb-1 text-xs text-[#7BC2E6]">
                                             手續費率
                                         </span>
-                                        <span className="font-semibold">
+                                        <span className="font-semibold text-orange-400">
                                             {
                                                 transferFeeConfig.fee_rate || transferFeeConfig.feeRate || 'N/A'
                                             }
@@ -542,7 +544,7 @@ export const SystemConfig = ({ token }) => {
                                         <span className="mb-1 text-xs text-[#7BC2E6]">
                                             最低費用
                                         </span>
-                                        <span className="font-semibold">
+                                        <span className="font-semibold text-orange-400">
                                             {transferFeeConfig.min_fee || transferFeeConfig.minFee || 'N/A'}{" "}
                                             點
                                         </span>
@@ -614,6 +616,18 @@ export const SystemConfig = ({ token }) => {
                             交易限制設定
                         </h3>
 
+                        {/* 當前設定顯示 */}
+                        <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
+                            <div className="text-sm text-[#7BC2E6] mb-1">目前設定</div>
+                            <div className="text-white">
+                                <span className="font-semibold">漲跌停限制：</span>
+                                <span className="text-red-400">動態調整制</span>
+                                <span className="text-xs text-gray-400 ml-2">
+                                    (依股價自動調整 8%-20%)
+                                </span>
+                            </div>
+                        </div>
+
                         <div className="space-y-4">
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
@@ -669,12 +683,13 @@ export const SystemConfig = ({ token }) => {
 
                         {ipoDefaults && (
                             <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
+                                <div className="text-sm text-[#7BC2E6] mb-2">目前預設值</div>
                                 <div className="flex gap-6 text-white">
                                     <div className="flex flex-col items-start">
                                         <span className="mb-1 text-xs text-[#7BC2E6]">
                                             預設股數
                                         </span>
-                                        <span className="font-semibold">
+                                        <span className="font-semibold text-green-400">
                                             {(ipoDefaults.default_initial_shares || ipoDefaults.defaultInitialShares)?.toLocaleString() || 'N/A'}
                                         </span>
                                     </div>
@@ -682,10 +697,10 @@ export const SystemConfig = ({ token }) => {
                                         <span className="mb-1 text-xs text-[#7BC2E6]">
                                             預設價格
                                         </span>
-                                        <span className="font-semibold">
+                                        <span className="font-semibold text-green-400">
                                             {
                                                 ipoDefaults.default_initial_price || ipoDefaults.defaultInitialPrice || 'N/A'
-                                            }
+                                            } 點
                                         </span>
                                     </div>
                                 </div>
@@ -881,6 +896,34 @@ export const SystemConfig = ({ token }) => {
                                     <span>新增時段</span>
                                 </button>
                             </div>
+
+                            {/* 當前交易時間顯示 */}
+                            {tradingHours && tradingHours.tradingHours && tradingHours.tradingHours.length > 0 && (
+                                <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
+                                    <div className="text-sm text-[#7BC2E6] mb-2">目前設定的交易時段</div>
+                                    <div className="space-y-1">
+                                        {tradingHours.tradingHours.map((slot, index) => {
+                                            const startTime = new Date(slot.start * 1000).toLocaleTimeString('zh-TW', {
+                                                timeZone: 'Asia/Taipei',
+                                                hour12: false,
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            });
+                                            const endTime = new Date(slot.end * 1000).toLocaleTimeString('zh-TW', {
+                                                timeZone: 'Asia/Taipei',
+                                                hour12: false,
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            });
+                                            return (
+                                                <div key={index} className="text-blue-400 font-semibold">
+                                                    時段 {index + 1}：{startTime} - {endTime}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {marketTimesForm.openTime.length === 0 ? (
                                 <div className="rounded-lg border-2 border-dashed border-[#294565] bg-[#0f203e] p-6 text-center">
