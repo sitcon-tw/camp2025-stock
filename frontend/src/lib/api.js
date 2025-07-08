@@ -522,6 +522,28 @@ export async function getPriceLimitInfo(token, testPrice = 14.0) {
     });
 }
 
+// 查詢動態價格級距設定
+export async function getDynamicPriceTiers(token) {
+    return apiRequest("/api/admin/dynamic-price-tiers", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 更新動態價格級距設定
+export async function updateDynamicPriceTiers(token, tiers) {
+    return apiRequest("/api/admin/dynamic-price-tiers", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tiers),
+    });
+}
+
 // ========== RBAC 權限管理 API ==========
 
 // 取得目前使用者的權限資訊

@@ -318,7 +318,32 @@ class UserService:
                 logger.debug(f"Using admin configured limit: {fixed_limit}%")
                 return fixed_limit
             
-            # 否則使用動態限制（模仿現實股市的級距制度）
+            # 檢查是否有自訂的動態級距設定
+            tiers_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                {"type": "dynamic_price_tiers"}
+            )
+            
+            if tiers_config and tiers_config.get("tiers"):
+                # 使用自訂的動態級距
+                tiers = tiers_config["tiers"]
+                for tier in tiers:
+                    min_price = tier.get("min_price", 0)
+                    max_price = tier.get("max_price")
+                    
+                    if max_price is None:
+                        # 最高級距（無上限）
+                        if stock_price >= min_price:
+                            limit_percent = float(tier.get("limit_percent", 10.0))
+                            logger.debug(f"Using custom tier limit for price {stock_price}: {limit_percent}% (>= {min_price})")
+                            return limit_percent
+                    else:
+                        # 有上限的級距
+                        if min_price <= stock_price < max_price:
+                            limit_percent = float(tier.get("limit_percent", 10.0))
+                            logger.debug(f"Using custom tier limit for price {stock_price}: {limit_percent}% ({min_price}-{max_price})")
+                            return limit_percent
+            
+            # 否則使用預設的動態限制（模仿現實股市的級距制度）
             if stock_price < 10:
                 limit_percent = 20.0  # 低價股給予較大波動空間
             elif stock_price < 50:
@@ -328,7 +353,7 @@ class UserService:
             else:
                 limit_percent = 8.0   # 極高價股限制更嚴格
             
-            logger.debug(f"Using dynamic limit for price {stock_price}: {limit_percent}%")
+            logger.debug(f"Using default dynamic limit for price {stock_price}: {limit_percent}%")
             return limit_percent
             
         except Exception as e:

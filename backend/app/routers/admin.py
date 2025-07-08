@@ -2000,3 +2000,141 @@ async def get_price_limit_info(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"查詢價格限制資訊失敗: {str(e)}"
         )
+
+
+@router.get(
+    "/dynamic-price-tiers",
+    responses={
+        200: {"description": "動態級距設定查詢成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="查詢動態價格級距設定",
+    description="取得目前的動態價格級距設定"
+)
+async def get_dynamic_price_tiers(
+    current_user: dict = Depends(get_current_user)
+):
+    """查詢動態價格級距設定"""
+    # 檢查市場管理權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_MARKET not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要市場管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.core.database import get_database, Collections
+        db = get_database()
+        
+        # 查詢動態級距設定
+        config = await db[Collections.MARKET_CONFIG].find_one(
+            {"type": "dynamic_price_tiers"}
+        )
+        
+        if config:
+            tiers = config.get("tiers", [])
+        else:
+            # 如果沒有設定，回傳預設級距
+            tiers = [
+                {"min_price": 0, "max_price": 10, "limit_percent": 20.0},
+                {"min_price": 10, "max_price": 50, "limit_percent": 15.0},
+                {"min_price": 50, "max_price": 100, "limit_percent": 10.0},
+                {"min_price": 100, "max_price": None, "limit_percent": 8.0}
+            ]
+        
+        return {
+            "ok": True,
+            "tiers": tiers,
+            "generated_at": datetime.now(datetime.timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get dynamic price tiers: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"查詢動態級距設定失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/dynamic-price-tiers",
+    responses={
+        200: {"description": "動態級距設定更新成功"},
+        400: {"model": ErrorResponse, "description": "請求參數錯誤"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="更新動態價格級距設定",
+    description="設定動態價格級距和對應的漲跌停限制"
+)
+async def update_dynamic_price_tiers(
+    tiers: List[dict],
+    current_user: dict = Depends(get_current_user)
+):
+    """更新動態價格級距設定"""
+    # 檢查市場管理權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_MARKET not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要市場管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        # 驗證級距設定
+        for tier in tiers:
+            if not isinstance(tier.get("min_price"), (int, float)):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="級距最小價格必須是數字"
+                )
+            if tier.get("max_price") is not None and not isinstance(tier.get("max_price"), (int, float)):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="級距最大價格必須是數字或null"
+                )
+            if not isinstance(tier.get("limit_percent"), (int, float)) or tier.get("limit_percent") <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="限制百分比必須是正數"
+                )
+        
+        from app.core.database import get_database, Collections
+        db = get_database()
+        
+        # 更新設定
+        await db[Collections.MARKET_CONFIG].update_one(
+            {"type": "dynamic_price_tiers"},
+            {
+                "$set": {
+                    "tiers": tiers,
+                    "updated_at": datetime.now(datetime.timezone.utc),
+                    "updated_by": current_user.get('user_id', 'unknown')
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Admin {current_user.get('username')} updated dynamic price tiers: {tiers}")
+        
+        return {
+            "ok": True,
+            "message": "動態級距設定更新成功",
+            "tiers": tiers,
+            "updated_at": datetime.now(datetime.timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update dynamic price tiers: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"更新動態級距設定失敗: {str(e)}"
+        )
