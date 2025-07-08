@@ -292,7 +292,7 @@ export default function Dashboard() {
             await qrScannerRef.current.start();
             console.log('QR Scanner 啟動成功');
             
-            // 檢查視頻流
+            // 檢查影像流
             setTimeout(() => {
                 if (videoRef.current) {
                     console.log('Video srcObject:', videoRef.current.srcObject);
@@ -619,22 +619,42 @@ export default function Dashboard() {
 
                 console.log("開始載入使用者資料...");
 
-                // 載入使用者資料
-                const [portfolio, points, stocks, permissions] =
-                    await Promise.all([
-                        getWebPortfolio(token),
-                        getWebPointHistory(token),
-                        getWebStockOrders(token),
-                        getMyPermissions(token).catch((error) => {
-                            console.warn("無法載入權限資訊:", error);
-                            return null;
-                        }),
+                // 載入使用者資料，添加超時處理
+                const loadWithTimeout = (promise, name, timeout = 10000) => {
+                    return Promise.race([
+                        promise,
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error(`${name} 請求超時`)), timeout)
+                        )
                     ]);
+                };
+
+                console.log("正在載入 Portfolio...");
+                const portfolio = await loadWithTimeout(getWebPortfolio(token), "Portfolio");
+                console.log("Portfolio 載入完成:", portfolio);
+
+                console.log("正在載入 Point History...");
+                const points = await loadWithTimeout(getWebPointHistory(token), "Point History");
+                console.log("Point History 載入完成:", points?.length, "筆記錄");
+
+                console.log("正在載入 Stock Orders...");
+                const stocks = await loadWithTimeout(getWebStockOrders(token), "Stock Orders");
+                console.log("Stock Orders 載入完成:", stocks?.length, "筆記錄");
+
+                console.log("正在載入 Permissions...");
+                const permissions = await loadWithTimeout(
+                    getMyPermissions(token).catch((error) => {
+                        console.warn("無法載入權限資訊:", error);
+                        return null;
+                    }),
+                    "Permissions"
+                );
+                console.log("Permissions 載入完成:", permissions);
 
                 console.log("資料載入成功:", {
                     portfolio,
-                    pointsCount: points.length,
-                    stocksCount: stocks.length,
+                    pointsCount: points?.length || 0,
+                    stocksCount: stocks?.length || 0,
                     permissions,
                 });
 
