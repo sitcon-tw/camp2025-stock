@@ -63,6 +63,17 @@ export async function getRecentTrades(limit = 20, options = {}) {
     return apiRequest(`/api/price/trades?limit=${limit}`, options);
 }
 
+// 取得所有交易紀錄 (需要權限)
+export async function getTrades(token, limit = 1000, options = {}) {
+    return apiRequest(`/api/admin/trades?limit=${limit}`, {
+        ...options,
+        headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+        },
+    });
+}
+
 // 取得歷史價格資料
 export async function getHistoricalPrices(hours = 24, options = {}) {
     return apiRequest(`/api/price/history?hours=${hours}`, options);

@@ -5,7 +5,7 @@ from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest,
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
-    MarketLimitRequest, MarketLimitResponse
+    MarketLimitRequest, MarketLimitResponse, Trade
 )
 from app.schemas.user import UserBasicInfo
 from app.core.security import verify_CAMP_ADMIN_PASSWORD, create_access_token
@@ -738,3 +738,12 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to trigger system-wide balance check: {e}")
             raise AdminException(f"系統全面檢查失敗: {str(e)}")
+
+    async def get_all_trades(self, limit: int) -> List[Trade]:
+        try:
+            trades_cursor = self.db[Collections.TRADES].find().sort("timestamp", -1).limit(limit)
+            trades = await trades_cursor.to_list(length=None)
+            return [Trade(**trade) for trade in trades]
+        except Exception as e:
+            logger.error(f"Failed to get all trades: {e}")
+            raise AdminException("Failed to retrieve trades")
