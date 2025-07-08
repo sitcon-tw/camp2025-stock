@@ -301,19 +301,23 @@ export default function Dashboard() {
             setQuickTransferData(basicRecipientData);
             setShowQuickTransfer(true);
 
-            // 嘗試獲取收款人的大頭照
+            // 嘗試獲取收款人的大頭照和顯示名稱
             try {
                 const avatarResult = await getUserAvatar(token, preferredIdentifier);
-                if (avatarResult && avatarResult.photo_url) {
+                if (avatarResult) {
                     setQuickTransferData(prev => ({
                         ...prev,
+                        username: avatarResult.display_name || prev.username, // 使用 API 返回的顯示名稱
                         photo_url: avatarResult.photo_url
                     }));
-                    console.log('成功獲取收款人大頭照:', avatarResult.photo_url);
+                    console.log('成功獲取收款人資訊:', {
+                        display_name: avatarResult.display_name,
+                        photo_url: avatarResult.photo_url
+                    });
                 }
             } catch (avatarError) {
-                console.log('獲取收款人大頭照失敗:', avatarError);
-                // 保持使用字母圓形大頭照，不顯示錯誤給使用者
+                console.log('獲取收款人資訊失敗:', avatarError);
+                // 保持使用基本資料，不顯示錯誤給使用者
             }
 
         } catch (error) {

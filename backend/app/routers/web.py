@@ -496,6 +496,7 @@ async def get_user_avatar(
         
         return {
             "username": username,
+            "display_name": user.get("name") or user.get("username") or username,
             "photo_url": user.get("photo_url"),
             "has_avatar": user.get("photo_url") is not None
         }
