@@ -127,11 +127,13 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHOOSE_TEAM
 
     if telegram_id == "invalid":
-        await query.answer("⚠️ 該學員未綁定 Telegram 帳號", show_alert=True)
+        await update.message.reply_text("⚠️ 該學員未綁定 Telegram 帳號")
+        await query.answer()
         return CHOOSE_PERSON
 
     if telegram_id == str(update.effective_user.id):
-        await query.answer("❌ 不能轉給自己！")
+        await update.message.reply_text("❌ 不能轉給自己！", show_alert=True)
+        await query.answer()
         return CHOOSE_PERSON
 
     context.user_data["to_user"] = telegram_id
