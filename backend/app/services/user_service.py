@@ -1630,13 +1630,14 @@ class UserService:
     async def _try_match_orders(self):
         """嘗試撮合買賣訂單"""
         try:
-            # 查找待成交的買賣單，排除超出漲跌限制的訂單
+            # 查找待成交的買賣單，包含等待限價的訂單
+            # 修復：也包含 "pending_limit" 狀態，在撮合時動態檢查價格限制
             buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
-                {"side": "buy", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"}
+                {"side": "buy", "status": {"$in": ["pending", "partial", "pending_limit"]}, "order_type": "limit"}
             ).sort([("price", -1), ("created_at", 1)])
             
             sell_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
-                {"side": "sell", "status": {"$in": ["pending", "partial"]}, "order_type": "limit"}
+                {"side": "sell", "status": {"$in": ["pending", "partial", "pending_limit"]}, "order_type": "limit"}
             ).sort([("price", 1), ("created_at", 1)])
 
             buy_book = await buy_orders_cursor.to_list(None)
@@ -1713,6 +1714,39 @@ class UserService:
 
                 buy_price = buy_order.get("price", 0)
                 sell_price = sell_order.get("price", float('inf'))
+                
+                # 檢查訂單是否受價格限制影響
+                buy_status = buy_order.get("status")
+                sell_status = sell_order.get("status")
+                
+                # 如果訂單狀態為 "pending_limit"，需要重新檢查價格限制
+                if buy_status == "pending_limit":
+                    if await self._check_price_limit(buy_price):
+                        # 價格現在允許了，更新狀態為 pending
+                        await self.db[Collections.STOCK_ORDERS].update_one(
+                            {"_id": buy_order["_id"]},
+                            {"$set": {"status": "pending"}}
+                        )
+                        buy_order["status"] = "pending"  # 更新本地副本
+                        logger.info(f"Buy order {buy_order['_id']} price limit lifted, status changed from pending_limit to pending")
+                    else:
+                        # 價格仍然受限，跳過這個買單
+                        buy_idx += 1
+                        continue
+                
+                if sell_status == "pending_limit":
+                    if await self._check_price_limit(sell_price):
+                        # 價格現在允許了，更新狀態為 pending
+                        await self.db[Collections.STOCK_ORDERS].update_one(
+                            {"_id": sell_order["_id"]},
+                            {"$set": {"status": "pending"}}
+                        )
+                        sell_order["status"] = "pending"  # 更新本地副本
+                        logger.info(f"Sell order {sell_order['_id']} price limit lifted, status changed from pending_limit to pending")
+                    else:
+                        # 價格仍然受限，跳過這個賣單
+                        sell_idx += 1
+                        continue
                 
                 if buy_price >= sell_price:
                     # 價格符合，進行交易
