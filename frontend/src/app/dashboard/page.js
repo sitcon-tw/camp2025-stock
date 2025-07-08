@@ -1693,7 +1693,7 @@ export default function Dashboard() {
                         {/* 收款人資訊確認 */}
                         <div className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#469FD2] to-[#357AB8] text-lg font-bold text-white shadow-lg ring-2 ring-[#469FD2]/50">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 text-lg font-bold text-white shadow-lg ring-2 ring-white/20 border-2 border-white/10">
                                     {quickTransferData.username?.substring(0, 1)?.toUpperCase() || "U"}
                                 </div>
                                 <div className="flex-1">
