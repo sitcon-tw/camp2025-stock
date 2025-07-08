@@ -883,37 +883,35 @@ export default function Dashboard() {
                         </h3>
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="text-center">
-                                <p className="mb-3 text-sm text-[#557797]">
-                                    顯示你的收款 QR Code
-                                </p>
                                 <button
                                     onClick={openQRCode}
-                                    className="inline-flex items-center rounded-lg bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                    className="w-full rounded-lg bg-[#469FD2] px-6 py-4 text-white transition-colors hover:bg-[#357AB8] focus:outline-none focus:ring-2 focus:ring-[#469FD2]/50"
                                 >
-                                    <QrCode className="mr-2 h-4 w-4" />
-                                    顯示我的 QR Code
+                                    <QrCode className="mx-auto mb-2 h-8 w-8" />
+                                    <div className="text-lg font-medium">顯示我的 QR Code</div>
+                                    <div className="text-sm text-blue-100">讓別人掃描轉帳給你</div>
                                 </button>
                             </div>
                             <div className="text-center">
-                                <p className="mb-3 text-sm text-[#557797]">
-                                    轉帳給其他人
-                                </p>
-                                <div className="flex flex-col gap-2">
-                                    <button
-                                        onClick={startQRScanner}
-                                        className="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
-                                    >
-                                        <Camera className="mr-2 h-4 w-4" />
-                                        掃描 QR Code 轉帳
-                                    </button>
-                                    <button
-                                        onClick={() => openTransferModal()}
-                                        className="inline-flex items-center rounded-lg border border-green-600 bg-transparent px-4 py-1 text-sm text-green-600 transition-colors hover:bg-green-600/10"
-                                    >
-                                        手動輸入
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={startQRScanner}
+                                    className="w-full rounded-lg bg-green-600 px-6 py-4 text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600/50"
+                                >
+                                    <Camera className="mx-auto mb-2 h-8 w-8" />
+                                    <div className="text-lg font-medium">掃描 QR Code</div>
+                                    <div className="text-sm text-green-100">掃描別人的 QR Code 轉帳</div>
+                                </button>
                             </div>
+                        </div>
+                        
+                        {/* 手動輸入選項 */}
+                        <div className="mt-4 text-center">
+                            <button
+                                onClick={() => openTransferModal()}
+                                className="inline-flex items-center rounded-lg border border-[#294565] bg-transparent px-4 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
+                            >
+                                手動輸入轉帳
+                            </button>
                         </div>
                     </div>
                 )}
