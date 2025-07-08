@@ -98,7 +98,11 @@ async def choose_team(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 callback_data=f"transfer:person:{telegram_id}"
             )
         ])
-    buttons.append([InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")])
+
+    buttons.append([
+        InlineKeyboardButton("️⬅️ 回到上一頁", callback_data="transfer:person:back"),
+        InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")
+    ])
 
     await query.edit_message_text(
         f"😺 請選擇要轉到*{team}*裡面的哪個人：",
@@ -112,6 +116,15 @@ async def choose_person(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     telegram_id = query.data.split(":")[2]
+
+    if telegram_id == "back":
+        teams = ["第一組", "第二組", "第三組", "第四組", "第五組", "第六組", "第七組", "第八組", "第九組", "課活組",
+                 "編輯組", "隊輔設計組", "財庶務行政銷組", "紀錄資訊組"]
+        buttons = [[InlineKeyboardButton(text=team, callback_data=f"transfer:team:{team}")] for team in teams]
+        buttons.append([InlineKeyboardButton("❌ 我不要轉帳了！", callback_data="transfer:cancel")])
+
+        await update.message.reply_text("😺 請選擇隊伍：", reply_markup=InlineKeyboardMarkup(buttons))
+        return CHOOSE_TEAM
 
     if telegram_id == "invalid":
         await query.answer("⚠️ 該學員未綁定 Telegram 帳號", show_alert=True)
