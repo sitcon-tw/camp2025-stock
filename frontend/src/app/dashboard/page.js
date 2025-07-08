@@ -10,7 +10,7 @@ import {
     webTransferPoints,
 } from "@/lib/api";
 import dayjs from "dayjs";
-import { LogOut, QrCode, Camera, X } from "lucide-react";
+import { LogOut, QrCode, Camera, X, CheckCircle2, DollarSign } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { twMerge } from "tailwind-merge";
@@ -47,8 +47,12 @@ export default function Dashboard() {
     const [transferLoading, setTransferLoading] = useState(false);
     const [transferError, setTransferError] = useState("");
     const [transferSuccess, setTransferSuccess] = useState("");
+    const [receivedPayment, setReceivedPayment] = useState(null);
+    const [showPaymentNotification, setShowPaymentNotification] = useState(false);
+    const [lastPointHistoryLength, setLastPointHistoryLength] = useState(0);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
+    const pollingIntervalRef = useRef(null);
     const router = useRouter();
 
     // 檢查頭像圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
@@ -316,6 +320,7 @@ export default function Dashboard() {
                     ]);
                     setUser(portfolio);
                     setPointHistory(points);
+                    setLastPointHistoryLength(points.length); // 更新歷史記錄長度
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
@@ -335,15 +340,139 @@ export default function Dashboard() {
         }
     };
 
-    // 清理 QR Scanner
+    // 輪詢檢查新的收款
+    const checkForNewPayments = async () => {
+        try {
+            const token = localStorage.getItem('userToken');
+            if (!token) return;
+
+            const newPointHistory = await getWebPointHistory(token, 10);
+            
+            // 檢查是否有新的轉帳收入
+            if (newPointHistory.length > 0 && lastPointHistoryLength > 0) {
+                const newTransactions = newPointHistory.slice(0, newPointHistory.length - lastPointHistoryLength);
+                
+                for (const transaction of newTransactions) {
+                    // 檢查是否為轉帳收入（正數且包含轉帳關鍵字）
+                    if (transaction.amount > 0 && transaction.note && 
+                        (transaction.note.includes('轉帳') || 
+                         transaction.note.includes('transfer') || 
+                         transaction.note.includes('來自'))) {
+                        
+                        // 提取轉帳人名稱
+                        let fromUser = '未知用戶';
+                        if (transaction.note.includes('來自')) {
+                            fromUser = transaction.note.match(/來自\s*(.+)/)?.[1] || '未知用戶';
+                        } else if (transaction.note.includes('轉帳給')) {
+                            // 如果是轉帳給別人的記錄，提取轉帳人
+                            fromUser = transaction.note.match(/轉帳給\s*(.+)/)?.[1] || '未知用戶';
+                        }
+                        
+                        // 找到新的收款
+                        setReceivedPayment({
+                            amount: transaction.amount,
+                            from: fromUser,
+                            note: transaction.note,
+                            timestamp: transaction.created_at
+                        });
+                        setShowPaymentNotification(true);
+                        
+                        // 播放收款音效（使用簡單的音頻音效）
+                        try {
+                            // 使用 Web Audio API 生成簡單的提示音
+                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            
+                            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                            oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2);
+                            
+                            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                            
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + 0.3);
+                        } catch (e) {
+                            console.log('音效播放失敗:', e);
+                        }
+                        
+                        break; // 只顯示最新一筆收款
+                    }
+                }
+            }
+            
+            setLastPointHistoryLength(newPointHistory.length);
+            setPointHistory(newPointHistory);
+            
+        } catch (error) {
+            console.error('檢查新收款失敗:', error);
+        }
+    };
+
+    // 開始輪詢
+    const startPolling = () => {
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = setInterval(checkForNewPayments, 3000); // 每3秒檢查一次
+    };
+
+    // 停止輪詢
+    const stopPolling = () => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+        }
+    };
+
+    // 關閉收款通知
+    const closePaymentNotification = () => {
+        setShowPaymentNotification(false);
+        setReceivedPayment(null);
+    };
+
+    // 清理 QR Scanner 和輪詢
     useEffect(() => {
         return () => {
             if (qrScannerRef.current) {
                 qrScannerRef.current.stop();
                 qrScannerRef.current.destroy();
             }
+            stopPolling();
         };
     }, []);
+
+    // 當頁面可見時開始輪詢，隱藏時停止
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopPolling();
+            } else if (user && authData) {
+                startPolling();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // 如果用戶數據已載入，開始輪詢
+        if (user && authData) {
+            startPolling();
+        }
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            stopPolling();
+        };
+    }, [user, authData, lastPointHistoryLength]);
+
+    // 初始化歷史記錄長度
+    useEffect(() => {
+        if (pointHistory.length > 0 && lastPointHistoryLength === 0) {
+            setLastPointHistoryLength(pointHistory.length);
+        }
+    }, [pointHistory, lastPointHistoryLength]);
 
     // 檢查訂單是否可以取消
     const canCancelOrder = (order) => {
@@ -1380,6 +1509,96 @@ export default function Dashboard() {
                     )}
                 </div>
             </Modal>
+
+            {/* 收款通知彈出視窗 */}
+            {showPaymentNotification && receivedPayment && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="relative mx-4 w-full max-w-md payment-notification">
+                        {/* 成功動畫背景 */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-500/20 via-emerald-500/20 to-teal-500/20 blur-xl payment-glow" />
+                        
+                        {/* 主要內容 */}
+                        <div className="relative rounded-2xl border border-green-500/30 bg-gradient-to-br from-green-900/90 via-emerald-900/90 to-teal-900/90 p-6 shadow-2xl backdrop-blur-md">
+                            {/* 關閉按鈕 */}
+                            <button
+                                onClick={closePaymentNotification}
+                                className="absolute right-4 top-4 rounded-full p-1 text-green-300 hover:bg-green-800/50 hover:text-white transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+
+                            {/* 成功圖示 */}
+                            <div className="mb-4 flex justify-center">
+                                <div className="rounded-full bg-green-600/20 p-3 ring-2 ring-green-500/30 success-pulse">
+                                    <CheckCircle2 className="h-12 w-12 text-green-400" />
+                                </div>
+                            </div>
+
+                            {/* 標題 */}
+                            <div className="mb-4 text-center">
+                                <h3 className="text-xl font-bold text-green-100 mb-1">
+                                    收款成功！
+                                </h3>
+                                <p className="text-sm text-green-300">
+                                    您有一筆新的轉帳收入
+                                </p>
+                            </div>
+
+                            {/* 金額顯示 */}
+                            <div className="mb-6 text-center">
+                                <div className="flex items-center justify-center gap-2 mb-2 money-float">
+                                    <DollarSign className="h-6 w-6 text-green-400" />
+                                    <span className="text-3xl font-bold text-white">
+                                        +{receivedPayment.amount.toLocaleString()}
+                                    </span>
+                                    <span className="text-lg text-green-300">點</span>
+                                </div>
+                                <div className="h-px bg-gradient-to-r from-transparent via-green-500/50 to-transparent" />
+                            </div>
+
+                            {/* 轉帳詳情 */}
+                            <div className="space-y-3 mb-6">
+                                <div className="flex items-center justify-between rounded-lg bg-green-800/30 p-3">
+                                    <span className="text-sm text-green-300">轉帳人</span>
+                                    <span className="font-medium text-green-100">
+                                        {receivedPayment.from}
+                                    </span>
+                                </div>
+                                
+                                <div className="flex items-center justify-between rounded-lg bg-green-800/30 p-3">
+                                    <span className="text-sm text-green-300">時間</span>
+                                    <span className="font-medium text-green-100">
+                                        {dayjs(receivedPayment.timestamp)
+                                            .add(8, 'hour')
+                                            .format('MM/DD HH:mm:ss')}
+                                    </span>
+                                </div>
+                                
+                                {receivedPayment.note && (
+                                    <div className="rounded-lg bg-green-800/30 p-3">
+                                        <span className="text-sm text-green-300 block mb-1">備註</span>
+                                        <span className="text-green-100">
+                                            {receivedPayment.note}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 確認按鈕 */}
+                            <button
+                                onClick={closePaymentNotification}
+                                className="w-full rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 py-3 font-medium text-white transition-all duration-200 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg active:scale-95"
+                            >
+                                知道了
+                            </button>
+                            
+                            {/* 裝飾性元素 */}
+                            <div className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-green-500 animate-ping" />
+                            <div className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-green-500" />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
