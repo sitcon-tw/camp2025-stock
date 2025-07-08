@@ -334,39 +334,6 @@ export async function updateIpoDefaults(
     );
 }
 
-// 市場開關控制
-// 手動開盤（包含集合競價）
-export async function openMarket(token) {
-    return apiRequest("/api/admin/market/open", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    });
-}
-
-// 手動收盤
-export async function closeMarket(token) {
-    return apiRequest("/api/admin/market/close", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    });
-}
-
-// 查詢市場狀態
-export async function getAdminMarketStatus(token) {
-    return apiRequest("/api/admin/market/status", {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    });
-}
 
 // 轉點數手續費設定
 // 查詢手續費設定

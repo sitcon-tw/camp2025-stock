@@ -173,18 +173,7 @@ class TradingApplicationService(BaseApplicationService):
             from app.core.database import database_manager
             from app.core.enums import Collections
             
-            # 首先檢查手動控制覆蓋（最高優先權）
-            manual_control = await database_manager.db[Collections.MARKET_CONFIG].find_one(
-                {"type": "manual_control"}
-            )
-            
-            if manual_control:
-                # 如果存在手動控制設定，以此為準
-                is_manually_open = manual_control.get("is_open", False)
-                logger.info(f"Manual market control active: is_open={is_manually_open}")
-                return is_manually_open
-            
-            # 如果沒有手動控制，則檢查預定時間
+            # 檢查預定時間
             market_config = await database_manager.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "market_hours"}
             )

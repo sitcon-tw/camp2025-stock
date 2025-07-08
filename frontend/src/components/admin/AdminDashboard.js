@@ -7,14 +7,11 @@ import { PermissionButton, PermissionGuard } from "./PermissionGuard";
 import { RoleManagement } from "./RoleManagement";
 // import { QuickRoleSetup } from "./QuickRoleSetup";
 import {
-    closeMarket,
     forceSettlement,
-    getAdminMarketStatus,
     getIpoStatus,
     getTeams,
     getUserAssets,
     givePoints,
-    openMarket,
     resetAllData,
     resetIpo,
     setTradingLimit,
@@ -290,11 +287,6 @@ const SystemManagementSection = ({ token, showNotification }) => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     // 市場管理相關狀態
-    const [marketStatus, setMarketStatus] = useState(null);
-    const [marketOperationLoading, setMarketOperationLoading] = useState({
-        opening: false,
-        closing: false
-    });
     const [ipoStatus, setIpoStatus] = useState(null);
     const [showIpoModal, setShowIpoModal] = useState(false);
     const [showTradingLimitModal, setShowTradingLimitModal] =
@@ -306,17 +298,8 @@ const SystemManagementSection = ({ token, showNotification }) => {
         initialPrice: "",
     });
 
-    // 獲取市場狀態
+    // 獲取IPO狀態
     useEffect(() => {
-        const fetchMarketStatus = async () => {
-            try {
-                const status = await getAdminMarketStatus(token);
-                setMarketStatus(status);
-            } catch (error) {
-                console.error("獲取市場狀態失敗:", error);
-            }
-        };
-
         const fetchIpoStatus = async () => {
             try {
                 const status = await getIpoStatus(token);
@@ -326,7 +309,6 @@ const SystemManagementSection = ({ token, showNotification }) => {
             }
         };
 
-        fetchMarketStatus();
         fetchIpoStatus();
     }, [token]);
 
@@ -437,152 +419,6 @@ const SystemManagementSection = ({ token, showNotification }) => {
                 系統設定
             </h2>
 
-            {/* 市場狀態顯示 */}
-            {marketStatus && (
-                <div className="mb-6 rounded-lg border border-[#294565] bg-[#0f203e] p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                        <span className="text-[#7BC2E6]">
-                            市場狀態:
-                        </span>
-                        <span
-                            className={`rounded-full px-3 py-1 text-sm font-medium ${marketStatus.is_open
-                                    ? "bg-green-600 text-green-100"
-                                    : "bg-red-600 text-red-100"
-                                }`}
-                        >
-                            {marketStatus.is_open
-                                ? "開盤中"
-                                : "已收盤"}
-                        </span>
-                    </div>
-                </div>
-            )}
-
-            {/* 市場管理操作區 */}
-            <div className="mb-6">
-                <h3 className="mb-3 text-lg font-semibold text-blue-400">市場管理</h3>
-                
-                {/* 手動操作警語 */}
-                <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-600/10 p-3">
-                    <div className="flex items-start space-x-2">
-                        <span className="text-lg">⚡</span>
-                        <div>
-                            <h4 className="font-semibold text-yellow-400">手動控制優先</h4>
-                            <p className="mt-1 text-sm text-yellow-300">
-                                手動開盤/收盤操作具有最高優先權，將覆蓋所有時間限制設定。
-                                請謹慎使用這些控制功能。
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    <PermissionButton
-                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                        token={token}
-                        className={`rounded px-4 py-2 text-white transition-all duration-200 ${
-                            marketOperationLoading.opening
-                                ? "bg-green-400 cursor-wait"
-                                : "bg-green-500 hover:bg-green-600"
-                        }`}
-                        onClick={async () => {
-                            try {
-                                setMarketOperationLoading(prev => ({ ...prev, opening: true }));
-                                await openMarket(token);
-                                showNotification("市場已開盤", "success");
-                                const status = await getAdminMarketStatus(token);
-                                setMarketStatus(status);
-                            } catch (error) {
-                                showNotification(
-                                    `開盤失敗: ${error.message}`,
-                                    "error",
-                                );
-                            } finally {
-                                setMarketOperationLoading(prev => ({ ...prev, opening: false }));
-                            }
-                        }}
-                        disabled={marketStatus?.is_open || marketOperationLoading.opening}
-                    >
-                        {marketOperationLoading.opening ? (
-                            <div className="flex items-center justify-center space-x-2">
-                                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>開盤中...</span>
-                            </div>
-                        ) : (
-                            "手動開盤"
-                        )}
-                    </PermissionButton>
-
-                    <PermissionButton
-                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                        token={token}
-                        className={`rounded px-4 py-2 text-white transition-all duration-200 ${
-                            marketOperationLoading.closing
-                                ? "bg-red-400 cursor-wait"
-                                : "bg-red-500 hover:bg-red-600"
-                        }`}
-                        onClick={async () => {
-                            try {
-                                setMarketOperationLoading(prev => ({ ...prev, closing: true }));
-                                await closeMarket(token);
-                                showNotification("市場已收盤", "success");
-                                const status = await getAdminMarketStatus(token);
-                                setMarketStatus(status);
-                            } catch (error) {
-                                showNotification(
-                                    `收盤失敗: ${error.message}`,
-                                    "error",
-                                );
-                            } finally {
-                                setMarketOperationLoading(prev => ({ ...prev, closing: false }));
-                            }
-                        }}
-                        disabled={(marketStatus && !marketStatus.is_open) || marketOperationLoading.closing}
-                    >
-                        {marketOperationLoading.closing ? (
-                            <div className="flex items-center justify-center space-x-2">
-                                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>收盤中...</span>
-                            </div>
-                        ) : (
-                            "手動收盤"
-                        )}
-                    </PermissionButton>
-
-                    <PermissionButton
-                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                        token={token}
-                        className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 hidden"
-                        onClick={() => setShowIpoModal(true)}
-                    >
-                        更新 IPO 參數
-                    </PermissionButton>
-
-                    <PermissionButton
-                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                        token={token}
-                        className="rounded bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600 hidden"
-                        onClick={handleIpoReset}
-                    >
-                        重置 IPO
-                    </PermissionButton>
-
-                    <PermissionButton
-                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
-                        token={token}
-                        className="rounded bg-indigo-500 px-4 py-2 text-white hover:bg-indigo-600 hidden"
-                        onClick={() => setShowTradingLimitModal(true)}
-                    >
-                        設定漲跌限制
-                    </PermissionButton>
-                </div>
-            </div>
 
             {/* 危險操作區 */}
             <div className="border-t border-[#294565] pt-6">
