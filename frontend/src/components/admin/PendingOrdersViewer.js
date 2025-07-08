@@ -49,7 +49,7 @@ export const PendingOrdersViewer = ({ token }) => {
             const result = await triggerManualMatching(token);
             
             if (result.ok) {
-                // 撮合成功後，等待一下再更新數據
+                // 撮合成功後，等待一下再更新資料
                 setTimeout(() => {
                     fetchPendingOrders();
                 }, 1000);

@@ -6,9 +6,9 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
     // 生成24小時的時間點
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
-    // 獲取交易時段數據，處理不同的數據結構
+    // 獲取交易時段資料，處理不同的資料結構
     const getTradingSessions = () => {
-        // 優先使用表單數據（實時更新，用於系統設定頁面）
+        // 優先使用表單資料（實時更新，用於系統設定頁面）
         if (
             marketTimesForm &&
             marketTimesForm.openTime &&
@@ -20,7 +20,7 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
             );
         }
 
-        // 如果沒有表單數據，則使用已保存的數據
+        // 如果沒有表單資料，則使用已保存的資料
         if (!tradingHours) return [];
 
         // 檢查是否有 openTime 屬性

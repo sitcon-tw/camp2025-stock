@@ -257,7 +257,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     await query.edit_message_text("❌ 處理請求時發生錯誤")
                     return
             else:
-                await query.edit_message_text("❌ 無效的callback數據格式")
+                await query.edit_message_text("❌ 無效的callback資料格式")
         
         elif callback_data.startswith("pvp_conflict_continue_"):
             # 使用者選擇繼續舊的挑戰

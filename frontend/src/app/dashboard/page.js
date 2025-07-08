@@ -92,7 +92,7 @@ export default function Dashboard() {
             telegramData = JSON.parse(telegramDataStr);
             userData = JSON.parse(userDataStr);
         } catch (e) {
-            console.error("無法解析 localStorage 數據:", e);
+            console.error("無法解析 localStorage 資料:", e);
         }
 
         console.log("解析後的 telegramData:", telegramData);

@@ -56,7 +56,7 @@ export const MembersList = ({ token }) => {
     const [selectedMember, setSelectedMember] = useState(null);
     const [showDebugInfo, setShowDebugInfo] = useState(false);
 
-    // 獲取所有成員數據
+    // 獲取所有成員資料
     const fetchMembers = async () => {
         try {
             setLoading(true);
@@ -86,11 +86,11 @@ export const MembersList = ({ token }) => {
                 
                 setMembers(formattedData);
             } else {
-                setError("獲取成員數據失敗");
+                setError("獲取成員資料失敗");
             }
         } catch (error) {
             console.error("Failed to fetch members:", error);
-            setError(error.message || "獲取成員數據失敗");
+            setError(error.message || "獲取成員資料失敗");
         } finally {
             setLoading(false);
         }
@@ -187,7 +187,7 @@ export const MembersList = ({ token }) => {
             <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                     <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#92cbf4] border-t-transparent"></div>
-                    <p className="text-[#92cbf4]">載入成員數據中...</p>
+                    <p className="text-[#92cbf4]">載入成員資料中...</p>
                 </div>
             </div>
         );
@@ -285,7 +285,7 @@ export const MembersList = ({ token }) => {
                         <div className="p-8 text-center">
                             <div className="text-4xl text-gray-500 mb-4">👤</div>
                             <p className="text-[#7BC2E6]">
-                                {searchTerm ? "沒有找到符合條件的成員" : "沒有成員數據"}
+                                {searchTerm ? "沒有找到符合條件的成員" : "沒有成員資料"}
                             </p>
                         </div>
                     ) : (

@@ -64,7 +64,7 @@ export default function TutorialPage() {
                     </h1>
                     <div className="text-center text-white">
                         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
-                        <p className="mt-4">載入市場數據中...</p>
+                        <p className="mt-4">載入市場資料中...</p>
                     </div>
                 </div>
             </div>

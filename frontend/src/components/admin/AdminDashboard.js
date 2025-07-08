@@ -846,7 +846,7 @@ const PointManagementSection = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [studentsLoading, setStudentsLoading] = useState(false);
 
-    // 獲取學生和隊伍數據
+    // 獲取學生和隊伍資料
     useEffect(() => {
         if (token) {
             fetchStudentsAndTeams();

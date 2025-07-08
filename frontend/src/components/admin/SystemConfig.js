@@ -30,7 +30,7 @@ export const SystemConfig = ({ token }) => {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false); // 新增：追蹤更新狀態
 
-    // 設定數據
+    // 設定資料
     const [transferFeeConfig, setTransferFeeConfig] = useState(null);
     const [tradingHours, setTradingHours] = useState(null);
     const [ipoDefaults, setIpoDefaults] = useState(null);
@@ -472,7 +472,7 @@ export const SystemConfig = ({ token }) => {
                             disabled={loading}
                             className="rounded bg-[#469FD2] px-3 py-1 text-sm text-white hover:bg-[#357AB8] disabled:opacity-50"
                         >
-                            {loading ? "更新中..." : "更新數據"}
+                            {loading ? "更新中..." : "更新資料"}
                         </button>
                     </div>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
