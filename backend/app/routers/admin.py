@@ -1706,3 +1706,161 @@ async def fix_invalid_orders(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"修復無效訂單失敗: {str(e)}"
         )
+
+
+@router.get(
+    "/pending-orders",
+    responses={
+        200: {"description": "等待撮合訂單查詢成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="查詢所有等待撮合的訂單",
+    description="查詢所有狀態為等待撮合的股票訂單，包括pending、partial和pending_limit狀態的訂單"
+)
+async def get_pending_orders(
+    limit: int = Query(100, ge=1, le=500, description="查詢筆數限制（1-500筆）"),
+    current_user: dict = Depends(get_current_user)
+):
+    """查詢所有等待撮合的訂單
+    
+    Args:
+        limit: 查詢筆數限制（預設100筆）
+        current_user: 目前使用者（自動注入）
+    
+    Returns:
+        等待撮合的訂單列表，包含訂單詳細資訊和使用者資訊
+    """
+    # 檢查查看所有使用者權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.core.database import get_database, Collections
+        from datetime import datetime, timezone
+        
+        db = get_database()
+        
+        # 查詢所有等待撮合的訂單
+        pipeline = [
+            # 首先篩選等待撮合的訂單
+            {
+                "$match": {
+                    "status": {"$in": ["pending", "partial", "pending_limit"]}
+                }
+            },
+            # 加入使用者資訊
+            {
+                "$lookup": {
+                    "from": Collections.USERS,
+                    "localField": "user_id",
+                    "foreignField": "_id",
+                    "as": "user_info"
+                }
+            },
+            # 解構使用者資訊陣列
+            {
+                "$unwind": {
+                    "path": "$user_info",
+                    "preserveNullAndEmptyArrays": True
+                }
+            },
+            # 選擇需要的欄位
+            {
+                "$project": {
+                    "_id": {"$toString": "$_id"},
+                    "order_id": 1,
+                    "user_id": {"$toString": "$user_id"},
+                    "username": "$user_info.name",
+                    "user_telegram_id": "$user_info.telegram_id",
+                    "user_team": "$user_info.team",
+                    "side": 1,
+                    "order_type": 1,
+                    "quantity": 1,
+                    "original_quantity": 1,
+                    "price": 1,
+                    "status": 1,
+                    "created_at": 1,
+                    "updated_at": 1
+                }
+            },
+            # 按建立時間倒序排列
+            {"$sort": {"created_at": -1}},
+            # 限制回傳筆數
+            {"$limit": limit}
+        ]
+        
+        # 執行聚合查詢
+        orders_cursor = db[Collections.STOCK_ORDERS].aggregate(pipeline)
+        orders = await orders_cursor.to_list(length=None)
+        
+        # 統計不同狀態的訂單數量
+        status_stats = await db[Collections.STOCK_ORDERS].aggregate([
+            {
+                "$match": {
+                    "status": {"$in": ["pending", "partial", "pending_limit"]}
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$status",
+                    "count": {"$sum": 1},
+                    "total_quantity": {"$sum": "$quantity"}
+                }
+            }
+        ]).to_list(length=None)
+        
+        # 格式化統計資料
+        stats = {
+            "pending": {"count": 0, "total_quantity": 0},
+            "partial": {"count": 0, "total_quantity": 0},
+            "pending_limit": {"count": 0, "total_quantity": 0}
+        }
+        
+        for stat in status_stats:
+            if stat["_id"] in stats:
+                stats[stat["_id"]] = {
+                    "count": stat["count"],
+                    "total_quantity": stat["total_quantity"]
+                }
+        
+        # 計算總計
+        total_count = sum(stat["count"] for stat in stats.values())
+        total_quantity = sum(stat["total_quantity"] for stat in stats.values())
+        
+        # 處理日期格式
+        for order in orders:
+            if order.get("created_at"):
+                order["created_at"] = order["created_at"].isoformat() if isinstance(order["created_at"], datetime) else order["created_at"]
+            if order.get("updated_at"):
+                order["updated_at"] = order["updated_at"].isoformat() if isinstance(order["updated_at"], datetime) else order["updated_at"]
+        
+        logger.info(f"Admin {current_user.get('username')} queried pending orders: {len(orders)} orders returned")
+        
+        return {
+            "ok": True,
+            "orders": orders,
+            "stats": {
+                "total_orders": total_count,
+                "total_quantity": total_quantity,
+                "returned_count": len(orders),
+                "status_breakdown": stats
+            },
+            "query_info": {
+                "limit": limit,
+                "queried_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get pending orders: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"查詢等待撮合訂單失敗: {str(e)}"
+        )

@@ -491,6 +491,16 @@ export async function getWebUserProfile(token) {
     });
 }
 
+// 查詢所有等待撮合的訂單
+export async function getPendingOrders(token, limit = 100) {
+    return apiRequest(`/api/admin/pending-orders?limit=${limit}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // ========== RBAC 權限管理 API ==========
 
 // 取得目前使用者的權限資訊

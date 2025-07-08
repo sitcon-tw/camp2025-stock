@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminDashboard, PermissionAudit, SystemConfig } from "@/components/admin";
+import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer } from "@/components/admin";
 import { PermissionProvider, usePermissionContext } from "@/contexts/PermissionContext";
 import { debugAuth } from "@/utils/debugAuth";
 import { LogOut } from "lucide-react";
@@ -139,6 +139,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                     <nav className="flex space-x-8">
                         {[
                             { id: "dashboard", label: "功能面板" },
+                            { id: "pending-orders", label: "等待撮合訂單" },
                             { id: "config", label: "系統設定" },
                             { id: "audit", label: "權限審查" },
                         ].map((tab) => (
@@ -161,6 +162,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
             {/* 主要內容區域 */}
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                 {activeTab === "dashboard" && <AdminDashboard token={adminToken} />}
+                {activeTab === "pending-orders" && <PendingOrdersViewer token={adminToken} />}
                 {activeTab === "config" && <SystemConfig token={adminToken} />}
                 {activeTab === "audit" && <PermissionAudit token={adminToken} />}
             </div>
@@ -175,7 +177,6 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
 export default function EnhancedAdminPage() {
     const router = useRouter();
     const [adminToken, setAdminToken] = useState(null);
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -212,7 +213,6 @@ export default function EnhancedAdminPage() {
                     "Setting admin token, will validate via usePermissions hook",
                 );
                 setAdminToken(adminToken);
-                setIsLoggedIn(true);
                 setLoading(false);
                 return;
             }
@@ -226,7 +226,6 @@ export default function EnhancedAdminPage() {
                 console.log("Telegram login detected");
                 try {
                     setAdminToken(userToken);
-                    setIsLoggedIn(true);
                     console.log(
                         "Telegram user token set, will check permissions via RBAC",
                     );
