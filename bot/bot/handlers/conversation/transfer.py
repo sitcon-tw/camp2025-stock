@@ -143,6 +143,10 @@ async def confirm_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    if context.user_data["amount"] <= 0:
+        await query.edit_message_text(f"✅ 成功轉帳了一個寂寞 :D")
+        return ConversationHandler.END
+
     result = api_helper.post("/api/bot/transfer", protected_route=True, json={
         "from_user": str(update.effective_user.id),
         "to_username": context.user_data["to_user"],
