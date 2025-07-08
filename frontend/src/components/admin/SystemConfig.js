@@ -653,20 +653,23 @@ export const SystemConfig = ({ token }) => {
                                     <span className="font-semibold">漲跌停限制：</span>
                                     <span className="text-red-400">動態級距制</span>
                                 </div>
-                                {dynamicTiers && dynamicTiers.tiers && (
-                                    <div className="text-xs text-gray-300 pl-4 space-y-1">
-                                        {dynamicTiers.tiers.map((tier, index) => {
-                                            const rangeText = tier.max_price === null 
-                                                ? `≥ ${tier.min_price}點`
-                                                : `${tier.min_price}-${tier.max_price}點`;
-                                            return (
-                                                <div key={index}>
-                                                    • {rangeText}：{tier.limit_percent}% 漲跌停
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                <div className="text-xs text-gray-300 pl-4 space-y-1">
+                                    {(dynamicTiers?.tiers || [
+                                        { min_price: 0, max_price: 10, limit_percent: 20.0 },
+                                        { min_price: 10, max_price: 50, limit_percent: 15.0 },
+                                        { min_price: 50, max_price: 100, limit_percent: 10.0 },
+                                        { min_price: 100, max_price: null, limit_percent: 8.0 }
+                                    ]).map((tier, index) => {
+                                        const rangeText = tier.max_price === null 
+                                            ? `≥ ${tier.min_price}點`
+                                            : `${tier.min_price}-${tier.max_price}點`;
+                                        return (
+                                            <div key={index}>
+                                                • {rangeText}：{tier.limit_percent}% 漲跌停
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                                 <div className="text-xs text-yellow-300">
                                     📝 模仿真實股市的價格級距制度，股價越高限制越嚴格
                                 </div>
@@ -717,14 +720,17 @@ export const SystemConfig = ({ token }) => {
                                 <h4 className="mb-3 text-lg font-semibold text-red-300">
                                     動態級距設定
                                 </h4>
-                                {dynamicTiers && dynamicTiers.tiers && (
-                                    <DynamicTiersEditor
-                                        tiers={dynamicTiers.tiers}
-                                        onUpdate={handleUpdateDynamicTiers}
-                                        loading={updating}
-                                        token={token}
-                                    />
-                                )}
+                                <DynamicTiersEditor
+                                    tiers={dynamicTiers?.tiers || [
+                                        { min_price: 0, max_price: 10, limit_percent: 20.0 },
+                                        { min_price: 10, max_price: 50, limit_percent: 15.0 },
+                                        { min_price: 50, max_price: 100, limit_percent: 10.0 },
+                                        { min_price: 100, max_price: null, limit_percent: 8.0 }
+                                    ]}
+                                    onUpdate={handleUpdateDynamicTiers}
+                                    loading={updating}
+                                    token={token}
+                                />
                             </div>
                         </div>
                     </div>
