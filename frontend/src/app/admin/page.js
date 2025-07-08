@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer } from "@/components/admin";
+import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer, MembersList } from "@/components/admin";
 import { PermissionProvider, usePermissionContext } from "@/contexts/PermissionContext";
 import { debugAuth } from "@/utils/debugAuth";
 import { LogOut } from "lucide-react";
@@ -139,6 +139,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                     <nav className="flex space-x-8">
                         {[
                             { id: "dashboard", label: "功能面板" },
+                            { id: "members", label: "所有成員" },
                             { id: "pending-orders", label: "等待撮合訂單" },
                             { id: "config", label: "系統設定" },
                             { id: "audit", label: "權限審查" },
@@ -162,6 +163,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
             {/* 主要內容區域 */}
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                 {activeTab === "dashboard" && <AdminDashboard token={adminToken} />}
+                {activeTab === "members" && <MembersList token={adminToken} />}
                 {activeTab === "pending-orders" && <PendingOrdersViewer token={adminToken} />}
                 {activeTab === "config" && <SystemConfig token={adminToken} />}
                 {activeTab === "audit" && <PermissionAudit token={adminToken} />}
