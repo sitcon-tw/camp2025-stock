@@ -14,11 +14,15 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
     });
     const [tradeHistory, setTradeHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null); // 新增請求控制
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchData = async () => {
         try {
-            setLoading(true);
+            // 只在初次載入時顯示loading，避免閃爍
+            if (isInitialLoad) {
+                setLoading(true);
+            }
 
             // 同時抓五檔和交易記錄
             const [depthData, tradesData] = await Promise.all([
@@ -34,6 +38,11 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
             setTradeHistory(tradesData || []);
 
             setError(null);
+            
+            // 首次載入完成
+            if (isInitialLoad) {
+                setIsInitialLoad(false);
+            }
         } catch (err) {
             console.error("獲取交易資料失敗:", err);
             setError("無法獲取交易資料");
@@ -45,7 +54,9 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
             setTradeHistory([]);
         } finally {
-            setLoading(false);
+            if (isInitialLoad) {
+                setLoading(false);
+            }
         }
     };
     useEffect(() => {
@@ -59,12 +70,12 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
         fetchInitialData();
 
-        // 添加自動更新機制，每3秒更新一次
+        // 添加自動更新機制，每5秒更新一次
         const interval = setInterval(() => {
             if (isMounted) {
                 fetchData();
             }
-        }, 3000);
+        }, 5000);
 
         return () => {
             isMounted = false;

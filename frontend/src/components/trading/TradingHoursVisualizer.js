@@ -8,7 +8,7 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
 
     // 獲取交易時段資料，處理不同的資料結構
     const getTradingSessions = () => {
-        // 優先使用表單資料（實時更新，用於系統設定頁面）
+        // 優先使用表單資料（即時更新，用於系統設定頁面）
         if (
             marketTimesForm &&
             marketTimesForm.openTime &&

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 export default function UpdateBanner() {
-    const [timeLeft, setTimeLeft] = useState(3);
+    const [timeLeft, setTimeLeft] = useState(5);
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
@@ -15,7 +15,7 @@ export default function UpdateBanner() {
                     setTimeout(() => {
                         setIsUpdating(false);
                     }, 800);
-                    return 3; // 重置為3秒，與TradingTabs的更新週期一致
+                    return 5; // 改為5秒更新週期
                 }
                 return prevTime - 1;
             });
@@ -25,7 +25,7 @@ export default function UpdateBanner() {
     }, []);
 
     return (
-        <div className="w-full bg-gradient-to-r from-emerald-600 via-blue-600 to-cyan-600 px-4 py-1.5 text-center text-xs text-white shadow-sm">
+        <div className="w-full bg-gradient-to-r from-[#1A325F] via-[#294565] to-[#0f203e] px-4 py-1.5 text-center text-xs text-white shadow-sm border-b border-[#294565] absolute top-0 left-0">
             <div className="flex items-center justify-center space-x-2">
                 {isUpdating ? (
                     <>
@@ -44,13 +44,13 @@ export default function UpdateBanner() {
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             />
                         </svg>
-                        <span className="font-medium">🔄 數據更新中</span>
+                        <span className="font-medium">🔄 資料更新中</span>
                     </>
                 ) : (
                     <>
                         <div className="flex items-center space-x-1">
                             <div className="h-2 w-2 animate-pulse rounded-full bg-green-300"></div>
-                            <span className="text-green-100">實時更新</span>
+                            <span className="text-green-100">即時更新</span>
                         </div>
                         <span className="text-white/80">|</span>
                         <span>
