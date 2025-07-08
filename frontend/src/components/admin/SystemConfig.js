@@ -180,6 +180,24 @@ export const SystemConfig = ({ token }) => {
         }
     }, [token]);
 
+    // 自動更新系統數值
+    useEffect(() => {
+        if (!token) return;
+
+        const interval = setInterval(() => {
+            // 只更新系統統計，不重新載入所有設定
+            getSystemStats(token)
+                .then(stats => {
+                    setSystemStats(stats);
+                })
+                .catch(error => {
+                    console.error('自動更新系統統計失敗:', error);
+                });
+        }, 30000); // 每30秒更新一次
+
+        return () => clearInterval(interval);
+    }, [token]);
+
     // 更新轉帳手續費
     const handleUpdateTransferFee = async () => {
         try {
@@ -510,6 +528,7 @@ export const SystemConfig = ({ token }) => {
                     {systemStats.generated_at && (
                         <div className="mt-4 text-xs text-gray-400 text-center">
                             最後更新：{new Date(systemStats.generated_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}
+                            <span className="ml-2 text-green-400">• 每30秒自動更新</span>
                         </div>
                     )}
                 </div>

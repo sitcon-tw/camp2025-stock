@@ -417,8 +417,10 @@ async def get_system_stats(
         total_stocks_result = await db[Collections.STOCKS].aggregate(total_stocks_pipeline).to_list(1)
         total_stocks = total_stocks_result[0]["total"] if total_stocks_result else 0
         
-        # 統計群組數量
-        total_groups = await db[Collections.GROUPS].count_documents({})
+        # 統計隊伍數量（從 USERS 集合的 team 字段統計）
+        teams = await db[Collections.USERS].distinct("team")
+        # 過濾掉 None 和空字串
+        total_groups = len([t for t in teams if t is not None and t.strip() != ""])
         
         # 統計交易次數
         total_trades = await db[Collections.STOCK_ORDERS].count_documents({"status": "filled"})
@@ -429,7 +431,7 @@ async def get_system_stats(
             "total_points": total_points,
             "total_stocks": total_stocks,
             "total_trades": total_trades,
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.now(datetime.timezone.utc).isoformat()
         }
         
     except Exception as e:
