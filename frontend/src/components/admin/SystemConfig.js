@@ -618,13 +618,21 @@ export const SystemConfig = ({ token }) => {
 
                         {/* 當前設定顯示 */}
                         <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
-                            <div className="text-sm text-[#7BC2E6] mb-1">目前設定</div>
-                            <div className="text-white">
-                                <span className="font-semibold">漲跌停限制：</span>
-                                <span className="text-red-400">動態調整制</span>
-                                <span className="text-xs text-gray-400 ml-2">
-                                    (依股價自動調整 8%-20%)
-                                </span>
+                            <div className="text-sm text-[#7BC2E6] mb-2">目前設定</div>
+                            <div className="text-white space-y-2">
+                                <div>
+                                    <span className="font-semibold">漲跌停限制：</span>
+                                    <span className="text-red-400">動態級距制</span>
+                                </div>
+                                <div className="text-xs text-gray-300 pl-4 space-y-1">
+                                    <div>• 低價股 (< 10點)：20% 漲跌停</div>
+                                    <div>• 中價股 (10-50點)：15% 漲跌停</div>
+                                    <div>• 高價股 (50-100點)：10% 漲跌停</div>
+                                    <div>• 極高價股 (≥ 100點)：8% 漲跌停</div>
+                                </div>
+                                <div className="text-xs text-yellow-300">
+                                    📝 模仿真實股市的價格級距制度，股價越高限制越嚴格
+                                </div>
                             </div>
                         </div>
 
@@ -654,7 +662,7 @@ export const SystemConfig = ({ token }) => {
                                     placeholder="例: 10"
                                 />
                                 <div className="mt-1 text-xs text-[#557797]">
-                                    設定每日股價變動的最大百分比限制
+                                    設定固定的每日股價變動百分比限制（會覆蓋動態級距制）
                                 </div>
                             </div>
                             <PermissionButton
