@@ -415,11 +415,6 @@ const SystemManagementSection = ({ token, showNotification }) => {
 
     return (
         <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
-            <h2 className="mb-4 text-xl font-bold text-orange-400">
-                系統設定
-            </h2>
-
-
             {/* 危險操作區 */}
             <div className="border-t border-[#294565] pt-6">
                 <h3 className="mb-2 text-center text-lg font-bold text-red-400">
