@@ -4,6 +4,45 @@ import { PermissionGuard } from "./PermissionGuard";
 import { PERMISSIONS } from "@/contexts/PermissionContext";
 
 /**
+ * 強制格式化時間為 UTC+8
+ */
+const formatTimeUTC8 = (dateString, options = {}) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+        const date = new Date(dateString);
+        // 強制加 8 小時轉換為 UTC+8
+        const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+        
+        const defaultOptions = {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            ...options
+        };
+        
+        return utc8Date.toLocaleString('zh-TW', defaultOptions);
+    } catch (error) {
+        return 'N/A';
+    }
+};
+
+/**
+ * 簡短時間格式（月日時分）
+ */
+const formatShortTimeUTC8 = (dateString) => {
+    return formatTimeUTC8(dateString, {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+/**
  * 所有成員名單組件
  * 顯示所有註冊成員的詳細資料
  */
@@ -104,8 +143,43 @@ export const MembersList = ({ token }) => {
 
     // 獲取排序箭頭
     const getSortIcon = (field) => {
-        if (sortBy !== field) return "↕️";
-        return sortOrder === "asc" ? "↑" : "↓";
+        if (sortBy !== field) return "⇅";
+        return sortOrder === "asc" ? "▲" : "▼";
+    };
+
+    // 強制格式化時間為 UTC+8
+    const formatTimeUTC8 = (dateString, options = {}) => {
+        if (!dateString) return 'N/A';
+        
+        try {
+            const date = new Date(dateString);
+            // 強制加 8 小時轉換為 UTC+8
+            const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+            
+            const defaultOptions = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                ...options
+            };
+            
+            return utc8Date.toLocaleString('zh-TW', defaultOptions);
+        } catch (error) {
+            return 'N/A';
+        }
+    };
+
+    // 簡短時間格式（月日時分）
+    const formatShortTimeUTC8 = (dateString) => {
+        return formatTimeUTC8(dateString, {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     if (loading) {
@@ -199,7 +273,7 @@ export const MembersList = ({ token }) => {
                 {error && (
                     <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-4">
                         <div className="flex items-center space-x-2">
-                            <span className="text-red-400">⚠️</span>
+                            <span className="text-red-400">!</span>
                             <span className="text-red-300">{error}</span>
                         </div>
                     </div>
@@ -209,7 +283,7 @@ export const MembersList = ({ token }) => {
                 <div className="rounded-lg border border-[#294565] bg-[#1A325F] shadow">
                     {filteredMembers.length === 0 ? (
                         <div className="p-8 text-center">
-                            <div className="text-4xl text-gray-500 mb-4">👥</div>
+                            <div className="text-4xl text-gray-500 mb-4">👤</div>
                             <p className="text-[#7BC2E6]">
                                 {searchTerm ? "沒有找到符合條件的成員" : "沒有成員數據"}
                             </p>
@@ -317,34 +391,10 @@ export const MembersList = ({ token }) => {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3 text-xs text-gray-400">
-                                                            {member.created_at ? 
-                                                                new Date(member.created_at).toLocaleString('zh-TW', {
-                                                                    timeZone: 'Asia/Taipei',
-                                                                    month: '2-digit',
-                                                                    day: '2-digit',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                }) : 'N/A'
-                                                            }
+                                                            {formatShortTimeUTC8(member.created_at)}
                                                         </td>
                                                         <td className="px-4 py-3 text-xs text-gray-400">
-                                                            {member.last_login ? 
-                                                                new Date(member.last_login).toLocaleString('zh-TW', {
-                                                                    timeZone: 'Asia/Taipei',
-                                                                    month: '2-digit',
-                                                                    day: '2-digit',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                }) : 
-                                                                member.updated_at ?
-                                                                    new Date(member.updated_at).toLocaleString('zh-TW', {
-                                                                        timeZone: 'Asia/Taipei',
-                                                                        month: '2-digit',
-                                                                        day: '2-digit',
-                                                                        hour: '2-digit',
-                                                                        minute: '2-digit'
-                                                                    }) : 'N/A'
-                                                            }
+                                                            {formatShortTimeUTC8(member.last_login || member.updated_at)}
                                                         </td>
                                                     </>
                                                 )}
@@ -439,32 +489,8 @@ export const MembersList = ({ token }) => {
                                                     )}
                                                 </div>
                                                 <div className="text-xs text-gray-400">
-                                                    <div>註冊: {member.created_at ? 
-                                                        new Date(member.created_at).toLocaleString('zh-TW', {
-                                                            timeZone: 'Asia/Taipei',
-                                                            month: '2-digit',
-                                                            day: '2-digit',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        }) : 'N/A'
-                                                    }</div>
-                                                    <div>活動: {member.last_login ? 
-                                                        new Date(member.last_login).toLocaleString('zh-TW', {
-                                                            timeZone: 'Asia/Taipei',
-                                                            month: '2-digit',
-                                                            day: '2-digit',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        }) : 
-                                                        member.updated_at ?
-                                                            new Date(member.updated_at).toLocaleString('zh-TW', {
-                                                                timeZone: 'Asia/Taipei',
-                                                                month: '2-digit',
-                                                                day: '2-digit',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            }) : 'N/A'
-                                                    }</div>
+                                                    <div>註冊: {formatShortTimeUTC8(member.created_at)}</div>
+                                                    <div>活動: {formatShortTimeUTC8(member.last_login || member.updated_at)}</div>
                                                 </div>
                                             </div>
                                         )}
@@ -520,7 +546,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                         onClick={onClose}
                         className="text-gray-400 hover:text-white transition-colors text-lg sm:text-xl"
                     >
-                        ✕
+                        ×
                     </button>
                 </div>
                 
@@ -587,13 +613,13 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                                 {member.created_at && (
                                     <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
                                         <div className="text-sm text-[#7BC2E6]">註冊時間</div>
-                                        <div className="text-white text-sm">{new Date(member.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</div>
+                                        <div className="text-white text-sm">{formatTimeUTC8(member.created_at)}</div>
                                     </div>
                                 )}
                                 {member.last_login && (
                                     <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
                                         <div className="text-sm text-[#7BC2E6]">最後登入</div>
-                                        <div className="text-white text-sm">{new Date(member.last_login).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</div>
+                                        <div className="text-white text-sm">{formatTimeUTC8(member.last_login)}</div>
                                     </div>
                                 )}
                             </div>
@@ -637,17 +663,13 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                                         <div>
                                             <div className="text-gray-400">建立時間</div>
                                             <div className="text-white">
-                                                {member.created_at ? 
-                                                    new Date(member.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : 'N/A'
-                                                }
+                                                {formatTimeUTC8(member.created_at)}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-gray-400">最後更新</div>
                                             <div className="text-white">
-                                                {member.updated_at ? 
-                                                    new Date(member.updated_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : 'N/A'
-                                                }
+                                                {formatTimeUTC8(member.updated_at)}
                                             </div>
                                         </div>
                                     </div>
