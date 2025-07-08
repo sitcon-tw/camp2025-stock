@@ -7,7 +7,7 @@ from api.depends.auth import verify_backend_token
 from api.schemas.broadcast import Broadcast
 from bot.instance import bot
 from utils.logger import setup_logger
-from bot.helper.chat_ids import STUDENT_GROUPS
+from bot.helper.chat_ids import STUDENT_GROUPS, MAIN_GROUP
 
 router = APIRouter()
 logger = setup_logger(__name__)
@@ -17,7 +17,10 @@ BACKEND_TOKEN = environ.get("BACKEND_TOKEN")
 @router.post("/bot/broadcast/")
 async def broadcast(request: Broadcast, token: str = Depends(verify_backend_token)):
     logger.info("[FastAPI] Selective broadcast endpoint hit.")
-    for channel in list(STUDENT_GROUPS.values()):
+    groups = list(STUDENT_GROUPS.values())
+    groups.append(MAIN_GROUP)
+
+    for channel in groups:
         try:
             await bot.bot.send_message(
                 f"-{channel}",
