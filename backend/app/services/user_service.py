@@ -1829,6 +1829,13 @@ class UserService:
                         continue
                 
                 if buy_price >= sell_price:
+                    # 檢查是否為自我交易
+                    if buy_order.get("user_id") == sell_order.get("user_id"):
+                        logger.warning(f"Prevented self-trading for user {buy_order.get('user_id')}")
+                        # 跳過賣單，避免無限循環
+                        sell_idx += 1
+                        continue
+                    
                     # 價格符合，進行交易
                     is_system_sale = sell_order.get("is_system_order", False)
                     logger.info(f"Matching orders: Buy {buy_order.get('quantity')} @ {buy_price} vs Sell {sell_order.get('quantity')} @ {sell_price} {'(SYSTEM IPO)' if is_system_sale else ''}")
@@ -1966,10 +1973,7 @@ class UserService:
     async def _match_orders_logic(self, buy_order: dict, sell_order: dict, session=None):
         """訂單撮合邏輯"""
         try:
-            # 防止自己交易給自己
-            if buy_order.get("user_id") == sell_order.get("user_id"):
-                logger.warning(f"Prevented self-trading for user {buy_order.get('user_id')}")
-                return
+            # 注意：自我交易檢查已在主循環中處理
             
             # 計算成交數量和價格
             trade_quantity = min(buy_order["quantity"], sell_order["quantity"])
