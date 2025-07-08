@@ -293,8 +293,8 @@ export default function Dashboard() {
             // 優先使用 ID，如果 ID 不存在或無效，則使用 username
             const preferredIdentifier = qrData.id || qrData.username;
             const basicRecipientData = {
-                username: preferredIdentifier,
-                id: qrData.id || '',
+                username: String(preferredIdentifier),
+                id: qrData.id ? String(qrData.id) : '',
                 photo_url: null
             };
 
@@ -807,9 +807,7 @@ export default function Dashboard() {
                         />
                     ) : (
                         <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-[#264173] text-xl font-bold text-[#92cbf4]">
-                            {user?.username
-                                ?.substring(0, 1)
-                                ?.toUpperCase() || "U"}
+                            {String(user?.username || '').substring(0, 1).toUpperCase() || "U"}
                         </div>
                     )}
                     <div>
@@ -1515,7 +1513,7 @@ export default function Dashboard() {
                                 />
                             ) : (
                                 <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#264173] text-sm font-bold text-[#92cbf4]">
-                                    {user?.username?.substring(0, 1)?.toUpperCase() || "U"}
+                                    {String(user?.username || '').substring(0, 1).toUpperCase() || "U"}
                                 </div>
                             )}
                             <span className="text-sm font-medium text-white">
@@ -1740,7 +1738,7 @@ export default function Dashboard() {
                                 <div 
                                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 text-lg font-bold text-white shadow-lg ring-2 ring-white/20 border-2 border-white/10 ${quickTransferData.photo_url ? 'hidden' : 'flex'}`}
                                 >
-                                    {quickTransferData.username?.substring(0, 1)?.toUpperCase() || "U"}
+                                    {String(quickTransferData.username || '').substring(0, 1).toUpperCase() || "U"}
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-medium text-[#92cbf4]">轉帳給</p>
