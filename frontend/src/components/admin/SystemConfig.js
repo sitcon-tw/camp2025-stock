@@ -10,6 +10,7 @@ import {
     updateIpoDefaults,
     updateMarketTimes,
     updateTransferFeeConfig,
+    getSystemStats,
 } from "@/lib/api";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,6 +35,7 @@ export const SystemConfig = ({ token }) => {
     const [tradingHours, setTradingHours] = useState(null);
     const [ipoDefaults, setIpoDefaults] = useState(null);
     const [ipoStatus, setIpoStatus] = useState(null);
+    const [systemStats, setSystemStats] = useState(null);
 
     // 表單狀態
     const [feeForm, setFeeForm] = useState({
@@ -84,12 +86,13 @@ export const SystemConfig = ({ token }) => {
             setLoading(true);
 
             // 並行載入所有設定
-            const [feeConfig, hours, defaults, ipoCurrentStatus] =
+            const [feeConfig, hours, defaults, ipoCurrentStatus, stats] =
                 await Promise.allSettled([
                     getTransferFeeConfig(token),
                     getTradingHours(),
                     getIpoDefaults(token),
                     getIpoStatus(token),
+                    getSystemStats(token),
                 ]);
 
             if (feeConfig.status === "fulfilled") {
@@ -157,6 +160,10 @@ export const SystemConfig = ({ token }) => {
                     sharesRemaining: ipoCurrentStatus.value.sharesRemaining || "",
                     initialPrice: ipoCurrentStatus.value.initialPrice || "",
                 });
+            }
+
+            if (stats.status === "fulfilled") {
+                setSystemStats(stats.value);
             }
         } catch (error) {
             console.error("載入設定失敗:", error);
@@ -448,6 +455,61 @@ export const SystemConfig = ({ token }) => {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* 系統數值統計 */}
+            {systemStats && (
+                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow mb-8">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h3 className="text-xl font-bold text-[#92cbf4]">
+                            📊 目前系統數值
+                        </h3>
+                        <button
+                            onClick={loadConfigs}
+                            disabled={loading}
+                            className="rounded bg-[#469FD2] px-3 py-1 text-sm text-white hover:bg-[#357AB8] disabled:opacity-50"
+                        >
+                            {loading ? "更新中..." : "刷新數據"}
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+                        <div className="rounded border border-[#294565] bg-[#0f203e] p-4 text-center">
+                            <div className="text-2xl font-bold text-green-400">
+                                {systemStats.total_points?.toLocaleString() || 0}
+                            </div>
+                            <div className="text-sm text-[#7BC2E6]">總點數</div>
+                        </div>
+                        <div className="rounded border border-[#294565] bg-[#0f203e] p-4 text-center">
+                            <div className="text-2xl font-bold text-blue-400">
+                                {systemStats.total_stocks?.toLocaleString() || 0}
+                            </div>
+                            <div className="text-sm text-[#7BC2E6]">總股數</div>
+                        </div>
+                        <div className="rounded border border-[#294565] bg-[#0f203e] p-4 text-center">
+                            <div className="text-2xl font-bold text-yellow-400">
+                                {systemStats.total_users?.toLocaleString() || 0}
+                            </div>
+                            <div className="text-sm text-[#7BC2E6]">使用者數</div>
+                        </div>
+                        <div className="rounded border border-[#294565] bg-[#0f203e] p-4 text-center">
+                            <div className="text-2xl font-bold text-purple-400">
+                                {systemStats.total_groups?.toLocaleString() || 0}
+                            </div>
+                            <div className="text-sm text-[#7BC2E6]">隊伍數</div>
+                        </div>
+                        <div className="rounded border border-[#294565] bg-[#0f203e] p-4 text-center">
+                            <div className="text-2xl font-bold text-orange-400">
+                                {systemStats.total_trades?.toLocaleString() || 0}
+                            </div>
+                            <div className="text-sm text-[#7BC2E6]">成交次數</div>
+                        </div>
+                    </div>
+                    {systemStats.generated_at && (
+                        <div className="mt-4 text-xs text-gray-400 text-center">
+                            最後更新：{new Date(systemStats.generated_at).toLocaleString('zh-TW')}
+                        </div>
+                    )}
                 </div>
             )}
 
