@@ -27,6 +27,7 @@ export const SystemConfig = ({ token }) => {
         type: "info",
     });
     const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(false); // 新增：追蹤更新狀態
 
     // 設定數據
     const [transferFeeConfig, setTransferFeeConfig] = useState(null);
@@ -57,6 +58,15 @@ export const SystemConfig = ({ token }) => {
     // 顯示通知
     const showNotification = (message, type = "info") => {
         setNotification({ show: true, message, type });
+        
+        // 成功時添加觸覺反饋（如果支持）
+        if (type === "success" && "vibrate" in navigator) {
+            navigator.vibrate([100, 50, 100]); // 短-停-短震動模式
+        }
+        
+        // 成功訊息顯示更久一點，錯誤訊息也顯示久一點
+        const duration = type === "success" ? 6000 : type === "error" ? 7000 : 4000;
+        
         setTimeout(
             () =>
                 setNotification({
@@ -64,7 +74,7 @@ export const SystemConfig = ({ token }) => {
                     message: "",
                     type: "info",
                 }),
-            4000,
+            duration,
         );
     };
 
@@ -170,6 +180,8 @@ export const SystemConfig = ({ token }) => {
                 return;
             }
 
+            setUpdating(true); // 開始更新
+
             await updateTransferFeeConfig(
                 token,
                 parseFloat(feeForm.feeRate),
@@ -183,6 +195,8 @@ export const SystemConfig = ({ token }) => {
                 `更新轉帳手續費失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setUpdating(false); // 結束更新
         }
     };
 
@@ -193,6 +207,8 @@ export const SystemConfig = ({ token }) => {
                 showNotification("請填寫交易限制百分比", "error");
                 return;
             }
+
+            setUpdating(true); // 開始更新
 
             await setTradingLimit(
                 token,
@@ -205,6 +221,8 @@ export const SystemConfig = ({ token }) => {
                 `更新交易限制失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setUpdating(false); // 結束更新
         }
     };
 
@@ -219,6 +237,8 @@ export const SystemConfig = ({ token }) => {
                 return;
             }
 
+            setUpdating(true); // 開始更新
+
             await updateIpoDefaults(
                 token,
                 parseInt(ipoDefaultsForm.initialShares),
@@ -232,6 +252,8 @@ export const SystemConfig = ({ token }) => {
                 `更新IPO預設值失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setUpdating(false); // 結束更新
         }
     };
 
@@ -272,6 +294,8 @@ export const SystemConfig = ({ token }) => {
                     ? parseInt(ipoUpdateForm.initialPrice)
                     : null;
 
+            setUpdating(true); // 開始更新
+
             const result = await updateIpo(
                 token,
                 sharesRemaining,
@@ -285,6 +309,8 @@ export const SystemConfig = ({ token }) => {
                 `更新IPO狀態失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setUpdating(false); // 結束更新
         }
     };
 
@@ -292,6 +318,8 @@ export const SystemConfig = ({ token }) => {
     const handleResetIpo = async () => {
         try {
             if (confirm("確定要重置IPO嗎？這將使用預設值重新開始IPO。")) {
+                setUpdating(true); // 開始更新
+
                 const result = await resetIpo(token);
                 showNotification(result.message, "success");
                 await loadConfigs(); // 重新載入設定
@@ -301,12 +329,18 @@ export const SystemConfig = ({ token }) => {
                 `重置IPO失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setUpdating(false); // 結束更新
         }
     };
 
     // 儲存交易時間
     const handleUpdateTradingHours = async () => {
+        if (updating) return; // 防止重複提交
+        
         try {
+            setUpdating(true); // 在開始時就設置更新狀態
+            
             // 驗證時間格式
             const validSessions = marketTimesForm.openTime.filter(
                 (session) => session.start && session.end,
@@ -339,7 +373,10 @@ export const SystemConfig = ({ token }) => {
 
             console.log('Sending openTime to API:', openTime);
             await updateMarketTimes(token, openTime);
-            showNotification("交易時間更新成功！", "success");
+            
+            // 顯示更詳細的成功訊息
+            const timeRanges = validSessions.map(session => `${session.start}-${session.end}`).join(', ');
+            showNotification(`交易時間更新成功！新的交易時段：${timeRanges}`, "success");
             
             // 直接更新 tradingHours 狀態，避免重新載入導致表單重置
             setTradingHours({
@@ -350,6 +387,8 @@ export const SystemConfig = ({ token }) => {
                 `更新交易時間失敗: ${error.message}`,
                 "error",
             );
+        } finally {
+            setUpdating(false); // 結束更新
         }
     };
 
@@ -367,19 +406,48 @@ export const SystemConfig = ({ token }) => {
     }
 
     return (
-        <div className="space-y-8">
-            {/* 通知區域 */}
+        <div className="relative space-y-8">
+            {/* 固定在螢幕頂部的通知區域 */}
             {notification.show && (
-                <div
-                    className={`rounded-lg border p-4 ${
-                        notification.type === "success"
-                            ? "border-green-500/30 bg-green-600/20 text-green-300"
-                            : notification.type === "error"
-                              ? "border-red-500/30 bg-red-600/20 text-red-300"
-                              : "border-blue-500/30 bg-blue-600/20 text-blue-300"
-                    }`}
-                >
-                    {notification.message}
+                <div className="fixed left-1/2 top-4 z-50 w-full max-w-md -translate-x-1/2 transform px-4">
+                    <div
+                        className={`animate-in slide-in-from-top-2 fade-in-0 duration-300 rounded-lg border p-4 shadow-xl backdrop-blur-sm ${
+                            notification.type === "success"
+                                ? "border-green-500/50 bg-green-600/90 text-green-100 shadow-green-500/30"
+                                : notification.type === "error"
+                                  ? "border-red-500/50 bg-red-600/90 text-red-100 shadow-red-500/30"
+                                  : "border-blue-500/50 bg-blue-600/90 text-blue-100 shadow-blue-500/30"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between space-x-2">
+                            <div className="flex items-center space-x-2">
+                                {notification.type === "success" && (
+                                    <svg className="h-5 w-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
+                                {notification.type === "error" && (
+                                    <svg className="h-5 w-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
+                                {notification.type === "info" && (
+                                    <svg className="h-5 w-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
+                                <span className="font-medium text-sm">{notification.message}</span>
+                            </div>
+                            <button
+                                onClick={() => setNotification({ show: false, message: "", type: "info" })}
+                                className="text-current opacity-70 hover:opacity-100 transition-opacity ml-2 flex-shrink-0"
+                            >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -857,12 +925,25 @@ export const SystemConfig = ({ token }) => {
                                 token={token}
                                 onClick={handleUpdateTradingHours}
                                 disabled={
-                                    marketTimesForm.openTime
-                                        .length === 0
+                                    updating || marketTimesForm.openTime.length === 0
                                 }
-                                className="w-full rounded bg-blue-500 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400"
+                                className={`w-full rounded px-4 py-2 font-medium text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400 ${
+                                    updating 
+                                        ? 'bg-blue-400 cursor-wait' 
+                                        : 'bg-blue-500 hover:bg-blue-600 hover:shadow-lg'
+                                }`}
                             >
-                                更新交易時間
+                                {updating ? (
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>更新中...</span>
+                                    </div>
+                                ) : (
+                                    "更新交易時間"
+                                )}
                             </PermissionButton>
                         </div>
                     </div>

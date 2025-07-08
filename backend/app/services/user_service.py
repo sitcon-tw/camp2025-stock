@@ -1239,7 +1239,7 @@ class UserService:
     async def _is_market_open(self) -> bool:
         """檢查市場是否開放交易"""
         try:
-            from datetime import datetime, timezone
+            from datetime import datetime, timezone, timedelta
             
             # 取得市場開放時間設定
             market_config = await self.db[Collections.MARKET_CONFIG].find_one(
@@ -1250,12 +1250,31 @@ class UserService:
                 # 如果沒有設定，預設市場開放
                 return True
             
-            current_timestamp = int(datetime.now(timezone.utc).timestamp())
+            # 取得目前台北時間 (UTC+8)
+            taipei_tz = timezone(timedelta(hours=8))
+            current_time = datetime.now(timezone.utc).astimezone(taipei_tz)
+            current_hour = current_time.hour
+            current_minute = current_time.minute
+            current_seconds_of_day = current_hour * 3600 + current_minute * 60 + current_time.second
             
             # 檢查目前是否在任何一個開放時間段內
             for slot in market_config["openTime"]:
-                if slot["start"] <= current_timestamp <= slot["end"]:
-                    return True
+                # 將儲存的時間戳轉換為當日的秒數
+                start_dt = datetime.fromtimestamp(slot["start"], tz=timezone.utc).astimezone(taipei_tz)
+                end_dt = datetime.fromtimestamp(slot["end"], tz=timezone.utc).astimezone(taipei_tz)
+                
+                start_seconds = start_dt.hour * 3600 + start_dt.minute * 60 + start_dt.second
+                end_seconds = end_dt.hour * 3600 + end_dt.minute * 60 + end_dt.second
+                
+                # 處理跨日情況（例如 23:00 到 01:00）
+                if start_seconds <= end_seconds:
+                    # 同一天內的時間段
+                    if start_seconds <= current_seconds_of_day <= end_seconds:
+                        return True
+                else:
+                    # 跨日時間段
+                    if current_seconds_of_day >= start_seconds or current_seconds_of_day <= end_seconds:
+                        return True
             
             return False
             

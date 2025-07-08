@@ -132,7 +132,7 @@ export default function Home() {
     };
 
     return (
-        <div className="flex min-h-dvh place-items-center justify-center overflow-hidden bg-[#101f3e] py-8 px-8">
+        <div className="flex min-h-dvh place-items-center justify-center overflow-hidden bg-[#101f3e] py-8 px-8 pb-20">
             <div className="flex flex-col items-center">
                 <Image
                     src={botAvatar}

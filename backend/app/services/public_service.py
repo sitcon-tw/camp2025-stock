@@ -7,7 +7,7 @@ from app.schemas.public import (
     MarketPriceInfo
 )
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List
 import logging
 
@@ -285,10 +285,30 @@ class PublicService:
                 open_times = default_open_times
             
             # 檢查目前是否在開放時間內
-            is_open = any(
-                slot.start <= current_timestamp <= slot.end
-                for slot in open_times
-            )
+            taipei_tz = timezone(timedelta(hours=8))
+            current_taipei_time = current_time.astimezone(taipei_tz)
+            current_seconds_of_day = current_taipei_time.hour * 3600 + current_taipei_time.minute * 60 + current_taipei_time.second
+            
+            is_open = False
+            for slot in open_times:
+                # 將儲存的時間戳轉換為當日的秒數
+                start_dt = datetime.fromtimestamp(slot.start, tz=timezone.utc).astimezone(taipei_tz)
+                end_dt = datetime.fromtimestamp(slot.end, tz=timezone.utc).astimezone(taipei_tz)
+                
+                start_seconds = start_dt.hour * 3600 + start_dt.minute * 60 + start_dt.second
+                end_seconds = end_dt.hour * 3600 + end_dt.minute * 60 + end_dt.second
+                
+                # 處理跨日情況（例如 23:00 到 01:00）
+                if start_seconds <= end_seconds:
+                    # 同一天內的時間段
+                    if start_seconds <= current_seconds_of_day <= end_seconds:
+                        is_open = True
+                        break
+                else:
+                    # 跨日時間段
+                    if current_seconds_of_day >= start_seconds or current_seconds_of_day <= end_seconds:
+                        is_open = True
+                        break
             
             return MarketStatus(
                 isOpen=is_open,
@@ -410,10 +430,30 @@ class PublicService:
                 trading_hours = default_open_times
             
             # 檢查目前是否在交易時間內
-            is_currently_open = any(
-                slot.start <= current_timestamp <= slot.end
-                for slot in trading_hours
-            )
+            taipei_tz = timezone(timedelta(hours=8))
+            current_taipei_time = current_time.astimezone(taipei_tz)
+            current_seconds_of_day = current_taipei_time.hour * 3600 + current_taipei_time.minute * 60 + current_taipei_time.second
+            
+            is_currently_open = False
+            for slot in trading_hours:
+                # 將儲存的時間戳轉換為當日的秒數
+                start_dt = datetime.fromtimestamp(slot.start, tz=timezone.utc).astimezone(taipei_tz)
+                end_dt = datetime.fromtimestamp(slot.end, tz=timezone.utc).astimezone(taipei_tz)
+                
+                start_seconds = start_dt.hour * 3600 + start_dt.minute * 60 + start_dt.second
+                end_seconds = end_dt.hour * 3600 + end_dt.minute * 60 + end_dt.second
+                
+                # 處理跨日情況（例如 23:00 到 01:00）
+                if start_seconds <= end_seconds:
+                    # 同一天內的時間段
+                    if start_seconds <= current_seconds_of_day <= end_seconds:
+                        is_currently_open = True
+                        break
+                else:
+                    # 跨日時間段
+                    if current_seconds_of_day >= start_seconds or current_seconds_of_day <= end_seconds:
+                        is_currently_open = True
+                        break
             
             return TradingHoursResponse(
                 tradingHours=trading_hours,
