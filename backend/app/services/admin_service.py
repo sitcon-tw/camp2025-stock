@@ -808,9 +808,31 @@ class AdminService:
 
     async def get_all_point_logs(self, limit: int) -> List[PointLog]:
         try:
-            logs_cursor = self.db[Collections.POINT_LOGS].find().sort("created_at", -1).limit(limit)
+            # 使用聚合管道轉換字段並排序
+            pipeline = [
+                # 排序：最新的紀錄在前
+                {"$sort": {"created_at": -1}},
+                # 限制結果數量
+                {"$limit": limit},
+                # 轉換為期望的格式
+                {
+                    "$project": {
+                        "user_id": {"$toString": "$user_id"},
+                        "type": 1,
+                        "amount": 1,
+                        "note": 1,
+                        "created_at": 1,
+                        "balance_after": 1
+                    }
+                }
+            ]
+            
+            logs_cursor = self.db[Collections.POINT_LOGS].aggregate(pipeline)
             logs = await logs_cursor.to_list(length=None)
+            
+            # 轉換為 PointLog 物件
             return [PointLog(**log) for log in logs]
+            
         except Exception as e:
             logger.error(f"Failed to get all point logs: {e}")
             raise AdminException("Failed to retrieve point logs")
