@@ -10,6 +10,8 @@ from app.schemas.user import (
     PVPAcceptRequest, PVPResult,
     UserPointLog, UserStockOrder
 )
+from app.services.cache_service import cached, get_cache_service, CacheKeys
+from app.services.cache_invalidation import get_cache_invalidator
 from app.core.security import create_access_token
 from app.core.config_refactored import config
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -37,6 +39,8 @@ class UserService:
             self.db = get_database()
         else:
             self.db = db
+        self.cache_service = get_cache_service()
+        self.cache_invalidator = get_cache_invalidator()
     
     async def _get_or_initialize_ipo_config(self, session=None) -> dict:
         """
@@ -138,6 +142,7 @@ class UserService:
             return None
     
     # 取得使用者投資組合
+    @cached(ttl=10, key_prefix="user_portfolio")
     async def get_user_portfolio(self, user_id: str) -> UserPortfolio:
         try:
             # 取得使用者資訊
@@ -479,6 +484,10 @@ class UserService:
                 # 觸發異步撮合（不阻塞響應）
                 await self._trigger_async_matching("limit_order_placed")
                 
+                # 清除價格相關快取
+                await self.cache_invalidator.invalidate_price_related_caches()
+                await self.cache_invalidator.invalidate_user_portfolio_cache(user_id)
+                
                 # 檢查訂單狀態（一般為 pending）
                 updated_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": result.inserted_id})
                 if updated_order and updated_order.get("status") == "filled":
@@ -670,6 +679,10 @@ class UserService:
             user_ids=[from_user_oid, to_user["_id"]],
             operation_name=f"轉帳 - {request.amount} 點 (含手續費 {fee} 點)"
         )
+        
+        # 清除相關用戶的投資組合快取
+        await self.cache_invalidator.invalidate_user_portfolio_cache(str(from_user_oid))
+        await self.cache_invalidator.invalidate_user_portfolio_cache(str(to_user["_id"]))
         
         return TransferResponse(
             success=True,

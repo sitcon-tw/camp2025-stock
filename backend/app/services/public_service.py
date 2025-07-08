@@ -6,6 +6,7 @@ from app.schemas.public import (
     MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot, PublicAnnouncement,
     MarketPriceInfo
 )
+from app.services.cache_service import cached, get_cache_service, CacheKeys
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone, timedelta
 from typing import List
@@ -27,6 +28,7 @@ class PublicService:
             self.db = db
     
     # 取得股票價格摘要
+    @cached(ttl=5, key_prefix="price")
     async def get_price_summary(self) -> PriceSummary:
         try:
             # 取得近5筆平均價格
@@ -119,6 +121,7 @@ class PublicService:
             )
     
     # 取得五檔報價
+    @cached(ttl=2, key_prefix="price")
     async def get_price_depth(self) -> PriceDepth:
         try:
             # 取得買方掛單（價格從高到低）
@@ -180,6 +183,7 @@ class PublicService:
             )
     
     # 取得最近成交記錄
+    @cached(ttl=10, key_prefix="trade")
     async def get_recent_trades(self, limit: int = 20) -> List[TradeRecord]:
         try:
             trades_cursor = self.db[Collections.STOCK_ORDERS].find({
@@ -215,6 +219,7 @@ class PublicService:
             )
     
     # 取得排行榜
+    @cached(ttl=60, key_prefix="leaderboard")
     async def get_leaderboard(self) -> List[LeaderboardEntry]:
         try:
             # 取得所有使用者
@@ -265,6 +270,7 @@ class PublicService:
             )
     
     # 取得市場狀態
+    @cached(ttl=30, key_prefix="market")
     async def get_market_status(self) -> MarketStatus:
         try:
             # 取得市場開放時間設定

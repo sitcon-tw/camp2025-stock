@@ -42,7 +42,7 @@ class ApiService {
         try {
             const data = await apiFunction();
 
-            // 緩存結果
+            // 快取結果
             this.cache.set(key, {
                 data,
                 timestamp: Date.now(),
@@ -56,7 +56,7 @@ class ApiService {
         }
     }
 
-    // 清除緩存
+    // 清除快取
     clearCache(key) {
         if (key) {
             this.cache.delete(key);
