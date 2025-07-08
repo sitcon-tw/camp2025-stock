@@ -461,6 +461,21 @@ const SystemManagementSection = ({ token, showNotification }) => {
             {/* 市場管理操作區 */}
             <div className="mb-6">
                 <h3 className="mb-3 text-lg font-semibold text-blue-400">市場管理</h3>
+                
+                {/* 手動操作警語 */}
+                <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-600/10 p-3">
+                    <div className="flex items-start space-x-2">
+                        <span className="text-lg">⚡</span>
+                        <div>
+                            <h4 className="font-semibold text-yellow-400">手動控制優先</h4>
+                            <p className="mt-1 text-sm text-yellow-300">
+                                手動開盤/收盤操作具有最高優先權，將覆蓋所有時間限制設定。
+                                請謹慎使用這些控制功能。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                     <PermissionButton
                         requiredPermission={PERMISSIONS.MANAGE_MARKET}
