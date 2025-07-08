@@ -187,7 +187,7 @@ export default function TutorialPage() {
                 </h2>
                 <div className="mb-6 rounded-lg bg-[#1a2e4a] p-4">
                     <p className="font-semibold text-[#82bee2]">
-                        所有交易指令都透過 Telegram Bot 完成！
+                        此網站可以買賣股票，其他遊戲和轉帳請透過 Telegram Bot 完成！
                     </p>
                 </div>
 
