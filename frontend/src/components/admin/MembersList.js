@@ -376,9 +376,28 @@ export const MembersList = ({ token }) => {
  * 成員詳細資料彈窗組件
  */
 const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
+    // 處理 ESC 鍵關閉
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            onClose();
+        }
+    };
+
+    // 處理背景點擊關閉
+    const handleBackdropClick = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="max-w-2xl w-full mx-4 rounded-lg border border-[#294565] bg-[#1A325F] shadow-xl">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 overflow-y-auto"
+            onClick={handleBackdropClick}
+            onKeyDown={handleKeyDown}
+            tabIndex={-1}
+        >
+            <div className="max-w-4xl w-full my-8 rounded-lg border border-[#294565] bg-[#1A325F] shadow-xl max-h-[90vh] flex flex-col">
                 <div className="flex items-center justify-between p-6 border-b border-[#294565]">
                     <h3 className="text-xl font-bold text-[#92cbf4]">成員詳細資料</h3>
                     <button
@@ -389,7 +408,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                     </button>
                 </div>
                 
-                <div className="p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* 基本資料 */}
                     <div>
                         <h4 className="text-lg font-semibold text-[#7BC2E6] mb-3">基本資料</h4>
@@ -521,7 +540,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                                 {/* 原始資料 */}
                                 <div className="rounded border border-[#294565] bg-[#0f203e] p-3">
                                     <div className="text-sm text-[#7BC2E6] mb-2">原始資料 (JSON)</div>
-                                    <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-32 bg-black p-2 rounded">
+                                    <pre className="text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-48 bg-black p-2 rounded border">
                                         {JSON.stringify(member, null, 2)}
                                     </pre>
                                 </div>
@@ -530,7 +549,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
                     )}
                 </div>
 
-                <div className="flex justify-end p-6 border-t border-[#294565]">
+                <div className="flex-shrink-0 flex justify-end p-6 border-t border-[#294565]">
                     <button
                         onClick={onClose}
                         className="rounded bg-[#469FD2] px-6 py-2 text-white hover:bg-[#357AB8]"
