@@ -98,7 +98,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
                 {!loading && (
                     <>
-                        {/* 刷新按鈕 */}
+                        {/* 刷新按鈕
                         <div className="mb-3 flex justify-end">
                             <button
                                 onClick={fetchData}
@@ -107,7 +107,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                             >
                                 🔄 刷新五檔
                             </button>
-                        </div>
+                        </div> */}
                         
                         {/* 表頭 */}
                         <div className="text-md mb-2 grid grid-cols-4 border-b border-[#469FD2] pb-2 text-white">
