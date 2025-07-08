@@ -1628,12 +1628,6 @@ export default function Dashboard() {
                             playsInline
                             muted
                         />
-                        <button
-                            onClick={stopQRScanner}
-                            className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white hover:bg-red-700"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
                     </div>
                     
                     <div className="text-center space-y-2">
