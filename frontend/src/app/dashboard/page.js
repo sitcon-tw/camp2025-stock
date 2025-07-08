@@ -239,9 +239,18 @@ export default function Dashboard() {
         setTransferError("");
         
         try {
-            await new Promise(resolve => setTimeout(resolve, 100)); // 等待DOM更新
+            // 等待 DOM 更新
+            await new Promise(resolve => setTimeout(resolve, 200));
             
             if (videoRef.current) {
+                // 檢查相機權限
+                const hasCamera = await QrScanner.hasCamera();
+                if (!hasCamera) {
+                    setTransferError('未檢測到相機設備');
+                    setShowQRScanner(false);
+                    return;
+                }
+                
                 qrScannerRef.current = new QrScanner(
                     videoRef.current,
                     result => {
@@ -268,14 +277,26 @@ export default function Dashboard() {
                         returnDetailedScanResult: true,
                         highlightScanRegion: true,
                         highlightCodeOutline: true,
+                        preferredCamera: 'environment', // 使用後置相機
                     }
                 );
                 
                 await qrScannerRef.current.start();
+                console.log('QR Scanner 啟動成功');
             }
         } catch (error) {
             console.error('啟動相機失敗:', error);
-            setTransferError('無法啟動相機，請檢查權限設定');
+            let errorMessage = '無法啟動相機';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage = '相機權限被拒絕，請在瀏覽器設定中允許相機權限';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage = '未找到相機設備';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage = '瀏覽器不支援相機功能';
+            }
+            
+            setTransferError(errorMessage);
             setShowQRScanner(false);
         }
     };
@@ -1540,7 +1561,14 @@ export default function Dashboard() {
                         <video
                             ref={videoRef}
                             className="w-full rounded-lg bg-black"
-                            style={{ maxHeight: '300px' }}
+                            style={{ 
+                                width: '100%', 
+                                height: '300px', 
+                                objectFit: 'cover' 
+                            }}
+                            autoPlay
+                            playsInline
+                            muted
                         />
                         <button
                             onClick={closeQRScanner}
