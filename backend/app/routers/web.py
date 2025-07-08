@@ -535,7 +535,7 @@ async def redeem_qr_code(
         
         # 給予點數
         give_points_request = GivePointsRequest(
-            target=current_user["user_id"],
+            username=current_user["user_id"],
             type="user",
             amount=points
         )

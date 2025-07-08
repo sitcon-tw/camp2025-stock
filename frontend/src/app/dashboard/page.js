@@ -274,9 +274,19 @@ export default function Dashboard() {
     };
 
     const stopQRScanner = () => {
-        if (qrScannerRef.current) {
-            qrScannerRef.current.stop();
-            qrScannerRef.current.destroy();
+        try {
+            if (qrScannerRef.current) {
+                qrScannerRef.current.stop();
+                // 延遲銷毀以避免 document 訪問錯誤
+                setTimeout(() => {
+                    if (qrScannerRef.current) {
+                        qrScannerRef.current.destroy();
+                        qrScannerRef.current = null;
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error('停止 QR Scanner 失敗:', error);
             qrScannerRef.current = null;
         }
         setShowQRScanner(false);
@@ -649,9 +659,13 @@ export default function Dashboard() {
     // 清理 QR Scanner 和輪詢
     useEffect(() => {
         return () => {
-            if (qrScannerRef.current) {
-                qrScannerRef.current.stop();
-                qrScannerRef.current.destroy();
+            try {
+                if (qrScannerRef.current) {
+                    qrScannerRef.current.stop();
+                    qrScannerRef.current.destroy();
+                }
+            } catch (error) {
+                console.error('清理 QR Scanner 失敗:', error);
             }
             stopPolling();
         };
