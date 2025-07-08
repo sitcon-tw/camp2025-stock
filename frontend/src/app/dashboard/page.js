@@ -1463,13 +1463,27 @@ export default function Dashboard() {
                             fgColor="#000000"
                         />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <p className="text-sm text-[#92cbf4]">
                             讓別人掃描這個 QR Code 來轉帳給你
                         </p>
-                        <p className="text-xs text-[#557797]">
-                            用戶名：{user?.username || ''}
-                        </p>
+                        <div className="flex items-center justify-center gap-3">
+                            {authData?.photo_url && !useAvatarFallback ? (
+                                <img
+                                    src={authData.photo_url}
+                                    alt="大頭照"
+                                    className="h-8 w-8 rounded-full"
+                                    onError={() => setUseAvatarFallback(true)}
+                                />
+                            ) : (
+                                <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#264173] text-sm font-bold text-[#92cbf4]">
+                                    {user?.username?.substring(0, 1)?.toUpperCase() || "U"}
+                                </div>
+                            )}
+                            <span className="text-sm font-medium text-white">
+                                {user?.username || ''}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </Modal>
@@ -1679,8 +1693,8 @@ export default function Dashboard() {
                         {/* 收款人資訊確認 */}
                         <div className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
                             <div className="flex items-center gap-3">
-                                <div className="rounded-full bg-[#469FD2]/20 p-2">
-                                    <QrCode className="h-6 w-6 text-[#469FD2]" />
+                                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#469FD2]/30 text-lg font-bold text-[#469FD2]">
+                                    {quickTransferData.username?.substring(0, 1)?.toUpperCase() || "U"}
                                 </div>
                                 <div>
                                     <p className="font-medium text-[#92cbf4]">轉帳給</p>
