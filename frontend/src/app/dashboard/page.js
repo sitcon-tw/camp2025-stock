@@ -300,13 +300,13 @@ export default function Dashboard() {
                 throw new Error('未找到認證令牌');
             }
 
-            // 先停止掃描器
-            stopQRScanner();
-
             // 呼叫兌換 API
             const result = await redeemQRCode(token, qrData);
             
             if (result.ok) {
+                // 兌換成功，停止掃描器
+                stopQRScanner();
+                
                 const qrInfo = JSON.parse(qrData);
                 setTransferSuccess(`🎉 QR Code 兌換成功！獲得 ${result.points} 點數！`);
                 
@@ -356,11 +356,23 @@ export default function Dashboard() {
                     console.error('重新載入資料失敗:', refreshError);
                 }
             } else {
+                // 兌換失敗，保持掃描器開啟，只顯示錯誤訊息
                 setTransferError(result.message || '兌換失敗');
+                
+                // 3秒後清除錯誤訊息，繼續掃描
+                setTimeout(() => {
+                    setTransferError('');
+                }, 3000);
             }
         } catch (error) {
             console.error('兌換 QR Code 失敗:', error);
+            // 兌換失敗，保持掃描器開啟，只顯示錯誤訊息
             setTransferError(error.message || '兌換失敗，請稍後再試');
+            
+            // 3秒後清除錯誤訊息，繼續掃描
+            setTimeout(() => {
+                setTransferError('');
+            }, 3000);
         }
     };
 
