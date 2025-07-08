@@ -239,102 +239,52 @@ export default function Dashboard() {
         setTransferError("");
         
         try {
-            // 先檢查海覽器支援
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('您的海覽器不支援相機功能');
-            }
+            await new Promise(resolve => setTimeout(resolve, 100)); // 等待DOM更新
             
-            // 等待 DOM 更新
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-            if (!videoRef.current) {
-                throw new Error('相機元件初始化失敗');
-            }
-            
-            // 檢查相機權限（可選，部分海覽器不支援）
-            try {
-                if (navigator.permissions && navigator.permissions.query) {
-                    const permission = await navigator.permissions.query({name: 'camera'});
-                    console.log('相機權限狀態:', permission.state);
-                    
-                    if (permission.state === 'denied') {
-                        throw new Error('相機權限被拒絕，請在設定中開啟相機權限');
-                    }
-                }
-            } catch (permissionError) {
-                console.warn('權限檢查失敗，繼續嘗試啟動相機:', permissionError);
-            }
-            
-            // 初始化 QR Scanner
-            qrScannerRef.current = new QrScanner(
-                videoRef.current,
-                result => {
-                    console.log('QR Code 掃描結果:', result.data);
-                    try {
-                        const qrData = JSON.parse(result.data);
-                        if (qrData.type === 'transfer' && qrData.username) {
-                            // 掃描成功後設定用戶資訊並停止掃描
-                            setScannedUser({
-                                username: qrData.username,
-                                id: qrData.id || ''
-                            });
-                            stopQRScanner();
-                            // 直接開啟轉帳表單
-                            openTransferModal(qrData.username);
-                        } else {
-                            setTransferError('無效的轉帳 QR Code');
+            if (videoRef.current) {
+                qrScannerRef.current = new QrScanner(
+                    videoRef.current,
+                    result => {
+                        console.log('QR Code 掃描結果:', result.data);
+                        try {
+                            const qrData = JSON.parse(result.data);
+                            if (qrData.type === 'transfer' && qrData.username) {
+                                // 掃描成功後設定用戶資訊並停止掃描
+                                setScannedUser({
+                                    username: qrData.username,
+                                    id: qrData.id || ''
+                                });
+                                stopQRScanner();
+                                // 直接開啟轉帳表單
+                                openTransferModal(qrData.username);
+                            } else {
+                                setTransferError('無效的轉帳 QR Code');
+                            }
+                        } catch (e) {
+                            setTransferError('QR Code 格式錯誤');
                         }
-                    } catch (e) {
-                        setTransferError('QR Code 格式錯誤');
-                        console.error('QR Code 解析錯誤:', e);
+                    },
+                    {
+                        returnDetailedScanResult: true,
+                        highlightScanRegion: true,
+                        highlightCodeOutline: true,
                     }
-                },
-                {
-                    returnDetailedScanResult: true,
-                    highlightScanRegion: true,
-                    highlightCodeOutline: true,
-                    preferredCamera: 'environment', // 優先使用後相機
-                    maxScansPerSecond: 5, // 限制掃描頻率
-                }
-            );
-            
-            // 啟動相機
-            await qrScannerRef.current.start();
-            console.log('QR Scanner 啟動成功');
-            
+                );
+                
+                await qrScannerRef.current.start();
+            }
         } catch (error) {
             console.error('啟動相機失敗:', error);
-            
-            let errorMessage = '無法啟動相機';
-            
-            if (error.name === 'NotAllowedError' || error.message.includes('權限')) {
-                errorMessage = '相機權限被拒絕，請在設定中開啟相機權限';
-            } else if (error.name === 'NotFoundError') {
-                errorMessage = '找不到可用的相機設備';
-            } else if (error.name === 'NotSupportedError') {
-                errorMessage = '您的海覽器不支援相機功能';
-            } else if (error.name === 'NotReadableError') {
-                errorMessage = '相機被其他應用程式使用中';
-            } else {
-                errorMessage = error.message || '相機啟動失敗，請稍後再試';
-            }
-            
-            setTransferError(errorMessage);
+            setTransferError('無法啟動相機，請檢查權限設定');
             setShowQRScanner(false);
         }
     };
 
     const stopQRScanner = () => {
         if (qrScannerRef.current) {
-            try {
-                qrScannerRef.current.stop();
-                qrScannerRef.current.destroy();
-                console.log('QR Scanner 已停止');
-            } catch (error) {
-                console.error('停止 QR Scanner 時發生錯誤:', error);
-            } finally {
-                qrScannerRef.current = null;
-            }
+            qrScannerRef.current.stop();
+            qrScannerRef.current.destroy();
+            qrScannerRef.current = null;
         }
         setShowQRScanner(false);
     };
@@ -345,37 +295,6 @@ export default function Dashboard() {
         setScannedUser(null);
     };
 
-    const requestCameraPermission = async () => {
-        try {
-            setTransferError('');
-            
-            // 手動請求相機權限
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'environment' // 優先使用後相機
-                } 
-            });
-            
-            // 權限獲取成功，停止串流並重新啟動掃描器
-            stream.getTracks().forEach(track => track.stop());
-            
-            // 重新啟動 QR 掃描器
-            setTimeout(() => startQRScanner(), 500);
-            
-        } catch (error) {
-            console.error('權限請求失敗:', error);
-            
-            let errorMessage = '無法獲取相機權限';
-            
-            if (error.name === 'NotAllowedError') {
-                errorMessage = '相機權限被拒絕。請點擊海覽器地址欄的鎖頭圖示，並允許相機權限。';
-            } else if (error.name === 'NotFoundError') {
-                errorMessage = '找不到相機設備。請確認您的設備有相機。';
-            }
-            
-            setTransferError(errorMessage);
-        }
-    };
 
     const handleTransferSubmit = async (e) => {
         e.preventDefault();
@@ -1621,26 +1540,11 @@ export default function Dashboard() {
                         <video
                             ref={videoRef}
                             className="w-full rounded-lg bg-black"
-                            style={{ 
-                                maxHeight: '300px',
-                                minHeight: '250px'
-                            }}
-                            playsInline
-                            muted
+                            style={{ maxHeight: '300px' }}
                         />
-                        
-                        {/* 掃描框提示 */}
-                        <div className="absolute inset-0 pointer-events-none">
-                            <div className="flex items-center justify-center h-full">
-                                <div className="w-48 h-48 border-2 border-dashed border-green-400 rounded-lg flex items-center justify-center">
-                                    <QrCode className="h-12 w-12 text-green-400 opacity-50" />
-                                </div>
-                            </div>
-                        </div>
-                        
                         <button
                             onClick={closeQRScanner}
-                            className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white hover:bg-red-700 z-10"
+                            className="absolute top-2 right-2 rounded-full bg-red-600 p-2 text-white hover:bg-red-700"
                         >
                             <X className="h-4 w-4" />
                         </button>
@@ -1653,25 +1557,6 @@ export default function Dashboard() {
                         <p className="text-xs text-[#557797]">
                             掃描成功後將自動跳轉到轉帳表單
                         </p>
-                        
-                        {/* 權限指導和手動權限請求 */}
-                        <div className="mt-4 p-3 bg-blue-600/10 border border-blue-500/30 rounded-lg">
-                            <p className="text-xs text-blue-300 mb-2">
-                                📱 如果相機無法啟動：
-                            </p>
-                            <ul className="text-xs text-blue-300 space-y-1 text-left mb-3">
-                                <li>• 請確認已允許相機權限</li>
-                                <li>• 關閉其他使用相機的應用</li>
-                                <li>• 嘗試重新整理頁面</li>
-                            </ul>
-                            
-                            <button
-                                onClick={requestCameraPermission}
-                                className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs text-white transition-colors hover:bg-blue-700"
-                            >
-                                手動請求相機權限
-                            </button>
-                        </div>
                     </div>
                     
                     {transferError && (
@@ -1679,17 +1564,6 @@ export default function Dashboard() {
                             <p className="text-sm text-red-400">
                                 ❌ {transferError}
                             </p>
-                            
-                            {/* 重試按鈕 */}
-                            <button
-                                onClick={() => {
-                                    setTransferError('');
-                                    setTimeout(() => startQRScanner(), 100);
-                                }}
-                                className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
-                            >
-                                重試啟動相機
-                            </button>
                         </div>
                     )}
                 </div>
