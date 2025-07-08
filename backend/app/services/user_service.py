@@ -930,8 +930,27 @@ class UserService:
     async def transfer_points_by_username(self, from_username: str, request: TransferRequest) -> TransferResponse:
         """根據使用者名轉帳點數"""
         try:
-            user = await self._get_user_(from_username)
-            return await self.transfer_points(str(user["_id"]), request)
+            # 額外檢查：防止用不同的用戶名稱格式指向同一人的自我轉帳
+            from_user = await self._get_user_(from_username)
+            
+            # 嘗試解析目標用戶以進行自我轉帳檢查
+            try:
+                to_user = await self._get_user_(request.to_username)
+                
+                # 檢查是否為同一人（多種標識符檢查）
+                if (str(from_user["_id"]) == str(to_user["_id"]) or 
+                    from_user.get("telegram_id") == to_user.get("telegram_id") or
+                    (from_user.get("telegram_id") and str(from_user.get("telegram_id")) == request.to_username) or
+                    (to_user.get("telegram_id") and str(to_user.get("telegram_id")) == from_username)):
+                    return TransferResponse(
+                        success=False,
+                        message="無法轉帳給自己"
+                    )
+            except HTTPException:
+                # 如果目標用戶不存在，讓後續邏輯處理
+                pass
+            
+            return await self.transfer_points(str(from_user["_id"]), request)
         except Exception as e:
             logger.error(f"Failed to transfer points by username: {e}")
             raise
