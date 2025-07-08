@@ -466,30 +466,46 @@ export default function Dashboard() {
             // 檢查是否有新的轉帳收入
             if (newPointHistory.length > 0 && lastPointHistoryLength > 0) {
                 const newTransactions = newPointHistory.slice(0, newPointHistory.length - lastPointHistoryLength);
+                console.log('檢查新交易:', {
+                    newLength: newPointHistory.length,
+                    lastLength: lastPointHistoryLength,
+                    newTransactionsCount: newTransactions.length,
+                    newTransactions: newTransactions
+                });
                 
                 for (const transaction of newTransactions) {
-                    // 檢查是否為轉帳收入（正數且包含轉帳關鍵字）
-                    if (transaction.amount > 0 && transaction.note && 
-                        (transaction.note.includes('轉帳') || 
-                         transaction.note.includes('transfer') || 
-                         transaction.note.includes('來自'))) {
+                    // 檢查是否為轉帳收入（根據後端的標準格式）
+                    const isTransferIn = transaction.amount > 0 && transaction.note && 
+                        (transaction.type === 'transfer_in' || 
+                         transaction.note.includes('收到來自') || 
+                         transaction.note.includes('的轉帳'));
+                    
+                    console.log('檢查交易:', {
+                        amount: transaction.amount,
+                        type: transaction.type,
+                        note: transaction.note,
+                        isTransferIn: isTransferIn
+                    });
+                    
+                    if (isTransferIn) {
                         
-                        // 提取轉帳人名稱
+                        // 提取轉帳人名稱（根據後端格式："收到來自 [sender] 的轉帳"）
                         let fromUser = '未知使用者';
-                        if (transaction.note.includes('來自')) {
-                            fromUser = transaction.note.match(/來自\s*(.+)/)?.[1] || '未知使用者';
-                        } else if (transaction.note.includes('轉帳給')) {
-                            // 如果是轉帳給別人的記錄，提取轉帳人
-                            fromUser = transaction.note.match(/轉帳給\s*(.+)/)?.[1] || '未知使用者';
+                        if (transaction.note.includes('收到來自') && transaction.note.includes('的轉帳')) {
+                            const match = transaction.note.match(/收到來自\s*(.+?)\s*的轉帳/);
+                            fromUser = match?.[1]?.trim() || '未知使用者';
                         }
                         
                         // 找到新的收款
-                        setReceivedPayment({
+                        const paymentData = {
                             amount: transaction.amount,
                             from: fromUser,
                             note: transaction.note,
                             timestamp: transaction.created_at
-                        });
+                        };
+                        
+                        console.log('觸發收款通知:', paymentData);
+                        setReceivedPayment(paymentData);
                         setShowPaymentNotification(true);
                         
                         // 播放收款音效（使用簡單的音頻音效）
