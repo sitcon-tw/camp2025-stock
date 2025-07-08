@@ -507,6 +507,12 @@ class AuthenticationApplicationService(BaseApplicationService):
             if not is_eligible:
                 return False, None, message
             
+            # 3.5. 更新使用者的 photo_url（如果有的話）
+            photo_url = auth_data.get('photo_url')
+            if photo_url and photo_url != user.photo_url:
+                await self.user_repo.update_photo_url(user.user_id, photo_url)
+                logger.info(f"Updated photo_url for user {user.user_id}")
+            
             # 4. 準備使用者資訊（移除敏感資料）
             user_info = {
                 "id": user.user_id,

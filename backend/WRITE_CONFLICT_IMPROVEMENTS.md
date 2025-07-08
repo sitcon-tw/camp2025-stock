@@ -2,7 +2,7 @@
 
 ## 問題描述
 
-當多個用戶同時使用系統時，會出現 MongoDB WriteConflict 錯誤：
+當多個使用者同時使用系統時，會出現 MongoDB WriteConflict 錯誤：
 
 ```
 WriteConflict during plan execution and yielding is disabled. 
@@ -169,7 +169,7 @@ python test_write_conflict.py
 - 減少 WriteConflict 錯誤發生率
 - 提高系統併發處理能力
 - 更好的錯誤監控和診斷
-- 提升用戶體驗
+- 提升使用者體驗
 
 ### 7. 注意事項
 

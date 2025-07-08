@@ -97,6 +97,28 @@ class MongoUserRepository(UserRepository):
             logger.error(f"Error updating points for user {user_id}: {e}")
             raise
     
+    async def update_photo_url(self, user_id: str, photo_url: Optional[str]) -> None:
+        """更新使用者大頭照 URL"""
+        try:
+            update_data = {"updated_at": datetime.now()}
+            if photo_url:
+                update_data["photo_url"] = photo_url
+            else:
+                # 如果 photo_url 為 None，則移除該欄位
+                await self.collection.update_one(
+                    {"id": user_id},
+                    {"$unset": {"photo_url": ""}, "$set": {"updated_at": datetime.now()}}
+                )
+                return
+            
+            await self.collection.update_one(
+                {"id": user_id},
+                {"$set": update_data}
+            )
+        except Exception as e:
+            logger.error(f"Error updating photo_url for user {user_id}: {e}")
+            raise
+    
     def _document_to_entity(self, doc: dict) -> User:
         """將 MongoDB 文件轉換為領域實體"""
         # Handle telegram_id as both string and int
@@ -114,13 +136,14 @@ class MongoUserRepository(UserRepository):
             team=doc.get("team"),
             points=doc.get("points", 0),
             telegram_id=telegram_id,
+            photo_url=doc.get("photo_url"),
             is_active=doc.get("enabled", doc.get("is_active", True)),  # Support both field names
             created_at=doc.get("created_at")
         )
     
     def _entity_to_document(self, user: User) -> dict:
         """將領域實體轉換為 MongoDB 文件"""
-        return {
+        doc = {
             "id": user.user_id,
             "username": user.username,
             "email": user.email,
@@ -131,6 +154,12 @@ class MongoUserRepository(UserRepository):
             "created_at": user.created_at or datetime.now(),
             "updated_at": datetime.now()
         }
+        
+        # 只有當 photo_url 不為 None 時才添加到文件中
+        if user.photo_url is not None:
+            doc["photo_url"] = user.photo_url
+            
+        return doc
 
 
 class MongoStockRepository(StockRepository):

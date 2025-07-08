@@ -104,7 +104,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
 
     return (
         <div className="min-h-screen bg-[#0f203e] pb-20">
-            {/* 頁面標題和用戶資訊 */}
+            {/* 頁面標題和使用者資訊 */}
             <div className="border-b border-[#294565] bg-[#1A325F] shadow">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between py-6">

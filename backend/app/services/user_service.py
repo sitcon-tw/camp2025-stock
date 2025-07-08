@@ -701,7 +701,7 @@ class UserService:
             operation_name=f"轉帳 - {request.amount} 點 (含手續費 {fee} 點)"
         )
         
-        # 清除相關用戶的投資組合快取
+        # 清除相關使用者的投資組合快取
         await self.cache_invalidator.invalidate_user_portfolio_cache(str(from_user_oid))
         await self.cache_invalidator.invalidate_user_portfolio_cache(str(to_user["_id"]))
         
@@ -964,10 +964,10 @@ class UserService:
     async def transfer_points_by_username(self, from_username: str, request: TransferRequest) -> TransferResponse:
         """根據使用者名轉帳點數"""
         try:
-            # 額外檢查：防止用不同的用戶名稱格式指向同一人的自我轉帳
+            # 額外檢查：防止用不同的使用者名稱格式指向同一人的自我轉帳
             from_user = await self._get_user_(from_username)
             
-            # 嘗試解析目標用戶以進行自我轉帳檢查
+            # 嘗試解析目標使用者以進行自我轉帳檢查
             try:
                 to_user = await self._get_user_(request.to_username)
                 
@@ -981,7 +981,7 @@ class UserService:
                         message="無法轉帳給自己"
                     )
             except HTTPException:
-                # 如果目標用戶不存在，讓後續邏輯處理
+                # 如果目標使用者不存在，讓後續邏輯處理
                 pass
             
             return await self.transfer_points(str(from_user["_id"]), request)

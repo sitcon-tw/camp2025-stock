@@ -51,7 +51,7 @@ class TelegramOAuthRequest(BaseModel):
     first_name: str = Field(..., description="名字")
     last_name: Optional[str] = Field(None, description="姓氏")
     username: Optional[str] = Field(None, description="使用者名稱")
-    photo_url: Optional[str] = Field(None, description="頭像 URL")
+    photo_url: Optional[str] = Field(None, description="大頭照 URL")
     auth_date: int = Field(..., description="認證時間戳")
     hash: str = Field(..., description="認證雜湊值")
 

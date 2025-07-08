@@ -122,14 +122,14 @@ const isLegacyAdminToken = (payload) => {
 };
 
 /**
- * 檢查是否為 Telegram 用戶 token (新系統)
+ * 檢查是否為 Telegram 使用者 token (新系統)
  * @param {Object} payload - JWT payload
  * @returns {boolean}
  */
 const isUserToken = (payload) => {
     if (!payload) return false;
 
-    // Telegram 用戶 token 特徵：
+    // Telegram 使用者 token 特徵：
     // - 有 telegram_id
     // - 或者有 user_id 且不是 admin
     return (
@@ -379,7 +379,7 @@ export const usePermissions = (token) => {
     }, [token, fetchPermissions]);
 
     /**
-     * 清除目前用戶的權限快取
+     * 清除目前使用者的權限快取
      */
     const clearCache = useCallback(() => {
         if (token) {

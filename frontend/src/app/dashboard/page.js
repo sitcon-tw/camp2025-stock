@@ -8,6 +8,7 @@ import {
     getWebPortfolio,
     getWebStockOrders,
     webTransferPoints,
+    getUserAvatar,
 } from "@/lib/api";
 import dayjs from "dayjs";
 import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2 } from "lucide-react";
@@ -57,11 +58,11 @@ export default function Dashboard() {
     const pollingIntervalRef = useRef(null);
     const router = useRouter();
 
-    // 檢查頭像圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
+    // 檢查大頭照圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
     const handleAvatarLoad = (event) => {
         const img = event.target;
 
-        // 如果圖片太小，使用文字頭像
+        // 如果圖片太小，使用文字大頭照
         if (img.naturalWidth <= 10 || img.naturalHeight <= 10) {
             setUseAvatarFallback(true);
         } else {
@@ -243,7 +244,7 @@ export default function Dashboard() {
                         try {
                             const qrData = JSON.parse(result.data);
                             if (qrData.type === 'transfer' && qrData.username) {
-                                // 嘗試獲取收款人的完整資訊（包括頭像）
+                                // 嘗試獲取收款人的完整資訊（包括大頭照）
                                 fetchRecipientInfo(qrData);
                             } else {
                                 setTransferError('無效的轉帳 QR Code');
@@ -280,21 +281,38 @@ export default function Dashboard() {
     // 獲取收款人資訊
     const fetchRecipientInfo = async (qrData) => {
         try {
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                throw new Error('未找到認證令牌');
+            }
+
             // 先停止掃描器
             stopQRScanner();
 
-            // 設定基本資料（目前只能使用字母圓形頭像）
+            // 設定基本資料（作為fallback）
             const basicRecipientData = {
                 username: qrData.username,
                 id: qrData.id || '',
-                photo_url: null // 由於沒有公開API可以獲取其他用戶頭像，暫時使用null
+                photo_url: null
             };
 
             setQuickTransferData(basicRecipientData);
             setShowQuickTransfer(true);
 
-            // 注意：目前後端沒有提供公開API來獲取其他用戶的頭像資訊
-            // 如果將來需要此功能，需要後端新增相應的API端點
+            // 嘗試獲取收款人的大頭照
+            try {
+                const avatarResult = await getUserAvatar(token, qrData.username);
+                if (avatarResult && avatarResult.photo_url) {
+                    setQuickTransferData(prev => ({
+                        ...prev,
+                        photo_url: avatarResult.photo_url
+                    }));
+                    console.log('成功獲取收款人大頭照:', avatarResult.photo_url);
+                }
+            } catch (avatarError) {
+                console.log('獲取收款人大頭照失敗:', avatarError);
+                // 保持使用字母圓形大頭照，不顯示錯誤給使用者
+            }
 
         } catch (error) {
             console.error('設定收款人資訊失敗:', error);
@@ -342,7 +360,7 @@ export default function Dashboard() {
             if (result.success) {
                 setTransferSuccess(`轉帳成功！手續費: ${result.fee} 點`);
                 
-                // 重新載入用戶資料
+                // 重新載入使用者資料
                 try {
                     const [portfolio, points] = await Promise.all([
                         getWebPortfolio(token),
@@ -403,7 +421,7 @@ export default function Dashboard() {
             if (result.success) {
                 setTransferSuccess(`轉帳成功！手續費: ${result.fee} 點`);
                 
-                // 重新載入用戶資料
+                // 重新載入使用者資料
                 try {
                     const [portfolio, points] = await Promise.all([
                         getWebPortfolio(token),
@@ -451,12 +469,12 @@ export default function Dashboard() {
                          transaction.note.includes('來自'))) {
                         
                         // 提取轉帳人名稱
-                        let fromUser = '未知用戶';
+                        let fromUser = '未知使用者';
                         if (transaction.note.includes('來自')) {
-                            fromUser = transaction.note.match(/來自\s*(.+)/)?.[1] || '未知用戶';
+                            fromUser = transaction.note.match(/來自\s*(.+)/)?.[1] || '未知使用者';
                         } else if (transaction.note.includes('轉帳給')) {
                             // 如果是轉帳給別人的記錄，提取轉帳人
-                            fromUser = transaction.note.match(/轉帳給\s*(.+)/)?.[1] || '未知用戶';
+                            fromUser = transaction.note.match(/轉帳給\s*(.+)/)?.[1] || '未知使用者';
                         }
                         
                         // 找到新的收款
@@ -547,7 +565,7 @@ export default function Dashboard() {
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         
-        // 如果用戶數據已載入，開始輪詢
+        // 如果使用者數據已載入，開始輪詢
         if (user && authData) {
             startPolling();
         }
@@ -1533,7 +1551,7 @@ export default function Dashboard() {
                     <form onSubmit={handleTransferSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-[#92cbf4] mb-2">
-                                收款人用戶名
+                                收款人使用者名
                             </label>
                             <div className="flex gap-2">
                                 <input
@@ -1541,7 +1559,7 @@ export default function Dashboard() {
                                     value={transferForm.to_username}
                                     onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
                                     className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                    placeholder="輸入收款人用戶名"
+                                    placeholder="輸入收款人使用者名"
                                     required
                                 />
                                 <button
@@ -1711,7 +1729,7 @@ export default function Dashboard() {
                                         alt="收款人大頭照"
                                         className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-[#469FD2]/50"
                                         onError={(e) => {
-                                            // 如果頭像載入失敗，改為顯示字母圓形圖標
+                                            // 如果大頭照載入失敗，改為顯示字母圓形圖標
                                             e.target.style.display = 'none';
                                             e.target.nextElementSibling.style.display = 'flex';
                                         }}

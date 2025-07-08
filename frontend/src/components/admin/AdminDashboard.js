@@ -186,7 +186,7 @@ export const AdminDashboard = ({ token }) => {
                             token={token}
                             fallback={
                                 <div className="text-red-600">
-                                    權限不足：需要用戶管理權限
+                                    權限不足：需要使用者管理權限
                                 </div>
                             }
                         >
@@ -672,39 +672,39 @@ const SystemManagementSection = ({ token, showNotification }) => {
 };
 
 /**
- * 用戶管理區塊 (暫時未使用)
+ * 使用者管理區塊 (暫時未使用)
  */
 const UserManagementSection = ({ token }) => (
     <div className="rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-xl font-bold text-blue-600">
-            用戶管理
+            使用者管理
         </h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <PermissionButton
                 requiredPermission={PERMISSIONS.VIEW_ALL_USERS}
                 token={token}
                 className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-                onClick={() => console.log("查看所有用戶")}
+                onClick={() => console.log("查看所有使用者")}
             >
-                查看所有用戶
+                查看所有使用者
             </PermissionButton>
 
             <PermissionButton
                 requiredPermission={PERMISSIONS.MANAGE_USERS}
                 token={token}
                 className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
-                onClick={() => console.log("管理用戶角色")}
+                onClick={() => console.log("管理使用者角色")}
             >
-                管理用戶角色
+                管理使用者角色
             </PermissionButton>
 
             <PermissionButton
                 requiredPermission={PERMISSIONS.VIEW_ALL_USERS}
                 token={token}
                 className="rounded bg-purple-500 px-4 py-2 text-white hover:bg-purple-600"
-                onClick={() => console.log("查看用戶統計")}
+                onClick={() => console.log("查看使用者統計")}
             >
-                查看用戶統計
+                查看使用者統計
             </PermissionButton>
         </div>
     </div>

@@ -23,7 +23,7 @@ class EventType(Enum):
     ORDER_CANCELLED = "order_cancelled"
     ORDER_FAILED = "order_failed"
     
-    # 用戶事件
+    # 使用者事件
     USER_POINTS_UPDATED = "user_points_updated"
     USER_PORTFOLIO_UPDATED = "user_portfolio_updated"
     USER_LOGIN = "user_login"
@@ -281,7 +281,7 @@ class EventBusService:
         return events
     
     def get_events_by_user(self, user_id: str, limit: int = 100) -> List[EventPayload]:
-        """根據用戶ID獲取事件"""
+        """根據使用者ID獲取事件"""
         events = []
         for event in reversed(self.event_history):
             if event.user_id == user_id:
@@ -399,7 +399,7 @@ class OrderEventHandler(EventHandler):
         return True
 
 class UserEventHandler(EventHandler):
-    """用戶事件處理器"""
+    """使用者事件處理器"""
     
     def __init__(self, user_service, notification_service=None):
         super().__init__("UserEventHandler", [
@@ -411,7 +411,7 @@ class UserEventHandler(EventHandler):
         self.notification_service = notification_service
     
     async def handle_event(self, event: EventPayload) -> bool:
-        """處理用戶事件"""
+        """處理使用者事件"""
         try:
             if event.event_type == EventType.USER_POINTS_UPDATED:
                 return await self._handle_points_updated(event)
@@ -426,18 +426,18 @@ class UserEventHandler(EventHandler):
             return False
     
     async def _handle_points_updated(self, event: EventPayload) -> bool:
-        """處理用戶點數更新事件"""
+        """處理使用者點數更新事件"""
         logger.info(f"User points updated: {event.data}")
         # 可以在這裡觸發通知或其他業務邏輯
         return True
     
     async def _handle_portfolio_updated(self, event: EventPayload) -> bool:
-        """處理用戶組合更新事件"""
+        """處理使用者組合更新事件"""
         logger.info(f"User portfolio updated: {event.data}")
         return True
     
     async def _handle_user_login(self, event: EventPayload) -> bool:
-        """處理用戶登入事件"""
+        """處理使用者登入事件"""
         logger.info(f"User login: {event.data}")
         return True
 

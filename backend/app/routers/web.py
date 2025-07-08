@@ -459,6 +459,57 @@ async def get_teams(
         )
 
 
+# ========== 使用者大頭照 API ==========
+
+@router.get(
+    "/users/{username}/avatar",
+    summary="獲取使用者大頭照",
+    description="根據使用者名獲取使用者的大頭照 URL"
+)
+async def get_user_avatar(
+    username: str,
+    current_user: dict = Depends(get_current_user),
+    user_service: UserService = Depends(get_user_service)
+) -> dict:
+    """
+    獲取指定使用者的大頭照 URL
+    
+    Args:
+        username: 使用者名
+        current_user: 目前使用者（透過 JWT Token 取得）
+        user_service: 使用者服務
+        
+    Returns:
+        包含大頭照 URL 的字典
+        
+    Raises:
+        HTTPException: 當使用者不存在或獲取失敗時
+    """
+    try:
+        # 獲取使用者資訊
+        user = await user_service._get_user_(username)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"使用者 {username} 不存在"
+            )
+        
+        return {
+            "username": username,
+            "photo_url": user.get("photo_url"),
+            "has_avatar": user.get("photo_url") is not None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get avatar for user {username}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="無法獲取使用者大頭照"
+        )
+
+
 # ========== 健康檢查 ==========
 
 @router.get("/health")

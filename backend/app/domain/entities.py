@@ -19,6 +19,7 @@ class User:
     team: str
     points: int
     telegram_id: Optional[int] = None
+    photo_url: Optional[str] = None
     is_active: bool = True
     created_at: Optional[datetime] = None
     

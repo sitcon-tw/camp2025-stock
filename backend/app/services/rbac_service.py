@@ -37,7 +37,7 @@ class RBACManagementService:
             使用者角色資訊
         """
         try:
-            # 特殊處理：管理員用戶
+            # 特殊處理：管理員使用者
             if user_id == "admin":
                 admin_role = Role.ADMIN
                 admin_permissions = list(ROLE_PERMISSIONS.get(admin_role, set()))

@@ -3,7 +3,7 @@
 ## 🎯 問題分析
 
 股市系統的核心挑戰：
-- **高頻交易**：大量用戶同時下單
+- **高頻交易**：大量使用者同時下單
 - **資料一致性**：確保餘額、庫存、訂單狀態一致
 - **順序性**：價格優先、時間優先原則
 - **原子性**：交易要麼完全成功，要麼完全失敗
@@ -71,7 +71,7 @@ await order_queue.enqueue_market_order(user_id, order_data)
 ```python
 # Redis 分散式鎖方案
 async with RedisLock(f"user_lock:{user_id}", timeout=5):
-    # 處理用戶相關操作
+    # 處理使用者相關操作
     await process_user_order(user_id, order_data)
 ```
 
@@ -142,7 +142,7 @@ async def enhanced_atomic_update():
             await asyncio.sleep(min(delay, 0.1))  # 最大100ms
             continue
 
-# 2. 用戶級別的操作合併
+# 2. 使用者級別的操作合併
 class UserOperationBatcher:
     def __init__(self):
         self.pending_operations = defaultdict(list)
@@ -178,7 +178,7 @@ async def hybrid_order_processing(user_id: str, order_data: dict):
 #### **第三階段：分散式優化 🌐**
 
 ```python
-# 用戶分片策略
+# 使用者分片策略
 def get_user_shard(user_id: str) -> int:
     return hash(user_id) % NUM_SHARDS
 
@@ -206,7 +206,7 @@ class ShardedOrderProcessor:
 
 ### 短期（1-2週）：
 1. ✅ **已完成**：優化重試機制
-2. 🔄 **進行中**：實現用戶操作合併
+2. 🔄 **進行中**：實現使用者操作合併
 3. 📋 **計劃**：添加佇列機制作為回退
 
 ### 中期（1個月）：

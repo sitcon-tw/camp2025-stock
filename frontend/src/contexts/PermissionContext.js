@@ -74,7 +74,7 @@ export const PERMISSION_GROUPS = {
         PERMISSIONS.TRANSFER_POINTS,
     ],
     
-    // 用戶管理
+    // 使用者管理
     USER_MANAGEMENT: [
         PERMISSIONS.VIEW_ALL_USERS,
         PERMISSIONS.MANAGE_USERS,

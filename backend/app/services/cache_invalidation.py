@@ -20,12 +20,12 @@ class CacheInvalidator:
         logger.info("Price-related caches invalidated")
     
     async def invalidate_user_portfolio_cache(self, user_id: str):
-        """清除特定用戶的投資組合快取"""
+        """清除特定使用者的投資組合快取"""
         await self.cache_service.invalidate(CacheKeys.user_portfolio(user_id))
         logger.info(f"User portfolio cache invalidated for user: {user_id}")
     
     async def invalidate_user_orders_cache(self, user_id: str):
-        """清除特定用戶的訂單快取"""
+        """清除特定使用者的訂單快取"""
         await self.cache_service.invalidate(CacheKeys.stock_orders(user_id))
         logger.info(f"User orders cache invalidated for user: {user_id}")
     
@@ -40,7 +40,7 @@ class CacheInvalidator:
         logger.info("Announcements cache invalidated")
     
     async def invalidate_all_user_portfolios(self):
-        """清除所有用戶投資組合快取"""
+        """清除所有使用者投資組合快取"""
         await self.cache_service.invalidate_pattern("user_portfolio:")
         logger.info("All user portfolios cache invalidated")
 

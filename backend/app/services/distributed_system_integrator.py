@@ -154,7 +154,7 @@ class DistributedSystemIntegrator:
         )
         self.event_bus_service.subscribe(order_handler)
         
-        # 用戶事件處理器
+        # 使用者事件處理器
         user_handler = UserEventHandler(
             user_service=self.user_service,
             notification_service=None  # 暫時沒有通知服務
@@ -163,7 +163,7 @@ class DistributedSystemIntegrator:
         
         # 市場事件處理器
         market_handler = MarketEventHandler(
-            market_service=self.user_service  # 暫時使用用戶服務
+            market_service=self.user_service  # 暫時使用使用者服務
         )
         self.event_bus_service.subscribe(market_handler)
         

@@ -24,8 +24,8 @@ async def test_self_transfer_protection():
         bot_token = os.getenv("BOT_TOKEN", "test_token")
         headers = {"X-Bot-Token": bot_token}
         
-        # 使用已知的測試用戶 telegram_id
-        test_telegram_id = "123456789"  # 替換為實際的測試用戶 ID
+        # 使用已知的測試使用者 telegram_id
+        test_telegram_id = "123456789"  # 替換為實際的測試使用者 ID
         
         # 測試 1: 相同 telegram_id 的自我轉帳
         print(f"\n📝 測試 1: 使用相同 telegram_id 自我轉帳")
@@ -49,8 +49,8 @@ async def test_self_transfer_protection():
             else:
                 print("❌ 測試 1 失敗：未能阻止相同 telegram_id 的自我轉帳")
         
-        # 測試 2: 獲取用戶資料以便進行更多測試
-        print(f"\n📝 測試 2: 獲取用戶資料")
+        # 測試 2: 獲取使用者資料以便進行更多測試
+        print(f"\n📝 測試 2: 獲取使用者資料")
         profile_data = {"from_user": test_telegram_id}
         
         async with session.post(
@@ -60,9 +60,9 @@ async def test_self_transfer_protection():
         ) as response:
             if response.status == 200:
                 user_profile = await response.json()
-                print(f"用戶資料: {user_profile}")
+                print(f"使用者資料: {user_profile}")
                 
-                # 如果用戶有 name，測試使用 name 自我轉帳
+                # 如果使用者有 name，測試使用 name 自我轉帳
                 if user_profile.get("name"):
                     print(f"\n📝 測試 3: 使用 name 自我轉帳")
                     transfer_data_name = {
@@ -85,7 +85,7 @@ async def test_self_transfer_protection():
                         else:
                             print("❌ 測試 3 失敗：未能阻止使用 name 的自我轉帳")
             else:
-                print(f"❌ 無法獲取用戶資料，狀態碼: {response.status}")
+                print(f"❌ 無法獲取使用者資料，狀態碼: {response.status}")
                 error_detail = await response.text()
                 print(f"錯誤詳情: {error_detail}")
 

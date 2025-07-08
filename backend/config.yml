@@ -95,8 +95,8 @@ trading:
 # 使用者系統設定
 user:
   # 初始設定
-  initial_balance: 0           # 新用戶初始點數
-  initial_stocks: 0            # 新用戶初始股數
+  initial_balance: 0           # 新使用者初始點數
+  initial_stocks: 0            # 新使用者初始股數
   
   # 學員設定（從程式碼中找到的實際值）
   student_defaults:

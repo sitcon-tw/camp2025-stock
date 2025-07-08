@@ -1,6 +1,6 @@
 """
-用戶分片服務 - 分散式優化的核心組件
-將用戶分佈到不同的分片中，減少併發衝突
+使用者分片服務 - 分散式優化的核心組件
+將使用者分佈到不同的分片中，減少併發衝突
 """
 
 import hashlib
@@ -32,10 +32,10 @@ class ShardInfo:
 
 class UserShardingService:
     """
-    用戶分片服務
+    使用者分片服務
     
     功能：
-    1. 用戶哈希分片
+    1. 使用者哈希分片
     2. 分片負載均衡
     3. 分片狀態監控
     4. 動態分片調整
@@ -74,7 +74,7 @@ class UserShardingService:
             )
     
     def get_user_shard(self, user_id: str) -> int:
-        """獲取用戶所屬的分片ID"""
+        """獲取使用者所屬的分片ID"""
         
         # 檢查緩存
         if user_id in self.user_shard_cache:
@@ -152,7 +152,7 @@ class UserShardingService:
             stats["errors"] += 1
     
     def get_users_in_shard(self, shard_id: int) -> List[str]:
-        """獲取分片中的所有用戶"""
+        """獲取分片中的所有使用者"""
         return [user_id for user_id, user_shard in self.user_shard_cache.items() 
                 if user_shard == shard_id]
     
@@ -164,12 +164,12 @@ class UserShardingService:
             
             logger.info(f"Shard {shard_id} status changed from {old_status} to {status}")
             
-            # 如果分片被禁用，清除相關用戶緩存
+            # 如果分片被禁用，清除相關使用者緩存
             if status == ShardStatus.DISABLED:
                 self._clear_shard_cache(shard_id)
     
     def _clear_shard_cache(self, shard_id: int):
-        """清除分片的用戶緩存"""
+        """清除分片的使用者緩存"""
         users_to_remove = [user_id for user_id, user_shard in self.user_shard_cache.items() 
                           if user_shard == shard_id]
         
@@ -239,7 +239,7 @@ class UserShardingService:
             logger.info(f"Found {len(overloaded_shards)} overloaded shards: {overloaded_shards}")
             
             # 實際的重新平衡邏輯會在這裡實現
-            # 這可能涉及到將一些用戶遷移到其他分片
+            # 這可能涉及到將一些使用者遷移到其他分片
             # 或者調整分片的最大負載限制
             
             for shard_id in overloaded_shards:

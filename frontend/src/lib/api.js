@@ -605,4 +605,14 @@ export async function getTransferFeeConfigPublic() {
     });
 }
 
+// 取得使用者大頭照
+export async function getUserAvatar(token, username) {
+    return apiRequest(`/api/web/users/${encodeURIComponent(username)}/avatar`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 export { API_BASE_URL };

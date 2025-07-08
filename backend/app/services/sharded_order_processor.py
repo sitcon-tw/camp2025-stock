@@ -1,5 +1,5 @@
 """
-分片訂單處理器 - 整合用戶分片和事件驅動架構
+分片訂單處理器 - 整合使用者分片和事件驅動架構
 結合分片服務和事件匯流，實現高性能分散式訂單處理
 """
 
@@ -40,7 +40,7 @@ class ShardedOrderProcessor:
     分片訂單處理器
     
     功能：
-    1. 根據用戶分片路由訂單
+    1. 根據使用者分片路由訂單
     2. 每個分片獨立處理，避免跨分片衝突
     3. 整合事件驅動架構
     4. 支援快速路徑和佇列回退
@@ -148,7 +148,7 @@ class ShardedOrderProcessor:
         start_time = asyncio.get_event_loop().time()
         order_id = str(uuid.uuid4())
         
-        # 獲取用戶分片
+        # 獲取使用者分片
         shard_id = self.sharding_service.get_user_shard(user_id)
         
         # 發布訂單創建事件

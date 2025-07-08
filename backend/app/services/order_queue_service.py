@@ -37,7 +37,7 @@ class OrderQueueService:
     
     功能：
     1. 按優先級處理訂單
-    2. 避免同時修改同一用戶資料
+    2. 避免同時修改同一使用者資料
     3. 批量處理相關訂單
     4. 失敗重試機制
     """
@@ -52,7 +52,7 @@ class OrderQueueService:
             OrderPriority.LOW: deque()
         }
         
-        # 用戶鎖定集合 - 避免同時處理同一用戶的訂單
+        # 使用者鎖定集合 - 避免同時處理同一使用者的訂單
         self.locked_users: set = set()
         
         # 處理中的訂單
@@ -141,7 +141,7 @@ class OrderQueueService:
         for priority in [OrderPriority.HIGH, OrderPriority.MEDIUM, OrderPriority.LOW]:
             queue = self.priority_queues[priority]
             
-            # 找到第一個未被鎖定用戶的訂單
+            # 找到第一個未被鎖定使用者的訂單
             for i, order in enumerate(queue):
                 if order.user_id not in self.locked_users:
                     # 從佇列中移除
@@ -154,7 +154,7 @@ class OrderQueueService:
     async def _process_order(self, order: QueuedOrder):
         """處理單個訂單"""
         
-        # 鎖定用戶
+        # 鎖定使用者
         self.locked_users.add(order.user_id)
         self.processing_orders[order.order_id] = order
         
@@ -194,7 +194,7 @@ class OrderQueueService:
                 logger.error(f"Order {order.order_id} failed permanently after {order.max_retries} retries")
         
         finally:
-            # 解鎖用戶
+            # 解鎖使用者
             self.locked_users.discard(order.user_id)
             self.processing_orders.pop(order.order_id, None)
     

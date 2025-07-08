@@ -22,7 +22,7 @@ async def example_send_dm():
             f"{BOT_BASE_URL}/notifications/dm/send",
             headers=HEADERS,
             json={
-                "user_id": 123456789,  # 替換為實際的 Telegram 用戶 ID
+                "user_id": 123456789,  # 替換為實際的 Telegram 使用者 ID
                 "message": "🔔 *測試通知*\n\n這是一個測試私人訊息\\!",
                 "parse_mode": "MarkdownV2"
             }
@@ -37,7 +37,7 @@ async def example_bulk_dm():
             f"{BOT_BASE_URL}/notifications/dm/bulk",
             headers=HEADERS,
             json={
-                "user_ids": [123456789, 987654321],  # 替換為實際的用戶 ID 列表
+                "user_ids": [123456789, 987654321],  # 替換為實際的使用者 ID 列表
                 "message": "📢 *批量通知*\n\n這是一個批量傳送的測試訊息\\!",
                 "parse_mode": "MarkdownV2",
                 "delay_seconds": 0.5
@@ -144,7 +144,7 @@ async def example_custom_notification():
                 "additional_data": {
                     "優惠代碼": "WELCOME100",
                     "有效期限": "2024-12-31",
-                    "適用對象": "新用戶"
+                    "適用對象": "新使用者"
                 }
             }
         )

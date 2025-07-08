@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 # 配置
 BASE_URL = "http://localhost:8000"
-CONCURRENT_USERS = 50  # 同時併發用戶數
-ORDERS_PER_USER = 10   # 每個用戶下的訂單數
+CONCURRENT_USERS = 50  # 同時併發使用者數
+ORDERS_PER_USER = 10   # 每個使用者下的訂單數
 TRANSFER_AMOUNT = 10   # 轉帳金額
 
 class LoadTester:
@@ -38,7 +38,7 @@ class LoadTester:
             await self.session.close()
             
     async def simulate_user_trading(self, user_id: int):
-        """模擬用戶交易"""
+        """模擬使用者交易"""
         user_token = f"test_token_{user_id}"
         
         # 模擬市價單交易
@@ -63,14 +63,14 @@ class LoadTester:
                     
                     if response.status == 200:
                         self.success_count += 1
-                        logger.info(f"用戶 {user_id} 訂單 {i+1} 成功，耗時 {end_time - start_time:.3f}s")
+                        logger.info(f"使用者 {user_id} 訂單 {i+1} 成功，耗時 {end_time - start_time:.3f}s")
                     else:
                         self.error_count += 1
                         if "WriteConflict" in str(result):
                             self.write_conflict_count += 1
-                            logger.warning(f"用戶 {user_id} 訂單 {i+1} WriteConflict: {result}")
+                            logger.warning(f"使用者 {user_id} 訂單 {i+1} WriteConflict: {result}")
                         else:
-                            logger.error(f"用戶 {user_id} 訂單 {i+1} 失敗: {result}")
+                            logger.error(f"使用者 {user_id} 訂單 {i+1} 失敗: {result}")
                     
                     self.results.append({
                         "user_id": user_id,
@@ -82,7 +82,7 @@ class LoadTester:
                     
             except Exception as e:
                 self.error_count += 1
-                logger.error(f"用戶 {user_id} 訂單 {i+1} 異常: {e}")
+                logger.error(f"使用者 {user_id} 訂單 {i+1} 異常: {e}")
                 
             # 短暫延遲避免過度衝突
             await asyncio.sleep(0.1)
@@ -99,7 +99,7 @@ class LoadTester:
         await asyncio.gather(*tasks)
         
     async def simulate_user_transfer(self, user_id: int):
-        """模擬用戶轉帳"""
+        """模擬使用者轉帳"""
         user_token = f"test_token_{user_id}"
         to_user = f"user_{(user_id + 1) % CONCURRENT_USERS}"
         
@@ -122,29 +122,29 @@ class LoadTester:
                 
                 if response.status == 200:
                     self.success_count += 1
-                    logger.info(f"用戶 {user_id} 轉帳成功，耗時 {end_time - start_time:.3f}s")
+                    logger.info(f"使用者 {user_id} 轉帳成功，耗時 {end_time - start_time:.3f}s")
                 else:
                     self.error_count += 1
                     if "WriteConflict" in str(result):
                         self.write_conflict_count += 1
-                        logger.warning(f"用戶 {user_id} 轉帳 WriteConflict: {result}")
+                        logger.warning(f"使用者 {user_id} 轉帳 WriteConflict: {result}")
                     else:
-                        logger.error(f"用戶 {user_id} 轉帳失敗: {result}")
+                        logger.error(f"使用者 {user_id} 轉帳失敗: {result}")
                 
         except Exception as e:
             self.error_count += 1
-            logger.error(f"用戶 {user_id} 轉帳異常: {e}")
+            logger.error(f"使用者 {user_id} 轉帳異常: {e}")
             
     async def run_concurrent_trading_test(self):
         """運行併發交易測試"""
-        logger.info(f"開始併發交易測試 - {CONCURRENT_USERS} 用戶，每人 {ORDERS_PER_USER} 訂單")
+        logger.info(f"開始併發交易測試 - {CONCURRENT_USERS} 使用者，每人 {ORDERS_PER_USER} 訂單")
         
         await self.create_session()
         
         try:
             start_time = time.time()
             
-            # 創建所有用戶的任務
+            # 創建所有使用者的任務
             tasks = []
             for user_id in range(CONCURRENT_USERS):
                 task = asyncio.create_task(self.simulate_user_trading(user_id))
