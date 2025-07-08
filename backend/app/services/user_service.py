@@ -1635,11 +1635,11 @@ class UserService:
             # 查找待成交的買賣單，包含等待限價的訂單
             # 修復：也包含 "pending_limit" 狀態，在撮合時動態檢查價格限制
             buy_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
-                {"side": "buy", "status": {"$in": ["pending", "partial", "pending_limit"]}, "order_type": "limit"}
+                {"side": "buy", "status": {"$in": ["pending", "partial", "pending_limit"]}, "order_type": {"$in": ["limit", "market_converted"]}}
             ).sort([("price", -1), ("created_at", 1)])
             
             sell_orders_cursor = self.db[Collections.STOCK_ORDERS].find(
-                {"side": "sell", "status": {"$in": ["pending", "partial", "pending_limit"]}, "order_type": "limit"}
+                {"side": "sell", "status": {"$in": ["pending", "partial", "pending_limit"]}, "order_type": {"$in": ["limit", "market_converted"]}}
             ).sort([("price", 1), ("created_at", 1)])
 
             buy_book = await buy_orders_cursor.to_list(None)
