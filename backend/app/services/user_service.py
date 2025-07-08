@@ -222,8 +222,8 @@ class UserService:
                 logger.warning("Cannot determine reference price, using default price 20.0")
                 reference_price = 20.0
             
-            # 取得動態漲跌限制
-            limit_percent = await self._get_dynamic_price_limit(reference_price)
+            # 取得固定漲跌限制
+            limit_percent = await self._get_fixed_price_limit()
             
             # 計算漲跌停價格
             max_price = reference_price * (1 + limit_percent / 100.0)
