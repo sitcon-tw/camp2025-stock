@@ -331,6 +331,18 @@ class AdminService:
     # 設定漲跌限制
     async def set_trading_limit(self, request: MarketLimitRequest) -> MarketLimitResponse:
         try:
+            # 如果百分比為0，刪除固定限制設定（切換回動態模式）
+            if request.limit_percent == 0:
+                await self.db[Collections.MARKET_CONFIG].delete_one(
+                    {"type": "trading_limit"}
+                )
+                logger.info("Trading limit cleared, switched to dynamic mode")
+                return MarketLimitResponse(
+                    ok=True, 
+                    limit_percent=0, 
+                    message="固定限制已清除，切換為動態級距制"
+                )
+            
             # 將傳入的百分比轉換為基點 (basis points)
             limit_in_basis_points = request.limit_percent * 100
 
@@ -350,7 +362,7 @@ class AdminService:
 
             logger.info(
                 f"Trading limit set to {request.limit_percent}% ({limit_in_basis_points} bp)")
-            return MarketLimitResponse(ok=True, limit_percent=request.limit_percent, message=f"Trading limit set to {request.limit_percent}% ({limit_in_basis_points} bp)")
+            return MarketLimitResponse(ok=True, limit_percent=request.limit_percent, message=f"固定限制設定為 {request.limit_percent}%")
 
         except Exception as e:
             logger.error(f"Failed to set trading limit: {e}")

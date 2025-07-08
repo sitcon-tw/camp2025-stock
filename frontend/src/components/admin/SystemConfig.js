@@ -40,6 +40,7 @@ export const SystemConfig = ({ token }) => {
     const [systemStats, setSystemStats] = useState(null);
     const [currentTradingLimit, setCurrentTradingLimit] = useState(null);
     const [dynamicTiers, setDynamicTiers] = useState(null);
+    const [limitMode, setLimitMode] = useState("dynamic"); // "fixed" 或 "dynamic"
 
     // 表單狀態
     const [feeForm, setFeeForm] = useState({
@@ -355,6 +356,11 @@ export const SystemConfig = ({ token }) => {
         try {
             setUpdating(true);
             
+            // 如果選擇動態模式，先清除固定限制
+            if (limitMode === "dynamic") {
+                await clearTradingLimit();
+            }
+            
             const result = await updateDynamicPriceTiers(token, newTiers);
             
             if (result.ok) {
@@ -368,6 +374,16 @@ export const SystemConfig = ({ token }) => {
             );
         } finally {
             setUpdating(false);
+        }
+    };
+
+    // 清除固定限制（切換到動態模式時使用）
+    const clearTradingLimit = async () => {
+        try {
+            // 發送一個請求來刪除固定限制設定
+            await setTradingLimit(token, 0); // 設定為0表示清除
+        } catch (error) {
+            console.error("清除固定限制失敗:", error);
         }
     };
 
@@ -645,14 +661,46 @@ export const SystemConfig = ({ token }) => {
                             交易限制設定
                         </h3>
 
+                        {/* 模式選擇 */}
+                        <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-4">
+                            <div className="text-sm text-[#7BC2E6] mb-3">漲跌停限制模式</div>
+                            <div className="flex items-center space-x-6">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="limitMode"
+                                        value="dynamic"
+                                        checked={limitMode === "dynamic"}
+                                        onChange={(e) => setLimitMode(e.target.value)}
+                                        className="text-[#469FD2] focus:ring-[#469FD2]"
+                                    />
+                                    <span className="text-white">動態級距制</span>
+                                    <span className="text-xs text-gray-400">(依股價調整)</span>
+                                </label>
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="limitMode"
+                                        value="fixed"
+                                        checked={limitMode === "fixed"}
+                                        onChange={(e) => setLimitMode(e.target.value)}
+                                        className="text-[#469FD2] focus:ring-[#469FD2]"
+                                    />
+                                    <span className="text-white">固定限制</span>
+                                    <span className="text-xs text-gray-400">(統一百分比)</span>
+                                </label>
+                            </div>
+                        </div>
+
                         {/* 當前設定顯示 */}
-                        <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
-                            <div className="text-sm text-[#7BC2E6] mb-2">目前設定</div>
-                            <div className="text-white space-y-2">
-                                <div>
-                                    <span className="font-semibold">漲跌停限制：</span>
-                                    <span className="text-red-400">動態級距制</span>
-                                </div>
+                        {limitMode === "dynamic" && (
+                            <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
+                                <div className="text-sm text-[#7BC2E6] mb-2">目前設定</div>
+                                <div className="text-white space-y-2">
+                                    <div>
+                                        <span className="font-semibold">漲跌停限制：</span>
+                                        <span className="text-red-400">動態級距制</span>
+                                    </div>
                                 <div className="text-xs text-gray-300 pl-4 space-y-1">
                                     {(dynamicTiers?.tiers || [
                                         { min_price: 0, max_price: 10, limit_percent: 20.0 },
@@ -675,63 +723,66 @@ export const SystemConfig = ({ token }) => {
                                 </div>
                             </div>
                         </div>
+                        )}
 
+                        {/* 設定區域 */}
                         <div className="space-y-4">
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
-                                    漲跌停限制 (%)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    max="100"
-                                    value={
-                                        tradingLimitForm.limitPercent
-                                    }
-                                    onChange={(e) =>
-                                        setTradingLimitForm(
-                                            (prev) => ({
-                                                ...prev,
-                                                limitPercent:
-                                                    e.target.value,
-                                            }),
-                                        )
-                                    }
-                                    className="w-full rounded border border-[#294565] bg-[#0f203e] p-3 text-white focus:border-[#469FD2] focus:outline-none"
-                                    placeholder="例: 10"
-                                />
-                                <div className="mt-1 text-xs text-[#557797]">
-                                    設定固定的每日股價變動百分比限制（會覆蓋動態級距制）
+                            {limitMode === "fixed" ? (
+                                // 固定限制設定
+                                <>
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-[#7BC2E6]">
+                                            漲跌停限制 (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            min="0"
+                                            max="100"
+                                            value={tradingLimitForm.limitPercent}
+                                            onChange={(e) =>
+                                                setTradingLimitForm(
+                                                    (prev) => ({
+                                                        ...prev,
+                                                        limitPercent: e.target.value,
+                                                    }),
+                                                )
+                                            }
+                                            className="w-full rounded border border-[#294565] bg-[#0f203e] p-3 text-white focus:border-[#469FD2] focus:outline-none"
+                                            placeholder="例: 10"
+                                        />
+                                        <div className="mt-1 text-xs text-[#557797]">
+                                            設定固定的每日股價變動百分比限制
+                                        </div>
+                                    </div>
+                                    <PermissionButton
+                                        requiredPermission={PERMISSIONS.MANAGE_MARKET}
+                                        token={token}
+                                        onClick={handleUpdateTradingLimit}
+                                        className="w-full rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                                    >
+                                        更新固定限制
+                                    </PermissionButton>
+                                </>
+                            ) : (
+                                // 動態級距設定
+                                <div>
+                                    <h4 className="mb-3 text-lg font-semibold text-red-300">
+                                        動態級距設定
+                                    </h4>
+                                    <DynamicTiersEditor
+                                        tiers={dynamicTiers?.tiers || [
+                                            { min_price: 0, max_price: 10, limit_percent: 20.0 },
+                                            { min_price: 10, max_price: 50, limit_percent: 15.0 },
+                                            { min_price: 50, max_price: 100, limit_percent: 10.0 },
+                                            { min_price: 100, max_price: null, limit_percent: 8.0 }
+                                        ]}
+                                        onUpdate={handleUpdateDynamicTiers}
+                                        loading={updating}
+                                        token={token}
+                                    />
                                 </div>
-                            </div>
-                            <PermissionButton
-                                requiredPermission={
-                                    PERMISSIONS.MANAGE_MARKET
-                                }
-                                token={token}
-                                onClick={handleUpdateTradingLimit}
-                                className="w-full rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
-                            >
-                                更新交易限制
-                            </PermissionButton>
-
-                            <div className="mt-6 pt-6 border-t border-[#294565]">
-                                <h4 className="mb-3 text-lg font-semibold text-red-300">
-                                    動態級距設定
-                                </h4>
-                                <DynamicTiersEditor
-                                    tiers={dynamicTiers?.tiers || [
-                                        { min_price: 0, max_price: 10, limit_percent: 20.0 },
-                                        { min_price: 10, max_price: 50, limit_percent: 15.0 },
-                                        { min_price: 50, max_price: 100, limit_percent: 10.0 },
-                                        { min_price: 100, max_price: null, limit_percent: 8.0 }
-                                    ]}
-                                    onUpdate={handleUpdateDynamicTiers}
-                                    loading={updating}
-                                    token={token}
-                                />
-                            </div>
+                            )}
                         </div>
                     </div>
                 </PermissionGuard>
