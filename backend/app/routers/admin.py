@@ -1937,3 +1937,66 @@ async def trigger_manual_matching(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"手動觸發撮合失敗: {str(e)}"
         )
+
+
+@router.get(
+    "/price-limit-info",
+    responses={
+        200: {"description": "價格限制資訊查詢成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        500: {"model": ErrorResponse, "description": "系統錯誤"}
+    },
+    summary="查詢價格限制資訊",
+    description="查詢目前的價格限制設定和基準價格，用於診斷訂單限制問題"
+)
+async def get_price_limit_info(
+    test_price: float = Query(14.0, description="測試價格（預設14點）"),
+    current_user: dict = Depends(get_current_user)
+):
+    """查詢價格限制資訊
+    
+    Args:
+        test_price: 要測試的價格
+        current_user: 目前使用者（自動注入）
+    
+    Returns:
+        價格限制的詳細資訊
+    """
+    # 檢查查看所有使用者權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.services.user_service import get_user_service
+        from datetime import datetime, timezone
+        
+        user_service = get_user_service()
+        
+        # 獲取價格限制資訊
+        limit_info = await user_service._get_price_limit_info(test_price)
+        
+        # 檢查測試價格是否在限制範圍內
+        is_within_limit = await user_service._check_price_limit(test_price)
+        
+        logger.info(f"Admin {current_user.get('username')} queried price limit info for price {test_price}")
+        
+        return {
+            "ok": True,
+            "test_price": test_price,
+            "within_limit": is_within_limit,
+            "limit_info": limit_info,
+            "queried_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get price limit info: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"查詢價格限制資訊失敗: {str(e)}"
+        )

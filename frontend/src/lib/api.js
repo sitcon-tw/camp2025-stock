@@ -512,6 +512,16 @@ export async function triggerManualMatching(token) {
     });
 }
 
+// 查詢價格限制資訊
+export async function getPriceLimitInfo(token, testPrice = 14.0) {
+    return apiRequest(`/api/admin/price-limit-info?test_price=${testPrice}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // ========== RBAC 權限管理 API ==========
 
 // 取得目前使用者的權限資訊

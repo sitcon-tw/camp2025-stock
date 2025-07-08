@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getPendingOrders, triggerManualMatching } from "@/lib/api";
+import { getPendingOrders, triggerManualMatching, getPriceLimitInfo } from "@/lib/api";
 
 /**
  * 等待撮合訂單查看器組件
@@ -14,6 +14,8 @@ export const PendingOrdersViewer = ({ token }) => {
     const [autoRefresh, setAutoRefresh] = useState(false);
     const [lastUpdate, setLastUpdate] = useState(null);
     const [matchingInProgress, setMatchingInProgress] = useState(false);
+    const [showPriceLimitInfo, setShowPriceLimitInfo] = useState(false);
+    const [priceLimitInfo, setPriceLimitInfo] = useState(null);
 
     // 獲取等待撮合的訂單
     const fetchPendingOrders = async () => {
@@ -57,6 +59,20 @@ export const PendingOrdersViewer = ({ token }) => {
             setError(`手動撮合失敗: ${error.message}`);
         } finally {
             setMatchingInProgress(false);
+        }
+    };
+
+    // 查詢價格限制資訊
+    const checkPriceLimit = async (testPrice = 14.0) => {
+        try {
+            const result = await getPriceLimitInfo(token, testPrice);
+            if (result.ok) {
+                setPriceLimitInfo(result);
+                setShowPriceLimitInfo(true);
+            }
+        } catch (error) {
+            console.error("Failed to get price limit info:", error);
+            setError(`查詢價格限制失敗: ${error.message}`);
         }
     };
 
@@ -197,6 +213,15 @@ export const PendingOrdersViewer = ({ token }) => {
                         >
                             {matchingInProgress ? "撮合中..." : "手動撮合"}
                         </button>
+
+                        {/* 價格限制診斷按鈕 */}
+                        <button
+                            onClick={() => checkPriceLimit(14)}
+                            className="rounded bg-orange-600 px-4 py-2 text-sm text-white hover:bg-orange-700"
+                            title="檢查14點價格是否受限制"
+                        >
+                            檢查限制
+                        </button>
                     </div>
                 </div>
 
@@ -237,6 +262,46 @@ export const PendingOrdersViewer = ({ token }) => {
                     <div className="flex items-center space-x-2">
                         <span className="text-red-400">⚠️</span>
                         <span className="text-red-300">{error}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* 價格限制資訊 */}
+            {showPriceLimitInfo && priceLimitInfo && (
+                <div className="rounded-lg border border-orange-500/30 bg-orange-600/20 p-4">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <h3 className="mb-2 text-lg font-semibold text-orange-400">
+                                價格限制診斷：{priceLimitInfo.test_price} 點
+                            </h3>
+                            <div className="space-y-2 text-sm text-orange-200">
+                                <div>
+                                    <span className="font-medium">
+                                        是否可交易：
+                                        <span className={priceLimitInfo.within_limit ? "text-green-400" : "text-red-400"}>
+                                            {priceLimitInfo.within_limit ? "✅ 是" : "❌ 否"}
+                                        </span>
+                                    </span>
+                                </div>
+                                {priceLimitInfo.limit_info && (
+                                    <>
+                                        <div>基準價格：{priceLimitInfo.limit_info.reference_price} 點</div>
+                                        <div>漲跌限制：{priceLimitInfo.limit_info.limit_percent}%</div>
+                                        <div>
+                                            可交易範圍：{priceLimitInfo.limit_info.min_price.toFixed(2)} ~ {priceLimitInfo.limit_info.max_price.toFixed(2)} 點
+                                        </div>
+                                        <div>上漲上限：{priceLimitInfo.limit_info.max_price.toFixed(2)} 點</div>
+                                        <div>下跌下限：{priceLimitInfo.limit_info.min_price.toFixed(2)} 點</div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowPriceLimitInfo(false)}
+                            className="ml-4 text-orange-300 hover:text-orange-100"
+                        >
+                            ✕
+                        </button>
                     </div>
                 </div>
             )}
