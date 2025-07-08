@@ -194,8 +194,8 @@ class UserService:
                 logger.warning("Unable to determine reference price for price limit check")
                 return True  # 無法確定基準價格時允許交易
             
-            # 取得動態漲跌限制（依股價級距）
-            limit_percent = await self._get_dynamic_price_limit(reference_price)
+            # 取得固定漲跌限制
+            limit_percent = await self._get_fixed_price_limit()
             
             # 計算漲跌停價格
             max_price = reference_price * (1 + limit_percent / 100.0)
@@ -304,10 +304,10 @@ class UserService:
             logger.error(f"Failed to get reference price: {e}")
             return 20.0
 
-    async def _get_dynamic_price_limit(self, stock_price: float) -> float:
-        """取得動態漲跌限制百分比（依股價級距調整）"""
+    async def _get_fixed_price_limit(self) -> float:
+        """取得固定漲跌限制百分比"""
         try:
-            # 先檢查是否有管理員設定的固定限制
+            # 檢查是否有管理員設定的固定限制
             limit_config = await self.db[Collections.MARKET_CONFIG].find_one(
                 {"type": "trading_limit"}
             )
@@ -318,47 +318,13 @@ class UserService:
                 logger.debug(f"Using admin configured limit: {fixed_limit}%")
                 return fixed_limit
             
-            # 檢查是否有自訂的動態級距設定
-            tiers_config = await self.db[Collections.MARKET_CONFIG].find_one(
-                {"type": "dynamic_price_tiers"}
-            )
-            
-            if tiers_config and tiers_config.get("tiers"):
-                # 使用自訂的動態級距
-                tiers = tiers_config["tiers"]
-                for tier in tiers:
-                    min_price = tier.get("min_price", 0)
-                    max_price = tier.get("max_price")
-                    
-                    if max_price is None:
-                        # 最高級距（無上限）
-                        if stock_price >= min_price:
-                            limit_percent = float(tier.get("limit_percent", 10.0))
-                            logger.debug(f"Using custom tier limit for price {stock_price}: {limit_percent}% (>= {min_price})")
-                            return limit_percent
-                    else:
-                        # 有上限的級距
-                        if min_price <= stock_price < max_price:
-                            limit_percent = float(tier.get("limit_percent", 10.0))
-                            logger.debug(f"Using custom tier limit for price {stock_price}: {limit_percent}% ({min_price}-{max_price})")
-                            return limit_percent
-            
-            # 否則使用預設的動態限制（模仿現實股市的級距制度）
-            if stock_price < 10:
-                limit_percent = 20.0  # 低價股給予較大波動空間
-            elif stock_price < 50:
-                limit_percent = 15.0  # 中價股
-            elif stock_price < 100:
-                limit_percent = 10.0  # 高價股
-            else:
-                limit_percent = 8.0   # 極高價股限制更嚴格
-            
-            logger.debug(f"Using default dynamic limit for price {stock_price}: {limit_percent}%")
-            return limit_percent
+            # 預設固定限制 20%
+            logger.debug("Using default fixed limit: 20.0%")
+            return 20.0
             
         except Exception as e:
-            logger.error(f"Failed to get dynamic price limit: {e}")
-            return 10.0  # 預設 10%
+            logger.error(f"Failed to get fixed price limit: {e}")
+            return 20.0  # 預設 20%
 
     # 下股票訂單
     async def place_stock_order(self, user_id: str, request: StockOrderRequest) -> StockOrderResponse:

@@ -531,27 +531,7 @@ export async function getPriceLimitInfo(token, testPrice = 14.0) {
     });
 }
 
-// 查詢動態價格級距設定
-export async function getDynamicPriceTiers(token) {
-    return apiRequest("/api/admin/dynamic-price-tiers", {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-    });
-}
-
-// 更新動態價格級距設定
-export async function updateDynamicPriceTiers(token, tiers) {
-    return apiRequest("/api/admin/dynamic-price-tiers", {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(tiers),
-    });
-}
+// 動態價格級距功能已移除，改為固定漲跌限制
 
 // ========== RBAC 權限管理 API ==========
 

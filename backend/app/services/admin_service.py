@@ -336,11 +336,11 @@ class AdminService:
                 await self.db[Collections.MARKET_CONFIG].delete_one(
                     {"type": "trading_limit"}
                 )
-                logger.info("Trading limit cleared, switched to dynamic mode")
+                logger.info("Trading limit cleared, using default fixed limit")
                 return MarketLimitResponse(
                     ok=True, 
                     limit_percent=0, 
-                    message="固定限制已清除，切換為動態級距制"
+                    message="固定限制已清除，使用預設固定限制20%"
                 )
             
             # 將傳入的百分比轉換為基點 (basis points)
