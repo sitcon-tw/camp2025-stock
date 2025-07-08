@@ -379,7 +379,7 @@ export const usePermissions = (token) => {
     }, [token, fetchPermissions]);
 
     /**
-     * 清除當前用戶的權限快取
+     * 清除目前用戶的權限快取
      */
     const clearCache = useCallback(() => {
         if (token) {

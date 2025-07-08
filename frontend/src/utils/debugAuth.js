@@ -25,7 +25,7 @@ export const decodeJWT = (token) => {
 };
 
 /**
- * 檢查當前認證狀態
+ * 檢查目前認證狀態
  * @returns {Object} - 認證狀態資訊
  */
 export const checkAuthStatus = () => {

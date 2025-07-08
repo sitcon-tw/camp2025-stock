@@ -636,7 +636,7 @@ export const SystemConfig = ({ token }) => {
                             交易限制設定
                         </h3>
 
-                        {/* 當前設定顯示 */}
+                        {/* 目前設定顯示 */}
                         <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
                             <div className="text-sm text-[#7BC2E6] mb-2">目前設定</div>
                             <div className="text-white space-y-2">
@@ -796,11 +796,11 @@ export const SystemConfig = ({ token }) => {
                             IPO 狀態管理
                         </h3>
 
-                        {/* 當前IPO狀態顯示 */}
+                        {/* 目前IPO狀態顯示 */}
                         {ipoStatus && (
                             <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-4">
                                 <h4 className="mb-3 text-sm font-medium text-[#7BC2E6]">
-                                    當前 IPO 狀態
+                                    目前 IPO 狀態
                                 </h4>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <div className="text-center">
@@ -915,7 +915,7 @@ export const SystemConfig = ({ token }) => {
                                 </button>
                             </div>
 
-                            {/* 當前交易時間顯示 */}
+                            {/* 目前交易時間顯示 */}
                             {tradingHours && tradingHours.tradingHours && tradingHours.tradingHours.length > 0 && (
                                 <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
                                     <div className="text-sm text-[#7BC2E6] mb-2">目前設定的交易時段</div>
@@ -1114,7 +1114,7 @@ export const SystemConfig = ({ token }) => {
                             IPO狀態管理
                         </h4>
                         <ul className="space-y-1 text-[#557797]">
-                            <li>• 即時調整當前IPO的剩餘股數和價格</li>
+                            <li>• 即時調整目前IPO的剩餘股數和價格</li>
                             <li>• 可以停止或重新開始IPO發行</li>
                             <li>• 重置功能會使用預設值重新初始化</li>
                         </ul>
