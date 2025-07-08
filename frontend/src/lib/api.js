@@ -490,6 +490,18 @@ export async function webTransferPoints(token, transferData) {
     });
 }
 
+// QR Code 兌換點數
+export async function redeemQRCode(token, qrData) {
+    return apiRequest("/api/web/qr/redeem", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ qr_data: qrData }),
+    });
+}
+
 // 查詢使用者資料
 export async function getWebUserProfile(token) {
     return apiRequest("/api/web/profile", {

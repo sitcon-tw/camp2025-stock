@@ -9,6 +9,7 @@ import {
     getWebStockOrders,
     webTransferPoints,
     getUserAvatar,
+    redeemQRCode,
 } from "@/lib/api";
 import dayjs from "dayjs";
 import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2 } from "lucide-react";
@@ -246,8 +247,11 @@ export default function Dashboard() {
                             if (qrData.type === 'transfer' && (qrData.id || qrData.username)) {
                                 // 嘗試獲取收款人的完整資訊（包括大頭照）
                                 fetchRecipientInfo(qrData);
+                            } else if (qrData.type === 'points_redeem' && qrData.id && qrData.points) {
+                                // 處理點數兌換 QR Code
+                                handlePointsRedemption(result.data);
                             } else {
-                                setTransferError('無效的轉帳 QR Code');
+                                setTransferError('無效的 QR Code');
                             }
                         } catch (e) {
                             setTransferError('QR Code 格式錯誤');
@@ -276,6 +280,44 @@ export default function Dashboard() {
             qrScannerRef.current = null;
         }
         setShowQRScanner(false);
+    };
+
+    // 處理點數兌換 QR Code
+    const handlePointsRedemption = async (qrData) => {
+        try {
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                throw new Error('未找到認證令牌');
+            }
+
+            // 先停止掃描器
+            stopQRScanner();
+
+            // 呼叫兌換 API
+            const result = await redeemQRCode(token, qrData);
+            
+            if (result.ok) {
+                setTransferSuccess(`成功兌換 ${result.points} 點數！`);
+                
+                // 重新載入使用者資料
+                try {
+                    const [portfolio, points] = await Promise.all([
+                        getWebPortfolio(token),
+                        getWebPointHistory(token)
+                    ]);
+                    setUser(portfolio);
+                    setPointHistory(points);
+                    setLastPointHistoryLength(points.length);
+                } catch (refreshError) {
+                    console.error('重新載入資料失敗:', refreshError);
+                }
+            } else {
+                setTransferError(result.message || '兌換失敗');
+            }
+        } catch (error) {
+            console.error('兌換 QR Code 失敗:', error);
+            setTransferError(error.message || '兌換失敗，請稍後再試');
+        }
     };
 
     // 獲取收款人資訊
@@ -937,7 +979,7 @@ export default function Dashboard() {
                                 >
                                     <Camera className="mx-auto mb-2 h-8 w-8" />
                                     <div className="text-lg font-medium">掃描 QR Code</div>
-                                    <div className="text-sm text-green-100">掃描別人的 QR Code 轉帳</div>
+                                    <div className="text-sm text-green-100">掃描轉帳或兌換點數</div>
                                 </button>
                             </div>
                         </div>
@@ -1670,10 +1712,10 @@ export default function Dashboard() {
                     
                     <div className="text-center space-y-2">
                         <p className="text-sm text-[#92cbf4]">
-                            請對準收款人的 QR Code 進行掃描
+                            請對準 QR Code 進行掃描
                         </p>
                         <p className="text-xs text-[#557797]">
-                            掃描成功後將自動跳轉到轉帳表單
+                            支援轉帳 QR Code 和點數兌換 QR Code
                         </p>
                         
                         {/* 測試相機按鈕 */}

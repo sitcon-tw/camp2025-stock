@@ -185,6 +185,16 @@ class PublicAnnouncement(BaseModel):
         populate_by_name = True
 
 
+# QR Code 兌換請求
+class QRCodeRedeemRequest(BaseModel):
+    qr_data: str = Field(..., description="QR Code 資料")
+
+# QR Code 兌換回應
+class QRCodeRedeemResponse(BaseModel):
+    ok: bool = Field(..., description="兌換結果")
+    message: str = Field(..., description="兌換訊息")
+    points: Optional[int] = Field(None, description="獲得的點數")
+    
 # 錯誤回應
 class ErrorResponse(BaseModel):
     detail: str = Field(..., description="錯誤詳情")

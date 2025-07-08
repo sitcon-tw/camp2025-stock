@@ -23,6 +23,7 @@ from app.schemas.user import (
     TransferRequest, TransferResponse,
     UserPointLog, UserStockOrder
 )
+from app.schemas.public import QRCodeRedeemRequest, QRCodeRedeemResponse
 from app.core.security import get_current_user
 from typing import List
 import logging
@@ -167,6 +168,113 @@ async def transfer_points(
     Clean Code 原則：參數驗證清晰
     """
     return await transfer_service.transfer_points(current_user["user_id"], request)
+
+
+# ========== QR Code 兌換端點 ==========
+
+@router.post("/qr/redeem", response_model=QRCodeRedeemResponse)
+async def redeem_qr_code(
+    request: QRCodeRedeemRequest,
+    current_user: dict = Depends(get_current_user),
+    transfer_service: TransferApplicationService = Depends(get_transfer_application_service)
+):
+    """
+    QR Code 兌換點數
+    SRP 原則：專注於 QR Code 兌換的 HTTP 處理
+    DIP 原則：依賴抽象的轉帳服務
+    """
+    import json
+    from datetime import datetime
+    
+    try:
+        # 解析 QR Code 資料
+        qr_data = json.loads(request.qr_data)
+        
+        # 驗證 QR Code 格式
+        if qr_data.get("type") != "points_redeem":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="無效的 QR Code 類型"
+            )
+        
+        qr_id = qr_data.get("id")
+        points = qr_data.get("points")
+        
+        if not qr_id or not points or points <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="QR Code 資料不完整"
+            )
+        
+        # 檢查 QR Code 是否已經使用過
+        from app.core.database import get_database, Collections
+        db = get_database()
+        
+        # 檢查是否已經兌換過
+        existing_redemption = await db[Collections.POINT_LOGS].find_one({
+            "qr_id": qr_id,
+            "user_id": current_user["user_id"]
+        })
+        
+        if existing_redemption:
+            return QRCodeRedeemResponse(
+                ok=False,
+                message="此 QR Code 已經兌換過了"
+            )
+        
+        # 檢查是否有其他人兌換過
+        other_redemption = await db[Collections.POINT_LOGS].find_one({
+            "qr_id": qr_id
+        })
+        
+        if other_redemption:
+            return QRCodeRedeemResponse(
+                ok=False,
+                message="此 QR Code 已經被其他人兌換過了"
+            )
+        
+        # 給予點數
+        from app.services.admin_service import AdminService
+        admin_service = AdminService(db)
+        
+        # 使用 admin_service 的 give_points 功能
+        from app.schemas.public import GivePointsRequest
+        give_points_request = GivePointsRequest(
+            target=current_user["user_id"],
+            type="user",
+            amount=points
+        )
+        
+        # 給予點數
+        await admin_service.give_points(give_points_request)
+        
+        # 記錄兌換日誌
+        await db[Collections.POINT_LOGS].insert_one({
+            "user_id": current_user["user_id"],
+            "qr_id": qr_id,
+            "amount": points,
+            "balance_after": 0,  # 這個會在 give_points 中正確設定
+            "note": f"QR Code 兌換 ({qr_id})",
+            "created_at": datetime.now()
+        })
+        
+        return QRCodeRedeemResponse(
+            ok=True,
+            message=f"成功兌換 {points} 點數！",
+            points=points
+        )
+        
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QR Code 格式錯誤"
+        )
+    except Exception as e:
+        logger.error(f"QR Code 兌換失敗: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="兌換失敗，請稍後再試"
+        )
 
 
 # ========== 歷史記錄端點 ==========

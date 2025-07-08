@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer, MembersList, TransactionHistory, PointHistory } from "@/components/admin";
+import { AdminDashboard, PermissionAudit, SystemConfig, PendingOrdersViewer, MembersList, TransactionHistory, PointHistory, QRCodeGenerator } from "@/components/admin";
 import { PermissionProvider, usePermissionContext } from "@/contexts/PermissionContext";
 import { debugAuth } from "@/utils/debugAuth";
 import { LogOut } from "lucide-react";
@@ -143,6 +143,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                             { id: "pending-orders", label: "等待撮合訂單" },
                             { id: "transactions", label: "交易紀錄" },
                             { id: "point-history", label: "點數紀錄" },
+                            { id: "qr-generator", label: "QR Code 生成器" },
                             { id: "config", label: "系統設定" },
                             { id: "audit", label: "權限審查" },
                         ].map((tab) => (
@@ -169,6 +170,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                 {activeTab === "pending-orders" && <PendingOrdersViewer token={adminToken} />}
                 {activeTab === "transactions" && <TransactionHistory token={adminToken} />}
                 {activeTab === "point-history" && <PointHistory token={adminToken} />}
+                {activeTab === "qr-generator" && <QRCodeGenerator token={adminToken} />}
                 {activeTab === "config" && <SystemConfig token={adminToken} />}
                 {activeTab === "audit" && <PermissionAudit token={adminToken} />}
             </div>

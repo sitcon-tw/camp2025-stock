@@ -7,6 +7,7 @@ from app.schemas.user import (
     TransferRequest, TransferResponse,
     UserPointLog, UserStockOrder
 )
+from app.schemas.public import QRCodeRedeemRequest, QRCodeRedeemResponse
 from app.core.security import get_current_user
 from typing import List
 import logging
