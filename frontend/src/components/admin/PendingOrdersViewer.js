@@ -87,7 +87,7 @@ export const PendingOrdersViewer = ({ token }) => {
     useEffect(() => {
         let interval;
         if (autoRefresh && token) {
-            interval = setInterval(fetchPendingOrders, 10000); // 每10秒更新一次
+            interval = setInterval(fetchPendingOrders, 30000); // 每30秒更新一次
         }
         return () => {
             if (interval) {

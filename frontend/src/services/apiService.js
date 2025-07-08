@@ -14,7 +14,7 @@ class ApiService {
     constructor() {
         this.cache = new Map();
         this.pendingRequests = new Map();
-        this.defaultCacheTime = 5000;
+        this.defaultCacheTime = 15000;
     }
 
     async request(
@@ -75,14 +75,14 @@ class ApiService {
     }
 
     async getOrderBookData() {
-        return this.request("price-depth", getPriceDepth, 1000);
+        return this.request("price-depth", getPriceDepth, 5000);
     }
 
     async getTradeHistory(limit = 20) {
         return this.request(
             `trades-${limit}`,
             () => getRecentTrades(limit),
-            5000,
+            15000,
         );
     }
 

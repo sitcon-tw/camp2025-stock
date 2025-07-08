@@ -16,6 +16,8 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
     const [loading, setLoading] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [error, setError] = useState(null);
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -38,6 +40,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
             setTradeHistory(tradesData || []);
 
             setError(null);
+            setLastUpdated(new Date());
             
             // 首次載入完成
             if (isInitialLoad) {
@@ -70,18 +73,18 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
         fetchInitialData();
 
-        // 添加自動更新機制，每5秒更新一次
+        // 添加自動更新機制，每15秒更新一次（僅在啟用時）
         const interval = setInterval(() => {
-            if (isMounted) {
+            if (isMounted && autoRefresh) {
                 fetchData();
             }
-        }, 5000);
+        }, 15000);
 
         return () => {
             isMounted = false;
             clearInterval(interval);
         };
-    }, []);
+    }, [autoRefresh]);
     const OrderBookTab = () => {
         // 計算待買賣總數量
         const totalBuyQuantity = orderbookData.buys.reduce(
@@ -109,16 +112,33 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
 
                 {!loading && (
                     <>
-                        {/* 刷新按鈕
-                        <div className="mb-3 flex justify-end">
+                        {/* 控制按鈕 */}
+                        <div className="mb-3 flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    onClick={() => setAutoRefresh(!autoRefresh)}
+                                    className={`rounded px-3 py-1 text-sm transition-colors ${
+                                        autoRefresh 
+                                            ? 'bg-green-500 text-white hover:bg-green-600' 
+                                            : 'bg-gray-500 text-white hover:bg-gray-600'
+                                    }`}
+                                >
+                                    {autoRefresh ? '🔄 自動更新' : '⏸️ 手動更新'}
+                                </button>
+                                {lastUpdated && (
+                                    <span className="text-xs text-gray-400">
+                                        上次更新: {lastUpdated.toLocaleTimeString()}
+                                    </span>
+                                )}
+                            </div>
                             <button
                                 onClick={fetchData}
                                 className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 transition-colors"
                                 disabled={loading}
                             >
-                                🔄 刷新五檔
+                                🔄 立即刷新
                             </button>
-                        </div> */}
+                        </div>
                         
                         {/* 表頭 */}
                         <div className="text-md mb-2 grid grid-cols-4 border-b border-[#469FD2] pb-2 text-white">

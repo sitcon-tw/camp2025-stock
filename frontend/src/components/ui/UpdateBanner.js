@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 export default function UpdateBanner() {
-    const [timeLeft, setTimeLeft] = useState(5);
+    const [timeLeft, setTimeLeft] = useState(15);
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
@@ -15,7 +15,7 @@ export default function UpdateBanner() {
                     setTimeout(() => {
                         setIsUpdating(false);
                     }, 800);
-                    return 5; // 改為5秒更新週期
+                    return 15; // 改為15秒更新週期
                 }
                 return prevTime - 1;
             });

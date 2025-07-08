@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 
-export const useApiRequest = (minInterval = 5000) => {
+export const useApiRequest = (minInterval = 15000) => {
     const fetchingRef = useRef(false);
     const lastFetchTimeRef = useRef(0);
     const abortControllerRef = useRef(null);
