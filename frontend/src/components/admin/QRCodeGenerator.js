@@ -165,16 +165,27 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                 </div>
                 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
                 <script>
+                    // QR Code 資料，安全地嵌入到 HTML 中
+                    const qrData = [
+                        ${qrCodes.map(qr => `{
+                            id: ${JSON.stringify(qr.id)},
+                            data: ${JSON.stringify(qr.data)},
+                            points: ${qr.points}
+                        }`).join(',')}
+                    ];
+                    
                     // 等待 QRCode 庫載入完成
-                    window.onload = function() {
-                        // 逐個生成QR Code
-                        const qrData = ${JSON.stringify(qrCodes.map(qr => ({
-                            id: qr.id,
-                            data: qr.data,
-                            points: qr.points
-                        })))};
+                    function generateQRCodes() {
+                        if (typeof QRCode === 'undefined') {
+                            console.log('QRCode library not loaded yet, retrying...');
+                            setTimeout(generateQRCodes, 100);
+                            return;
+                        }
                         
-                        qrData.forEach(qr => {
+                        console.log('Generating QR codes for', qrData.length, 'items');
+                        
+                        let completed = 0;
+                        qrData.forEach((qr, index) => {
                             const canvas = document.getElementById('qr-' + qr.id);
                             if (canvas) {
                                 QRCode.toCanvas(canvas, qr.data, {
@@ -183,16 +194,34 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                                     margin: 1,
                                     color: { dark: '#000000', light: '#ffffff' }
                                 }, function(error) {
-                                    if (error) console.error('QR Code generation error:', error);
+                                    if (error) {
+                                        console.error('QR Code generation error for', qr.id, ':', error);
+                                    } else {
+                                        console.log('QR Code generated successfully for', qr.id);
+                                    }
+                                    completed++;
+                                    
+                                    // 所有 QR Code 生成完成後自動列印
+                                    if (completed === qrData.length) {
+                                        console.log('All QR codes generated, printing in 1 second...');
+                                        setTimeout(() => {
+                                            window.print();
+                                        }, 1000);
+                                    }
                                 });
+                            } else {
+                                console.error('Canvas element not found for QR code:', qr.id);
+                                completed++;
                             }
                         });
-                        
-                        // 等待QR Code生成完成後自動列印
-                        setTimeout(() => {
-                            window.print();
-                        }, 1500);
-                    };
+                    }
+                    
+                    // 開始生成 QR Code
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', generateQRCodes);
+                    } else {
+                        generateQRCodes();
+                    }
                 </script>
             </body>
             </html>
