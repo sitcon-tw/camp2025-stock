@@ -157,7 +157,7 @@ class UserShardingService:
                 if user_shard == shard_id]
     
     def set_shard_status(self, shard_id: int, status: ShardStatus):
-        """設置分片狀態"""
+        """設定分片狀態"""
         if shard_id in self.shards:
             old_status = self.shards[shard_id].status
             self.shards[shard_id].status = status
