@@ -96,7 +96,7 @@ python test/simulation_trading.py
 3. **檢查API端點**: 確保所有API都正常運作
 4. **清理資料**: 可能需要清理之前的測試資料
 
-## 自定義設置
+## 自定義設定
 
 你可以修改腳本中的常數：
 - `INITIAL_POINTS`: 初始點數（預設100）
