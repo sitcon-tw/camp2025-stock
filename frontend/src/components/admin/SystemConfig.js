@@ -472,7 +472,7 @@ export const SystemConfig = ({ token }) => {
                             disabled={loading}
                             className="rounded bg-[#469FD2] px-3 py-1 text-sm text-white hover:bg-[#357AB8] disabled:opacity-50"
                         >
-                            {loading ? "更新中..." : "刷新數據"}
+                            {loading ? "更新中..." : "更新數據"}
                         </button>
                     </div>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-5">

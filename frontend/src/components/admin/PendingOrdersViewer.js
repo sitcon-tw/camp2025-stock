@@ -49,7 +49,7 @@ export const PendingOrdersViewer = ({ token }) => {
             const result = await triggerManualMatching(token);
             
             if (result.ok) {
-                // 撮合成功後，等待一下再刷新數據
+                // 撮合成功後，等待一下再更新數據
                 setTimeout(() => {
                     fetchPendingOrders();
                 }, 1000);
@@ -83,11 +83,11 @@ export const PendingOrdersViewer = ({ token }) => {
         }
     }, [token, limit]);
 
-    // 自動刷新
+    // 自動更新
     useEffect(() => {
         let interval;
         if (autoRefresh && token) {
-            interval = setInterval(fetchPendingOrders, 10000); // 每10秒刷新一次
+            interval = setInterval(fetchPendingOrders, 10000); // 每10秒更新一次
         }
         return () => {
             if (interval) {
@@ -170,7 +170,7 @@ export const PendingOrdersViewer = ({ token }) => {
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-[#92cbf4]">等待撮合訂單</h2>
                     <div className="flex items-center space-x-4">
-                        {/* 自動刷新開關 */}
+                        {/* 自動更新開關 */}
                         <label className="flex items-center space-x-2">
                             <input
                                 type="checkbox"
@@ -178,7 +178,7 @@ export const PendingOrdersViewer = ({ token }) => {
                                 onChange={(e) => setAutoRefresh(e.target.checked)}
                                 className="rounded border-[#294565] bg-[#0f203e] text-[#469FD2] focus:ring-2 focus:ring-[#469FD2]"
                             />
-                            <span className="text-sm text-[#7BC2E6]">自動刷新</span>
+                            <span className="text-sm text-[#7BC2E6]">自動更新</span>
                         </label>
 
                         {/* 筆數限制 */}
@@ -196,13 +196,13 @@ export const PendingOrdersViewer = ({ token }) => {
                             </select>
                         </div>
 
-                        {/* 手動刷新按鈕 */}
+                        {/* 手動更新按鈕 */}
                         <button
                             onClick={fetchPendingOrders}
                             disabled={loading}
                             className="rounded bg-[#469FD2] px-4 py-2 text-sm text-white hover:bg-[#357AB8] disabled:opacity-50"
                         >
-                            {loading ? "刷新中..." : "刷新"}
+                            {loading ? "更新中..." : "更新"}
                         </button>
 
                         {/* 手動撮合按鈕 */}
@@ -252,7 +252,7 @@ export const PendingOrdersViewer = ({ token }) => {
                 {lastUpdate && (
                     <div className="text-xs text-gray-400">
                         最後更新：{formatTime(lastUpdate.toISOString())}
-                        {autoRefresh && <span className="ml-2 text-green-400">• 自動刷新開啟</span>}
+                        {autoRefresh && <span className="ml-2 text-green-400">• 自動更新開啟</span>}
                     </div>
                 )}
             </div>

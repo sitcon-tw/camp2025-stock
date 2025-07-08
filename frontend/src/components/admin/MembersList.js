@@ -210,7 +210,7 @@ export const MembersList = ({ token }) => {
                         disabled={loading}
                         className="rounded bg-[#469FD2] px-4 py-2 text-white hover:bg-[#357AB8] disabled:opacity-50"
                     >
-                        {loading ? "刷新中..." : "刷新"}
+                        {loading ? "更新中..." : "更新"}
                     </button>
                 </div>
 
