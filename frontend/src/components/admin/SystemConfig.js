@@ -661,34 +661,32 @@ export const SystemConfig = ({ token }) => {
                             交易限制設定
                         </h3>
 
-                        {/* 模式選擇 */}
+                        {/* 模式切換 */}
                         <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-4">
-                            <div className="text-sm text-[#7BC2E6] mb-3">漲跌停限制模式</div>
-                            <div className="flex items-center space-x-6">
-                                <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="limitMode"
-                                        value="dynamic"
-                                        checked={limitMode === "dynamic"}
-                                        onChange={(e) => setLimitMode(e.target.value)}
-                                        className="text-[#469FD2] focus:ring-[#469FD2]"
-                                    />
-                                    <span className="text-white">動態級距制</span>
-                                    <span className="text-xs text-gray-400">(依股價調整)</span>
-                                </label>
-                                <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="limitMode"
-                                        value="fixed"
-                                        checked={limitMode === "fixed"}
-                                        onChange={(e) => setLimitMode(e.target.value)}
-                                        className="text-[#469FD2] focus:ring-[#469FD2]"
-                                    />
-                                    <span className="text-white">固定限制</span>
-                                    <span className="text-xs text-gray-400">(統一百分比)</span>
-                                </label>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="text-sm font-medium text-[#7BC2E6] mb-1">漲跌停限制模式</div>
+                                    <div className="text-xs text-gray-400">
+                                        {limitMode === "dynamic" ? "動態級距制 (依股價調整)" : "固定限制 (統一百分比)"}
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-sm ${limitMode === "dynamic" ? "text-green-400 font-medium" : "text-gray-400"}`}>
+                                        動態級距
+                                    </span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={limitMode === "fixed"}
+                                            onChange={(e) => setLimitMode(e.target.checked ? "fixed" : "dynamic")}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-[#294565] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#469FD2]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#469FD2]"></div>
+                                    </label>
+                                    <span className={`text-sm ${limitMode === "fixed" ? "text-red-400 font-medium" : "text-gray-400"}`}>
+                                        固定限制
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
