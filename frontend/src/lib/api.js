@@ -111,6 +111,15 @@ export async function getSystemStats(token) {
     });
 }
 
+export async function getAllStudents(token) {
+    return apiRequest("/api/admin/students", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 // 取得所有隊伍的基本資料，包括隊伍名稱、成員數量等
 export async function getTeams(token) {
     return apiRequest("/api/admin/teams", {

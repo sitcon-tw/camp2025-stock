@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUserAssets } from "@/lib/api";
+import { getAllStudents } from "@/lib/api";
 import { PermissionGuard } from "./PermissionGuard";
 import { PERMISSIONS } from "@/contexts/PermissionContext";
 
@@ -23,10 +23,29 @@ export const MembersList = ({ token }) => {
             setLoading(true);
             setError(null);
             
-            const result = await getUserAssets(token);
+            // 獲取完整的學員資料（包含資產資訊）
+            const studentsData = await getAllStudents(token);
             
-            if (Array.isArray(result)) {
-                setMembers(result);
+            if (Array.isArray(studentsData)) {
+                // 將資料格式化為組件期望的格式
+                const formattedData = studentsData.map(student => ({
+                    user_id: student.id,
+                    username: student.name,
+                    team: student.team,
+                    telegram_id: student.telegram_id,
+                    telegram_nickname: student.telegram_nickname,
+                    enabled: student.enabled,
+                    created_at: student.created_at,
+                    updated_at: student.updated_at,
+                    points: student.points || 0,
+                    stock_amount: student.stock_amount || 0,
+                    total_value: student.total_value || 0,
+                    // 添加 debug 資訊
+                    is_active: student.enabled,
+                    last_login: student.updated_at // 使用 updated_at 作為最後活動時間的代理
+                }));
+                
+                setMembers(formattedData);
             } else {
                 setError("獲取成員數據失敗");
             }

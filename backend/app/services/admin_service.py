@@ -426,11 +426,24 @@ class AdminService:
         try:
             # 更新為新的 ID-based 系統字段，包含 enabled 狀態
             users_cursor = self.db[Collections.USERS].find(
-                {}, {"id": 1, "name": 1, "team": 1, "telegram_id": 1, "telegram_nickname": 1, "enabled": 1, "points": 1, "stock_amount": 1, "created_at": 1})
+                {}, {"id": 1, "name": 1, "team": 1, "telegram_id": 1, "telegram_nickname": 1, "enabled": 1, "points": 1, "created_at": 1, "updated_at": 1})
             users = await users_cursor.to_list(length=None)
 
             result = []
             for user in users:
+                # 獲取使用者的股票持有量（從 STOCKS 集合中獲取）
+                stock_holding = await self.db[Collections.STOCKS].find_one(
+                    {"user_id": user["_id"]}
+                ) or {"stock_amount": 0}
+                
+                # 計算股票價值
+                market_config = await self.db[Collections.MARKET_CONFIG].find_one(
+                    {"type": "current_price"}
+                ) or {"price": 20}  # 預設價格 20 元
+                
+                current_price = market_config.get("price", 20)
+                stock_amount = stock_holding.get("stock_amount", 0)
+                total_value = user.get("points", 0) + (stock_amount * current_price)
 
                 result.append({
                     "id": user.get("id"),
@@ -440,9 +453,13 @@ class AdminService:
                     "telegram_nickname": user.get("telegram_nickname"),
                     "enabled": user.get("enabled", False),
                     "points": user.get("points", 0),
-                    "stock_amount": user.get("stock_amount", 0),
-                    "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
+                    "stock_amount": stock_amount,
+                    "total_value": total_value,
+                    "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
+                    "updated_at": user.get("updated_at").isoformat() if user.get("updated_at") else None
                 })
+
+            return result
 
         except Exception as e:
             logger.error(f"Failed to list all users: {e}")
