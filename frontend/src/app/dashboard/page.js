@@ -251,12 +251,18 @@ export default function Dashboard() {
                 throw new Error('相機元件初始化失敗');
             }
             
-            // 檢查相機權限
-            const permission = await navigator.permissions.query({name: 'camera'});
-            console.log('相機權限狀態:', permission.state);
-            
-            if (permission.state === 'denied') {
-                throw new Error('相機權限被拒絕，請在設定中開啟相機權限');
+            // 檢查相機權限（可選，部分海覽器不支援）
+            try {
+                if (navigator.permissions && navigator.permissions.query) {
+                    const permission = await navigator.permissions.query({name: 'camera'});
+                    console.log('相機權限狀態:', permission.state);
+                    
+                    if (permission.state === 'denied') {
+                        throw new Error('相機權限被拒絕，請在設定中開啟相機權限');
+                    }
+                }
+            } catch (permissionError) {
+                console.warn('權限檢查失敗，繼續嘗試啟動相機:', permissionError);
             }
             
             // 初始化 QR Scanner
@@ -292,15 +298,6 @@ export default function Dashboard() {
                 }
             );
             
-            // 相機啟動事件監聽
-            qrScannerRef.current.addEventListener('cameraOn', () => {
-                console.log('相機已啟動');
-            });
-            
-            qrScannerRef.current.addEventListener('cameraOff', () => {
-                console.log('相機已關閉');
-            });
-            
             // 啟動相機
             await qrScannerRef.current.start();
             console.log('QR Scanner 啟動成功');
@@ -329,9 +326,15 @@ export default function Dashboard() {
 
     const stopQRScanner = () => {
         if (qrScannerRef.current) {
-            qrScannerRef.current.stop();
-            qrScannerRef.current.destroy();
-            qrScannerRef.current = null;
+            try {
+                qrScannerRef.current.stop();
+                qrScannerRef.current.destroy();
+                console.log('QR Scanner 已停止');
+            } catch (error) {
+                console.error('停止 QR Scanner 時發生錯誤:', error);
+            } finally {
+                qrScannerRef.current = null;
+            }
         }
         setShowQRScanner(false);
     };
