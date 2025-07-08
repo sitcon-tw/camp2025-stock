@@ -291,6 +291,10 @@ const SystemManagementSection = ({ token, showNotification }) => {
 
     // 市場管理相關狀態
     const [marketStatus, setMarketStatus] = useState(null);
+    const [marketOperationLoading, setMarketOperationLoading] = useState({
+        opening: false,
+        closing: false
+    });
     const [ipoStatus, setIpoStatus] = useState(null);
     const [showIpoModal, setShowIpoModal] = useState(false);
     const [showTradingLimitModal, setShowTradingLimitModal] =
@@ -461,9 +465,14 @@ const SystemManagementSection = ({ token, showNotification }) => {
                     <PermissionButton
                         requiredPermission={PERMISSIONS.MANAGE_MARKET}
                         token={token}
-                        className="rounded bg-green-500 px-4 py-2 text-white hover:bg-green-600"
+                        className={`rounded px-4 py-2 text-white transition-all duration-200 ${
+                            marketOperationLoading.opening
+                                ? "bg-green-400 cursor-wait"
+                                : "bg-green-500 hover:bg-green-600"
+                        }`}
                         onClick={async () => {
                             try {
+                                setMarketOperationLoading(prev => ({ ...prev, opening: true }));
                                 await openMarket(token);
                                 showNotification("市場已開盤", "success");
                                 const status = await getAdminMarketStatus(token);
@@ -473,19 +482,36 @@ const SystemManagementSection = ({ token, showNotification }) => {
                                     `開盤失敗: ${error.message}`,
                                     "error",
                                 );
+                            } finally {
+                                setMarketOperationLoading(prev => ({ ...prev, opening: false }));
                             }
                         }}
-                        disabled={marketStatus?.is_open}
+                        disabled={marketStatus?.is_open || marketOperationLoading.opening}
                     >
-                        手動開盤
+                        {marketOperationLoading.opening ? (
+                            <div className="flex items-center justify-center space-x-2">
+                                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>開盤中...</span>
+                            </div>
+                        ) : (
+                            "手動開盤"
+                        )}
                     </PermissionButton>
 
                     <PermissionButton
                         requiredPermission={PERMISSIONS.MANAGE_MARKET}
                         token={token}
-                        className="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600"
+                        className={`rounded px-4 py-2 text-white transition-all duration-200 ${
+                            marketOperationLoading.closing
+                                ? "bg-red-400 cursor-wait"
+                                : "bg-red-500 hover:bg-red-600"
+                        }`}
                         onClick={async () => {
                             try {
+                                setMarketOperationLoading(prev => ({ ...prev, closing: true }));
                                 await closeMarket(token);
                                 showNotification("市場已收盤", "success");
                                 const status = await getAdminMarketStatus(token);
@@ -495,11 +521,23 @@ const SystemManagementSection = ({ token, showNotification }) => {
                                     `收盤失敗: ${error.message}`,
                                     "error",
                                 );
+                            } finally {
+                                setMarketOperationLoading(prev => ({ ...prev, closing: false }));
                             }
                         }}
-                        disabled={marketStatus && !marketStatus.is_open}
+                        disabled={(marketStatus && !marketStatus.is_open) || marketOperationLoading.closing}
                     >
-                        手動收盤
+                        {marketOperationLoading.closing ? (
+                            <div className="flex items-center justify-center space-x-2">
+                                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>收盤中...</span>
+                            </div>
+                        ) : (
+                            "手動收盤"
+                        )}
                     </PermissionButton>
 
                     <PermissionButton
