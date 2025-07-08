@@ -243,13 +243,8 @@ export default function Dashboard() {
                         try {
                             const qrData = JSON.parse(result.data);
                             if (qrData.type === 'transfer' && qrData.username) {
-                                // 設置快速轉帳資料並顯示快速轉帳視窗
-                                setQuickTransferData({
-                                    username: qrData.username,
-                                    id: qrData.id || ''
-                                });
-                                stopQRScanner();
-                                setShowQuickTransfer(true);
+                                // 嘗試獲取收款人的完整資訊（包括頭像）
+                                fetchRecipientInfo(qrData);
                             } else {
                                 setTransferError('無效的轉帳 QR Code');
                             }
@@ -280,6 +275,31 @@ export default function Dashboard() {
             qrScannerRef.current = null;
         }
         setShowQRScanner(false);
+    };
+
+    // 獲取收款人資訊
+    const fetchRecipientInfo = async (qrData) => {
+        try {
+            // 先停止掃描器
+            stopQRScanner();
+
+            // 設定基本資料（目前只能使用字母圓形頭像）
+            const basicRecipientData = {
+                username: qrData.username,
+                id: qrData.id || '',
+                photo_url: null // 由於沒有公開API可以獲取其他用戶頭像，暫時使用null
+            };
+
+            setQuickTransferData(basicRecipientData);
+            setShowQuickTransfer(true);
+
+            // 注意：目前後端沒有提供公開API來獲取其他用戶的頭像資訊
+            // 如果將來需要此功能，需要後端新增相應的API端點
+
+        } catch (error) {
+            console.error('設定收款人資訊失敗:', error);
+            setTransferError('無法獲取收款人資訊');
+        }
     };
 
     // 快速轉帳相關函數
@@ -1693,7 +1713,21 @@ export default function Dashboard() {
                         {/* 收款人資訊確認 */}
                         <div className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 text-lg font-bold text-white shadow-lg ring-2 ring-white/20 border-2 border-white/10">
+                                {quickTransferData.photo_url ? (
+                                    <img
+                                        src={quickTransferData.photo_url}
+                                        alt="收款人大頭照"
+                                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-[#469FD2]/50"
+                                        onError={(e) => {
+                                            // 如果頭像載入失敗，改為顯示字母圓形圖標
+                                            e.target.style.display = 'none';
+                                            e.target.nextElementSibling.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div 
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 text-lg font-bold text-white shadow-lg ring-2 ring-white/20 border-2 border-white/10 ${quickTransferData.photo_url ? 'hidden' : 'flex'}`}
+                                >
                                     {quickTransferData.username?.substring(0, 1)?.toUpperCase() || "U"}
                                 </div>
                                 <div className="flex-1">
