@@ -51,7 +51,7 @@ class CacheService:
         return None
     
     async def set(self, key: str, data: Any, ttl: Optional[int] = None) -> None:
-        """設置快取資料"""
+        """設定快取資料"""
         ttl = ttl or self._default_ttl
         self._cache[key] = CacheEntry(data, ttl)
         logger.debug(f"Cache set for key: {key}, ttl: {ttl}s")

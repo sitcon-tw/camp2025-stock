@@ -149,7 +149,7 @@ export default function Login() {
             const permissionData = await checkTelegramAdminStatus(userToken);
             
             if (permissionData.role === "admin") {
-                // 設置管理員狀態
+                // 設定管理員狀態
                 localStorage.setItem("isAdmin", "true");
                 localStorage.setItem("adminToken", userToken);
                 

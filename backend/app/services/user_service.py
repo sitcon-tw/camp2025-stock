@@ -24,6 +24,8 @@ import uuid
 import asyncio
 import os
 import requests
+import time
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,25 @@ class UserService:
             self.db = db
         self.cache_service = get_cache_service()
         self.cache_invalidator = get_cache_invalidator()
+        
+        # 寫入衝突統計
+        self.write_conflict_stats = defaultdict(int)
+        self.last_conflict_log_time = time.time()
+    
+    def _log_write_conflict(self, operation: str, attempt: int, max_retries: int):
+        """記錄寫入衝突統計"""
+        self.write_conflict_stats[operation] += 1
+        
+        # 每 60 秒輸出一次統計報告
+        current_time = time.time()
+        if current_time - self.last_conflict_log_time > 60:
+            total_conflicts = sum(self.write_conflict_stats.values())
+            logger.warning(f"寫入衝突統計報告：總計 {total_conflicts} 次衝突")
+            for op, count in self.write_conflict_stats.items():
+                logger.warning(f"  {op}: {count} 次")
+            self.last_conflict_log_time = current_time
+            
+        logger.info(f"{operation} WriteConflict 第 {attempt + 1}/{max_retries} 次嘗試失敗，將重試...")
     
     async def _get_or_initialize_ipo_config(self, session=None) -> dict:
         """
@@ -459,8 +480,8 @@ class UserService:
             else:
                 # 限價單可以直接掛單等待撮合，不需要檢查即時流動性
                 
-                # 限價單加入訂單簿
-                result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc)
+                # 限價單加入訂單簿（帶重試機制）
+                result = await self._insert_order_with_retry(order_doc)
                 order_id = str(result.inserted_id)
                 
                 if limit_exceeded:
@@ -1306,11 +1327,44 @@ class UserService:
             # 出錯時預設開放，避免影響交易
             return True
     
+    # 帶重試機制的訂單插入
+    async def _insert_order_with_retry(self, order_doc: dict):
+        """帶重試機制的訂單插入"""
+        max_retries = 5
+        retry_delay = 0.003
+        
+        for attempt in range(max_retries):
+            try:
+                result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc)
+                if attempt > 0:
+                    logger.info(f"Order insert succeeded on attempt {attempt + 1}")
+                return result
+                
+            except Exception as e:
+                error_str = str(e)
+                
+                # 檢查是否為寫入衝突錯誤
+                if "WriteConflict" in error_str or "TransientTransactionError" in error_str:
+                    if attempt < max_retries - 1:
+                        self._log_write_conflict("order_insert", attempt, max_retries)
+                        import asyncio
+                        import random
+                        jitter = random.uniform(0.8, 1.2)
+                        await asyncio.sleep(retry_delay * jitter)
+                        retry_delay *= 1.6
+                        continue
+                    else:
+                        logger.error(f"Order insert WriteConflict persisted after {max_retries} attempts")
+                        raise
+                else:
+                    logger.error(f"Order insert failed with non-retryable error: {e}")
+                    raise
+
     # 執行市價單
     async def _execute_market_order(self, user_oid: ObjectId, order_doc: dict) -> StockOrderResponse:
-        """執行市價單交易，帶重試機制"""
-        max_retries = 5  # 增加重試次數
-        retry_delay = 0.005  # 5ms 初始延遲
+        """執行市價單交易，帶增強重試機制"""
+        max_retries = 8  # 增加重試次數至 8 次
+        retry_delay = 0.003  # 3ms 初始延遲
         
         for attempt in range(max_retries):
             try:
@@ -1330,10 +1384,13 @@ class UserService:
                 # 檢查是否為寫入衝突錯誤（可重試）
                 elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
                     if attempt < max_retries - 1:
-                        logger.info(f"Market order WriteConflict detected on attempt {attempt + 1}/{max_retries}, retrying in {retry_delay:.3f}s...")
+                        self._log_write_conflict("market_order", attempt, max_retries)
                         import asyncio
-                        await asyncio.sleep(retry_delay)
-                        retry_delay *= 1.5  # 較溫和的指數退避
+                        import random
+                        # 添加隨機延遲以避免雷群效應
+                        jitter = random.uniform(0.8, 1.2)
+                        await asyncio.sleep(retry_delay * jitter)
+                        retry_delay *= 1.6  # 略為加強的指數退避
                         continue
                     else:
                         logger.warning(f"Market order WriteConflict persisted after {max_retries} attempts, falling back to non-transactional mode")
@@ -1856,9 +1913,9 @@ class UserService:
 
     
     async def _match_orders(self, buy_order: dict, sell_order: dict):
-        """撮合訂單 - 自動選擇事務或非事務模式，帶重試機制"""
-        max_retries = 5  # 增加重試次數
-        retry_delay = 0.005  # 5ms 初始延遲
+        """撮合訂單 - 自動選擇事務或非事務模式，帶增強重試機制"""
+        max_retries = 8  # 增加重試次數至 8 次
+        retry_delay = 0.003  # 3ms 初始延遲
         
         for attempt in range(max_retries):
             try:
@@ -1879,10 +1936,13 @@ class UserService:
                 # 檢查是否為寫入衝突錯誤（可重試）
                 elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
                     if attempt < max_retries - 1:
-                        logger.info(f"WriteConflict detected on attempt {attempt + 1}/{max_retries}, retrying in {retry_delay:.3f}s...")
+                        self._log_write_conflict("order_matching", attempt, max_retries)
                         import asyncio
-                        await asyncio.sleep(retry_delay)
-                        retry_delay *= 1.5  # 較溫和的指數退避
+                        import random
+                        # 添加隨機延遲以避免雷群效應
+                        jitter = random.uniform(0.8, 1.2)
+                        await asyncio.sleep(retry_delay * jitter)
+                        retry_delay *= 1.6  # 略為加強的指數退避
                         continue
                     else:
                         logger.warning(f"WriteConflict persisted after {max_retries} attempts, falling back to non-transactional mode")

@@ -20,7 +20,7 @@ async def test_self_transfer_protection():
     async with aiohttp.ClientSession() as session:
         print("🧪 開始測試自我轉帳防護功能...")
         
-        # 設置測試用的 Bot token (這需要從環境變數或配置中獲取)
+        # 設定測試用的 Bot token (這需要從環境變數或配置中獲取)
         bot_token = os.getenv("BOT_TOKEN", "test_token")
         headers = {"X-Bot-Token": bot_token}
         

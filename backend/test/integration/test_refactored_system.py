@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-# 設置日誌
+# 設定日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

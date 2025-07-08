@@ -112,7 +112,7 @@ def get_matching_scheduler() -> Optional[MatchingScheduler]:
 
 
 def set_matching_scheduler(scheduler: MatchingScheduler):
-    """設置撮合調度器實例"""
+    """設定撮合調度器實例"""
     global _matching_scheduler
     _matching_scheduler = scheduler
 

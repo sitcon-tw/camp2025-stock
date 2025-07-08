@@ -24,22 +24,46 @@ class TransferService:
             self.db = db
     
     async def transfer_points(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
-        """轉帳點數"""
-        # 嘗試使用事務，如果失敗則使用非事務模式
-        try:
-            return await self._transfer_points_with_transaction(from_user_id, request)
-        except Exception as e:
-            error_str = str(e)
-            # 檢查是否為事務不支援的錯誤
-            if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
-                logger.warning("MongoDB transactions not supported, falling back to non-transactional mode")
-                return await self._transfer_points_without_transaction(from_user_id, request)
-            else:
-                logger.error(f"Transfer failed: {e}")
-                return TransferResponse(
-                    success=False,
-                    message=f"轉帳失敗：{str(e)}"
-                )
+        """轉帳點數，帶增強重試機制"""
+        max_retries = 8  # 增加重試次數
+        retry_delay = 0.003  # 3ms 初始延遲
+        
+        for attempt in range(max_retries):
+            try:
+                result = await self._transfer_points_with_transaction(from_user_id, request)
+                if attempt > 0:
+                    logger.info(f"Transfer succeeded on attempt {attempt + 1}")
+                return result
+                
+            except Exception as e:
+                error_str = str(e)
+                
+                # 檢查是否為事務不支援的錯誤
+                if "Transaction numbers are only allowed on a replica set member or mongos" in error_str:
+                    logger.warning("MongoDB transactions not supported, falling back to non-transactional mode")
+                    return await self._transfer_points_without_transaction(from_user_id, request)
+                
+                # 檢查是否為寫入衝突錯誤（可重試）
+                elif "WriteConflict" in error_str or "TransientTransactionError" in error_str:
+                    if attempt < max_retries - 1:
+                        logger.info(f"Transfer WriteConflict detected on attempt {attempt + 1}/{max_retries}, retrying in {retry_delay:.3f}s...")
+                        import asyncio
+                        import random
+                        # 添加隨機延遲以避免雷群效應
+                        jitter = random.uniform(0.8, 1.2)
+                        await asyncio.sleep(retry_delay * jitter)
+                        retry_delay *= 1.6  # 略為加強的指數退避
+                        continue
+                    else:
+                        logger.warning(f"Transfer WriteConflict persisted after {max_retries} attempts, falling back to non-transactional mode")
+                        return await self._transfer_points_without_transaction(from_user_id, request)
+                
+                else:
+                    logger.error(f"Transfer failed with non-retryable error: {e}")
+                    return TransferResponse(
+                        success=False,
+                        message=f"轉帳失敗：{str(e)}"
+                    )
 
     async def _transfer_points_with_transaction(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
         """使用事務進行轉帳（適用於 replica set 或 sharded cluster）"""

@@ -201,7 +201,7 @@ export default function AdminPage() {
                 // 先測試 token 是否有效
                 await getSystemStats(token);
 
-                // Token 有效，設置狀態並初始化資料
+                // Token 有效，設定狀態並初始化資料
                 setAdminToken(token);
                 setIsLoggedIn(true);
 

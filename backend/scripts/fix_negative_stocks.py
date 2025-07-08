@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime, timezone
 import logging
 
-# 設置日誌
+# 設定日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

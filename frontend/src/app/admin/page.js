@@ -209,7 +209,7 @@ export default function EnhancedAdminPage() {
                     console.error("Failed to parse admin token:", e);
                 }
 
-                // 直接設置 token，不驗證 getSystemStats
+                // 直接設定 token，不驗證 getSystemStats
                 // 因為後端可能已經改為 RBAC 驗證，讓 usePermissions hook 處理
                 console.log(
                     "Setting admin token, will validate via usePermissions hook",

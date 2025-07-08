@@ -249,7 +249,7 @@ export default function Dashboard() {
                         try {
                             const qrData = JSON.parse(result.data);
                             if (qrData.type === 'transfer' && qrData.username) {
-                                // 掃描成功後設置用戶資訊並停止掃描
+                                // 掃描成功後設定用戶資訊並停止掃描
                                 setScannedUser({
                                     username: qrData.username,
                                     id: qrData.id || ''
