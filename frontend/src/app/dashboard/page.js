@@ -243,7 +243,7 @@ export default function Dashboard() {
                         console.log('QR Code 掃描結果:', result.data);
                         try {
                             const qrData = JSON.parse(result.data);
-                            if (qrData.type === 'transfer' && qrData.username) {
+                            if (qrData.type === 'transfer' && (qrData.id || qrData.username)) {
                                 // 嘗試獲取收款人的完整資訊（包括大頭照）
                                 fetchRecipientInfo(qrData);
                             } else {
@@ -290,8 +290,10 @@ export default function Dashboard() {
             stopQRScanner();
 
             // 設定基本資料（作為fallback）
+            // 優先使用 ID，如果 ID 不存在或無效，則使用 username
+            const preferredIdentifier = qrData.id || qrData.username;
             const basicRecipientData = {
-                username: qrData.username,
+                username: preferredIdentifier,
                 id: qrData.id || '',
                 photo_url: null
             };
@@ -301,7 +303,7 @@ export default function Dashboard() {
 
             // 嘗試獲取收款人的大頭照
             try {
-                const avatarResult = await getUserAvatar(token, qrData.username);
+                const avatarResult = await getUserAvatar(token, preferredIdentifier);
                 if (avatarResult && avatarResult.photo_url) {
                     setQuickTransferData(prev => ({
                         ...prev,
