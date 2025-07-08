@@ -65,6 +65,7 @@ async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"你只有 {response.get('points')} 點，總共需要 {total_fee} 點，*無法轉帳* 😾",
             parse_mode=ParseMode.MARKDOWN_V2
         )
+        context.user_data["in_transfer_convo"] = False
         return ConversationHandler.END
 
     teams = ["第一組", "第二組", "第三組", "第四組", "第五組", "第六組", "第七組", "第八組", "第九組", "課活組",
@@ -145,6 +146,7 @@ async def confirm_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if context.user_data["amount"] <= 0:
         await query.edit_message_text(f"✅ 成功轉帳了一個寂寞 :D")
+        context.user_data["in_transfer_convo"] = False
         return ConversationHandler.END
 
     result = api_helper.post("/api/bot/transfer", protected_route=True, json={
