@@ -325,3 +325,50 @@ async def get_market_price_info(
         - lastTradeTime: 最後成交時間
     """
     return await public_service.get_market_price_info()
+
+
+@router.get(
+    "/transfer/fee-config",
+    responses={
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢轉帳手續費設定",
+    description="查詢目前轉帳手續費率和最低手續費設定"
+)
+async def get_transfer_fee_config():
+    """
+    查詢轉帳手續費設定
+    
+    Returns:
+        dict: 轉帳手續費設定，包含：
+        - feeRate: 手續費率 (%)
+        - minFee: 最低手續費 (點數)
+    """
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        
+        # 查詢手續費設定
+        fee_config = await db[Collections.MARKET_CONFIG].find_one({
+            "type": "transfer_fee"
+        })
+        
+        if fee_config:
+            return {
+                "feeRate": fee_config.get("fee_rate", 10.0),
+                "minFee": fee_config.get("min_fee", 1)
+            }
+        else:
+            # 如果沒有設定，回傳預設值
+            return {
+                "feeRate": 10.0,
+                "minFee": 1
+            }
+        
+    except Exception as e:
+        logger.error(f"Failed to get transfer fee config: {e}")
+        return {
+            "feeRate": 10.0,
+            "minFee": 1
+        }

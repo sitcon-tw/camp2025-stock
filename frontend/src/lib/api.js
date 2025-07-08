@@ -629,4 +629,11 @@ export async function getUserPermissionSummaries(token, role = null) {
     });
 }
 
+// 查詢轉帳手續費設定 (公開API)
+export async function getTransferFeeConfigPublic() {
+    return apiRequest("/api/transfer/fee-config", {
+        method: "GET",
+    });
+}
+
 export { API_BASE_URL };

@@ -1,4 +1,76 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getPriceSummary, getMarketPriceInfo, getTransferFeeConfigPublic, API_BASE_URL } from '@/lib/api';
+
 export default function TutorialPage() {
+    const [marketData, setMarketData] = useState({
+        ipoPrice: 20,
+        tradingLimit: 20,
+        transferFeeRate: 10,
+        transferMinFee: 1,
+        ipoSharesRemaining: null,
+        loading: true
+    });
+
+    useEffect(() => {
+        const fetchMarketData = async () => {
+            try {
+                // 獲取價格摘要（包含漲跌限制）
+                const priceData = await getPriceSummary();
+
+                // 獲取 IPO 狀態
+                const ipoResponse = await fetch(`${API_BASE_URL}/api/ipo/status`);
+                const ipoData = await ipoResponse.json();
+
+                // 嘗試獲取市場價格資訊
+                let marketInfo = null;
+                try {
+                    marketInfo = await getMarketPriceInfo();
+                } catch (error) {
+                    console.warn('Failed to fetch market price info:', error);
+                }
+
+                // 獲取轉帳手續費設定
+                let feeConfig = { feeRate: 10, minFee: 1 };
+                try {
+                    feeConfig = await getTransferFeeConfigPublic();
+                } catch (error) {
+                    console.warn('Failed to fetch transfer fee config:', error);
+                }
+
+                setMarketData({
+                    ipoPrice: ipoData?.initialPrice || 20,
+                    tradingLimit: priceData.limitPercent ? (priceData.limitPercent / 100) : 20,
+                    transferFeeRate: feeConfig.feeRate || 10,
+                    transferMinFee: feeConfig.minFee || 1,
+                    ipoSharesRemaining: ipoData?.sharesRemaining,
+                    loading: false
+                });
+            } catch (error) {
+                console.error('Failed to fetch market data:', error);
+                setMarketData(prev => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchMarketData();
+    }, []);
+    if (marketData.loading) {
+        return (
+            <div className="min-h-screen bg-[#0f203e] pb-32">
+                <div className="container mx-auto max-w-4xl px-8 py-8">
+                    <h1 className="mb-8 text-center text-3xl font-bold text-[#82bee2]">
+                        📈 SITC 股市交易指南
+                    </h1>
+                    <div className="text-center text-white">
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
+                        <p className="mt-4">載入市場數據中...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#0f203e] pb-32">
             <div className="container mx-auto max-w-4xl px-8 py-8">
@@ -12,6 +84,32 @@ export default function TutorialPage() {
                         模擬股市！你可以使用「營隊點數」來體驗
                         投資的樂趣，就算你從沒碰過股票也沒關係！
                     </p>
+                </div>
+
+                <div className="mb-8 rounded-lg bg-[#0d2543] border border-[#82bee2] p-4">
+                    <h3 className="mb-3 text-lg font-semibold text-[#82bee2]">
+                        📊 目前系統設定
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white">
+                        <div>
+                            <span className="text-[#a8d4f0]">IPO 價格：</span>
+                            {marketData.ipoPrice} 點/股
+                        </div>
+                        <div>
+                            <span className="text-[#a8d4f0]">漲跌限制：</span>
+                            {marketData.tradingLimit}%
+                        </div>
+                        <div>
+                            <span className="text-[#a8d4f0]">轉帳手續費：</span>
+                            {marketData.transferFeeRate}%（最低 {marketData.transferMinFee} 點）
+                        </div>
+                        {marketData.ipoSharesRemaining !== null && (
+                            <div>
+                                <span className="text-[#a8d4f0]">IPO 剩餘：</span>
+                                {marketData.ipoSharesRemaining.toLocaleString()} 股
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <h2 className="mb-4 text-2xl font-bold text-[#82bee2]">
@@ -113,7 +211,7 @@ export default function TutorialPage() {
                         <div>
                             <h4 className="mb-2 font-semibold text-[#a8d4f0]">市價單即時成交：</h4>
                             <ul className="list-disc pl-6 text-white space-y-1">
-                                <li><strong>市價買單</strong>：優先與最低價賣單配對，若無賣單則從 IPO 以 20 點/股購買</li>
+                                <li><strong>市價買單</strong>：優先與最低價賣單配對，若無賣單則從 IPO 以 {marketData.loading ? '...' : marketData.ipoPrice} 點/股購買</li>
                                 <li><strong>市價賣單</strong>：優先與最高價買單配對，若無買單則拒絕交易</li>
                                 <li>成交立即執行，無需等待</li>
                                 <li><span className="text-red-400">⚠️ 限制</span>：市價買單在無賣單且 IPO 售完時會失敗</li>
@@ -131,8 +229,10 @@ export default function TutorialPage() {
                             <h4 className="mb-2 font-semibold text-[#a8d4f0]">IPO 回補機制：</h4>
                             <ul className="list-disc pl-6 text-white space-y-1">
                                 <li>當市場缺乏賣單時，市價買單可從系統 IPO 購買</li>
-                                <li>IPO 價格固定為 20 點/股，提供市場流動性</li>
+                                <li>IPO 價格為 {marketData.loading ? '...' : marketData.ipoPrice} 點/股，提供市場流動性</li>
                                 <li><span className="text-yellow-400">⚠️ IPO 股數有限</span>，售完後市價買單會失敗</li>
+                                <li>IPO 在五檔報價中會顯示為系統賣單</li>
+                                <li>管理員可動態調整 IPO 剩餘股數和價格</li>
                             </ul>
                         </div>
                     </div>
@@ -162,7 +262,7 @@ export default function TutorialPage() {
                             使用 /stock
                             指令進入交易介面，選擇市價買入。
                         </li>
-                        <li>用當下市場「賣一價」直接買入，若無賣單則從 IPO 以 20 點/股購買。</li>
+                        <li>用當下市場「賣一價」直接買入，若無賣單則從 IPO 以 {marketData.loading ? '...' : marketData.ipoPrice} 點/股購買。</li>
                         <li>
                             系統會顯示「你花了多少點數，買了幾張」。
                         </li>
@@ -276,7 +376,7 @@ export default function TutorialPage() {
                     </p>
                     <ul className="list-disc pl-6 text-white">
                         <li>可以轉點數給其他人。</li>
-                        <li>會抽取 5% 手續費。</li>
+                        <li>會抽取 {marketData.loading ? '...' : marketData.transferFeeRate}% 手續費（最低 {marketData.loading ? '...' : marketData.transferMinFee} 點）。</li>
                     </ul>
                 </div>
 
@@ -330,7 +430,7 @@ export default function TutorialPage() {
                                     即時價格
                                 </td>
                                 <td className="px-4 py-2 text-white">
-                                    近五筆成交平均價格
+                                    最新成交價格
                                 </td>
                             </tr>
                             <tr>
@@ -365,8 +465,33 @@ export default function TutorialPage() {
                     🕒 交易時間？
                 </h2>
                 <p className="mb-8 text-white">
-                    每天限定時段可交易，可在網站首頁查看。
+                    每天限定時段可交易，可在網站首頁查看。管理員也可手動開關市場。
                 </p>
+
+                <h2 className="mb-4 text-2xl font-bold text-[#82bee2]">
+                    📊 漲跌限制機制
+                </h2>
+                <div className="mb-8 rounded-lg bg-[#0d2543] border border-[#82bee2] p-6">
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="mb-2 font-semibold text-[#a8d4f0]">價格限制：</h4>
+                            <ul className="list-disc pl-6 text-white space-y-1">
+                                <li>預設漲跌限制為 <strong>{marketData.loading ? '...' : marketData.tradingLimit}%</strong>（{marketData.loading ? '...' : marketData.tradingLimit * 100} basis points）</li>
+                                <li>基準價格基於最近成交價格計算</li>
+                                <li>超出限制的訂單會暫停，狀態變為 <span className="text-yellow-400">"pending_limit"</span></li>
+                                <li>當價格回到允許範圍內時，訂單會自動重新啟用</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="mb-2 font-semibold text-[#a8d4f0]">撮合頻率：</h4>
+                            <ul className="list-disc pl-6 text-white space-y-1">
+                                <li>自動撮合：每 60 秒執行一次</li>
+                                <li>觸發撮合：下單後立即嘗試撮合</li>
+                                <li>管理員可手動觸發撮合</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
                 <h2 className="mb-4 text-2xl font-bold text-[#82bee2]">
                     🏆 排行榜怎麼算？
@@ -453,8 +578,8 @@ export default function TutorialPage() {
                             ❓ 我可以轉點數給別人嗎？
                         </h3>
                         <p className="text-white">
-                            可以。使用 /transfer 指令，會抽取 5%
-                            手續費。
+                            可以。使用 /transfer 指令，會抽取 {marketData.loading ? '...' : marketData.transferFeeRate}%
+                            手續費（最低 {marketData.loading ? '...' : marketData.transferMinFee} 點）。
                         </p>
                     </div>
 
@@ -470,7 +595,7 @@ export default function TutorialPage() {
                             ❓ 即時股價如何計算？
                         </h3>
                         <p className="text-white">
-                            根據最後五筆的平均成交價。
+                            顯示價格為最新成交價，平均價格為最近 5 筆成交的平均值。
                         </p>
                     </div>
 
@@ -484,6 +609,59 @@ export default function TutorialPage() {
                         </p>
                         <p className="text-white">
                             如果你持有的股票很多的話確實容易控制股價。
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="mb-2 text-lg font-semibold text-[#82bee2]">
+                            ❓ 什麼是 IPO？
+                        </h3>
+                        <p className="text-white">
+                            IPO 是系統初次公開發行，當市場沒有賣單時，市價買單會自動從 IPO 以 {marketData.loading ? '...' : marketData.ipoPrice} 點/股購買。
+                        </p>
+                        <p className="text-white">
+                            <span className="text-yellow-400">注意：</span>IPO 股數有限，售完後只能透過限價單與其他玩家交易。
+                        </p>
+                        {!marketData.loading && marketData.ipoSharesRemaining !== null && (
+                            <p className="text-white">
+                                <span className="text-blue-400">目前 IPO 剩餘：</span>{marketData.ipoSharesRemaining.toLocaleString()} 股
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <h3 className="mb-2 text-lg font-semibold text-[#82bee2]">
+                            ❓ 為什麼我的訂單沒有立即成交？
+                        </h3>
+                        <p className="text-white">
+                            可能原因：
+                        </p>
+                        <ul className="list-disc pl-6 text-white">
+                            <li>限價單價格不符合市場條件</li>
+                            <li>訂單超出漲跌限制被暫停（狀態：pending_limit）</li>
+                            <li>市場流動性不足</li>
+                            <li>系統正在等待下次撮合週期（最長 60 秒）</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 className="mb-2 text-lg font-semibold text-[#82bee2]">
+                            ❓ 什麼是部分成交？
+                        </h3>
+                        <p className="text-white">
+                            當你的訂單數量大於市場可供應量時，會發生部分成交。
+                        </p>
+                        <p className="text-white">
+                            例如：你想買 100 股，但市場只有 60 股可賣，你會先買到 60 股，剩下 40 股繼續掛單等待。
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="mb-2 text-lg font-semibold text-[#82bee2]">
+                            ❓ 如何取消掛單？
+                        </h3>
+                        <p className="text-white">
+                            使用 Telegram Bot 的取消功能，或透過 /stock 指令查看並取消待成交的訂單。
                         </p>
                     </div>
                 </div>
