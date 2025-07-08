@@ -63,7 +63,7 @@ class MatchingScheduler:
             logger.debug(f"Matching already in progress, skipping {reason}")
             return
             
-        # 創建異步任務，不等待完成
+        # 建立異步任務，不等待完成
         asyncio.create_task(self.trigger_matching(reason))
         
     async def trigger_matching(self, reason: str = "manual_trigger"):

@@ -98,17 +98,27 @@ export const SystemConfig = ({ token }) => {
                 ) {
                     const formattedTimes =
                         hours.value.tradingHours.map((slot) => {
-                            const startDate = new Date(
-                                slot.start * 1000,
-                            );
+                            // 使用 UTC 時間戳，轉換為台北時間 (UTC+8)
+                            const startDate = new Date(slot.start * 1000);
                             const endDate = new Date(slot.end * 1000);
+                            
+                            // 格式化為 HH:MM，確保時區正確
+                            const startTime = startDate.toLocaleTimeString('en-GB', {
+                                timeZone: 'Asia/Taipei',
+                                hour12: false,
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            const endTime = endDate.toLocaleTimeString('en-GB', {
+                                timeZone: 'Asia/Taipei', 
+                                hour12: false,
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            
                             return {
-                                start: startDate
-                                    .toTimeString()
-                                    .slice(0, 5), // 轉 HH:MM Format
-                                end: endDate
-                                    .toTimeString()
-                                    .slice(0, 5),
+                                start: startTime,
+                                end: endTime,
                             };
                         });
                     setMarketTimesForm({
@@ -308,13 +318,13 @@ export const SystemConfig = ({ token }) => {
             }
 
             const openTime = validSessions.map((time) => {
+                // 建立今天的日期，但使用 UTC 時間來避免時區問題
                 const today = new Date();
-                const startTime = new Date(
-                    today.toDateString() + " " + time.start,
-                );
-                const endTime = new Date(
-                    today.toDateString() + " " + time.end,
-                );
+                const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+                
+                // 建立台北時間的時間戳
+                const startTime = new Date(`${dateStr}T${time.start}:00+08:00`);
+                const endTime = new Date(`${dateStr}T${time.end}:00+08:00`);
 
                 return {
                     start: Math.floor(startTime.getTime() / 1000),
@@ -324,7 +334,11 @@ export const SystemConfig = ({ token }) => {
 
             await updateMarketTimes(token, openTime);
             showNotification("交易時間更新成功！", "success");
-            await loadConfigs(); // 重新載入設定
+            
+            // 直接更新 tradingHours 狀態，避免重新載入導致表單重置
+            setTradingHours({
+                tradingHours: openTime
+            });
         } catch (error) {
             showNotification(
                 `更新交易時間失敗: ${error.message}`,

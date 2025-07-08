@@ -46,7 +46,7 @@ async def telegram_oauth(
                 message=message
             )
         
-        # 創建 JWT Token
+        # 建立 JWT Token
         token = create_user_token(user_info["id"], auth_request.id)
         
         return TelegramOAuthResponse(

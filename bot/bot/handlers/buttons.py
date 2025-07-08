@@ -266,9 +266,9 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
             pvp_manager = get_pvp_manager()
             challenge_info = pvp_manager.get_challenge_info(challenge_id)
             
-            # 驗證使用者是否為挑戰的創建者
+            # 驗證使用者是否為挑戰的建立者
             if challenge_info and challenge_info.get("user_id") != user_id:
-                await query.edit_message_text("❌ 你不是這個挑戰的創建者")
+                await query.edit_message_text("❌ 你不是這個挑戰的建立者")
                 return
             
             if challenge_info:

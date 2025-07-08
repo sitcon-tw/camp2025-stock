@@ -310,7 +310,7 @@ export const AnnouncementManagement = ({ token }) => {
                             <div className="text-sm text-[#557797]">
                                 {showDeleted 
                                     ? "沒有找到已刪除的公告" 
-                                    : "點擊上方「發布公告」按鈕來創建第一個公告"
+                                    : "點擊上方「發布公告」按鈕來建立第一個公告"
                                 }
                             </div>
                         </div>
