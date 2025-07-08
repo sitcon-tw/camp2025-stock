@@ -1693,10 +1693,10 @@ export default function Dashboard() {
                         {/* 收款人資訊確認 */}
                         <div className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
                             <div className="flex items-center gap-3">
-                                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#469FD2]/30 text-lg font-bold text-[#469FD2]">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#469FD2] to-[#357AB8] text-lg font-bold text-white shadow-lg ring-2 ring-[#469FD2]/50">
                                     {quickTransferData.username?.substring(0, 1)?.toUpperCase() || "U"}
                                 </div>
-                                <div>
+                                <div className="flex-1">
                                     <p className="font-medium text-[#92cbf4]">轉帳給</p>
                                     <p className="text-xl font-bold text-white">
                                         {quickTransferData.username}
