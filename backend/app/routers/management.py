@@ -132,7 +132,8 @@ async def get_my_role_info(
         "can_give_points": Permission.GIVE_POINTS in user_permissions,
         "can_create_announcement": Permission.CREATE_ANNOUNCEMENT in user_permissions,
         "can_view_all_users": Permission.VIEW_ALL_USERS in user_permissions,
-        "can_manage_system": Permission.SYSTEM_ADMIN in user_permissions
+        "can_manage_system": Permission.SYSTEM_ADMIN in user_permissions,
+        "can_generate_qrcode": Permission.GENERATE_QRCODE in user_permissions
     }
 
 @router.get(

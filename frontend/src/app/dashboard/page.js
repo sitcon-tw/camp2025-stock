@@ -1182,7 +1182,13 @@ export default function Dashboard() {
                   userPermissions.permissions.includes("manage_market") ||
                   userPermissions.permissions.includes("system_admin") ||
                   userPermissions.permissions.includes("give_points") ||
-                  userPermissions.permissions.includes("create_announcement")) && (
+                  userPermissions.permissions.includes("create_announcement") ||
+                  userPermissions.permissions.includes("generate_qrcode") ||
+                  userPermissions.can_give_points ||
+                  userPermissions.can_create_announcement ||
+                  userPermissions.can_view_all_users ||
+                  userPermissions.can_manage_system ||
+                  userPermissions.can_generate_qrcode) && (
                     <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
                         <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                             管理功能

@@ -11,6 +11,13 @@ class UserRoleInfo(BaseModel):
     role: Role = Field(..., description="使用者角色")
     permissions: List[Permission] = Field(..., description="使用者權限列表")
     
+    # 便利欄位：可以直接檢查特定權限
+    can_give_points: bool = Field(default=False, description="是否可以發放點數")
+    can_create_announcement: bool = Field(default=False, description="是否可以發布公告")
+    can_view_all_users: bool = Field(default=False, description="是否可以查看所有用戶")
+    can_manage_system: bool = Field(default=False, description="是否可以管理系統")
+    can_generate_qrcode: bool = Field(default=False, description="是否可以生成QR Code")
+    
     class Config:
         use_enum_values = True
 

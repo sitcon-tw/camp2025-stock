@@ -46,7 +46,12 @@ class RBACManagementService:
                     user_id="admin",
                     username="系統管理員",
                     role=admin_role,
-                    permissions=admin_permissions
+                    permissions=admin_permissions,
+                    can_give_points=Permission.GIVE_POINTS in admin_permissions,
+                    can_create_announcement=Permission.CREATE_ANNOUNCEMENT in admin_permissions,
+                    can_view_all_users=Permission.VIEW_ALL_USERS in admin_permissions,
+                    can_manage_system=Permission.SYSTEM_ADMIN in admin_permissions,
+                    can_generate_qrcode=Permission.GENERATE_QRCODE in admin_permissions
                 )
             
             # 查詢使用者資料
@@ -79,7 +84,12 @@ class RBACManagementService:
                 user_id=str(user["_id"]),
                 username=user.get("name", user.get("id", "未知")),
                 role=user_role,
-                permissions=user_permissions
+                permissions=user_permissions,
+                can_give_points=Permission.GIVE_POINTS in user_permissions,
+                can_create_announcement=Permission.CREATE_ANNOUNCEMENT in user_permissions,
+                can_view_all_users=Permission.VIEW_ALL_USERS in user_permissions,
+                can_manage_system=Permission.SYSTEM_ADMIN in user_permissions,
+                can_generate_qrcode=Permission.GENERATE_QRCODE in user_permissions
             )
             
         except Exception as e:
