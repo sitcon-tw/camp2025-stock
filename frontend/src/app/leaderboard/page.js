@@ -186,11 +186,11 @@ export default function Leaderboard() {
         return Array.from(teamMap.values())
             .map((team) => {
                 const isBonus = bonusTeams.includes(team.teamName);
-                const multiplier = isBonus ? 1.5 : 1;
+                const totalScore = team.totalPoints + team.totalStockValue;
                 
                 return {
                     ...team,
-                    totalValue: (team.totalPoints + team.totalStockValue) * multiplier,
+                    totalValue: isBonus ? (totalScore / 7 * 8) : totalScore,
                 };
             })
             .sort((a, b) => b.totalValue - a.totalValue);
