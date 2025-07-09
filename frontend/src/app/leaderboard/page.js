@@ -48,7 +48,14 @@ function RankingItem({ rank, user, isGroup = false }) {
 
             <div className="ml-3 flex-1">
                 <h3 className="mb-1 text-lg font-semibold text-[#AFE1F5]">
-                    {isGroup ? user.teamName : user.username}
+                    {isGroup ? user.teamName : (
+                        <>
+                            {user.username}{" "}
+                            <span className="text-sm font-normal text-gray-400">
+                                ({user.team || "未分組"})
+                            </span>
+                        </>
+                    )}
                 </h3>
                 {isGroup ? (
                     <div className="text-sm text-gray-300">

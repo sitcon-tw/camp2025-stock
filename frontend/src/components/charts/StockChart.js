@@ -319,6 +319,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
             legend: { display: false },
             tooltip: {
