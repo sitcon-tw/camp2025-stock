@@ -64,6 +64,8 @@ class Collections:
     MARKET_CONFIG = "market_config"
     PVP_CHALLENGES = "pvp_challenges"
     QR_CODES = "qr_codes"
+    ESCROWS = "escrows"
+    ESCROW_LOGS = "escrow_logs"
     
     @classmethod
     def all_collections(cls) -> list:
@@ -72,7 +74,7 @@ class Collections:
             cls.USERS, cls.GROUPS, cls.POINT_LOGS,
             cls.STOCKS, cls.STOCK_ORDERS, cls.TRADES,
             cls.ANNOUNCEMENTS, cls.MARKET_CONFIG, cls.PVP_CHALLENGES,
-            cls.QR_CODES
+            cls.QR_CODES, cls.ESCROWS, cls.ESCROW_LOGS
         ]
 
 
@@ -110,6 +112,18 @@ async def init_database_indexes():
         
         # market_config
         await database[Collections.MARKET_CONFIG].create_index("type", unique=True)
+        
+        # escrows
+        await database[Collections.ESCROWS].create_index("user_id")
+        await database[Collections.ESCROWS].create_index("status")
+        await database[Collections.ESCROWS].create_index("created_at")
+        await database[Collections.ESCROWS].create_index("reference_id")
+        await database[Collections.ESCROWS].create_index("type")
+        
+        # escrow_logs
+        await database[Collections.ESCROW_LOGS].create_index("user_id")
+        await database[Collections.ESCROW_LOGS].create_index("created_at")
+        await database[Collections.ESCROW_LOGS].create_index("escrow_id")
         
         logger.info("Database indexes created successfully")
         

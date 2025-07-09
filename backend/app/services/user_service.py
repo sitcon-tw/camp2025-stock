@@ -26,6 +26,7 @@ import os
 import requests
 import time
 from collections import defaultdict
+from app.core.exceptions import InsufficientPointsException, EscrowException
 
 logger = logging.getLogger(__name__)
 
@@ -478,11 +479,48 @@ class UserService:
                 execution_result = await self._execute_market_order(user_oid, order_doc)
                 return execution_result
             else:
-                # 限價單可以直接掛單等待撮合，不需要檢查即時流動性
+                # 限價單需要先進行圈存，確保有足夠資金
+                escrow_id = None
+                if request.side == "buy":
+                    from app.services.escrow_service import get_escrow_service
+                    escrow_service = get_escrow_service()
+                    
+                    # 計算需要圈存的最大金額
+                    max_cost = request.quantity * request.price
+                    
+                    try:
+                        # 創建圈存記錄
+                        escrow_id = await escrow_service.create_escrow(
+                            user_id=user_oid,
+                            amount=max_cost,
+                            escrow_type="stock_order",
+                            reference_id=None,  # 將在訂單創建後更新
+                            metadata={
+                                "side": request.side,
+                                "quantity": request.quantity,
+                                "price": request.price,
+                                "order_type": request.order_type
+                            }
+                        )
+                        
+                        # 在訂單文檔中記錄圈存ID
+                        order_doc["escrow_id"] = escrow_id
+                        
+                        logger.info(f"Escrow created for buy order: {escrow_id}, amount: {max_cost}")
+                    except Exception as e:
+                        logger.error(f"Failed to create escrow for buy order: {e}")
+                        raise InsufficientPointsException(f"無法圈存資金：{str(e)}")
                 
                 # 限價單加入訂單簿（帶重試機制）
                 result = await self._insert_order_with_retry(order_doc)
                 order_id = str(result.inserted_id)
+                
+                # 更新圈存記錄的reference_id
+                if escrow_id:
+                    await self.db[Collections.ESCROWS].update_one(
+                        {"_id": ObjectId(escrow_id)},
+                        {"$set": {"reference_id": order_id}}
+                    )
                 
                 if limit_exceeded:
                     logger.info(f"Limit order queued due to price limit: user {user_oid}, {request.side} {request.quantity} shares @ {request.price}, order_id: {order_id}")
@@ -641,28 +679,37 @@ class UserService:
         fee = max(fee_config["min_fee"], int(request.amount * fee_config["fee_rate"] / 100.0))
         total_deduct = request.amount + fee
         
-        # 檢查餘額
-        if from_user.get("points", 0) < total_deduct:
-            return TransferResponse(
-                success=False,
-                message=f"點數不足（需要 {total_deduct} 點，含手續費 {fee}）"
-            )
+        # 使用圈存系統執行轉帳
+        from app.services.escrow_service import get_escrow_service
+        escrow_service = get_escrow_service()
         
-        # 執行轉帳
         transaction_id = str(uuid.uuid4())
         
-        # 安全扣除傳送方點數
-        deduction_result = await self._safe_deduct_points(
-            user_id=from_user_oid,
-            amount=total_deduct,
-            operation_note=f"轉帳給 {request.to_username}：{request.amount} 點 (含手續費 {fee} 點)",
-            session=session
-        )
-        
-        if not deduction_result['success']:
+        try:
+            # 創建圈存記錄
+            escrow_id = await escrow_service.create_escrow(
+                user_id=from_user_oid,
+                amount=total_deduct,
+                escrow_type="transfer",
+                reference_id=transaction_id,
+                metadata={
+                    "to_username": request.to_username,
+                    "to_user_id": str(to_user["_id"]),
+                    "transfer_amount": request.amount,
+                    "fee": fee,
+                    "total_deduct": total_deduct
+                }
+            )
+            
+            # 立即完成圈存（轉帳是即時的）
+            await escrow_service.complete_escrow(escrow_id, total_deduct)
+            logger.info(f"Transfer escrow completed: {escrow_id}, amount: {total_deduct}")
+            
+        except Exception as e:
+            logger.error(f"Failed to create/complete transfer escrow: {e}")
             return TransferResponse(
                 success=False,
-                message=deduction_result['message']
+                message=f"轉帳圈存失敗：{str(e)}"
             )
         
         # 增加接收方點數
@@ -1626,22 +1673,45 @@ class UserService:
             # 更新使用者資產
             logger.info(f"Updating user assets: user_id={user_oid}, deducting {trade_amount} points, adding {quantity} stocks")
             
-            # 安全扣除使用者點數
-            deduction_result = await self._safe_deduct_points(
-                user_id=user_oid,
-                amount=trade_amount,
-                operation_note=f"市價買單成交：{quantity} 股 @ {price} 元",
-                session=session
-            )
+            # 為市價買單創建即時圈存並完成交易
+            if side == "buy":
+                from app.services.escrow_service import get_escrow_service
+                escrow_service = get_escrow_service()
+                
+                try:
+                    # 創建即時圈存
+                    escrow_id = await escrow_service.create_escrow(
+                        user_id=user_oid,
+                        amount=trade_amount,
+                        escrow_type="market_order",
+                        reference_id=str(result.inserted_id),
+                        metadata={
+                            "side": side,
+                            "quantity": quantity,
+                            "price": current_price,
+                            "order_type": "market"
+                        }
+                    )
+                    
+                    # 立即完成圈存
+                    await escrow_service.complete_escrow(escrow_id, trade_amount)
+                    logger.info(f"Market buy order escrow completed: {escrow_id}, consumed: {trade_amount}")
+                    
+                    # 更新訂單記錄圈存ID
+                    await self.db[Collections.STOCK_ORDERS].update_one(
+                        {"_id": result.inserted_id},
+                        {"$set": {"escrow_id": escrow_id}},
+                        session=session
+                    )
+                    
+                except Exception as e:
+                    logger.error(f"Failed to create/complete escrow for market buy order: {e}")
+                    raise Exception(f"市價買單圈存失敗：{str(e)}")
+            else:
+                # 賣單不需要圈存，不扣除點數
+                pass
             
-            if not deduction_result['success']:
-                logger.error(f"Point deduction failed: {deduction_result['message']}")
-                return StockOrderResponse(
-                    success=False,
-                    message=deduction_result['message']
-                )
-            
-            # 增加股票持有
+            # 買單增加股票持有
             stocks_update_result = await self.db[Collections.STOCKS].update_one(
                 {"user_id": user_oid},
                 {"$inc": {"stock_amount": quantity}},
@@ -2055,19 +2125,37 @@ class UserService:
                 logger.info(f"✅ IPO stock updated: reduced by {trade_quantity} shares")
             
             # 更新使用者資產
-            # 買方：安全扣除點數
-            deduction_result = await self._safe_deduct_points(
-                user_id=buy_order["user_id"],
-                amount=trade_amount,
-                operation_note=f"訂單撮合成交：{trade_quantity} 股 @ {trade_price} 元",
-                session=session
-            )
+            # 買方：使用圈存系統處理點數扣除
+            escrow_id = buy_order.get("escrow_id")
+            if escrow_id:
+                # 使用圈存系統完成交易
+                from app.services.escrow_service import get_escrow_service
+                escrow_service = get_escrow_service()
+                
+                try:
+                    # 完成圈存，實際扣除交易金額
+                    await escrow_service.complete_escrow(escrow_id, trade_amount)
+                    logger.info(f"Escrow completed for buy order: {escrow_id}, consumed: {trade_amount}")
+                except Exception as e:
+                    buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
+                    buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
+                    logger.error(f"Order matching escrow completion failed for user {buy_username} (ID: {buy_order['user_id']}): {e}")
+                    raise Exception(f"訂單撮合失敗 - 圈存完成失敗：使用者 {buy_username}，{str(e)}")
+            else:
+                # 後備方案：使用原有的安全扣除點數方式
+                deduction_result = await self._safe_deduct_points(
+                    user_id=buy_order["user_id"],
+                    amount=trade_amount,
+                    operation_note=f"訂單撮合成交：{trade_quantity} 股 @ {trade_price} 元",
+                    session=session
+                )
+                
+                if not deduction_result['success']:
+                    buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
+                    buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
+                    logger.error(f"Order matching point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
+                    raise Exception(f"訂單撮合失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
             
-            if not deduction_result['success']:
-                buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
-                buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
-                logger.error(f"Order matching point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
-                raise Exception(f"訂單撮合失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
             await self.db[Collections.STOCKS].update_one(
                 {"user_id": buy_order["user_id"]},
                 {"$inc": {"stock_amount": trade_quantity}},

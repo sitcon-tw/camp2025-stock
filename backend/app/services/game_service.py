@@ -86,7 +86,7 @@ class GameService:
         from app.schemas.bot import PVPResponse
         
         try:
-            # 檢查發起者是否存在且有足夠點數
+            # 檢查發起者是否存在
             user = await self.db[Collections.USERS].find_one({"telegram_id": from_user})
             if not user:
                 return PVPResponse(
@@ -94,10 +94,38 @@ class GameService:
                     message="使用者不存在，請先註冊"
                 )
             
-            if user.get("points", 0) < amount:
+            # 使用圈存系統預先圈存挑戰者的點數
+            from app.services.escrow_service import get_escrow_service
+            from app.core.exceptions import InsufficientPointsException
+            
+            escrow_service = get_escrow_service()
+            
+            try:
+                # 創建圈存記錄
+                escrow_id = await escrow_service.create_escrow(
+                    user_id=user["_id"],
+                    amount=amount,
+                    escrow_type="pvp_battle",
+                    reference_id=None,  # 將在挑戰創建後更新
+                    metadata={
+                        "challenger": from_user,
+                        "challenger_name": user.get("name", "未知使用者"),
+                        "chat_id": chat_id
+                    }
+                )
+                
+                logger.info(f"PVP challenge escrow created: {escrow_id}, amount: {amount}")
+                
+            except InsufficientPointsException as e:
                 return PVPResponse(
                     success=False,
-                    message=f"點數不足！你的點數：{user.get('points', 0)}，需要：{amount}"
+                    message=f"點數不足！{str(e)}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to create PVP challenge escrow: {e}")
+                return PVPResponse(
+                    success=False,
+                    message="圈存創建失敗，請稍後再試"
                 )
             
             # 檢查是否已有進行中的挑戰
@@ -140,10 +168,17 @@ class GameService:
                 "chat_id": chat_id,
                 "status": "pending",
                 "created_at": datetime.now(timezone.utc),
-                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)  # 5分鐘過期
+                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5),  # 5分鐘過期
+                "escrow_id": escrow_id  # 記錄圈存ID
             }
             
             await self.db[Collections.PVP_CHALLENGES].insert_one(challenge_doc)
+            
+            # 更新圈存記錄的reference_id
+            await self.db[Collections.ESCROWS].update_one(
+                {"_id": ObjectId(escrow_id)},
+                {"$set": {"reference_id": str(challenge_oid)}}
+            )
             
             return PVPResponse(
                 success=True,
@@ -324,19 +359,46 @@ class GameService:
                 winner_name = challenge["challenger_name"]
                 loser_name = accepter.get("name", "未知使用者")
                 
-                # 轉移點數 - 使用安全扣除
-                deduction_result = await self._safe_deduct_points(
-                    user_id=accepter["_id"],
-                    amount=amount,
-                    operation_note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
-                )
+                # 使用圈存系統處理點數轉移
+                from app.services.escrow_service import get_escrow_service
+                escrow_service = get_escrow_service()
                 
-                if not deduction_result['success']:
-                    # 點數扣除失敗，應該不會發生，但作為安全措施
-                    logger.error(f"PVP game point deduction failed: {deduction_result['message']}")
+                # 取消挑戰者的圈存（挑戰者勝利，退還圈存金額）
+                challenger_escrow_id = challenge.get("escrow_id")
+                if challenger_escrow_id:
+                    try:
+                        await escrow_service.cancel_escrow(challenger_escrow_id, "challenger_won")
+                        logger.info(f"PVP challenger escrow cancelled: {challenger_escrow_id}, challenger won")
+                    except Exception as e:
+                        logger.error(f"Failed to cancel PVP challenger escrow: {e}")
+                        return PVPResponse(
+                            success=False,
+                            message=f"遊戲結算失敗：挑戰者圈存取消失敗"
+                        )
+                
+                # 為接受者創建圈存並立即完成（接受者輸了）
+                try:
+                    accepter_escrow_id = await escrow_service.create_escrow(
+                        user_id=accepter["_id"],
+                        amount=amount,
+                        escrow_type="pvp_battle",
+                        reference_id=str(challenge["_id"]),
+                        metadata={
+                            "accepter": from_user,
+                            "accepter_name": accepter.get("name", "未知使用者"),
+                            "game_result": "accepter_lost"
+                        }
+                    )
+                    
+                    # 立即完成圈存（接受者失敗）
+                    await escrow_service.complete_escrow(accepter_escrow_id, amount)
+                    logger.info(f"PVP accepter escrow completed: {accepter_escrow_id}, lost: {amount}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to create/complete PVP accepter escrow: {e}")
                     return PVPResponse(
                         success=False,
-                        message=f"遊戲結算失敗：{deduction_result['message']}"
+                        message=f"遊戲結算失敗：接受者圈存失敗"
                     )
                 
                 # 增加勝利者點數
@@ -372,20 +434,22 @@ class GameService:
                 winner_name = accepter.get("name", "未知使用者")
                 loser_name = challenge["challenger_name"]
                 
-                # 轉移點數 - 使用安全扣除
-                deduction_result = await self._safe_deduct_points(
-                    user_id=challenger_user["_id"],
-                    amount=amount,
-                    operation_note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
-                )
+                # 使用圈存系統處理點數轉移
+                from app.services.escrow_service import get_escrow_service
+                escrow_service = get_escrow_service()
                 
-                if not deduction_result['success']:
-                    # 點數扣除失敗，應該不會發生，但作為安全措施
-                    logger.error(f"PVP game point deduction failed: {deduction_result['message']}")
-                    return PVPResponse(
-                        success=False,
-                        message=f"遊戲結算失敗：{deduction_result['message']}"
-                    )
+                # 完成挑戰者的圈存（挑戰者輸了）
+                challenger_escrow_id = challenge.get("escrow_id")
+                if challenger_escrow_id:
+                    try:
+                        await escrow_service.complete_escrow(challenger_escrow_id, amount)
+                        logger.info(f"PVP challenger escrow completed: {challenger_escrow_id}, challenger lost: {amount}")
+                    except Exception as e:
+                        logger.error(f"Failed to complete PVP challenger escrow: {e}")
+                        return PVPResponse(
+                            success=False,
+                            message=f"遊戲結算失敗：挑戰者圈存完成失敗"
+                        )
                 
                 # 增加勝利者點數
                 await self.db[Collections.USERS].update_one(
@@ -416,6 +480,18 @@ class GameService:
                 )
                 
             else:  # tie
+                # 平手時取消圈存
+                from app.services.escrow_service import get_escrow_service
+                escrow_service = get_escrow_service()
+                
+                challenger_escrow_id = challenge.get("escrow_id")
+                if challenger_escrow_id:
+                    try:
+                        await escrow_service.cancel_escrow(challenger_escrow_id, "game_tie")
+                        logger.info(f"PVP challenger escrow cancelled due to tie: {challenger_escrow_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to cancel PVP challenger escrow on tie: {e}")
+                
                 return PVPResponse(
                     success=True,
                     message=f"🤝 平手！\n{self._get_choice_emoji(challenger_choice)} {challenge['challenger_name']} 出 {self._get_choice_name(challenger_choice)}\n{self._get_choice_emoji(choice)} {accepter.get('name', '未知使用者')} 出 {self._get_choice_name(choice)}\n\n沒有點數變動！",

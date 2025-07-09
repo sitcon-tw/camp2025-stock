@@ -52,3 +52,11 @@ class InsufficientPointsException(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=detail
         )
+
+# 圈存異常
+class EscrowException(HTTPException):
+    def __init__(self, detail: str = "Escrow operation failed"):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail
+        )

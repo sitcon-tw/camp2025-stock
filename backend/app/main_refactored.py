@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache
+from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, admin_escrow
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -93,6 +93,12 @@ app.include_router(
     rbac.router, 
     prefix="/api/rbac", 
     tags=["RBAC APIs - 角色權限管理"]
+)
+
+app.include_router(
+    admin_escrow.router, 
+    prefix="/api", 
+    tags=["Admin Escrow - 圈存系統管理"]
 )
 
 app.include_router(
