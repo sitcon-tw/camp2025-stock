@@ -155,6 +155,7 @@ export default function Leaderboard() {
 
     const processGroupLeaderboard = (individualData) => {
         const teamMap = new Map();
+        const bonusTeams = ["第二組", "第七組", "第八組"];
 
         individualData.forEach((user) => {
             const teamName = user.team || "未分組";
@@ -176,10 +177,15 @@ export default function Leaderboard() {
         });
 
         return Array.from(teamMap.values())
-            .map((team) => ({
-                ...team,
-                totalValue: team.totalPoints + team.totalStockValue,
-            }))
+            .map((team) => {
+                const isBonus = bonusTeams.includes(team.teamName);
+                const multiplier = isBonus ? 1.5 : 1;
+                
+                return {
+                    ...team,
+                    totalValue: (team.totalPoints + team.totalStockValue) * multiplier,
+                };
+            })
             .sort((a, b) => b.totalValue - a.totalValue);
     };
 
