@@ -244,16 +244,32 @@ export default function Dashboard() {
                         console.log('QR Code 掃描結果:', result.data);
                         try {
                             const qrData = JSON.parse(result.data);
+                            console.log('解析後的 QR Data:', qrData);
+                            console.log('Type:', qrData.type);
+                            console.log('ID:', qrData.id);
+                            console.log('Username:', qrData.username);
+                            
                             if (qrData.type === 'transfer' && (qrData.id || qrData.username)) {
+                                console.log('匹配到 transfer 類型，ID 或 username 存在');
                                 // 嘗試獲取收款人的完整資訊（包括大頭照）
                                 fetchRecipientInfo(qrData);
                             } else if (qrData.type === 'points_redeem' && qrData.id && qrData.points) {
+                                console.log('匹配到 points_redeem 類型');
                                 // 處理點數兌換 QR Code
                                 handlePointsRedemption(result.data);
                             } else {
+                                console.log('QR Code 不符合任何預期格式');
+                                console.log('條件檢查結果:', {
+                                    isTransfer: qrData.type === 'transfer',
+                                    hasIdOrUsername: !!(qrData.id || qrData.username),
+                                    isPointsRedeem: qrData.type === 'points_redeem',
+                                    hasRequiredFields: !!(qrData.id && qrData.points)
+                                });
                                 setTransferError('無效的 QR Code');
                             }
                         } catch (e) {
+                            console.error('QR Code 解析失敗:', e);
+                            console.error('原始數據:', result.data);
                             setTransferError('QR Code 格式錯誤');
                         }
                     },
@@ -379,6 +395,7 @@ export default function Dashboard() {
     // 獲取收款人資訊
     const fetchRecipientInfo = async (qrData) => {
         try {
+            console.log('開始處理收款人資訊:', qrData);
             const token = localStorage.getItem('userToken');
             if (!token) {
                 throw new Error('未找到認證令牌');
@@ -390,24 +407,33 @@ export default function Dashboard() {
             // 設定基本資料（作為fallback）
             // 優先使用 ID，如果 ID 不存在或無效，則使用 username
             const preferredIdentifier = qrData.id || qrData.username;
+            console.log('使用識別符:', preferredIdentifier);
+            
             const basicRecipientData = {
                 username: String(preferredIdentifier),
                 id: qrData.id ? String(qrData.id) : '',
                 photo_url: null
             };
 
+            console.log('設定基本收款人資料:', basicRecipientData);
             setQuickTransferData(basicRecipientData);
             setShowQuickTransfer(true);
 
             // 嘗試獲取收款人的大頭照和顯示名稱
             try {
+                console.log('正在通過 API 獲取收款人詳細資訊...');
                 const avatarResult = await getUserAvatar(token, preferredIdentifier);
+                console.log('API 返回結果:', avatarResult);
+                
                 if (avatarResult) {
-                    setQuickTransferData(prev => ({
-                        ...prev,
-                        username: avatarResult.display_name || prev.username, // 使用 API 返回的顯示名稱
+                    const updatedData = {
+                        ...basicRecipientData,
+                        username: avatarResult.display_name || basicRecipientData.username, // 使用 API 返回的顯示名稱
                         photo_url: avatarResult.photo_url
-                    }));
+                    };
+                    console.log('更新收款人資料:', updatedData);
+                    setQuickTransferData(updatedData);
+                    
                     console.log('成功獲取收款人資訊:', {
                         display_name: avatarResult.display_name,
                         photo_url: avatarResult.photo_url
@@ -416,6 +442,7 @@ export default function Dashboard() {
             } catch (avatarError) {
                 console.log('獲取收款人資訊失敗:', avatarError);
                 // 保持使用基本資料，不顯示錯誤給使用者
+                console.log('將使用基本資料繼續:', basicRecipientData);
             }
 
         } catch (error) {
