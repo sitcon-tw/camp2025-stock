@@ -1688,11 +1688,20 @@ export default function Dashboard() {
                 <div className="space-y-4 text-center">
                     <div className="mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
                         <QRCode
-                            value={JSON.stringify({
-                                type: 'transfer',
-                                username: user?.username || '',
-                                id: authData?.id || ''
-                            })}
+                            value={(() => {
+                                const qrData = {
+                                    type: 'transfer',
+                                    username: user?.username || user?.name || 'unknown',
+                                    id: authData?.id || user?.id || 'unknown'
+                                };
+                                const qrString = JSON.stringify(qrData);
+                                console.log('生成 QR Code 數據:', qrData);
+                                console.log('QR Code 字符串:', qrString);
+                                console.log('QR Code 字符串長度:', qrString.length);
+                                console.log('user 對象:', user);
+                                console.log('authData 對象:', authData);
+                                return qrString;
+                            })()}
                             size={200}
                             bgColor="#ffffff"
                             fgColor="#000000"
