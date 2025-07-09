@@ -202,7 +202,7 @@ class AdminService:
                 "title": request.title,
                 "message": request.message,
                 "broadcast": request.broadcast,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
                 "created_by": "admin"
             }
 
@@ -225,13 +225,17 @@ class AdminService:
                 }
                 logger.info(
                     f"Broadcasting announcement: {request.title} - {request.message} to Telegram Bot API {CAMP_TELEGRAM_BOT_API_URL}")
-                response = requests.post(
-                    CAMP_TELEGRAM_BOT_API_URL, json=payload, headers=headers)
-                if response.status_code != 200:
-                    raise AdminException(
-                        f"Failed to broadcast announcement: {response.text}")
-                logger.info(
-                    f"Announcement should be broadcasted: {request.title}")
+                try:
+                    response = requests.post(
+                        CAMP_TELEGRAM_BOT_API_URL, json=payload, headers=headers, timeout=10)
+                    if response.status_code != 200:
+                        logger.warning(f"Failed to broadcast announcement: {response.text}")
+                        # 不要因為廣播失敗就拋出異常，只記錄警告
+                    else:
+                        logger.info(f"Announcement successfully broadcasted: {request.title}")
+                except requests.exceptions.RequestException as req_e:
+                    logger.warning(f"Request failed during announcement broadcast: {req_e}")
+                    # 不要因為網絡問題就拋出異常，只記錄警告
 
             logger.info(f"Announcement created with ID: {result.inserted_id}")
             return AnnouncementResponse(
@@ -241,7 +245,11 @@ class AdminService:
 
         except Exception as e:
             logger.error(f"Failed to create announcement: {e}")
-            raise AdminException("Failed to create announcement")
+            logger.error(f"Error type: {type(e)}")
+            logger.error(f"Error details: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise AdminException(f"Failed to create announcement: {str(e)}")
 
     # 系統自動公告（用於重置和結算）
     async def _send_system_announcement(self, title: str, message: str):
@@ -254,7 +262,7 @@ class AdminService:
                 "title": title,
                 "message": message,
                 "broadcast": True,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
                 "created_by": "system"
             }
             result = await self.db[Collections.ANNOUNCEMENTS].insert_one(announcement_doc)
@@ -310,7 +318,7 @@ class AdminService:
             market_config = {
                 "type": "market_hours",
                 "openTime": [slot.dict() for slot in request.open_time],
-                "updated_at": datetime.utcnow(),
+                "updated_at": datetime.now(timezone.utc),
                 "updated_by": "admin"
             }
 
@@ -349,7 +357,7 @@ class AdminService:
             limit_config = {
                 "type": "trading_limit",
                 "limitPercent": limit_in_basis_points,
-                "updated_at": datetime.utcnow(),
+                "updated_at": datetime.now(timezone.utc),
                 "updated_by": "admin"
             }
 
@@ -412,7 +420,7 @@ class AdminService:
                 "type": operation_type,
                 "amount": amount,
                 "note": note,
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
                 "balance_after": current_balance
             }
 
