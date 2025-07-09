@@ -102,14 +102,20 @@ class AdminService:
                 # 計算平均成本（從交易記錄計算）
                 avg_cost = await self._calculate_avg_cost(user["_id"])
 
+                available_points = user.get("points", 0)
+                escrow_amount = user.get("escrow_amount", 0)
+                total_balance = available_points + escrow_amount
+                
                 user_detail = UserAssetDetail(
                     username=user.get("name", "Unknown"),  # 使用新的 name 字段
                     team=user.get("team", "Unknown"),
-                    points=user.get("points", 0),
+                    points=available_points,  # 可用餘額
+                    escrowAmount=escrow_amount,  # 圈存金額
+                    totalBalance=total_balance,  # 總餘額
                     stocks=stocks,
                     avgCost=avg_cost,
                     stockValue=stock_value,
-                    total=user.get("points", 0) + stock_value
+                    total=total_balance + stock_value  # 總資產 = 總餘額 + 股票價值
                 )
                 result.append(user_detail)
 
@@ -451,7 +457,12 @@ class AdminService:
                 
                 current_price = market_config.get("price", 20)
                 stock_amount = stock_holding.get("stock_amount", 0)
-                total_value = user.get("points", 0) + (stock_amount * current_price)
+                stock_value = stock_amount * current_price
+                
+                available_points = user.get("points", 0)
+                escrow_amount = user.get("escrow_amount", 0)
+                total_balance = available_points + escrow_amount
+                total_value = total_balance + stock_value
 
                 result.append({
                     "id": user.get("id"),
@@ -460,9 +471,13 @@ class AdminService:
                     "telegram_id": user.get("telegram_id"),
                     "telegram_nickname": user.get("telegram_nickname"),
                     "enabled": user.get("enabled", False),
-                    "points": user.get("points", 0),
+                    "available_points": available_points,     # 可用餘額
+                    "escrow_amount": escrow_amount,          # 圈存金額
+                    "total_balance": total_balance,          # 總餘額
+                    "points": available_points,              # 向後兼容
                     "stock_amount": stock_amount,
-                    "total_value": total_value,
+                    "stock_value": stock_value,
+                    "total_value": total_value,              # 總資產
                     "created_at": user.get("created_at").isoformat() if user.get("created_at") else None,
                     "updated_at": user.get("updated_at").isoformat() if user.get("updated_at") else None
                 })

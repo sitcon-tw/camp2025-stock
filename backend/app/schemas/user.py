@@ -104,7 +104,9 @@ class StockOrderResponse(BaseModel):
 # 使用者投資組合
 class UserPortfolio(BaseModel):
     username: str = Field(..., description="使用者id")
-    points: int = Field(..., description="點數餘額")
+    points: int = Field(..., description="可用點數餘額")
+    escrow_amount: int = Field(0, description="圈存金額", alias="escrowAmount")
+    total_balance: int = Field(..., description="總餘額 (可用+圈存)", alias="totalBalance")
     stocks: int = Field(..., description="持股數量")
     stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
     total_value: int = Field(..., description="總資產（元）", alias="totalValue")

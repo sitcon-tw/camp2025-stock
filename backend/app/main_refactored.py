@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, admin_escrow
+from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, admin_escrow, user_balance
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -99,6 +99,12 @@ app.include_router(
     admin_escrow.router, 
     prefix="/api", 
     tags=["Admin Escrow - 圈存系統管理"]
+)
+
+app.include_router(
+    user_balance.router, 
+    prefix="/api", 
+    tags=["User Balance - 用戶餘額詳情"]
 )
 
 app.include_router(

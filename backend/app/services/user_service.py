@@ -192,14 +192,20 @@ class UserService:
             
             stocks = stock_holding.get("stock_amount", 0)
             stock_value = stocks * current_price
-            total_value = user.get("points", 0) + stock_value
+            
+            available_points = user.get("points", 0)
+            escrow_amount = user.get("escrow_amount", 0)
+            total_balance = available_points + escrow_amount
+            total_value = total_balance + stock_value
             
             return UserPortfolio(
                 username=user.get("name", user.get("id", "unknown")),
-                points=user.get("points", 0),
+                points=available_points,           # 可用餘額
+                escrowAmount=escrow_amount,        # 圈存金額
+                totalBalance=total_balance,        # 總餘額
                 stocks=stocks,
                 stockValue=stock_value,
-                totalValue=total_value,
+                totalValue=total_value,           # 總資產
                 avgCost=avg_cost
             )
             

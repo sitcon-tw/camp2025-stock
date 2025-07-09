@@ -107,7 +107,9 @@ class AdminLoginResponse(BaseModel):
 class UserAssetDetail(BaseModel):
     username: str = Field(..., description="使用者id")
     team: str = Field(..., description="所屬隊伍")
-    points: int = Field(..., description="點數餘額")
+    points: int = Field(..., description="可用點數餘額")
+    escrow_amount: int = Field(0, description="圈存金額", alias="escrowAmount")
+    total_balance: int = Field(..., description="總餘額 (可用+圈存)", alias="totalBalance")
     stocks: int = Field(..., description="持股數量")
     avg_cost: int = Field(..., description="平均成本（元）", alias="avgCost")
     stock_value: int = Field(..., description="股票價值（元）", alias="stockValue")
