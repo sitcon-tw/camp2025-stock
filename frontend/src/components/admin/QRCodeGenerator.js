@@ -169,6 +169,11 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                         background: #f9f9f9;
                         border-radius: 10px;
                         page-break-inside: avoid;
+                        break-inside: avoid;
+                        display: flex;
+                        flex-direction: column;
+                        height: auto;
+                        min-height: 200px;
                     }
                     .qr-code {
                         margin: 10px 0;
@@ -197,11 +202,36 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                         padding-bottom: 10px;
                     }
                     @media print {
-                        body { margin: 0; padding: 10px; }
-                        .qr-grid { gap: 12px; }
+                        body { 
+                            margin: 0; 
+                            padding: 10px;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        .qr-grid { 
+                            gap: 12px;
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                        }
                         .qr-item { 
                             break-inside: avoid; 
+                            page-break-inside: avoid;
+                            -webkit-column-break-inside: avoid;
                             padding: 10px;
+                            margin-bottom: 10px;
+                            orphans: 1;
+                            widows: 1;
+                            min-height: 180px;
+                            max-height: 220px;
+                            overflow: hidden;
+                        }
+                        .print-header {
+                            page-break-after: avoid;
+                            break-after: avoid;
+                        }
+                        @page {
+                            margin: 1cm;
+                            size: A4;
                         }
                     }
                 </style>
