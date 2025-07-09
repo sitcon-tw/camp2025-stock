@@ -1685,9 +1685,10 @@ export default function Dashboard() {
                 title="我的收款 QR Code"
                 size="md"
             >
-                <div className="space-y-4 text-center">
-                    <div className="mx-auto bg-white p-4 rounded-lg flex align-middle justify-center" style={{ width: 'fit-content' }}>
-                        <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" src="/SITQR.svg" />
+                <div className="space-y-4 text-center flex align-middle justify-center">
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" src="/SITQR.svg" />
+                    <div className="mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
+                        
                         <QRCode
                             value={(() => {
                                 // 從多個來源嘗試獲取用戶 ID 和用戶名
