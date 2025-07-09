@@ -1686,7 +1686,8 @@ export default function Dashboard() {
                 size="md"
             >
                 <div className="space-y-4 text-center">
-                    <div className="mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
+                    <div className="mx-auto bg-white p-4 rounded-lg flex align-middle justify-center" style={{ width: 'fit-content' }}>
+                        <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" src="/SITQR.svg" />
                         <QRCode
                             value={(() => {
                                 // 從多個來源嘗試獲取用戶 ID 和用戶名
@@ -1747,14 +1748,6 @@ export default function Dashboard() {
                             size={200}
                             bgColor="#ffffff"
                             fgColor="#000000"
-                            imageSettings={{
-                                src: "/SITQR.svg",
-                                x: undefined,
-                                y: undefined,
-                                height: 40,
-                                width: 40,
-                                excavate: true,
-                            }}
                         />
                     </div>
                     <div className="space-y-3">
