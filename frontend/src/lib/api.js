@@ -666,4 +666,26 @@ export async function getUserAvatar(token, username) {
     });
 }
 
+// ========== 圈存系統 API ==========
+
+// 取得使用者餘額詳情 (包含圈存資訊)
+export async function getUserBalanceDetail(token) {
+    return apiRequest("/api/user/balance/detail", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+// 取得使用者圈存記錄
+export async function getUserEscrows(token) {
+    return apiRequest("/api/user/balance/escrows", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 export { API_BASE_URL };

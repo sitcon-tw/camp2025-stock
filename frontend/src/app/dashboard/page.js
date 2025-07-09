@@ -10,6 +10,8 @@ import {
     webTransferPoints,
     getUserAvatar,
     redeemQRCode,
+    getUserBalanceDetail,
+    getUserEscrows,
 } from "@/lib/api";
 import dayjs from "dayjs";
 import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2 } from "lucide-react";
@@ -54,6 +56,9 @@ export default function Dashboard() {
     const [receivedPayment, setReceivedPayment] = useState(null);
     const [showPaymentNotification, setShowPaymentNotification] = useState(false);
     const [lastPointHistoryLength, setLastPointHistoryLength] = useState(0);
+    const [showEscrowDetails, setShowEscrowDetails] = useState(false);
+    const [userEscrows, setUserEscrows] = useState([]);
+    const [escrowLoading, setEscrowLoading] = useState(false);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
     const pollingIntervalRef = useRef(null);
@@ -774,6 +779,22 @@ export default function Dashboard() {
         }
     }, [pointHistory, lastPointHistoryLength]);
 
+    // 獲取用戶圈存記錄
+    const loadEscrowDetails = async () => {
+        const token = localStorage.getItem("userToken");
+        if (!token) return;
+        
+        setEscrowLoading(true);
+        try {
+            const data = await getUserEscrows(token);
+            setUserEscrows(data.data?.escrows || []);
+        } catch (error) {
+            console.error('Error loading escrow details:', error);
+        } finally {
+            setEscrowLoading(false);
+        }
+    };
+
     // 檢查訂單是否可以取消
     const canCancelOrder = (order) => {
         const cancellableStatuses = [
@@ -1020,6 +1041,11 @@ export default function Dashboard() {
                             </span>{" "}
                             點
                         </p>
+                        {user?.escrowAmount > 0 && (
+                            <p className="text-xs text-yellow-400">
+                                圈存中：{user.escrowAmount.toLocaleString()} 點
+                            </p>
+                        )}
                     </div>
                     <div className="ml-auto">
                         <button onClick={handleLogout}>
@@ -1032,16 +1058,35 @@ export default function Dashboard() {
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         資產總覽
                     </h3>
-                    <div className="grid grid-cols-2 place-items-center gap-4 md:grid-cols-4">
+                    <div className="grid grid-cols-2 place-items-center gap-4 md:grid-cols-5">
                         <div>
                             <p className="mb-1 text-center text-sm text-[#557797]">
-                                現金點數
+                                可用點數
                             </p>
                             <p className="text-center text-xl font-bold text-white">
                                 {user?.points?.toLocaleString() ||
                                     "0"}
                             </p>
                         </div>
+                        {user?.escrowAmount > 0 && (
+                            <div>
+                                <p className="mb-1 text-center text-sm text-[#557797]">
+                                    圈存金額
+                                </p>
+                                <p className="text-center text-xl font-bold text-yellow-400">
+                                    {user.escrowAmount.toLocaleString()}
+                                </p>
+                                <button 
+                                    onClick={() => {
+                                        setShowEscrowDetails(true);
+                                        loadEscrowDetails();
+                                    }}
+                                    className="mt-1 text-xs text-[#557797] hover:text-yellow-400 underline"
+                                >
+                                    查看詳情
+                                </button>
+                            </div>
+                        )}
                         <div>
                             <p className="mb-1 text-center text-sm text-[#557797]">
                                 股票數量
@@ -1078,6 +1123,21 @@ export default function Dashboard() {
                                     {user.avgCost}
                                 </span>
                             </p>
+                        </div>
+                    )}
+                    
+                    {/* 餘額詳細信息 */}
+                    {user?.escrowAmount > 0 && (
+                        <div className="mt-4 border-t border-[#294565] pt-4">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[#557797]">總餘額計算：</span>
+                                <span className="text-white">
+                                    {user.points.toLocaleString()} + {user.escrowAmount.toLocaleString()} = {((user.points || 0) + (user.escrowAmount || 0)).toLocaleString()}
+                                </span>
+                            </div>
+                            <div className="mt-2 text-xs text-[#557797]">
+                                圈存金額為已預訂但尚未消費的點數（如掛單、PVP對戰等）
+                            </div>
                         </div>
                     )}
                 </div>
@@ -2107,6 +2167,100 @@ export default function Dashboard() {
                     </div>
                 </div>
             )}
+
+            {/* 圈存詳情 Modal */}
+            <Modal isOpen={showEscrowDetails} onClose={() => setShowEscrowDetails(false)}>
+                <div className="p-6">
+                    <h2 className="text-xl font-bold text-white mb-4">圈存記錄詳情</h2>
+                    
+                    {escrowLoading ? (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#469FD2] mx-auto mb-4"></div>
+                            <p className="text-[#557797]">載入中...</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {userEscrows.length === 0 ? (
+                                <p className="text-[#557797] text-center py-8">目前沒有圈存記錄</p>
+                            ) : (
+                                <>
+                                    <div className="mb-4 p-4 bg-[#0f203e] rounded-lg">
+                                        <p className="text-sm text-[#557797] mb-2">圈存說明：</p>
+                                        <p className="text-xs text-[#557797]">
+                                            圈存是為了確保交易安全而預先保留的資金，包括股票掛單、PvP對戰等。
+                                            圈存的資金在交易完成或取消後會自動處理。
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="max-h-96 overflow-y-auto space-y-3">
+                                        {userEscrows.map((escrow, index) => (
+                                            <div key={index} className="border border-[#294565] rounded-lg p-4 bg-[#1A325F]">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex-1">
+                                                        <p className="text-white font-medium">
+                                                            {escrow.type === 'stock_order' && '股票掛單'}
+                                                            {escrow.type === 'pvp_battle' && 'PvP對戰'}
+                                                            {escrow.type === 'transfer' && '轉帳'}
+                                                            {escrow.type === 'market_order' && '市價單'}
+                                                            {!['stock_order', 'pvp_battle', 'transfer', 'market_order'].includes(escrow.type) && escrow.type}
+                                                        </p>
+                                                        <p className="text-sm text-[#557797]">
+                                                            {new Date(escrow.created_at).toLocaleString('zh-TW', {
+                                                                year: 'numeric',
+                                                                month: '2-digit',
+                                                                day: '2-digit',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                                timeZone: 'Asia/Taipei'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-lg font-bold text-yellow-400">
+                                                            {escrow.amount.toLocaleString()}
+                                                        </p>
+                                                        <p className={`text-sm ${
+                                                            escrow.status === 'active' ? 'text-yellow-400' :
+                                                            escrow.status === 'completed' ? 'text-green-400' :
+                                                            'text-gray-400'
+                                                        }`}>
+                                                            {escrow.status === 'active' && '處理中'}
+                                                            {escrow.status === 'completed' && '已完成'}
+                                                            {escrow.status === 'cancelled' && '已取消'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                {escrow.metadata && (
+                                                    <div className="mt-2 pt-2 border-t border-[#294565]">
+                                                        <p className="text-xs text-[#557797]">
+                                                            {escrow.type === 'stock_order' && escrow.metadata.side === 'buy' && 
+                                                                `買入 ${escrow.metadata.quantity} 股，每股 ${escrow.metadata.price} 元`}
+                                                            {escrow.type === 'pvp_battle' && 
+                                                                `PvP對戰，挑戰者: ${escrow.metadata.challenger_name}`}
+                                                            {escrow.type === 'transfer' && 
+                                                                `轉帳給 ${escrow.metadata.to_username}: ${escrow.metadata.transfer_amount} 元`}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            
+                            <div className="flex justify-end pt-4">
+                                <button
+                                    onClick={() => setShowEscrowDetails(false)}
+                                    className="rounded-lg bg-[#469FD2] px-6 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                >
+                                    關閉
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 }
