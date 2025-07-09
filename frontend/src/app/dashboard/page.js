@@ -242,6 +242,16 @@ export default function Dashboard() {
                     videoRef.current,
                     result => {
                         console.log('QR Code 掃描結果:', result.data);
+                        console.log('QR Code 數據長度:', result.data.length);
+                        console.log('QR Code 數據類型:', typeof result.data);
+                        
+                        // 檢查是否為空字符串或無效數據
+                        if (!result.data || result.data.trim() === '') {
+                            console.error('QR Code 掃描到空數據');
+                            setTransferError('QR Code 數據為空，請重新掃描');
+                            return;
+                        }
+                        
                         try {
                             const qrData = JSON.parse(result.data);
                             console.log('解析後的 QR Data:', qrData);
@@ -270,7 +280,31 @@ export default function Dashboard() {
                         } catch (e) {
                             console.error('QR Code 解析失敗:', e);
                             console.error('原始數據:', result.data);
-                            setTransferError('QR Code 格式錯誤');
+                            console.error('原始數據編碼:', encodeURIComponent(result.data));
+                            
+                            // 嘗試不同的解析方式
+                            if (result.data.includes('{"')) {
+                                console.log('數據似乎包含 JSON，嘗試修復...');
+                                // 嘗試找到 JSON 開始和結束位置
+                                const jsonStart = result.data.indexOf('{');
+                                const jsonEnd = result.data.lastIndexOf('}');
+                                if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+                                    const extractedJson = result.data.substring(jsonStart, jsonEnd + 1);
+                                    console.log('提取的 JSON:', extractedJson);
+                                    try {
+                                        const qrData = JSON.parse(extractedJson);
+                                        console.log('修復後解析成功:', qrData);
+                                        if (qrData.type === 'transfer' && (qrData.id || qrData.username)) {
+                                            fetchRecipientInfo(qrData);
+                                            return;
+                                        }
+                                    } catch (fixError) {
+                                        console.error('修復解析也失敗:', fixError);
+                                    }
+                                }
+                            }
+                            
+                            setTransferError('QR Code 格式錯誤或數據損壞');
                         }
                     },
                     {
