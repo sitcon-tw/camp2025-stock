@@ -836,3 +836,31 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to get all point logs: {e}")
             raise AdminException("Failed to retrieve point logs")
+
+    async def trigger_manual_matching(self) -> dict:
+        """手動觸發訂單撮合"""
+        try:
+            from app.services.matching_scheduler import get_matching_scheduler
+            
+            scheduler = get_matching_scheduler()
+            if not scheduler:
+                raise AdminException("Matching scheduler not initialized")
+                
+            # 檢查是否正在撮合
+            if scheduler.is_matching_in_progress():
+                return {
+                    "success": False,
+                    "message": "Order matching is already in progress"
+                }
+                
+            # 觸發撮合
+            await scheduler.trigger_matching("manual_admin_trigger")
+            
+            return {
+                "success": True,
+                "message": "Manual order matching triggered successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to trigger manual matching: {e}")
+            raise AdminException(f"Failed to trigger manual matching: {str(e)}")

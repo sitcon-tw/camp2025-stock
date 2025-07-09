@@ -3491,3 +3491,143 @@ class UserService:
                 
         except Exception as e:
             logger.error(f"傳送取消通知發生錯誤: {e}")
+
+    async def _try_match_orders(self):
+        """嘗試撮合訂單"""
+        try:
+            logger.info("開始撮合訂單...")
+            
+            # 獲取所有待撮合的訂單
+            pending_orders = await self.db[Collections.STOCK_ORDERS].find({
+                "status": {"$in": ["pending", "partial"]}
+            }).to_list(length=None)
+            
+            if not pending_orders:
+                logger.info("沒有待撮合的訂單")
+                return
+            
+            # 分離買單和賣單
+            buy_orders = [order for order in pending_orders if order["direction"] == "buy"]
+            sell_orders = [order for order in pending_orders if order["direction"] == "sell"]
+            
+            # 按價格排序：買單按價格降序，賣單按價格升序
+            buy_orders.sort(key=lambda x: (-x["price"], x["created_at"]))
+            sell_orders.sort(key=lambda x: (x["price"], x["created_at"]))
+            
+            matched_count = 0
+            
+            # 嘗試撮合
+            for buy_order in buy_orders:
+                if buy_order["quantity"] <= 0:
+                    continue
+                    
+                for sell_order in sell_orders:
+                    if sell_order["quantity"] <= 0:
+                        continue
+                    
+                    # 檢查是否可以撮合：買單價格 >= 賣單價格
+                    if buy_order["price"] >= sell_order["price"]:
+                        # 計算撮合數量
+                        trade_quantity = min(buy_order["quantity"], sell_order["quantity"])
+                        trade_price = sell_order["price"]  # 使用賣單價格
+                        
+                        # 執行撮合
+                        await self._execute_trade(buy_order, sell_order, trade_quantity, trade_price)
+                        matched_count += 1
+                        
+                        # 更新訂單數量
+                        buy_order["quantity"] -= trade_quantity
+                        sell_order["quantity"] -= trade_quantity
+                        
+                        # 如果買單或賣單已完全撮合，跳出內層循環
+                        if buy_order["quantity"] <= 0:
+                            break
+                            
+            logger.info(f"撮合完成，共撮合 {matched_count} 筆交易")
+            
+        except Exception as e:
+            logger.error(f"訂單撮合失敗: {e}")
+            raise
+
+    async def _execute_trade(self, buy_order: dict, sell_order: dict, quantity: int, price: int):
+        """執行交易"""
+        try:
+            # 開始會話進行原子性操作
+            async with await self.db.client.start_session() as session:
+                async with session.start_transaction():
+                    # 更新買方：扣除點數，增加股票
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": buy_order["user_id"]},
+                        {"$inc": {"points": -(quantity * price)}},
+                        session=session
+                    )
+                    
+                    await self.db[Collections.STOCKS].update_one(
+                        {"user_id": buy_order["user_id"]},
+                        {"$inc": {"stock_amount": quantity}},
+                        upsert=True,
+                        session=session
+                    )
+                    
+                    # 更新賣方：增加點數，扣除股票
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": sell_order["user_id"]},
+                        {"$inc": {"points": quantity * price}},
+                        session=session
+                    )
+                    
+                    await self.db[Collections.STOCKS].update_one(
+                        {"user_id": sell_order["user_id"]},
+                        {"$inc": {"stock_amount": -quantity}},
+                        session=session
+                    )
+                    
+                    # 更新買單狀態
+                    buy_new_quantity = buy_order["quantity"] - quantity
+                    buy_status = "filled" if buy_new_quantity <= 0 else "partial"
+                    await self.db[Collections.STOCK_ORDERS].update_one(
+                        {"_id": buy_order["_id"]},
+                        {
+                            "$set": {
+                                "quantity": buy_new_quantity,
+                                "status": buy_status,
+                                "updated_at": datetime.now(timezone.utc)
+                            }
+                        },
+                        session=session
+                    )
+                    
+                    # 更新賣單狀態
+                    sell_new_quantity = sell_order["quantity"] - quantity
+                    sell_status = "filled" if sell_new_quantity <= 0 else "partial"
+                    await self.db[Collections.STOCK_ORDERS].update_one(
+                        {"_id": sell_order["_id"]},
+                        {
+                            "$set": {
+                                "quantity": sell_new_quantity,
+                                "status": sell_status,
+                                "updated_at": datetime.now(timezone.utc)
+                            }
+                        },
+                        session=session
+                    )
+                    
+                    # 記錄交易
+                    trade_record = {
+                        "buy_order_id": buy_order["_id"],
+                        "sell_order_id": sell_order["_id"],
+                        "buyer_id": buy_order["user_id"],
+                        "seller_id": sell_order["user_id"],
+                        "quantity": quantity,
+                        "price": price,
+                        "total_amount": quantity * price,
+                        "created_at": datetime.now(timezone.utc)
+                    }
+                    
+                    await self.db[Collections.TRADES].insert_one(trade_record, session=session)
+                    
+                    logger.info(f"交易執行成功: 買方 {buy_order['user_id']} 賣方 {sell_order['user_id']} 數量 {quantity} 價格 {price}")
+                    
+        except Exception as e:
+            logger.error(f"交易執行失敗: {e}")
+            raise

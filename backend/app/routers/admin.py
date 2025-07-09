@@ -2136,3 +2136,38 @@ async def get_all_point_logs(
 
 
 # 動態價格級距功能已移除，改為固定漲跌限制
+
+
+@router.post(
+    "/trigger-matching",
+    responses={
+        200: {"description": "手動撮合觸發成功"},
+        401: {"model": ErrorResponse, "description": "未授權"},
+        403: {"model": ErrorResponse, "description": "權限不足"},
+        500: {"model": ErrorResponse, "description": "撮合觸發失敗"}
+    },
+    summary="手動觸發訂單撮合",
+    description="管理員手動觸發訂單撮合，立即執行一次撮合程序"
+)
+async def trigger_manual_matching(
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> dict:
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_MARKET not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要管理訂單權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        result = await admin_service.trigger_manual_matching()
+        return result
+    except Exception as e:
+        logger.error(f"Manual matching trigger failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="手動撮合觸發失敗"
+        )
