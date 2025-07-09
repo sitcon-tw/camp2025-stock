@@ -667,6 +667,7 @@ const SystemManagementSection = ({ token, showNotification }) => {
                                     <li>• 清除所有公告</li>
                                     <li>• 清除所有 PVP 挑戰</li>
                                     <li>• 重置市場狀態和IPO設定</li>
+                                    <li>• 清空所有 QRCode 紀錄</li>
                                     <li>• 🔒 保留使用者資料（包括 Telegram 綁定和大頭貼）</li>
                                     <li>• 🔒 保留隊伍資料</li>
                                     <li>• 🔒 將所有使用者點數重置為 0</li>

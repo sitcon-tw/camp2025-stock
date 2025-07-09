@@ -1043,7 +1043,8 @@ async def reset_all_data_except_users(
             Collections.TRADES,
             Collections.ANNOUNCEMENTS,
             Collections.MARKET_CONFIG,
-            Collections.PVP_CHALLENGES
+            Collections.PVP_CHALLENGES,
+            Collections.QR_CODES,
         ]
         
         # 記錄清除前的統計
