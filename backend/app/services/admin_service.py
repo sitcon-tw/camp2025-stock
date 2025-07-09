@@ -129,7 +129,7 @@ class AdminService:
             raise AdminException("Failed to retrieve user details")
 
     # 給予點數
-    async def give_points(self, request: GivePointsRequest) -> GivePointsResponse:
+    async def give_points(self, request: GivePointsRequest, admin_user: dict = None) -> GivePointsResponse:
         try:
             if request.type == "user":
                 # 給個人點數 - 新的 ID-based 系統
@@ -153,7 +153,13 @@ class AdminService:
                     user["_id"],
                     "admin_give",
                     request.amount,
-                    note=f"管理員給予點數"
+                    note=f"管理員給予點數",
+                    performed_by=admin_user.get("user_id") if admin_user else None,
+                    admin_info={
+                        "admin_username": admin_user.get("username", "unknown") if admin_user else "unknown",
+                        "admin_role": admin_user.get("role", "unknown") if admin_user else "unknown",
+                        "operation_source": "web_admin"
+                    }
                 )
 
                 message = f"Successfully gave {request.amount} points to user {request.username}"
@@ -184,7 +190,14 @@ class AdminService:
                         user["_id"],
                         "admin_give_group",
                         request.amount,
-                        note=f"管理員給予群組 {team_name} 點數"
+                        note=f"管理員給予群組 {team_name} 點數",
+                        performed_by=admin_user.get("user_id") if admin_user else None,
+                        admin_info={
+                            "admin_username": admin_user.get("username", "unknown") if admin_user else "unknown",
+                            "admin_role": admin_user.get("role", "unknown") if admin_user else "unknown",
+                            "operation_source": "web_admin",
+                            "target_group": team_name
+                        }
                     )
 
                 message = f"Successfully gave {request.amount} points to {len(users)} users in group {team_name}"
@@ -415,7 +428,8 @@ class AdminService:
 
     # 記錄點數變化
     async def _log_point_change(self, user_id: str, operation_type: str,
-                                amount: int, note: str = ""):
+                                amount: int, note: str = "", performed_by: str = None,
+                                admin_info: dict = None):
         try:
             # 取得使用者目前餘額
             user = await self.db[Collections.USERS].find_one({"_id": user_id})
@@ -427,7 +441,9 @@ class AdminService:
                 "amount": amount,
                 "note": note,
                 "created_at": datetime.now(timezone.utc),
-                "balance_after": current_balance
+                "balance_after": current_balance,
+                "performed_by": performed_by,  # 操作者用戶ID
+                "admin_info": admin_info or {}  # 管理員詳細資訊
             }
 
             await self.db[Collections.POINT_LOGS].insert_one(log_entry)
@@ -887,3 +903,35 @@ class AdminService:
         except Exception as e:
             logger.error(f"Failed to trigger manual matching: {e}")
             raise AdminException(f"Failed to trigger manual matching: {str(e)}")
+
+    async def get_all_escrow_logs(self, limit: int) -> List[dict]:
+        """獲取所有圈存操作日誌"""
+        try:
+            from app.schemas.public import EscrowLog
+            
+            logs_cursor = self.db[Collections.ESCROW_LOGS].find({}).sort("created_at", -1).limit(limit)
+            logs_raw = await logs_cursor.to_list(length=None)
+            
+            # 轉換為 EscrowLog 物件，處理 ObjectId 轉換
+            escrow_logs = []
+            for log in logs_raw:
+                # 將 ObjectId 轉換為字串
+                log_dict = {
+                    "user_id": str(log["user_id"]),
+                    "type": log.get("type", "unknown"),
+                    "action": log.get("action", "unknown"),
+                    "amount": log.get("amount", 0),
+                    "escrow_id": str(log.get("escrow_id", "")),
+                    "note": log.get("note", ""),
+                    "created_at": log.get("created_at", datetime.now(timezone.utc)),
+                    "performed_by": log.get("performed_by"),
+                    "admin_info": log.get("admin_info", {})
+                }
+                
+                escrow_logs.append(EscrowLog(**log_dict))
+            
+            return escrow_logs
+            
+        except Exception as e:
+            logger.error(f"Failed to get all escrow logs: {e}")
+            raise AdminException("Failed to retrieve escrow logs")

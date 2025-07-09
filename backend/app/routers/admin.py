@@ -5,7 +5,7 @@ from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
     AnnouncementResponse, MarketUpdateRequest, MarketUpdateResponse,
-    MarketLimitRequest, MarketLimitResponse, ErrorResponse, Trade, PointLog
+    MarketLimitRequest, MarketLimitResponse, ErrorResponse, Trade, PointLog, EscrowLog
 )
 from app.core.security import get_current_user
 from app.core.rbac import RBACService, Permission, require_admin_role, ROLE_PERMISSIONS
@@ -110,7 +110,14 @@ async def give_points(
             detail=f"權限不足：需要點數管理權限（目前角色：{user_role.value}）"
         )
     
-    return await admin_service.give_points(request)
+    # 準備管理員資訊
+    admin_user_info = {
+        "user_id": current_user.get("user_id"),
+        "username": current_user.get("username", "unknown"),
+        "role": user_role.value if user_role else "unknown"
+    }
+    
+    return await admin_service.give_points(request, admin_user_info)
 
 
 @router.post(
@@ -2213,6 +2220,33 @@ async def get_all_point_logs(
         )
     
     return await admin_service.get_all_point_logs(limit)
+
+
+@router.get(
+    "/escrow/logs",
+    response_model=List[EscrowLog],
+    responses={
+        401: {"model": ErrorResponse, "description": "未授權"},
+    },
+    summary="查詢所有圈存操作記錄",
+    description="查詢系統中所有的圈存操作記錄，包含操作者資訊"
+)
+async def get_all_escrow_logs(
+    limit: int = Query(1000, ge=1, le=5000),
+    current_user: dict = Depends(get_current_user),
+    admin_service: AdminService = Depends(get_admin_service)
+) -> List[EscrowLog]:
+    """查詢所有圈存操作記錄"""
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.VIEW_ALL_USERS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+        )
+    
+    return await admin_service.get_all_escrow_logs(limit)
 
 
 # 動態價格級距功能已移除，改為固定漲跌限制

@@ -362,7 +362,8 @@ class EscrowService:
             return 0
     
     async def _log_escrow_change(self, user_id: str, action: str, amount: int, 
-                                escrow_id: str, note: str, session=None):
+                                escrow_id: str, note: str, session=None,
+                                performed_by: str = None, admin_info: dict = None):
         """
         記錄圈存變更日誌
         
@@ -373,6 +374,8 @@ class EscrowService:
             escrow_id: 圈存ID
             note: 備註
             session: MongoDB session
+            performed_by: 操作者用戶ID
+            admin_info: 管理員詳細資訊
         """
         try:
             log_entry = {
@@ -382,7 +385,9 @@ class EscrowService:
                 "amount": amount,
                 "escrow_id": escrow_id,
                 "note": note,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(timezone.utc),
+                "performed_by": performed_by,  # 操作者用戶ID
+                "admin_info": admin_info or {}  # 管理員詳細資訊
             }
             
             await self.db[Collections.ESCROW_LOGS].insert_one(log_entry, session=session)

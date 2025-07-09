@@ -37,9 +37,13 @@ export const PermissionAudit = ({ token }) => {
             setLoading(true);
             
             // 並行獲取不同類型的日誌數據
-            const [pointHistoryResponse, transactionResponse] = await Promise.all([
+            const [pointHistoryResponse, transactionResponse, escrowLogsResponse] = await Promise.all([
                 getPointHistory(token).catch(err => ({ point_logs: [] })),
                 getTrades(token).catch(err => ({ trades: [] })),
+                // 獲取圈存日誌 - 使用新的 API 端點
+                fetch(`/api/admin/escrow/logs?limit=1000`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                }).then(res => res.json()).catch(err => []),
             ]);
 
             // 處理點數日誌
@@ -49,6 +53,8 @@ export const PermissionAudit = ({ token }) => {
                 type: "point_operation",
                 action: log.type,
                 user_id: log.user_id,
+                performed_by: log.performed_by,
+                admin_info: log.admin_info,
                 details: {
                     amount: log.amount,
                     balance_after: log.balance_after,
@@ -56,6 +62,24 @@ export const PermissionAudit = ({ token }) => {
                 },
                 icon: "💰",
                 color: "text-green-400",
+            }));
+
+            // 處理圈存日誌
+            const escrowLogs = (escrowLogsResponse || []).map(log => ({
+                id: `escrow_${log.escrow_id}_${log.created_at}`,
+                timestamp: log.created_at,
+                type: "escrow_operation",
+                action: log.action,
+                user_id: log.user_id,
+                performed_by: log.performed_by,
+                admin_info: log.admin_info,
+                details: {
+                    amount: log.amount,
+                    escrow_id: log.escrow_id,
+                    note: log.note,
+                },
+                icon: "🔒",
+                color: "text-orange-400",
             }));
 
             // 處理交易日誌
@@ -80,12 +104,13 @@ export const PermissionAudit = ({ token }) => {
             const systemEvents = generateSystemEvents();
 
             // 合併所有日誌
-            const combinedLogs = [...pointLogs, ...tradeLogs, ...systemEvents]
+            const combinedLogs = [...pointLogs, ...escrowLogs, ...tradeLogs, ...systemEvents]
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                 .slice(0, 1000); // 限制最多1000條記錄
 
             setAuditData({
                 pointLogs,
+                escrowLogs,
                 tradeLogs,
                 systemEvents,
                 combinedLogs: applyFilters(combinedLogs),
@@ -221,6 +246,7 @@ export const PermissionAudit = ({ token }) => {
     const getActionColor = (type, action) => {
         const colorMap = {
             "point_operation": "text-green-400",
+            "escrow_operation": "text-orange-400",
             "trade_operation": "text-blue-400", 
             "system_operation": "text-purple-400",
             "admin_operation": "text-orange-400",
@@ -256,7 +282,12 @@ export const PermissionAudit = ({ token }) => {
                                 </span>
                                 {log.user_id && log.user_id !== "system" && (
                                     <span className="text-[#7BC2E6] text-sm">
-                                        by {log.user_id}
+                                        目標: {log.user_id}
+                                    </span>
+                                )}
+                                {log.performed_by && (
+                                    <span className="text-[#FFA500] text-sm bg-[#2A1F0B] px-2 py-0.5 rounded">
+                                        👤 {log.admin_info?.admin_username || log.performed_by}
                                     </span>
                                 )}
                             </div>
@@ -283,6 +314,12 @@ export const PermissionAudit = ({ token }) => {
                                     {log.details.balance_after && ` (餘額: ${log.details.balance_after})`}
                                 </span>
                             )}
+                            {log.type === "escrow_operation" && (
+                                <span>
+                                    圈存 {log.details.amount} 點數 ({log.action})
+                                    {log.details.note && ` - ${log.details.note}`}
+                                </span>
+                            )}
                             {log.type === "trade_operation" && (
                                 <span>
                                     {log.details.quantity} 股 @ {log.details.price} 點數
@@ -299,6 +336,35 @@ export const PermissionAudit = ({ token }) => {
                             <div className="mt-3 p-3 bg-[#294565] rounded border border-[#3A5A7E]">
                                 <h4 className="text-sm font-medium text-[#92cbf4] mb-2">詳細資訊</h4>
                                 <div className="space-y-1">
+                                    {/* 操作者資訊 */}
+                                    {log.performed_by && (
+                                        <>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-[#7BC2E6]">操作者ID:</span>
+                                                <span className="text-[#FFA500]">{log.performed_by}</span>
+                                            </div>
+                                            {log.admin_info?.admin_username && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-[#7BC2E6]">操作者名稱:</span>
+                                                    <span className="text-[#FFA500]">{log.admin_info.admin_username}</span>
+                                                </div>
+                                            )}
+                                            {log.admin_info?.admin_role && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-[#7BC2E6]">操作者角色:</span>
+                                                    <span className="text-[#FFA500]">{log.admin_info.admin_role}</span>
+                                                </div>
+                                            )}
+                                            {log.admin_info?.operation_source && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-[#7BC2E6]">操作來源:</span>
+                                                    <span className="text-[#FFA500]">{log.admin_info.operation_source}</span>
+                                                </div>
+                                            )}
+                                            <div className="border-t border-[#3A5A7E] my-2"></div>
+                                        </>
+                                    )}
+                                    {/* 其他詳細資訊 */}
                                     {Object.entries(log.details || {}).map(([key, value]) => (
                                         <div key={key} className="flex justify-between text-sm">
                                             <span className="text-[#7BC2E6]">{key}:</span>
@@ -381,6 +447,7 @@ export const PermissionAudit = ({ token }) => {
                         >
                             <option value="all">全部類型</option>
                             <option value="point_operation">點數操作</option>
+                            <option value="escrow_operation">圈存操作</option>
                             <option value="trade_operation">交易操作</option>
                             <option value="system_operation">系統操作</option>
                             <option value="admin_operation">管理員操作</option>

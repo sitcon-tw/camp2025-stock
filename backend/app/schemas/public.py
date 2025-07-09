@@ -219,3 +219,17 @@ class PointLog(BaseModel):
     note: str
     created_at: datetime
     balance_after: int
+    performed_by: Optional[str] = None  # 操作者用戶ID
+    admin_info: Optional[dict] = None  # 管理員詳細資訊
+
+# 圈存日誌記錄
+class EscrowLog(BaseModel):
+    user_id: str
+    type: str
+    action: str
+    amount: int
+    escrow_id: str
+    note: str
+    created_at: datetime
+    performed_by: Optional[str] = None  # 操作者用戶ID
+    admin_info: Optional[dict] = None  # 管理員詳細資訊
