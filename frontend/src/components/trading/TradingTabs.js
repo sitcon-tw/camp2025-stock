@@ -281,7 +281,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                                     "flex-1 overflow-y-auto",
                             )}
                         >
-                            {tradeHistory.map((trade, index) => {
+                            {tradeHistory.filter(trade => trade.quantity > 0).map((trade, index) => {
                                 const change = calculateChange(
                                     trade.price,
                                     index,
@@ -328,7 +328,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                                     </div>
                                 );
                             })}
-                            {tradeHistory.length === 0 &&
+                            {tradeHistory.filter(trade => trade.quantity > 0).length === 0 &&
                                 !loading && (
                                     <div className="py-8 text-center text-gray-400">
                                         暫無交易記錄
