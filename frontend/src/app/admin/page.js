@@ -14,6 +14,15 @@ import { useEffect, useState } from "react";
 function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
     const { permissions, role, loading: permissionLoading, error } = usePermissionContext();
 
+    // 檢查當前頁簽是否對用戶可用，如果不可用則重定向到dashboard
+    useEffect(() => {
+        if (!permissionLoading && permissions) {
+            if (activeTab === "qr-generator" && !permissions.includes("generate_qrcode")) {
+                setActiveTab("dashboard");
+            }
+        }
+    }, [activeTab, permissions, permissionLoading, setActiveTab]);
+
     // 權限錯誤
     if (error) {
         return (
@@ -76,7 +85,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
     }
 
     // 檢查是否有管理權限
-    const hasManagementAccess = role && ["admin", "point_manager", "announcer"].includes(role);
+    const hasManagementAccess = role && ["admin", "qrcode_manager", "point_manager", "announcer"].includes(role);
 
     if (!hasManagementAccess) {
         return (
@@ -88,7 +97,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                         <p className="mb-2 text-yellow-300">您的角色是：{role || "未知"}</p>
                         <p className="mb-4 text-yellow-300">需要管理相關權限才能存取此頁面</p>
                         <p className="mb-4 text-sm text-yellow-300">
-                            允許的角色：admin、point_manager、announcer
+                            允許的角色：admin、qrcode_manager、point_manager、announcer
                         </p>
                         <button
                             onClick={() => router.push("/dashboard")}
@@ -143,10 +152,18 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                             { id: "pending-orders", label: "等待撮合訂單" },
                             { id: "transactions", label: "交易紀錄" },
                             { id: "point-history", label: "點數紀錄" },
-                            { id: "qr-generator", label: "QR Code 生成器" },
+                            { id: "qr-generator", label: "QR Code 生成器", requiredPermission: "generate_qrcode" },
                             { id: "config", label: "系統設定" },
                             { id: "audit", label: "權限審查" },
-                        ].map((tab) => (
+                        ]
+                            .filter((tab) => {
+                                // 如果頁簽需要特定權限，檢查用戶是否有該權限
+                                if (tab.requiredPermission) {
+                                    return permissions && permissions.includes(tab.requiredPermission);
+                                }
+                                return true;
+                            })
+                            .map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
@@ -170,16 +187,26 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                 {activeTab === "pending-orders" && <PendingOrdersViewer token={adminToken} />}
                 {activeTab === "transactions" && <TransactionHistory token={adminToken} />}
                 {activeTab === "point-history" && <PointHistory token={adminToken} />}
-                {activeTab === "qr-generator" && <QRCodeGenerator token={adminToken} showNotification={(message, type) => {
-                    // 簡單的通知實現，可以後續改進
-                    if (type === "error") {
-                        alert("錯誤：" + message);
-                    } else if (type === "success") {
-                        alert("成功：" + message);
-                    } else {
-                        alert(message);
-                    }
-                }} />}
+                {activeTab === "qr-generator" && (
+                    permissions && permissions.includes("generate_qrcode") ? (
+                        <QRCodeGenerator token={adminToken} showNotification={(message, type) => {
+                            // 簡單的通知實現，可以後續改進
+                            if (type === "error") {
+                                alert("錯誤：" + message);
+                            } else if (type === "success") {
+                                alert("成功：" + message);
+                            } else {
+                                alert(message);
+                            }
+                        }} />
+                    ) : (
+                        <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-8 text-center">
+                            <div className="text-4xl text-red-400 mb-4">🚫</div>
+                            <h3 className="text-xl font-bold text-red-400 mb-2">權限不足</h3>
+                            <p className="text-red-300">您需要 QR Code 生成權限才能使用此功能</p>
+                        </div>
+                    )
+                )}
                 {activeTab === "config" && <SystemConfig token={adminToken} />}
                 {activeTab === "audit" && <PermissionAudit token={adminToken} />}
             </div>
