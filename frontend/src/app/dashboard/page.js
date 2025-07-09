@@ -1686,8 +1686,9 @@ export default function Dashboard() {
                 size="md"
             >
                 <div className="space-y-4 text-center">
-                    <div className="mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
+                    <div className="relative mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
                         <QRCode
+                            level="M"
                             value={(() => {
                                 const qrData = {
                                     type: 'transfer',
@@ -1706,6 +1707,7 @@ export default function Dashboard() {
                             bgColor="#ffffff"
                             fgColor="#000000"
                         />
+                        <img src="/sitqr.svg" alt="QR Code Icon" className="absolute w-12 bg-white py-2 px-1 rounded-lg top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
                     </div>
                     <div className="space-y-3">
                         <p className="text-sm text-[#92cbf4]">
