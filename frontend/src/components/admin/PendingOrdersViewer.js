@@ -66,9 +66,13 @@ export const PendingOrdersViewer = ({ token }) => {
     const checkPriceLimit = async (testPrice = 14.0) => {
         try {
             const result = await getPriceLimitInfo(token, testPrice);
+            console.log("Price limit info result:", result);
             if (result.ok) {
                 setPriceLimitInfo(result);
                 setShowPriceLimitInfo(true);
+            } else {
+                console.error("Price limit info not ok:", result);
+                setError(`查詢價格限制失敗: ${result.message || "未知錯誤"}`);
             }
         } catch (error) {
             console.error("Failed to get price limit info:", error);
@@ -273,7 +277,7 @@ export const PendingOrdersViewer = ({ token }) => {
                     <div className="flex items-start justify-between">
                         <div className="flex-1">
                             <h3 className="mb-2 text-lg font-semibold text-orange-400">
-                                價格限制診斷：{priceLimitInfo.test_price} 點
+                                價格限制診斷：{priceLimitInfo.test_price || "14"} 點
                             </h3>
                             <div className="space-y-2 text-sm text-orange-200">
                                 <div>
@@ -284,16 +288,25 @@ export const PendingOrdersViewer = ({ token }) => {
                                         </span>
                                     </span>
                                 </div>
-                                {priceLimitInfo.limit_info && (
+                                {priceLimitInfo.limit_info ? (
                                     <>
-                                        <div>基準價格：{priceLimitInfo.limit_info.reference_price} 點</div>
-                                        <div>漲跌限制：{priceLimitInfo.limit_info.limit_percent}%</div>
+                                        <div>基準價格：{priceLimitInfo.limit_info.reference_price || "無"} 點</div>
+                                        <div>漲跌限制：{priceLimitInfo.limit_info.limit_percent || "0"}%</div>
                                         <div>
-                                            可交易範圍：{priceLimitInfo.limit_info.min_price.toFixed(2)} ~ {priceLimitInfo.limit_info.max_price.toFixed(2)} 點
+                                            可交易範圍：{(priceLimitInfo.limit_info.min_price || 0).toFixed(2)} ~ {(priceLimitInfo.limit_info.max_price || 0).toFixed(2)} 點
                                         </div>
-                                        <div>上漲上限：{priceLimitInfo.limit_info.max_price.toFixed(2)} 點</div>
-                                        <div>下跌下限：{priceLimitInfo.limit_info.min_price.toFixed(2)} 點</div>
+                                        <div>上漲上限：{(priceLimitInfo.limit_info.max_price || 0).toFixed(2)} 點</div>
+                                        <div>下跌下限：{(priceLimitInfo.limit_info.min_price || 0).toFixed(2)} 點</div>
+                                        {priceLimitInfo.limit_info.note && (
+                                            <div className="text-yellow-300">
+                                                注意：{priceLimitInfo.limit_info.note}
+                                            </div>
+                                        )}
                                     </>
+                                ) : (
+                                    <div className="text-red-300">
+                                        無法取得價格限制資訊
+                                    </div>
                                 )}
                             </div>
                         </div>

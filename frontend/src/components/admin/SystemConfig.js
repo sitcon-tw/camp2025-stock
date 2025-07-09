@@ -172,6 +172,21 @@ export const SystemConfig = ({ token }) => {
 
             if (priceLimit.status === "fulfilled") {
                 setPriceLimitInfo(priceLimit.value);
+            } else if (priceLimit.status === "rejected") {
+                console.error("Failed to load price limit info:", priceLimit.reason);
+                // 設定預設值以防止UI顯示錯誤
+                setPriceLimitInfo({
+                    ok: false,
+                    test_price: 14.0,
+                    within_limit: false,
+                    limit_info: {
+                        reference_price: null,
+                        limit_percent: null,
+                        min_price: null,
+                        max_price: null,
+                        note: `載入失敗: ${priceLimit.reason?.message || "未知錯誤"}`
+                    }
+                });
             }
         } catch (error) {
             console.error("載入設定失敗:", error);
@@ -657,36 +672,52 @@ export const SystemConfig = ({ token }) => {
                                 <div className="text-white space-y-2">
                                     <div>
                                         <span className="font-semibold">價格限制診斷：</span>
-                                        <span className="text-blue-400">{priceLimitInfo.test_price} 點</span>
+                                        <span className="text-blue-400">{priceLimitInfo.test_price || "14"} 點</span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">是否可交易：</span>
-                                        <span className={priceLimitInfo.can_trade ? "text-green-400" : "text-red-400"}>
-                                            {priceLimitInfo.can_trade ? "✅ 是" : "❌ 否"}
+                                        <span className={priceLimitInfo.within_limit ? "text-green-400" : "text-red-400"}>
+                                            {priceLimitInfo.within_limit ? "✅ 是" : "❌ 否"}
                                         </span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">基準價格：</span>
-                                        <span className="text-cyan-400">{priceLimitInfo.base_price} 點</span>
+                                        <span className="text-cyan-400">
+                                            {priceLimitInfo.limit_info?.reference_price || "無"} 點
+                                        </span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">漲跌限制：</span>
-                                        <span className="text-yellow-400">{priceLimitInfo.limit_percent}%</span>
+                                        <span className="text-yellow-400">
+                                            {priceLimitInfo.limit_info?.limit_percent || "0"}%
+                                        </span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">可交易範圍：</span>
                                         <span className="text-purple-400">
-                                            {priceLimitInfo.price_range?.min?.toFixed(2)} ~ {priceLimitInfo.price_range?.max?.toFixed(2)} 點
+                                            {(priceLimitInfo.limit_info?.min_price || 0).toFixed(2)} ~ {(priceLimitInfo.limit_info?.max_price || 0).toFixed(2)} 點
                                         </span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">上漲上限：</span>
-                                        <span className="text-green-400">{priceLimitInfo.upper_limit?.toFixed(2)} 點</span>
+                                        <span className="text-green-400">
+                                            {(priceLimitInfo.limit_info?.max_price || 0).toFixed(2)} 點
+                                        </span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">下跌下限：</span>
-                                        <span className="text-red-400">{priceLimitInfo.lower_limit?.toFixed(2)} 點</span>
+                                        <span className="text-red-400">
+                                            {(priceLimitInfo.limit_info?.min_price || 0).toFixed(2)} 點
+                                        </span>
                                     </div>
+                                    {priceLimitInfo.limit_info?.note && (
+                                        <div>
+                                            <span className="font-semibold">備註：</span>
+                                            <span className="text-yellow-300">
+                                                {priceLimitInfo.limit_info.note}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="text-white space-y-2">

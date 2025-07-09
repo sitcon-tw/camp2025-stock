@@ -2043,14 +2043,14 @@ async def get_price_limit_info(
     Returns:
         價格限制的詳細資訊
     """
-    # 檢查查看所有使用者權限
+    # 檢查市場管理權限
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
-    if Permission.VIEW_ALL_USERS not in user_permissions:
+    if Permission.MANAGE_MARKET not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
+            detail=f"權限不足：需要管理市場權限（目前角色：{user_role.value}）"
         )
     
     try:
