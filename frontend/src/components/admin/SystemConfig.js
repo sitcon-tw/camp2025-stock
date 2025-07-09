@@ -12,6 +12,7 @@ import {
     updateTransferFeeConfig,
     getSystemStats,
     getPriceLimitInfo,
+    fixInvalidTrades,
 } from "@/lib/api";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -445,6 +446,47 @@ export const SystemConfig = ({ token }) => {
             );
         } finally {
             setUpdating(false); // 結束更新
+        }
+    };
+
+    // 修復無效交易記錄
+    const handleFixInvalidTrades = async () => {
+        if (updating) return; // 防止重複提交
+        
+        try {
+            const confirmed = confirm(
+                "確定要修復無效交易記錄嗎？這將刪除所有數量為 0 的交易記錄。此操作不可逆轉！"
+            );
+            
+            if (!confirmed) return;
+            
+            setUpdating(true);
+            
+            const result = await fixInvalidTrades(token);
+            
+            if (result.success) {
+                showNotification(
+                    `修復完成！${result.message}`,
+                    "success"
+                );
+                
+                // 如果有刪除的記錄，顯示更多詳細訊息
+                if (result.deleted_count > 0) {
+                    console.log("刪除的無效交易記錄:", result.invalid_trades);
+                }
+            } else {
+                showNotification(
+                    `修復失敗: ${result.message || "未知錯誤"}`,
+                    "error"
+                );
+            }
+        } catch (error) {
+            showNotification(
+                `修復無效交易記錄失敗: ${error.message}`,
+                "error"
+            );
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -1151,6 +1193,56 @@ export const SystemConfig = ({ token }) => {
                     </div>
                 </PermissionGuard>
             </div>
+
+            {/* 系統維護區域 */}
+            <PermissionGuard
+                requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                token={token}
+            >
+                <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+                    <h3 className="mb-4 text-xl font-bold text-red-400">
+                        🔧 系統維護
+                    </h3>
+                    <div className="space-y-4">
+                        <div className="rounded-lg border border-yellow-600 bg-yellow-900/20 p-4">
+                            <h4 className="mb-2 text-lg font-semibold text-yellow-400">
+                                修復無效交易記錄
+                            </h4>
+                            <p className="mb-4 text-sm text-yellow-200">
+                                清理系統中數量為 0 的異常交易記錄。這些記錄通常是由於系統錯誤或資料同步問題造成。
+                            </p>
+                            <div className="rounded border border-yellow-600 bg-yellow-800/30 p-3 mb-4">
+                                <p className="text-xs text-yellow-200">
+                                    ⚠️ 警告：此操作會永久刪除無效的交易記錄，無法復原！
+                                </p>
+                            </div>
+                            <PermissionButton
+                                requiredPermission={PERMISSIONS.SYSTEM_ADMIN}
+                                token={token}
+                                onClick={handleFixInvalidTrades}
+                                disabled={updating}
+                                className={`rounded px-4 py-2 font-medium text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400 ${
+                                    updating 
+                                        ? 'bg-yellow-400 cursor-wait' 
+                                        : 'bg-yellow-600 hover:bg-yellow-700 hover:shadow-lg'
+                                }`}
+                            >
+                                {updating ? (
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>修復中...</span>
+                                    </div>
+                                ) : (
+                                    "修復無效交易記錄"
+                                )}
+                            </PermissionButton>
+                        </div>
+                    </div>
+                </div>
+            </PermissionGuard>
 
             {/* 說明區域 */}
             <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">

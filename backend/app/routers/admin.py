@@ -1789,6 +1789,86 @@ async def fix_invalid_orders(
         )
 
 
+@router.post(
+    "/fix-invalid-trades",
+    summary="修復無效交易記錄",
+    description="刪除系統中的無效交易記錄（quantity <= 0 的交易）"
+)
+async def fix_invalid_trades(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    修復無效交易記錄
+    
+    刪除 quantity <= 0 的異常交易記錄
+    
+    Returns:
+        修復結果，包含刪除的記錄數量和詳細訊息
+    """
+    # 檢查系統管理權限
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from app.core.database import get_database, Collections
+        
+        db = get_database()
+        
+        logger.info(f"Admin {current_user.get('username')} initiated invalid trades fix")
+        
+        # 查找無效交易記錄
+        invalid_trades = await db[Collections.TRADES].find({
+            "quantity": {"$lte": 0}
+        }).to_list(length=None)
+        
+        if not invalid_trades:
+            return {
+                "success": True,
+                "message": "沒有找到無效的交易記錄",
+                "deleted_count": 0,
+                "invalid_trades": []
+            }
+        
+        # 記錄無效交易的詳細資訊
+        invalid_trade_details = []
+        for trade in invalid_trades:
+            invalid_trade_details.append({
+                "trade_id": str(trade["_id"]),
+                "quantity": trade.get("quantity", 0),
+                "price": trade.get("price", 0),
+                "created_at": trade.get("created_at").isoformat() if trade.get("created_at") else None,
+                "buy_user_id": str(trade.get("buy_user_id", "")),
+                "sell_user_id": str(trade.get("sell_user_id", "")) if trade.get("sell_user_id") else None
+            })
+        
+        # 刪除無效交易記錄
+        delete_result = await db[Collections.TRADES].delete_many({
+            "quantity": {"$lte": 0}
+        })
+        
+        logger.info(f"Invalid trades fix completed: {delete_result.deleted_count} trades deleted")
+        
+        return {
+            "success": True,
+            "message": f"已刪除 {delete_result.deleted_count} 筆無效交易記錄",
+            "deleted_count": delete_result.deleted_count,
+            "invalid_trades": invalid_trade_details
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to fix invalid trades: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"修復無效交易記錄失敗: {str(e)}"
+        )
+
+
 @router.get(
     "/pending-orders",
     responses={

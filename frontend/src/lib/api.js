@@ -688,4 +688,15 @@ export async function getUserEscrows(token) {
     });
 }
 
+// 修復無效交易記錄
+export async function fixInvalidTrades(token) {
+    return apiRequest("/api/admin/fix-invalid-trades", {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+}
+
 export { API_BASE_URL };
