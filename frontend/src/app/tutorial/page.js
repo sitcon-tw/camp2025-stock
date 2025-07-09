@@ -171,6 +171,14 @@ export default function TutorialPage() {
                                 </td>
                             </tr>
                             <tr>
+                                <td className="px-4 py-2 text-white">
+                                    圈存系統
+                                </td>
+                                <td className="px-4 py-2 text-white">
+                                    交易時自動預留資金，防止超支和重複消費
+                                </td>
+                            </tr>
+                            <tr>
                                 <td className="rounded-bl-xl px-4 py-2 text-white">
                                     點數排行榜
                                 </td>
@@ -381,6 +389,71 @@ export default function TutorialPage() {
                 </div>
 
                 <h2 className="mb-4 text-2xl font-bold text-[#82bee2]">
+                    🔒 圈存系統說明
+                </h2>
+                <div className="mb-8 rounded-lg bg-[#0d2543] border border-[#82bee2] p-6">
+                    <div className="mb-4">
+                        <h3 className="mb-3 text-xl font-semibold text-[#82bee2]">
+                            💰 什麼是圈存？
+                        </h3>
+                        <p className="text-white mb-4">
+                            圈存是一種資金預留機制，類似銀行的資金凍結功能。當你進行需要花費點數的操作時，
+                            系統會先「圈存」（預留）相應的資金，確保交易安全進行。
+                        </p>
+                        
+                        <h4 className="mb-2 font-semibold text-[#a8d4f0]">圈存會在以下情況發生：</h4>
+                        <ul className="list-disc pl-6 text-white space-y-1 mb-4">
+                            <li><strong>股票掛單</strong>：下限價買單時，會圈存最大可能的購買成本</li>
+                            <li><strong>市價單</strong>：下市價買單時，會預估並圈存購買成本</li>
+                            <li><strong>PvP 對戰</strong>：發起挑戰時，會圈存挑戰金額</li>
+                            <li><strong>點數轉帳</strong>：轉帳時，會圈存轉帳金額加上手續費</li>
+                        </ul>
+                    </div>
+
+                    <div className="mb-4">
+                        <h4 className="mb-2 font-semibold text-[#a8d4f0]">雙餘額系統：</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white">
+                            <div className="bg-[#1a2e4a] p-4 rounded-lg">
+                                <h5 className="font-semibold text-green-400 mb-2">可用點數</h5>
+                                <p className="text-sm">可以自由使用的點數，用於新的交易和轉帳</p>
+                            </div>
+                            <div className="bg-[#1a2e4a] p-4 rounded-lg">
+                                <h5 className="font-semibold text-yellow-400 mb-2">圈存金額</h5>
+                                <p className="text-sm">已預留但尚未消費的點數，正在等待交易完成</p>
+                            </div>
+                        </div>
+                        <div className="mt-3 p-3 bg-[#1a2e4a] rounded-lg">
+                            <p className="text-sm text-[#a8d4f0]">
+                                <strong>總餘額 = 可用點數 + 圈存金額</strong>
+                            </p>
+                            <p className="text-xs text-[#557797] mt-1">
+                                這代表你實際擁有的所有點數
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <h4 className="mb-2 font-semibold text-[#a8d4f0]">圈存的好處：</h4>
+                        <ul className="list-disc pl-6 text-white space-y-1">
+                            <li><strong>防止超支</strong>：確保你不會花費超過擁有的點數</li>
+                            <li><strong>交易安全</strong>：避免同時進行多筆交易導致的資金不足</li>
+                            <li><strong>自動管理</strong>：交易完成後自動扣除，取消後自動退回</li>
+                            <li><strong>透明化</strong>：可隨時查看圈存詳情和交易狀態</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 className="mb-2 font-semibold text-[#a8d4f0]">如何查看圈存詳情：</h4>
+                        <ol className="list-decimal pl-6 text-white space-y-1">
+                            <li>在個人資料頁面，可以看到圈存金額（黃色顯示）</li>
+                            <li>點擊「查看詳情」按鈕，可以看到所有圈存記錄</li>
+                            <li>每筆圈存都會顯示類型、金額、時間和狀態</li>
+                            <li>狀態包括：處理中、已完成、已取消</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <h2 className="mb-4 text-2xl font-bold text-[#82bee2]">
                     🔍 如何「查看小隊點數」？
                 </h2>
                 <div className="mb-4 rounded-lg bg-[#1a2e4a] p-4">
@@ -521,7 +594,7 @@ export default function TutorialPage() {
                                     評價資產
                                 </td>
                                 <td className="px-4 py-2 text-white">
-                                    點數 + 股票市值（用當下價格估算）
+                                    總餘額（可用點數+圈存金額）+ 股票市值（用當下價格估算）
                                 </td>
                             </tr>
                             <tr>
@@ -529,7 +602,7 @@ export default function TutorialPage() {
                                     現金資產
                                 </td>
                                 <td className="rounded-br-xl px-4 py-2 text-white">
-                                    只看實際點數（未賣股票不算）
+                                    只看總餘額（可用點數+圈存金額，未賣股票不算）
                                 </td>
                             </tr>
                         </tbody>
@@ -663,6 +736,38 @@ export default function TutorialPage() {
                         <p className="text-white">
                             使用 Telegram Bot 的取消功能，或透過 /stock 指令查看並取消待成交的訂單。
                         </p>
+                    </div>
+
+                    <div>
+                        <h3 className="mb-2 text-lg font-semibold text-[#82bee2]">
+                            ❓ 什麼是圈存？為什麼我的點數變少了？
+                        </h3>
+                        <p className="text-white mb-2">
+                            圈存是資金預留機制，當你下單、轉帳或參與 PvP 時，系統會先「圈存」相應金額，確保交易安全。
+                        </p>
+                        <p className="text-white mb-2">
+                            你的總資產沒有減少，只是分為「可用點數」和「圈存金額」兩部分：
+                        </p>
+                        <ul className="list-disc pl-6 text-white space-y-1">
+                            <li><span className="text-green-400">可用點數</span>：可以立即使用的資金</li>
+                            <li><span className="text-yellow-400">圈存金額</span>：已預留給進行中交易的資金</li>
+                            <li>交易完成後會自動扣除圈存，取消時會退回可用餘額</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 className="mb-2 text-lg font-semibold text-[#82bee2]">
+                            ❓ 圈存的錢什麼時候會退回？
+                        </h3>
+                        <p className="text-white">
+                            圈存會在以下情況自動處理：
+                        </p>
+                        <ul className="list-disc pl-6 text-white space-y-1">
+                            <li><strong>交易成交</strong>：圈存金額轉為實際消費，多餘部分退回</li>
+                            <li><strong>訂單取消</strong>：全額退回到可用餘額</li>
+                            <li><strong>PvP 完成</strong>：根據結果扣除或退回</li>
+                            <li><strong>轉帳完成</strong>：扣除實際轉帳金額和手續費</li>
+                        </ul>
                     </div>
                 </div>
 
