@@ -1685,65 +1685,21 @@ export default function Dashboard() {
                 title="我的收款 QR Code"
                 size="md"
             >
-                <div className="space-y-4 text-center flex align-middle justify-center">
-                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" src="/SITQR.svg" />
+                <div className="space-y-4 text-center">
                     <div className="mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
-                        
                         <QRCode
                             value={(() => {
-                                // 從多個來源嘗試獲取用戶 ID 和用戶名
-                                let userId = null;
-                                let username = null;
-                                
-                                // 嘗試從 localStorage 獲取原始 telegramData
-                                try {
-                                    const telegramDataStr = localStorage.getItem("telegramData");
-                                    const userDataStr = localStorage.getItem("userData");
-                                    
-                                    if (telegramDataStr) {
-                                        const telegramData = JSON.parse(telegramDataStr);
-                                        userId = telegramData.id;
-                                        username = telegramData.username || telegramData.first_name || telegramData.last_name;
-                                    }
-                                    
-                                    if (userDataStr) {
-                                        const userData = JSON.parse(userDataStr);
-                                        userId = userId || userData.id;
-                                        username = username || userData.username || userData.name;
-                                    }
-                                } catch (e) {
-                                    console.error('無法解析 localStorage 數據:', e);
-                                }
-                                
-                                // Fallback 到 state 中的數據
-                                userId = userId || authData?.id || user?.id;
-                                username = username || user?.username || user?.name;
-                                
                                 const qrData = {
                                     type: 'transfer',
-                                    username: username || 'unknown',
-                                    id: userId || 'unknown'
+                                    username: user?.username || user?.name || 'unknown',
+                                    id: authData?.id || user?.id || 'unknown'
                                 };
-                                
                                 const qrString = JSON.stringify(qrData);
                                 console.log('生成 QR Code 數據:', qrData);
                                 console.log('QR Code 字符串:', qrString);
                                 console.log('QR Code 字符串長度:', qrString.length);
                                 console.log('user 對象:', user);
                                 console.log('authData 對象:', authData);
-                                console.log('從 localStorage 獲取的 ID:', userId);
-                                console.log('從 localStorage 獲取的 username:', username);
-                                
-                                // 確保不返回空字符串
-                                if (qrString.length === 0 || qrString === '{}') {
-                                    console.error('QR Code 數據為空或無效');
-                                    return JSON.stringify({
-                                        type: 'transfer',
-                                        username: 'error',
-                                        id: 'error'
-                                    });
-                                }
-                                
                                 return qrString;
                             })()}
                             size={200}
