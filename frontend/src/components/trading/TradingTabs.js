@@ -113,7 +113,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                 {!loading && (
                     <>
                         {/* 控制按鈕 */}
-                        <div className="mb-3 flex justify-between items-center">
+                        {/* <div className="mb-3 flex justify-between items-center">
                             <div className="flex items-center space-x-2">
                                 <button
                                     onClick={() => setAutoRefresh(!autoRefresh)}
@@ -138,7 +138,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                             >
                                 🔄 立即刷新
                             </button>
-                        </div>
+                        </div> */}
                         
                         {/* 表頭 */}
                         <div className="text-md mb-2 grid grid-cols-4 border-b border-[#469FD2] pb-2 text-white">
