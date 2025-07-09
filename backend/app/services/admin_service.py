@@ -808,30 +808,30 @@ class AdminService:
 
     async def get_all_point_logs(self, limit: int) -> List[PointLog]:
         try:
-            # 使用聚合管道轉換字段並排序
-            pipeline = [
-                # 排序：最新的紀錄在前
-                {"$sort": {"created_at": -1}},
-                # 限制結果數量
-                {"$limit": limit},
-                # 轉換為期望的格式
-                {
-                    "$project": {
-                        "user_id": {"$toString": "$user_id"},
-                        "type": 1,
-                        "amount": 1,
-                        "note": 1,
-                        "created_at": 1,
-                        "balance_after": 1
-                    }
+            # 只查詢有 amount 欄位的記錄（排除 role_change 等非點數交易記錄）
+            logs_cursor = self.db[Collections.POINT_LOGS].find({"amount": {"$exists": True}}).sort("created_at", -1).limit(limit)
+            logs_raw = await logs_cursor.to_list(length=None)
+            
+            # 轉換為 PointLog 物件，處理 ObjectId 轉換和不同記錄格式
+            point_logs = []
+            for log in logs_raw:
+                # 將 ObjectId 轉換為字串
+                log_dict = {
+                    "user_id": str(log["user_id"]),
+                    "type": log.get("type", "qr_scan"),  # 如果沒有 type，可能是 QR 掃描
+                    "amount": log["amount"],
+                    "note": log["note"],
+                    "created_at": log["created_at"],
+                    "balance_after": log["balance_after"]
                 }
-            ]
+                
+                # 如果有 qr_id，則表示是 QR 掃描記錄
+                if "qr_id" in log and "type" not in log:
+                    log_dict["type"] = "qr_scan"
+                
+                point_logs.append(PointLog(**log_dict))
             
-            logs_cursor = self.db[Collections.POINT_LOGS].aggregate(pipeline)
-            logs = await logs_cursor.to_list(length=None)
-            
-            # 轉換為 PointLog 物件
-            return [PointLog(**log) for log in logs]
+            return point_logs
             
         except Exception as e:
             logger.error(f"Failed to get all point logs: {e}")
