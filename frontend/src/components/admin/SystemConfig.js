@@ -672,7 +672,7 @@ export const SystemConfig = ({ token }) => {
                                 <div className="text-white space-y-2">
                                     <div>
                                         <span className="font-semibold">價格限制診斷：</span>
-                                        <span className="text-blue-400">{priceLimitInfo.test_price || "14"} 點</span>
+                                        <span className="text-blue-400">{priceLimitInfo.test_price || "無資料"} 點</span>
                                     </div>
                                     <div>
                                         <span className="font-semibold">是否可交易：</span>
