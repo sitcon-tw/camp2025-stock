@@ -11,6 +11,7 @@ import {
     updateMarketTimes,
     updateTransferFeeConfig,
     getSystemStats,
+    getPriceLimitInfo,
 } from "@/lib/api";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ export const SystemConfig = ({ token }) => {
     const [ipoStatus, setIpoStatus] = useState(null);
     const [systemStats, setSystemStats] = useState(null);
     const [currentTradingLimit, setCurrentTradingLimit] = useState(null);
+    const [priceLimitInfo, setPriceLimitInfo] = useState(null);
 
     // 表單狀態
     const [feeForm, setFeeForm] = useState({
@@ -87,13 +89,14 @@ export const SystemConfig = ({ token }) => {
             setLoading(true);
 
             // 並行載入所有設定
-            const [feeConfig, hours, defaults, ipoCurrentStatus, stats] =
+            const [feeConfig, hours, defaults, ipoCurrentStatus, stats, priceLimit] =
                 await Promise.allSettled([
                     getTransferFeeConfig(token),
                     getTradingHours(),
                     getIpoDefaults(token),
                     getIpoStatus(token),
                     getSystemStats(token),
+                    getPriceLimitInfo(token, 14.0),
                 ]);
 
             if (feeConfig.status === "fulfilled") {
@@ -165,6 +168,10 @@ export const SystemConfig = ({ token }) => {
 
             if (stats.status === "fulfilled") {
                 setSystemStats(stats.value);
+            }
+
+            if (priceLimit.status === "fulfilled") {
+                setPriceLimitInfo(priceLimit.value);
             }
         } catch (error) {
             console.error("載入設定失敗:", error);
@@ -242,6 +249,13 @@ export const SystemConfig = ({ token }) => {
             );
             showNotification("交易限制更新成功！", "success");
             setTradingLimitForm({ limitPercent: "" });
+            // 重新載入價格限制信息
+            try {
+                const priceLimit = await getPriceLimitInfo(token, 14.0);
+                setPriceLimitInfo(priceLimit);
+            } catch (error) {
+                console.error("重新載入價格限制信息失敗:", error);
+            }
         } catch (error) {
             showNotification(
                 `更新交易限制失敗: ${error.message}`,
@@ -638,16 +652,50 @@ export const SystemConfig = ({ token }) => {
 
                         {/* 目前設定顯示 */}
                         <div className="mb-4 rounded border border-[#294565] bg-[#0f203e] p-3">
-                            <div className="text-sm text-[#7BC2E6] mb-2">目前設定</div>
-                            <div className="text-white space-y-2">
-                                <div>
-                                    <span className="font-semibold">漲跌停限制：</span>
-                                    <span className="text-red-400">固定限制 20%</span>
+                            <div className="text-sm text-[#7BC2E6] mb-2">價格限制診斷</div>
+                            {priceLimitInfo ? (
+                                <div className="text-white space-y-2">
+                                    <div>
+                                        <span className="font-semibold">價格限制診斷：</span>
+                                        <span className="text-blue-400">{priceLimitInfo.test_price} 點</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">是否可交易：</span>
+                                        <span className={priceLimitInfo.can_trade ? "text-green-400" : "text-red-400"}>
+                                            {priceLimitInfo.can_trade ? "✅ 是" : "❌ 否"}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">基準價格：</span>
+                                        <span className="text-cyan-400">{priceLimitInfo.base_price} 點</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">漲跌限制：</span>
+                                        <span className="text-yellow-400">{priceLimitInfo.limit_percent}%</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">可交易範圍：</span>
+                                        <span className="text-purple-400">
+                                            {priceLimitInfo.price_range?.min?.toFixed(2)} ~ {priceLimitInfo.price_range?.max?.toFixed(2)} 點
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">上漲上限：</span>
+                                        <span className="text-green-400">{priceLimitInfo.upper_limit?.toFixed(2)} 點</span>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold">下跌下限：</span>
+                                        <span className="text-red-400">{priceLimitInfo.lower_limit?.toFixed(2)} 點</span>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-yellow-300">
-                                    📝 使用統一的固定漲跌限制百分比
+                            ) : (
+                                <div className="text-white space-y-2">
+                                    <div>
+                                        <span className="font-semibold">漲跌停限制：</span>
+                                        <span className="text-red-400">載入中...</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* 設定區域 */}
