@@ -1747,6 +1747,14 @@ export default function Dashboard() {
                             size={200}
                             bgColor="#ffffff"
                             fgColor="#000000"
+                            imageSettings={{
+                                src: "/SITQR.svg",
+                                x: undefined,
+                                y: undefined,
+                                height: 40,
+                                width: 40,
+                                excavate: true,
+                            }}
                         />
                     </div>
                     <div className="space-y-3">
