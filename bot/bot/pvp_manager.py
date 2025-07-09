@@ -215,7 +215,11 @@ class PVPManager:
                 )
                 logger.info(f"Edited message for challenge {challenge_id}")
             except Exception as e:
-                logger.error(f"Failed to edit message for challenge {challenge_id}: {e}")
+                error_msg = str(e)
+                if "Message is not modified" in error_msg:
+                    logger.debug(f"Message for challenge {challenge_id} is already up to date")
+                else:
+                    logger.error(f"Failed to edit message for challenge {challenge_id}: {e}")
 
 
 pvp_manager: Optional[PVPManager] = None

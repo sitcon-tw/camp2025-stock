@@ -13,6 +13,23 @@ from bot.helper.existing_user import verify_existing_user
 logger = setup_logger(__name__)
 
 
+async def safe_edit_message(query, text, parse_mode=None, reply_markup=None):
+    """安全地編輯訊息，處理 'Message is not modified' 警告"""
+    try:
+        await query.edit_message_text(
+            text=text,
+            parse_mode=parse_mode,
+            reply_markup=reply_markup
+        )
+    except Exception as e:
+        error_msg = str(e)
+        if "Message is not modified" in error_msg:
+            logger.debug("Message is already up to date, skipping edit")
+        else:
+            logger.error(f"Failed to edit message: {e}")
+            raise
+
+
 async def handle_zombie_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         callback_data = update.callback_query.data
@@ -45,7 +62,7 @@ async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAUL
     try:
         parts = query.data.split('_')
         if len(parts) != 4 or parts[0] != 'pvp' or parts[1] != 'creator':
-            await query.edit_message_text("❌ 無效的操作！")
+            await safe_edit_message(query, "❌ 無效的操作！")
             return
             
         challenge_id = parts[2]
@@ -81,7 +98,8 @@ async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAUL
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 
-                await query.edit_message_text(
+                await safe_edit_message(
+                    query,
                     challenge_message,
                     parse_mode=ParseMode.MARKDOWN_V2,
                     reply_markup=reply_markup
@@ -109,7 +127,7 @@ async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         parts = query.data.split('_')
         if len(parts) != 4 or parts[0] != 'pvp' or parts[1] != 'accept':
-            await query.edit_message_text("❌ 無效的挑戰！")
+            await safe_edit_message(query, "❌ 無效的挑戰！")
             return
             
         challenge_id = parts[2]
@@ -126,7 +144,8 @@ async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if response.get("success"):
                 # 遊戲完成，顯示結果
                 message_text = escape_markdown(response.get("message"), 2)
-                await query.edit_message_text(
+                await safe_edit_message(
+                    query,
                     message_text,
                     parse_mode=ParseMode.MARKDOWN_V2
                 )
@@ -186,7 +205,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                     # 驗證使用者是否有現有挑戰
                     existing_challenge_id = pvp_manager.get_user_challenge(user_id)
                     if not existing_challenge_id:
-                        await query.edit_message_text("❌ 沒有找到現有挑戰")
+                        await safe_edit_message(query, "❌ 沒有找到現有挑戰")
                         return
                     
                     # 取消現有挑戰
@@ -245,20 +264,20 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                                 error_msg = str(response.get("message", "建立新挑戰失敗"))
                             else:
                                 error_msg = "建立新挑戰失敗"
-                            await query.edit_message_text(f"❌ {error_msg}")
+                            await safe_edit_message(query, f"❌ {error_msg}")
                     else:
-                        await query.edit_message_text("❌ 取消舊挑戰失敗，請稍後再試")
+                        await safe_edit_message(query, "❌ 取消舊挑戰失敗，請稍後再試")
                         
                 except ValueError:
-                    await query.edit_message_text("❌ 無效的金額格式")
+                    await safe_edit_message(query, "❌ 無效的金額格式")
                     return
                 except Exception as e:
                     logger.error(f"Error processing pvp_conflict_new: {e}")
                     logger.error(f"Callback data: {callback_data}, Amount: {amount}, Chat ID: '{chat_id}' (type: {type(chat_id)})")
-                    await query.edit_message_text("❌ 處理請求時發生錯誤")
+                    await safe_edit_message(query, "❌ 處理請求時發生錯誤")
                     return
             else:
-                await query.edit_message_text("❌ 無效的callback資料格式")
+                await safe_edit_message(query, "❌ 無效的callback資料格式")
         
         elif callback_data.startswith("pvp_conflict_continue_"):
             # 使用者選擇繼續舊的挑戰
@@ -269,7 +288,7 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
             
             # 驗證使用者是否為挑戰的建立者
             if challenge_info and challenge_info.get("user_id") != user_id:
-                await query.edit_message_text("❌ 你不是這個挑戰的建立者")
+                await safe_edit_message(query, "❌ 你不是這個挑戰的建立者")
                 return
             
             if challenge_info:
@@ -329,12 +348,13 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                                     f"🔄 等待其他玩家接受挑戰\\.\\.\\."
                                 )
                                 
-                                await query.edit_message_text(
+                                await safe_edit_message(
+                                    query,
                                     message_text,
                                     parse_mode=ParseMode.MARKDOWN_V2
                                 )
                             else:
-                                await query.edit_message_text("❌ 挑戰已超時")
+                                await safe_edit_message(query, "❌ 挑戰已超時")
                         else:
                             # 如果無法計算時間，直接顯示狀態
                             message_text = (
@@ -344,7 +364,8 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                                 f"🔄 等待其他玩家接受挑戰\\.\\.\\."
                             )
                             
-                            await query.edit_message_text(
+                            await safe_edit_message(
+                                query,
                                 message_text,
                                 parse_mode=ParseMode.MARKDOWN_V2
                             )
@@ -358,19 +379,20 @@ async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE
                             f"🔄 等待其他玩家接受挑戰\\.\\.\\."
                         )
                         
-                        await query.edit_message_text(
+                        await safe_edit_message(
+                            query,
                             message_text,
                             parse_mode=ParseMode.MARKDOWN_V2
                         )
                 else:
-                    await query.edit_message_text("❌ 挑戰狀態異常")
+                    await safe_edit_message(query, "❌ 挑戰狀態異常")
             else:
-                await query.edit_message_text("❌ 找不到該挑戰，可能已超時或被取消")
+                await safe_edit_message(query, "❌ 找不到該挑戰，可能已超時或被取消")
         
     except Exception as e:
         logger.error(f"Error in handle_pvp_conflict: {e}")
         try:
-            await query.edit_message_text("❌ 處理衝突選擇時發生錯誤，請重試")
+            await safe_edit_message(query, "❌ 處理衝突選擇時發生錯誤，請重試")
         except:
             await query.answer("處理衝突選擇時發生錯誤", show_alert=True)
 
