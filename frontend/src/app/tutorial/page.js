@@ -446,7 +446,7 @@ export default function TutorialPage() {
                         <h4 className="mb-2 font-semibold text-[#a8d4f0]">如何查看圈存詳情：</h4>
                         <ol className="list-decimal pl-6 text-white space-y-1">
                             <li>在個人資料頁面，可以看到圈存金額（黃色顯示）</li>
-                            <li>點擊「查看詳情」按鈕，可以看到所有圈存記錄</li>
+                            <li>點選「查看詳情」按鈕，可以看到所有圈存記錄</li>
                             <li>每筆圈存都會顯示類型、金額、時間和狀態</li>
                             <li>狀態包括：處理中、已完成、已取消</li>
                         </ol>
