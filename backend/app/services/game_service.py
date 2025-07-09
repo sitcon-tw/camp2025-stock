@@ -20,6 +20,66 @@ class GameService:
             self.db = get_database()
         else:
             self.db = db
+            
+    async def _safe_deduct_points(self, user_id: ObjectId, amount: int, 
+                                operation_note: str, session=None) -> dict:
+        """
+        安全地扣除使用者點數，防止產生負數餘額
+        
+        Args:
+            user_id: 使用者ID
+            amount: 要扣除的點數
+            operation_note: 操作說明
+            session: 資料庫session（用於交易）
+            
+        Returns:
+            dict: {'success': bool, 'message': str, 'balance_before': int, 'balance_after': int}
+        """
+        try:
+            # 使用 MongoDB 的條件更新確保原子性
+            update_result = await self.db[Collections.USERS].update_one(
+                {
+                    "_id": user_id,
+                    "points": {"$gte": amount}  # 確保扣除後不會變負數
+                },
+                {"$inc": {"points": -amount}},
+                session=session
+            )
+            
+            if update_result.modified_count == 0:
+                # 扣除失敗，檢查使用者目前餘額
+                user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+                current_balance = user.get("points", 0) if user else 0
+                
+                return {
+                    'success': False,
+                    'message': f'點數不足，目前餘額：{current_balance}，需要：{amount}',
+                    'balance_before': current_balance,
+                    'balance_after': current_balance
+                }
+            
+            # 扣除成功，記錄變動
+            user_after = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+            balance_after = user_after.get("points", 0) if user_after else 0
+            balance_before = balance_after + amount
+            
+            # 點數記錄在外部處理，避免重複記錄
+            
+            return {
+                'success': True,
+                'message': '點數扣除成功',
+                'balance_before': balance_before,
+                'balance_after': balance_after
+            }
+            
+        except Exception as e:
+            logger.error(f"Safe deduct points failed: {e}")
+            return {
+                'success': False,
+                'message': f'點數扣除失敗：{str(e)}',
+                'balance_before': 0,
+                'balance_after': 0
+            }
     
     async def create_pvp_challenge(self, from_user: str, amount: int, chat_id: str):
         """建立 PVP 挑戰"""
@@ -264,14 +324,25 @@ class GameService:
                 winner_name = challenge["challenger_name"]
                 loser_name = accepter.get("name", "未知使用者")
                 
-                # 轉移點數
+                # 轉移點數 - 使用安全扣除
+                deduction_result = await self._safe_deduct_points(
+                    user_id=accepter["_id"],
+                    amount=amount,
+                    operation_note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                if not deduction_result['success']:
+                    # 點數扣除失敗，應該不會發生，但作為安全措施
+                    logger.error(f"PVP game point deduction failed: {deduction_result['message']}")
+                    return PVPResponse(
+                        success=False,
+                        message=f"遊戲結算失敗：{deduction_result['message']}"
+                    )
+                
+                # 增加勝利者點數
                 await self.db[Collections.USERS].update_one(
                     {"telegram_id": challenge["challenger"]},
                     {"$inc": {"points": amount}}
-                )
-                await self.db[Collections.USERS].update_one(
-                    {"telegram_id": from_user},
-                    {"$inc": {"points": -amount}}
                 )
                 
                 # 記錄點數變動
@@ -301,14 +372,25 @@ class GameService:
                 winner_name = accepter.get("name", "未知使用者")
                 loser_name = challenge["challenger_name"]
                 
-                # 轉移點數
+                # 轉移點數 - 使用安全扣除
+                deduction_result = await self._safe_deduct_points(
+                    user_id=challenger_user["_id"],
+                    amount=amount,
+                    operation_note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                if not deduction_result['success']:
+                    # 點數扣除失敗，應該不會發生，但作為安全措施
+                    logger.error(f"PVP game point deduction failed: {deduction_result['message']}")
+                    return PVPResponse(
+                        success=False,
+                        message=f"遊戲結算失敗：{deduction_result['message']}"
+                    )
+                
+                # 增加勝利者點數
                 await self.db[Collections.USERS].update_one(
                     {"telegram_id": from_user},
                     {"$inc": {"points": amount}}
-                )
-                await self.db[Collections.USERS].update_one(
-                    {"telegram_id": challenge["challenger"]},
-                    {"$inc": {"points": -amount}}
                 )
                 
                 # 記錄點數變動
