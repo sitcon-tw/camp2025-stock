@@ -166,14 +166,14 @@ export const PermissionAudit = ({ token }) => {
             filtered = filtered.filter(log => log.type === filters.actionType);
         }
 
-        // 用戶ID過濾
+        // 使用者ID過濾
         if (filters.userId) {
             filtered = filtered.filter(log => 
                 log.user_id && log.user_id.toLowerCase().includes(filters.userId.toLowerCase())
             );
         }
 
-        // 搜索過濾
+        // 搜尋過濾
         if (filters.searchTerm) {
             const searchTerm = filters.searchTerm.toLowerCase();
             filtered = filtered.filter(log => 
@@ -344,7 +344,7 @@ export const PermissionAudit = ({ token }) => {
                         className="flex items-center space-x-2 bg-[#469FD2] text-white px-4 py-2 rounded hover:bg-[#5BAEE3] transition-colors"
                     >
                         <Clock className="h-4 w-4" />
-                        <span>刷新</span>
+                        <span>更新</span>
                     </button>
                 </div>
             </div>
@@ -387,24 +387,24 @@ export const PermissionAudit = ({ token }) => {
                         </select>
                     </div>
 
-                    {/* 用戶篩選 */}
+                    {/* 使用者篩選 */}
                     <div>
                         <label className="block text-sm font-medium text-[#7BC2E6] mb-1">
-                            用戶ID
+                            使用者ID
                         </label>
                         <input
                             type="text"
                             value={filters.userId}
                             onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
-                            placeholder="搜索用戶..."
+                            placeholder="搜尋使用者..."
                             className="w-full bg-[#0f203e] border border-[#294565] rounded px-3 py-2 text-[#92cbf4] placeholder-[#557797] focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                         />
                     </div>
 
-                    {/* 搜索框 */}
+                    {/* 搜尋框 */}
                     <div>
                         <label className="block text-sm font-medium text-[#7BC2E6] mb-1">
-                            搜索
+                            搜尋
                         </label>
                         <div className="relative">
                             <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#557797]" />
@@ -412,7 +412,7 @@ export const PermissionAudit = ({ token }) => {
                                 type="text"
                                 value={filters.searchTerm}
                                 onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-                                placeholder="搜索操作..."
+                                placeholder="搜尋操作..."
                                 className="w-full bg-[#0f203e] border border-[#294565] rounded pl-10 pr-3 py-2 text-[#92cbf4] placeholder-[#557797] focus:outline-none focus:ring-2 focus:ring-[#469FD2]"
                             />
                         </div>
@@ -427,7 +427,7 @@ export const PermissionAudit = ({ token }) => {
                         <AlertCircle className="h-12 w-12 text-[#557797] mx-auto mb-4" />
                         <p className="text-[#7BC2E6] text-lg">沒有找到符合條件的日誌記錄</p>
                         <p className="text-[#557797] text-sm mt-2">
-                            請嘗試調整篩選條件或刷新頁面
+                            請嘗試調整篩選條件或更新頁面
                         </p>
                     </div>
                 ) : (

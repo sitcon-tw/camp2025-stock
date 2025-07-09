@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-初始化用戶圈存欄位腳本
-為所有現有用戶添加 escrow_amount 欄位，預設值為 0
+初始化使用者圈存欄位腳本
+為所有現有使用者添加 escrow_amount 欄位，預設值為 0
 """
 
 import asyncio
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def init_user_escrow_fields():
-    """為所有用戶初始化圈存欄位"""
+    """為所有使用者初始化圈存欄位"""
     try:
         # 連接到 MongoDB
         client = AsyncIOMotorClient(config.database.mongo_uri)
@@ -24,9 +24,9 @@ async def init_user_escrow_fields():
         await client.admin.command('ismaster')
         logger.info(f"Successfully connected to MongoDB database: {config.database.database_name}")
         
-        # 為所有用戶添加 escrow_amount 欄位
+        # 為所有使用者添加 escrow_amount 欄位
         result = await db[Collections.USERS].update_many(
-            {"escrow_amount": {"$exists": False}},  # 只更新沒有此欄位的用戶
+            {"escrow_amount": {"$exists": False}},  # 只更新沒有此欄位的使用者
             {"$set": {"escrow_amount": 0}}
         )
         

@@ -14,7 +14,7 @@ class EscrowService:
     圈存服務 - 類似銀行的資金圈存機制
     
     功能：
-    1. 預先凍結用戶資金用於特定交易
+    1. 預先凍結使用者資金用於特定交易
     2. 確保交易執行時有足夠資金
     3. 避免超額消費和負餘額
     4. 提供交易回滾機制
@@ -32,7 +32,7 @@ class EscrowService:
         創建圈存記錄
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             amount: 圈存金額
             escrow_type: 圈存類型 ('stock_order', 'pvp_battle', 'transfer')
             reference_id: 相關交易ID (如訂單ID、PVP ID等)
@@ -49,7 +49,7 @@ class EscrowService:
             # 使用事務確保原子性
             async with await self.db.client.start_session() as session:
                 async with session.start_transaction():
-                    # 檢查用戶餘額並扣除可用餘額
+                    # 檢查使用者餘額並扣除可用餘額
                     user_update_result = await self.db[Collections.USERS].update_one(
                         {
                             "_id": user_id,
@@ -132,7 +132,7 @@ class EscrowService:
                     # 計算退還金額
                     refund_amount = escrowed_amount - final_amount
                     
-                    # 更新用戶餘額
+                    # 更新使用者餘額
                     user_update = {
                         "$inc": {
                             "escrow_amount": -escrowed_amount,  # 減少圈存金額
@@ -202,7 +202,7 @@ class EscrowService:
                     user_id = escrow_doc["user_id"]
                     amount = escrow_doc["amount"]
                     
-                    # 退還資金到用戶餘額
+                    # 退還資金到使用者餘額
                     await self.db[Collections.USERS].update_one(
                         {"_id": user_id},
                         {
@@ -242,10 +242,10 @@ class EscrowService:
     
     async def get_user_escrows(self, user_id: str, status: str = None) -> List[Dict]:
         """
-        獲取用戶的圈存記錄
+        獲取使用者的圈存記錄
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             status: 狀態篩選 ('active', 'completed', 'cancelled')
             
         Returns:
@@ -295,10 +295,10 @@ class EscrowService:
     
     async def get_user_total_escrow(self, user_id: str) -> int:
         """
-        獲取用戶總圈存金額
+        獲取使用者總圈存金額
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             
         Returns:
             total_escrow: 總圈存金額
@@ -367,7 +367,7 @@ class EscrowService:
         記錄圈存變更日誌
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             action: 動作類型
             amount: 金額
             escrow_id: 圈存ID

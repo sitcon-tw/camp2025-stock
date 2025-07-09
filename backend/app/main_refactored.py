@@ -104,7 +104,7 @@ app.include_router(
 app.include_router(
     user_balance.router, 
     prefix="/api", 
-    tags=["User Balance - 用戶餘額詳情"]
+    tags=["User Balance - 使用者餘額詳情"]
 )
 
 app.include_router(

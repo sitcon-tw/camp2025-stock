@@ -9,7 +9,7 @@ router = APIRouter(prefix="/user/balance", tags=["user-balance"])
 logger = logging.getLogger(__name__)
 
 class UserBalanceDetail(BaseModel):
-    """用戶餘額詳情"""
+    """使用者餘額詳情"""
     username: str = Field(..., description="使用者名稱")
     available_points: int = Field(..., description="可用餘額", alias="availablePoints")
     escrow_amount: int = Field(..., description="圈存金額", alias="escrowAmount")
@@ -23,7 +23,7 @@ async def get_user_balance_detail(
     current_user: dict = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ):
-    """獲取用戶詳細餘額信息"""
+    """獲取使用者詳細餘額信息"""
     try:
         user_id = current_user.get("user_id")
         if not user_id:
@@ -35,7 +35,7 @@ async def get_user_balance_detail(
         db = get_database()
         user_oid = ObjectId(user_id)
         
-        # 獲取用戶資料
+        # 獲取使用者資料
         user = await db[Collections.USERS].find_one({"_id": user_oid})
         if not user:
             raise HTTPException(status_code=404, detail="使用者不存在")
@@ -59,7 +59,7 @@ async def get_user_balance_detail(
 async def get_user_escrows(
     current_user: dict = Depends(get_current_user)
 ):
-    """獲取用戶的圈存記錄"""
+    """獲取使用者的圈存記錄"""
     try:
         user_id = current_user.get("user_id")
         if not user_id:
@@ -68,7 +68,7 @@ async def get_user_escrows(
         from app.services.escrow_service import get_escrow_service
         escrow_service = get_escrow_service()
         
-        # 獲取用戶所有圈存記錄
+        # 獲取使用者所有圈存記錄
         escrows = await escrow_service.get_user_escrows(user_id)
         
         # 計算統計信息

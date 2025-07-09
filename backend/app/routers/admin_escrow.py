@@ -15,7 +15,7 @@ async def get_user_escrows(
     current_user: dict = Depends(get_current_user),
     escrow_service: EscrowService = Depends(get_escrow_service)
 ):
-    """獲取用戶的圈存記錄"""
+    """獲取使用者的圈存記錄"""
     check_admin_permission(current_user, Role.ADMIN)
     
     try:
@@ -138,7 +138,7 @@ async def cleanup_expired_escrows(
 
 @router.get("/logs")
 async def get_escrow_logs(
-    user_id: Optional[str] = Query(None, description="用戶ID篩選"),
+    user_id: Optional[str] = Query(None, description="使用者ID篩選"),
     limit: int = Query(100, description="限制結果數量"),
     current_user: dict = Depends(get_current_user)
 ):
@@ -192,10 +192,10 @@ async def escrow_system_health(
             "created_at": {"$lt": one_hour_ago}
         }).to_list(None)
         
-        # 檢查用戶圈存金額是否與實際圈存記錄一致
+        # 檢查使用者圈存金額是否與實際圈存記錄一致
         inconsistent_users = []
         
-        # 使用聚合查詢找出圈存金額不一致的用戶
+        # 使用聚合查詢找出圈存金額不一致的使用者
         pipeline = [
             {"$match": {"status": "active"}},
             {"$group": {

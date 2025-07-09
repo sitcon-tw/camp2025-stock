@@ -2,14 +2,14 @@
 
 ## 概述
 
-實施圈存系統後，用戶現在有兩種餘額概念：
-- **可用餘額** (`available_points` / `points`): 用戶可以立即使用的點數
+實施圈存系統後，使用者現在有兩種餘額概念：
+- **可用餘額** (`available_points` / `points`): 使用者可以立即使用的點數
 - **圈存金額** (`escrow_amount`): 已被預訂但尚未消費的點數
 - **總餘額** (`total_balance`): 可用餘額 + 圈存金額
 
 ## API 響應變更
 
-### 1. 用戶投資組合 API (`/api/user/portfolio`)
+### 1. 使用者投資組合 API (`/api/user/portfolio`)
 
 **舊格式：**
 ```json
@@ -37,7 +37,7 @@
 }
 ```
 
-### 2. 管理員用戶資產查詢 API (`/api/admin/user-details`)
+### 2. 管理員使用者資產查詢 API (`/api/admin/user-details`)
 
 **舊格式：**
 ```json
@@ -67,7 +67,7 @@
 }
 ```
 
-### 3. 管理員用戶列表 API (`/api/admin/users`)
+### 3. 管理員使用者列表 API (`/api/admin/users`)
 
 **新增字段：**
 ```json
@@ -90,7 +90,7 @@
 }
 ```
 
-### 4. 新增用戶餘額詳情 API (`/api/user/balance/detail`)
+### 4. 新增使用者餘額詳情 API (`/api/user/balance/detail`)
 
 **新 API 響應：**
 ```json
@@ -102,7 +102,7 @@
 }
 ```
 
-### 5. 新增用戶圈存記錄 API (`/api/user/balance/escrows`)
+### 5. 新增使用者圈存記錄 API (`/api/user/balance/escrows`)
 
 **新 API 響應：**
 ```json
@@ -188,14 +188,14 @@ if (userBalance.escrowAmount > 0) {
 ## 管理員功能
 
 ### 1. 圈存管理 API (`/api/admin/escrow/*`)
-- 查看用戶圈存記錄
+- 查看使用者圈存記錄
 - 取消異常圈存
 - 系統健康檢查
 - 圈存統計信息
 
-### 2. 用戶餘額初始化
+### 2. 使用者餘額初始化
 ```bash
-# 為現有用戶初始化圈存字段
+# 為現有使用者初始化圈存字段
 python scripts/init_user_escrow_fields.py
 ```
 

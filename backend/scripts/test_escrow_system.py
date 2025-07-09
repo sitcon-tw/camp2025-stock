@@ -37,7 +37,7 @@ class EscrowSystemTester:
             # 初始化圈存服務
             self.escrow_service = EscrowService(self.db)
             
-            # 創建測試用戶
+            # 創建測試使用者
             await self.create_test_user()
             
         except Exception as e:
@@ -45,11 +45,11 @@ class EscrowSystemTester:
             raise
     
     async def create_test_user(self):
-        """創建測試用戶"""
+        """創建測試使用者"""
         test_user = {
             "_id": "test_user_escrow",
             "id": "test_user_escrow",
-            "name": "圈存測試用戶",
+            "name": "圈存測試使用者",
             "telegram_id": "test_escrow_123",
             "team": "測試團隊",
             "points": 1000,
@@ -57,7 +57,7 @@ class EscrowSystemTester:
             "enabled": True
         }
         
-        # 如果用戶已存在，更新餘額
+        # 如果使用者已存在，更新餘額
         await self.db[Collections.USERS].update_one(
             {"_id": "test_user_escrow"},
             {"$set": test_user},
@@ -83,7 +83,7 @@ class EscrowSystemTester:
             )
             logger.info(f"✅ Escrow created: {escrow_id}")
             
-            # 驗證用戶餘額變化
+            # 驗證使用者餘額變化
             user = await self.db[Collections.USERS].find_one({"_id": user_id})
             assert user["points"] == 900, f"Expected 900 points, got {user['points']}"
             assert user["escrow_amount"] == 100, f"Expected 100 escrow, got {user['escrow_amount']}"
@@ -151,7 +151,7 @@ class EscrowSystemTester:
             except InsufficientPointsException:
                 logger.info("✅ Correctly rejected insufficient funds")
             
-            # 驗證用戶餘額未改變
+            # 驗證使用者餘額未改變
             user_after = await self.db[Collections.USERS].find_one({"_id": user_id})
             assert user_after["points"] == current_points, "User points should not change on failed escrow"
             assert user_after["escrow_amount"] == 0, "User escrow amount should not change on failed escrow"
@@ -220,7 +220,7 @@ class EscrowSystemTester:
                 )
                 escrow_ids.append(escrow_id)
             
-            # 驗證用戶狀態
+            # 驗證使用者狀態
             user = await self.db[Collections.USERS].find_one({"_id": user_id})
             assert user["escrow_amount"] == 250, f"Expected 250 total escrow, got {user['escrow_amount']}"
             
@@ -269,7 +269,7 @@ class EscrowSystemTester:
                 )
                 escrow_ids.append(escrow_id)
             
-            # 測試用戶圈存查詢
+            # 測試使用者圈存查詢
             user_escrows = await self.escrow_service.get_user_escrows(user_id)
             assert len(user_escrows) >= 3, "Should have at least 3 escrows"
             
@@ -345,7 +345,7 @@ class EscrowSystemTester:
     async def cleanup(self):
         """清理測試環境"""
         try:
-            # 清理測試用戶
+            # 清理測試使用者
             await self.db[Collections.USERS].delete_one({"_id": "test_user_escrow"})
             
             # 清理測試圈存記錄

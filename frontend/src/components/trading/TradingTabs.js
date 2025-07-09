@@ -136,7 +136,7 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                                 className="rounded bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 transition-colors"
                                 disabled={loading}
                             >
-                                🔄 立即刷新
+                                🔄 立即更新
                             </button>
                         </div> */}
                         

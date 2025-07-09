@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
     const { permissions, role, loading: permissionLoading, error } = usePermissionContext();
 
-    // 檢查當前頁簽是否對用戶可用，如果不可用則重定向到dashboard
+    // 檢查當前頁簽是否對使用者可用，如果不可用則重定向到dashboard
     useEffect(() => {
         if (!permissionLoading && permissions) {
             if (activeTab === "qr-generator" && !permissions.includes("generate_qrcode")) {
@@ -157,7 +157,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                             { id: "audit", label: "權限審查" },
                         ]
                             .filter((tab) => {
-                                // 如果頁簽需要特定權限，檢查用戶是否有該權限
+                                // 如果頁簽需要特定權限，檢查使用者是否有該權限
                                 if (tab.requiredPermission) {
                                     return permissions && permissions.includes(tab.requiredPermission);
                                 }

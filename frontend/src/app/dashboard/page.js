@@ -779,7 +779,7 @@ export default function Dashboard() {
         }
     }, [pointHistory, lastPointHistoryLength]);
 
-    // 獲取用戶圈存記錄
+    // 獲取使用者圈存記錄
     const loadEscrowDetails = async () => {
         const token = localStorage.getItem("userToken");
         if (!token) return;
