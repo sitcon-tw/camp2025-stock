@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getPendingOrders, triggerManualMatching, getPriceLimitInfo } from "@/lib/api";
+import { TradingTabs } from "@/components/trading";
 
 /**
  * 等待撮合訂單查看器組件
@@ -401,6 +402,16 @@ export const PendingOrdersViewer = ({ token }) => {
                     </p>
                 </div>
             )}
+
+            {/* 五檔報價 */}
+            <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+                <h3 className="mb-4 text-xl font-bold text-[#92cbf4]">
+                    📊 五檔報價
+                </h3>
+                <div className="max-w-md mx-auto">
+                    <TradingTabs activeTab="orderbook" />
+                </div>
+            </div>
         </div>
     );
 };
