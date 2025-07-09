@@ -469,3 +469,21 @@ def require_system_admin_permission():
             )
         return current_user
     return check_system_admin_permission
+
+def check_admin_permission(current_user: dict, required_role: Role):
+    """
+    檢查管理員權限的便利函數
+    
+    Args:
+        current_user: 目前使用者資訊
+        required_role: 所需角色
+        
+    Raises:
+        HTTPException: 如果權限不足
+    """
+    user_role = RBACService.get_user_role(current_user)
+    if user_role != required_role and user_role != Role.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要 {required_role.value} 角色"
+        )
