@@ -10,9 +10,11 @@ import {
     LinearScale,
     LineElement,
     PointElement,
+    TimeScale,
     Title,
     Tooltip,
 } from "chart.js";
+import "chartjs-adapter-date-fns";
 import { useEffect, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { twMerge } from "tailwind-merge";
@@ -24,6 +26,7 @@ ChartJS.register(
     LinearScale,
     PointElement,
     LineElement,
+    TimeScale,
     Title,
     Tooltip,
     Legend,
@@ -103,10 +106,12 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         );
                         const labels = historicalData.map((item) => {
                             const date = new Date(item.timestamp);
-                            return date.toLocaleTimeString("zh-TW", {
+                            // Convert to UTC+8 timezone
+                            const utc8Date = new Date(date.getTime() + (8 * 60 * 60 * 1000));
+                            return utc8Date.toLocaleTimeString("zh-TW", {
                                 hour: "2-digit",
                                 minute: "2-digit",
-                                timeZone: "Asia/Taipei"
+                                hour12: false
                             });
                         });
 

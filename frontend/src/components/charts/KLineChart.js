@@ -37,14 +37,19 @@ const KLineChart = ({
                 const chart = init(chartRef.current);
                 chartInstance.current = chart;
 
-                const klineData = data.map(item => ({
-                    timestamp: new Date(item.timestamp).getTime(),
-                    open: parseFloat(item.open) || 0,
-                    high: parseFloat(item.high) || 0,
-                    low: parseFloat(item.low) || 0,
-                    close: parseFloat(item.close) || 0,
-                    volume: parseFloat(item.volume) || 0
-                }));
+                const klineData = data.map(item => {
+                    // Convert timestamp to UTC+8 timezone
+                    const utcDate = new Date(item.timestamp);
+                    const utc8Date = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
+                    return {
+                        timestamp: utc8Date.getTime(),
+                        open: parseFloat(item.open) || 0,
+                        high: parseFloat(item.high) || 0,
+                        low: parseFloat(item.low) || 0,
+                        close: parseFloat(item.close) || 0,
+                        volume: parseFloat(item.volume) || 0
+                    };
+                });
 
                 chart.applyNewData(klineData);
 
