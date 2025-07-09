@@ -19,6 +19,7 @@ import {
     updateIpo,
 } from "@/lib/api";
 import { AnnouncementManagement } from "./AnnouncementManagement";
+import { QRCodeGenerator } from "./QRCodeGenerator";
 import { Modal } from "../ui";
 
 /**
@@ -69,9 +70,9 @@ export const AdminDashboard = ({ token }) => {
         );
     }
 
-    // 檢查是否有管理權限（admin、point_manager、announcer 都可以訪問）
+    // 檢查是否有管理權限（admin、qrcode_manager、point_manager、announcer 都可以訪問）
     const hasManagementAccess =
-        isAdmin() || role === "point_manager" || role === "announcer";
+        isAdmin() || role === "qrcode_manager" || role === "point_manager" || role === "announcer";
 
     if (!hasManagementAccess) {
         return (
@@ -84,7 +85,7 @@ export const AdminDashboard = ({ token }) => {
                         您的角色：{role}
                     </div>
                     <div className="text-sm text-gray-600">
-                        允許的角色：admin、point_manager、announcer
+                        允許的角色：admin、qrcode_manager、point_manager、announcer
                     </div>
                 </div>
             </div>
@@ -261,6 +262,17 @@ const OverviewSection = ({
                 token={token}
             >
                 <AnnouncementManagement token={token} />
+            </PermissionGuard>
+
+            {/* QR Code 管理區塊 */}
+            <PermissionGuard
+                requiredPermission={PERMISSIONS.GENERATE_QRCODE}
+                token={token}
+            >
+                <QRCodeManagementSection
+                    token={token}
+                    showNotification={showNotification}
+                />
             </PermissionGuard>
 
             {/* IPO 狀態區塊 */}
@@ -1354,6 +1366,35 @@ const IpoStatusSection = ({ token, showNotification }) => {
                     <p className="text-gray-400">無法獲取 IPO 狀態資訊</p>
                 </div>
             )}
+        </div>
+    );
+};
+
+/**
+ * QR Code 管理區塊
+ */
+const QRCodeManagementSection = ({ token, showNotification }) => {
+    return (
+        <div className="rounded-lg border border-[#294565] bg-[#1A325F] p-6 shadow">
+            <h2 className="mb-4 text-xl font-bold text-purple-400">
+                QR Code 管理
+            </h2>
+            <div className="rounded-lg border border-purple-500/30 bg-purple-600/10 p-3 mb-4">
+                <div className="flex items-start space-x-2">
+                    <span className="text-lg">📱</span>
+                    <div>
+                        <h4 className="font-semibold text-purple-400">QR Code 點數發放</h4>
+                        <p className="mt-1 text-sm text-purple-300">
+                            生成一次性使用的QR Code，學員掃描後可獲得指定點數。
+                            適用於活動獎勵、簽到獎勵等場景。
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <QRCodeGenerator 
+                token={token} 
+                showNotification={showNotification}
+            />
         </div>
     );
 };

@@ -44,6 +44,7 @@ export const PERMISSIONS = {
     VIEW_ALL_USERS: "view_all_users",
     GIVE_POINTS: "give_points",
     CREATE_ANNOUNCEMENT: "create_announcement",
+    GENERATE_QRCODE: "generate_qrcode",
     
     // 系統管理權限
     MANAGE_USERS: "manage_users",
@@ -57,6 +58,7 @@ export const PERMISSIONS = {
  */
 export const ROLES = {
     STUDENT: "student",
+    QRCODE_MANAGER: "qrcode_manager",
     POINT_MANAGER: "point_manager",
     ANNOUNCER: "announcer", 
     ADMIN: "admin",
@@ -90,6 +92,11 @@ export const PERMISSION_GROUPS = {
         PERMISSIONS.CREATE_ANNOUNCEMENT,
     ],
     
+    // QR Code 管理
+    QRCODE_MANAGEMENT: [
+        PERMISSIONS.GENERATE_QRCODE,
+    ],
+    
     // 市場管理
     MARKET_MANAGEMENT: [
         PERMISSIONS.MANAGE_MARKET,
@@ -113,6 +120,12 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.TRADE_STOCKS,
         PERMISSIONS.TRANSFER_POINTS,
     ],
+    [ROLES.QRCODE_MANAGER]: [
+        PERMISSIONS.VIEW_OWN_DATA,
+        PERMISSIONS.TRADE_STOCKS,
+        PERMISSIONS.TRANSFER_POINTS,
+        PERMISSIONS.GENERATE_QRCODE,
+    ],
     [ROLES.POINT_MANAGER]: [
         PERMISSIONS.VIEW_OWN_DATA,
         PERMISSIONS.TRADE_STOCKS,
@@ -134,6 +147,7 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.VIEW_ALL_USERS,
         PERMISSIONS.GIVE_POINTS,
         PERMISSIONS.CREATE_ANNOUNCEMENT,
+        PERMISSIONS.GENERATE_QRCODE,
         PERMISSIONS.MANAGE_USERS,
         PERMISSIONS.MANAGE_MARKET,
         PERMISSIONS.SYSTEM_ADMIN,

@@ -1077,6 +1077,8 @@ export default function Dashboard() {
                                     {userPermissions.role ===
                                         "student" && "一般學員"}
                                     {userPermissions.role ===
+                                        "qrcode_manager" && "QR Code管理員"}
+                                    {userPermissions.role ===
                                         "point_manager" &&
                                         "點數管理員"}
                                     {userPermissions.role ===
@@ -1085,6 +1087,7 @@ export default function Dashboard() {
                                         "admin" && "系統管理員"}
                                     {![
                                         "student",
+                                        "qrcode_manager",
                                         "point_manager",
                                         "announcer",
                                         "admin",
@@ -1172,6 +1175,7 @@ export default function Dashboard() {
                 {userPermissions && 
                  userPermissions.permissions && 
                  (userPermissions.role === "admin" || 
+                  userPermissions.role === "qrcode_manager" ||
                   userPermissions.role === "point_manager" || 
                   userPermissions.role === "announcer" ||
                   userPermissions.permissions.includes("manage_users") ||

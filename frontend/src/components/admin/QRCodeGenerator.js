@@ -332,7 +332,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     </div>
                     <div className="mt-4 flex gap-3">
                         <PermissionButton
-                            requiredPermission={PERMISSIONS.GIVE_POINTS}
+                            requiredPermission={PERMISSIONS.GENERATE_QRCODE}
                             token={token}
                             onClick={generateQRCodes}
                             disabled={isGenerating || !pointsPerQR || !generateCount}

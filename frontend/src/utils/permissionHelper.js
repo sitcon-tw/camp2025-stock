@@ -52,6 +52,7 @@ export const formatPermissionName = (permission) => {
         [PERMISSIONS.VIEW_ALL_USERS]: "查看所有使用者",
         [PERMISSIONS.GIVE_POINTS]: "發放點數",
         [PERMISSIONS.CREATE_ANNOUNCEMENT]: "發布公告",
+        [PERMISSIONS.GENERATE_QRCODE]: "生成QR Code",
         [PERMISSIONS.MANAGE_USERS]: "管理使用者",
         [PERMISSIONS.MANAGE_MARKET]: "管理市場",
         [PERMISSIONS.SYSTEM_ADMIN]: "系統管理",
@@ -68,6 +69,7 @@ export const formatPermissionName = (permission) => {
 export const formatRoleName = (role) => {
     const roleNames = {
         [ROLES.STUDENT]: "學員",
+        [ROLES.QRCODE_MANAGER]: "QR Code管理員",
         [ROLES.POINT_MANAGER]: "點數管理員",
         [ROLES.ANNOUNCER]: "公告員",
         [ROLES.ADMIN]: "管理員",
@@ -84,9 +86,10 @@ export const formatRoleName = (role) => {
 export const getRoleLevel = (role) => {
     const roleLevels = {
         [ROLES.STUDENT]: 1,
-        [ROLES.POINT_MANAGER]: 2,
-        [ROLES.ANNOUNCER]: 2,
-        [ROLES.ADMIN]: 4,
+        [ROLES.QRCODE_MANAGER]: 2,
+        [ROLES.POINT_MANAGER]: 3,
+        [ROLES.ANNOUNCER]: 3,
+        [ROLES.ADMIN]: 5,
     };
     
     return roleLevels[role] || 0;
@@ -116,6 +119,7 @@ export const getPermissionCategory = (permission) => {
         [PERMISSIONS.MANAGE_USERS]: "使用者管理",
         [PERMISSIONS.GIVE_POINTS]: "點數管理",
         [PERMISSIONS.CREATE_ANNOUNCEMENT]: "公告管理",
+        [PERMISSIONS.GENERATE_QRCODE]: "QR Code管理",
         [PERMISSIONS.MANAGE_MARKET]: "市場管理",
         [PERMISSIONS.SYSTEM_ADMIN]: "系統管理",
     };

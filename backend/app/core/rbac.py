@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class Role(str, Enum):
     """使用者角色定義"""
     STUDENT = "student"           # 一般學員
+    QRCODE_MANAGER = "qrcode_manager"  # QR Code管理員
     POINT_MANAGER = "point_manager"  # 發放點數權限
     ANNOUNCER = "announcer"       # 發公告權限
     ADMIN = "admin"              # 完整管理員權限
@@ -27,6 +28,7 @@ class Permission(str, Enum):
     VIEW_ALL_USERS = "view_all_users"         # 查看所有使用者
     GIVE_POINTS = "give_points"               # 發放點數
     CREATE_ANNOUNCEMENT = "create_announcement"  # 發布公告
+    GENERATE_QRCODE = "generate_qrcode"       # 生成QR Code
     
     # 系統管理權限
     MANAGE_USERS = "manage_users"             # 管理使用者
@@ -39,6 +41,12 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.VIEW_OWN_DATA,
         Permission.TRADE_STOCKS,
         Permission.TRANSFER_POINTS,
+    },
+    Role.QRCODE_MANAGER: {
+        Permission.VIEW_OWN_DATA,
+        Permission.TRADE_STOCKS,
+        Permission.TRANSFER_POINTS,
+        Permission.GENERATE_QRCODE,
     },
     Role.POINT_MANAGER: {
         Permission.VIEW_OWN_DATA,
@@ -62,6 +70,7 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.VIEW_ALL_USERS,
         Permission.GIVE_POINTS,
         Permission.CREATE_ANNOUNCEMENT,
+        Permission.GENERATE_QRCODE,
         Permission.MANAGE_USERS,
         Permission.MANAGE_MARKET,
         Permission.SYSTEM_ADMIN,
@@ -339,6 +348,20 @@ def require_student_role():
         return current_user
     return check_student_role
 
+def require_qrcode_manager_role():
+    """需要QR Code管理員角色"""
+    from app.core.security import get_current_user
+    
+    def check_qrcode_manager_role(current_user: dict = Depends(get_current_user)):
+        user_role = RBACService.get_user_role(current_user)
+        if user_role != Role.QRCODE_MANAGER and user_role != Role.ADMIN:  # 管理員可以存取所有功能
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Role.QRCODE_MANAGER.value} 角色"
+            )
+        return current_user
+    return check_qrcode_manager_role
+
 def require_point_manager_role():
     """需要點數管理員角色"""
     from app.core.security import get_current_user
@@ -420,6 +443,19 @@ def require_view_all_users_permission():
             )
         return current_user
     return check_view_all_users_permission
+
+def require_qrcode_permission():
+    """需要QR Code生成權限"""
+    from app.core.security import get_current_user
+    
+    def check_qrcode_permission(current_user: dict = Depends(get_current_user)):
+        if not RBACService.has_permission(current_user, Permission.GENERATE_QRCODE):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Permission.GENERATE_QRCODE.value} 權限"
+            )
+        return current_user
+    return check_qrcode_permission
 
 def require_system_admin_permission():
     """需要系統管理權限"""
