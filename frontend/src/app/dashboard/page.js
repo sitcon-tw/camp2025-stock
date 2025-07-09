@@ -1707,7 +1707,7 @@ export default function Dashboard() {
                             bgColor="#ffffff"
                             fgColor="#000000"
                         />
-                        <img src="/sitqr.svg" alt="QR Code Icon" className="absolute w-12 bg-white py-2 px-1 rounded-lg top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                        <img src="/SITQR.svg" alt="QR Code Icon" className="absolute w-12 bg-white py-2 px-1 rounded-lg top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
                     </div>
                     <div className="space-y-3">
                         <p className="text-sm text-[#92cbf4]">
