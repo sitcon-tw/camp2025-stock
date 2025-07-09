@@ -1692,7 +1692,7 @@ export default function Dashboard() {
                             value={(() => {
                                 const qrData = {
                                     type: 'transfer',
-                                    username: user?.username || user?.name || 'unknown',
+                                    // username: user?.username || user?.name || 'unknown',
                                     id: authData?.id || user?.id || 'unknown'
                                 };
                                 const qrString = JSON.stringify(qrData);
