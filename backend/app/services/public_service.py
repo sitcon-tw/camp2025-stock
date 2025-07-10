@@ -186,26 +186,24 @@ class PublicService:
     @cached(ttl=10, key_prefix="trade")
     async def get_recent_trades(self, limit: int = 20) -> List[TradeRecord]:
         try:
-            trades_cursor = self.db[Collections.STOCK_ORDERS].find({
-                "status": "filled"
-            }).sort("created_at", -1).limit(limit)
+            # 改用 TRADES 集合取得交易記錄，確保與管理員後台一致
+            trades_cursor = self.db[Collections.TRADES].find({}).sort("created_at", -1).limit(limit)
             
             trades = await trades_cursor.to_list(length=limit)
             
             trade_records = []
             for trade in trades:
-                # Get price from either 'price' or 'filled_price' field
+                # 使用 TRADES 集合的標準欄位
                 price = trade.get("price")
-                if price is None:
-                    price = trade.get("filled_price")
+                quantity = trade.get("quantity", 0)
                 
-                # Skip trades with invalid or missing price data
-                if price is None or price <= 0:
+                # 跳過無效的交易記錄
+                if price is None or price <= 0 or quantity <= 0:
                     continue
                     
                 trade_records.append(TradeRecord(
                     price=int(price),
-                    quantity=abs(trade.get("stock_amount", 0)),
+                    quantity=int(quantity),
                     timestamp=trade.get("created_at", datetime.now(timezone.utc)).isoformat()
                 ))
             

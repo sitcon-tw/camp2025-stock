@@ -218,27 +218,24 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
         const formatTime = (timestamp) => {
             const date = new Date(timestamp);
 
-            // make UTC+8 Asia/Taipei
-            date.setHours(date.getHours() + 8);
-
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const hours = date.getHours().toString().padStart(2, "0");
-            const minutes = date
-                .getMinutes()
-                .toString()
-                .padStart(2, "0");
-            const seconds = date
-                .getSeconds()
-                .toString()
-                .padStart(2, "0");
-            return `${month}/${day} ${hours}:${minutes}:${seconds}`;
+            // 使用標準的時區轉換，確保正確顯示台灣時間
+            const formatted = date.toLocaleString('zh-TW', {
+                timeZone: 'Asia/Taipei',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            return formatted.replace(/\//g, '/').replace(/,/g, '');
         };
 
-        // 計算漲跌
-        const calculateChange = (currentPrice, index) => {
-            if (index >= tradeHistory.length - 1) return 0;
-            const prevPrice = tradeHistory[index + 1].price;
+        // 計算漲跌 - 修正過濾後的索引邏輯
+        const calculateChange = (currentPrice, index, filteredArray) => {
+            if (index >= filteredArray.length - 1) return 0;
+            const prevPrice = filteredArray[index + 1].price;
             return currentPrice - prevPrice;
         };
 
@@ -281,12 +278,15 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                                     "flex-1 overflow-y-auto",
                             )}
                         >
-                            {tradeHistory.filter(trade => trade.quantity > 0).map((trade, index) => {
-                                const change = calculateChange(
-                                    trade.price,
-                                    index,
-                                );
-                                return (
+                            {(() => {
+                                const filteredTrades = tradeHistory.filter(trade => trade.quantity > 0);
+                                return filteredTrades.map((trade, index) => {
+                                    const change = calculateChange(
+                                        trade.price,
+                                        index,
+                                        filteredTrades
+                                    );
+                                    return (
                                     <div
                                         key={index}
                                         className="border-b border-[#469FD2]/30 last:border-b-0"
@@ -326,14 +326,17 @@ const TradingTabs = ({ activeTab: propActiveTab }) => {
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })}
-                            {tradeHistory.filter(trade => trade.quantity > 0).length === 0 &&
-                                !loading && (
+                                    );
+                                });
+                            })()}
+                            {(() => {
+                                const filteredTrades = tradeHistory.filter(trade => trade.quantity > 0);
+                                return filteredTrades.length === 0 && !loading && (
                                     <div className="py-8 text-center text-gray-400">
                                         暫無交易記錄
                                     </div>
-                                )}
+                                );
+                            })()}
                         </div>
                     </>
                 )}
