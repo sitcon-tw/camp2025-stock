@@ -245,14 +245,24 @@ class EscrowService:
         獲取使用者的圈存記錄
         
         Args:
-            user_id: 使用者ID
+            user_id: 使用者ID (字符串格式)
             status: 狀態篩選 ('active', 'completed', 'cancelled')
             
         Returns:
             escrows: 圈存記錄列表
         """
         try:
-            query = {"user_id": user_id}
+            from bson import ObjectId
+            
+            # 嘗試轉換為 ObjectId（因為資料庫中儲存的可能是 ObjectId）
+            try:
+                user_oid = ObjectId(user_id)
+                query_user_id = user_oid
+            except:
+                # 如果轉換失敗，使用原始字符串
+                query_user_id = user_id
+                
+            query = {"user_id": query_user_id}
             if status:
                 query["status"] = status
             
@@ -298,15 +308,25 @@ class EscrowService:
         獲取使用者總圈存金額
         
         Args:
-            user_id: 使用者ID
+            user_id: 使用者ID (字符串格式)
             
         Returns:
             total_escrow: 總圈存金額
         """
         try:
+            from bson import ObjectId
+            
+            # 嘗試轉換為 ObjectId（因為資料庫中儲存的可能是 ObjectId）
+            try:
+                user_oid = ObjectId(user_id)
+                query_user_id = user_oid
+            except:
+                # 如果轉換失敗，使用原始字符串
+                query_user_id = user_id
+            
             # 使用聚合計算活躍圈存的總金額
             pipeline = [
-                {"$match": {"user_id": user_id, "status": "active"}},
+                {"$match": {"user_id": query_user_id, "status": "active"}},
                 {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
             ]
             

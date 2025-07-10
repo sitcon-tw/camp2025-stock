@@ -198,7 +198,7 @@ class UserService:
             # 動態計算圈存金額，確保與圈存記錄一致
             from app.services.escrow_service import get_escrow_service
             escrow_service = get_escrow_service()
-            escrow_amount = await escrow_service.get_user_total_escrow(user_id)
+            escrow_amount = await escrow_service.get_user_total_escrow(str(user_oid))
             
             total_balance = available_points + escrow_amount
             total_value = total_balance + stock_value
