@@ -141,7 +141,9 @@ class AdminService:
                 
                 if current_owed > 0:
                     # 有欠款，優先償還
-                    repay_amount = min(request.amount, current_owed)
+                    # 先取得目前有多少存款，照道理是0但預防萬一仍然要處理
+                    current_points = user.get("points", 0)
+                    repay_amount = min(request.amount, current_owed +  current_points)
                     remaining_amount = request.amount - repay_amount
                     
                     # 更新點數和欠款
