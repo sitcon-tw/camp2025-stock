@@ -194,7 +194,12 @@ class UserService:
             stock_value = stocks * current_price
             
             available_points = user.get("points", 0)
-            escrow_amount = user.get("escrow_amount", 0)
+            
+            # 動態計算圈存金額，確保與圈存記錄一致
+            from app.services.escrow_service import get_escrow_service
+            escrow_service = get_escrow_service()
+            escrow_amount = await escrow_service.get_user_total_escrow(user_id)
+            
             total_balance = available_points + escrow_amount
             total_value = total_balance + stock_value
             
