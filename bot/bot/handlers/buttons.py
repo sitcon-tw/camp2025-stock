@@ -67,7 +67,7 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer("✅ 已取消 PVP 挑戰", show_alert=True)
         await query.edit_message_text("️⚠️ PVP 挑戰已取消")
         context.chat_data.pop(f"pvp:{original_user_id}", None)
-    elif data[1] == "confirm":
+    elif data[1] == "accept":
         if update.effective_user.id == int(data[2]):
             await query.answer("❌ 不能點自己的 PVP 挑戰！", show_alert=True)
             return
