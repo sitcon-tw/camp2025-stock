@@ -310,6 +310,7 @@ class MongoStockOrderRepository(StockOrderRepository):
             quantity=doc.get("quantity"),
             price=price,
             status=doc.get("status", "pending"),
+            filled_quantity=doc.get("filled_quantity", 0),
             created_at=doc.get("created_at"),
             executed_at=doc.get("executed_at")
         )

@@ -84,6 +84,7 @@ class StockOrder:
     quantity: int
     price: Optional[Decimal] = None
     status: str = "pending"  # pending, filled, cancelled
+    filled_quantity: int = 0  # 已成交數量
     created_at: Optional[datetime] = None
     executed_at: Optional[datetime] = None
     cancelled_at: Optional[datetime] = None
