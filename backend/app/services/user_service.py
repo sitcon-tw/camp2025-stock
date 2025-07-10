@@ -522,6 +522,44 @@ class UserService:
                         logger.error(f"Failed to create escrow for buy order: {e}")
                         raise InsufficientPointsException(f"無法圈存資金：{str(e)}")
                 
+                elif request.side == "sell":
+                    # 賣單：創建股票圈存記錄（但不實際扣除股票，用於追蹤）
+                    try:
+                        # 創建一個特殊的圈存記錄，用於追蹤賣單的股票佔用
+                        # 這個記錄不會實際扣除用戶的股票，但會在圈存系統中可見
+                        escrow_doc = {
+                            "user_id": user_oid,
+                            "amount": request.quantity,  # 記錄股票數量
+                            "type": "stock_order_sell",
+                            "reference_id": None,  # 將在訂單創建後更新
+                            "metadata": {
+                                "side": request.side,
+                                "quantity": request.quantity,
+                                "price": request.price,
+                                "order_type": request.order_type,
+                                "escrow_unit": "stocks",  # 標記這是股票圈存
+                                "note": "賣單股票圈存 - 用於追蹤，不實際扣除股票"
+                            },
+                            "status": "active",
+                            "created_at": datetime.now(timezone.utc),
+                            "expires_at": None,
+                            "completed_at": None,
+                            "cancelled_at": None
+                        }
+                        
+                        # 直接插入圈存記錄，不進行股票扣除
+                        escrow_result = await self.db[Collections.ESCROWS].insert_one(escrow_doc)
+                        escrow_id = str(escrow_result.inserted_id)
+                        
+                        # 在訂單文檔中記錄圈存ID
+                        order_doc["escrow_id"] = escrow_id
+                        
+                        logger.info(f"Stock tracking escrow created for sell order: {escrow_id}, stocks: {request.quantity}")
+                    except Exception as e:
+                        logger.error(f"Failed to create stock tracking escrow for sell order: {e}")
+                        # 如果無法創建追蹤記錄，仍然允許訂單創建（向後相容）
+                        logger.warning("Sell order will proceed without escrow tracking")
+                
                 # 限價單加入訂單簿（帶重試機制）
                 result = await self._insert_order_with_retry(order_doc)
                 order_id = str(result.inserted_id)
@@ -3531,20 +3569,40 @@ class UserService:
                     escrow for escrow in user_escrows 
                     if (escrow.get("reference_id") == order_id or 
                         escrow.get("reference_id") == str(order_oid)) and
-                       escrow.get("type") == "stock_order"
+                       escrow.get("type") in ["stock_order", "stock_order_sell"]
                 ]
                 
                 # 取消相關的圈存記錄
                 for escrow in related_escrows:
                     escrow_id = str(escrow.get("_id"))
-                    cancelled = await escrow_service.cancel_escrow(
-                        escrow_id=escrow_id,
-                        reason=f"訂單取消: {reason}"
-                    )
-                    if cancelled:
-                        logger.info(f"已取消相關圈存: {escrow_id}, 金額: {escrow.get('amount', 0)}")
+                    escrow_type = escrow.get("type")
+                    
+                    if escrow_type == "stock_order_sell":
+                        # 賣單圈存：直接標記為取消，不進行資金退還（因為沒有實際扣除股票）
+                        try:
+                            await self.db[Collections.ESCROWS].update_one(
+                                {"_id": ObjectId(escrow_id), "status": "active"},
+                                {
+                                    "$set": {
+                                        "status": "cancelled",
+                                        "cancellation_reason": f"訂單取消: {reason}",
+                                        "cancelled_at": datetime.now(timezone.utc)
+                                    }
+                                }
+                            )
+                            logger.info(f"已取消賣單圈存記錄: {escrow_id}, 股票數量: {escrow.get('amount', 0)}")
+                        except Exception as e:
+                            logger.warning(f"取消賣單圈存記錄失敗: {escrow_id}, 錯誤: {e}")
                     else:
-                        logger.warning(f"取消圈存失敗: {escrow_id}")
+                        # 買單圈存：使用標準的圈存取消邏輯（退還點數）
+                        cancelled = await escrow_service.cancel_escrow(
+                            escrow_id=escrow_id,
+                            reason=f"訂單取消: {reason}"
+                        )
+                        if cancelled:
+                            logger.info(f"已取消買單圈存: {escrow_id}, 金額: {escrow.get('amount', 0)}")
+                        else:
+                            logger.warning(f"取消買單圈存失敗: {escrow_id}")
                         
             except Exception as escrow_error:
                 logger.error(f"處理圈存取消時發生錯誤: {escrow_error}")

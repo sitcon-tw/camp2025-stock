@@ -490,7 +490,7 @@ class AdminService:
                     "available_points": available_points,     # 可用餘額
                     "escrow_amount": escrow_amount,          # 圈存金額
                     "total_balance": total_balance,          # 總餘額
-                    "points": available_points,              # 向後兼容
+                    "points": available_points,              # 向後相容
                     "stock_amount": stock_amount,
                     "stock_value": stock_value,
                     "total_value": total_value,              # 總資產

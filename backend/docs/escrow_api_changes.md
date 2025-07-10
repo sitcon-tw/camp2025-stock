@@ -81,7 +81,7 @@
   "available_points": 800,     // 新增：可用餘額
   "escrow_amount": 200,        // 新增：圈存金額
   "total_balance": 1000,       // 新增：總餘額
-  "points": 800,               // 向後兼容
+  "points": 800,               // 向後相容
   "stock_amount": 50,
   "stock_value": 1000,         // 新增：股票價值
   "total_value": 2000,         // 總資產
@@ -163,7 +163,7 @@ if (userBalance.escrowAmount > 0) {
 }
 ```
 
-## 向後兼容性
+## 向後相容性
 
 - `points` 字段保持不變，代表可用餘額
 - 新增的字段都有預設值，不會破壞現有功能
@@ -205,4 +205,4 @@ python scripts/init_user_escrow_fields.py
 python scripts/test_escrow_system.py
 ```
 
-這些變更確保了系統的資金安全性，同時保持了 API 的向後兼容性。
+這些變更確保了系統的資金安全性，同時保持了 API 的向後相容性。
