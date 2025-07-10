@@ -50,12 +50,13 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data.split(":")
 
-    market_status = api_helper.get("/api/status")
-    if not market_status.isOpen:
-        await update.message.reply_text(
-            "🚫 目前交易已經關閉，請稍後再來！",
-        )
-        return
+    # TODO: NOT working
+    # market_status = api_helper.get("/api/status")
+    # if not market_status.isOpen:
+    #     await update.message.reply_text(
+    #         "🚫 目前交易已經關閉，請稍後再來！",
+    #     )
+    #     return
 
     if data[1] == "cancel":
         original_user_id = int(data[2])
