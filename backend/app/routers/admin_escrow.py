@@ -258,8 +258,9 @@ async def refund_all_escrows(
     退還所有活躍的圈存金額
     這是一個危險的管理員操作，會取消所有正在進行的圈存並退款
     """
-    from app.core.rbac import require_permission, Permission
-    require_permission(current_user, Permission.MANAGE_SYSTEM)
+    from app.core.rbac import RBACService, Permission
+    if not RBACService.has_permission(current_user, Permission.SYSTEM_ADMIN):
+        raise HTTPException(status_code=403, detail="權限不足：需要系統管理權限")
     
     try:
         from app.core.database import get_database, Collections
@@ -350,8 +351,9 @@ async def refund_user_escrows(
     """
     退還特定使用者的所有圈存金額
     """
-    from app.core.rbac import require_permission, Permission
-    require_permission(current_user, Permission.VIEW_ALL_USERS)
+    from app.core.rbac import RBACService, Permission
+    if not RBACService.has_permission(current_user, Permission.VIEW_ALL_USERS):
+        raise HTTPException(status_code=403, detail="權限不足：需要查看所有使用者權限")
     
     try:
         logger.info(f"管理員 {current_user.get('username', 'unknown')} 開始退還使用者 {user_id} 的圈存")
