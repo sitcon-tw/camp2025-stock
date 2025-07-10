@@ -102,80 +102,89 @@ class EscrowService:
             logger.error(f"Failed to create escrow: {e}")
             raise EscrowException(f"圈存創建失敗: {str(e)}")
     
-    async def complete_escrow(self, escrow_id: str, actual_amount: int = None) -> bool:
+    async def complete_escrow(self, escrow_id: str, actual_amount: int = None, session=None) -> bool:
         """
         完成圈存 - 實際執行交易
         
         Args:
             escrow_id: 圈存記錄ID
             actual_amount: 實際消費金額 (如果不同於圈存金額)
+            session: 可選的數據庫會話（用於事務中）
             
         Returns:
             success: 是否成功完成
         """
         try:
-            async with await self.db.client.start_session() as session:
-                async with session.start_transaction():
-                    # 獲取圈存記錄
-                    escrow_doc = await self.db[Collections.ESCROWS].find_one(
-                        {"_id": ObjectId(escrow_id), "status": "active"},
-                        session=session
-                    )
-                    
-                    if not escrow_doc:
-                        raise EscrowException("圈存記錄不存在或已處理")
-                    
-                    user_id = escrow_doc["user_id"]
-                    escrowed_amount = escrow_doc["amount"]
-                    final_amount = actual_amount if actual_amount is not None else escrowed_amount
-                    
-                    # 計算退還金額
-                    refund_amount = escrowed_amount - final_amount
-                    
-                    # 更新使用者餘額
-                    user_update = {
-                        "$inc": {
-                            "escrow_amount": -escrowed_amount,  # 減少圈存金額
-                        }
-                    }
-                    
-                    if refund_amount > 0:
-                        # 如果有退款，返還到可用餘額
-                        user_update["$inc"]["points"] = refund_amount
-                    
-                    await self.db[Collections.USERS].update_one(
-                        {"_id": user_id},
-                        user_update,
-                        session=session
-                    )
-                    
-                    # 標記圈存為已完成
-                    await self.db[Collections.ESCROWS].update_one(
-                        {"_id": ObjectId(escrow_id)},
-                        {
-                            "$set": {
-                                "status": "completed",
-                                "actual_amount": final_amount,
-                                "refund_amount": refund_amount,
-                                "completed_at": datetime.now(timezone.utc)
-                            }
-                        },
-                        session=session
-                    )
-                    
-                    # 記錄完成日誌
-                    await self._log_escrow_change(
-                        user_id, "complete", final_amount, escrow_id,
-                        f"圈存完成 - 消費: {final_amount}, 退還: {refund_amount}", session
-                    )
-                    
-                    logger.info(f"Escrow completed: {escrow_id}, consumed: {final_amount}, refunded: {refund_amount}")
-                    return True
-                    
+            if session is not None:
+                # 使用提供的會話（已在事務中）
+                return await self._complete_escrow_logic(escrow_id, actual_amount, session)
+            else:
+                # 創建新的會話和事務
+                async with await self.db.client.start_session() as new_session:
+                    async with new_session.start_transaction():
+                        return await self._complete_escrow_logic(escrow_id, actual_amount, new_session)
+                        
         except Exception as e:
             logger.error(f"Failed to complete escrow {escrow_id}: {e}")
             raise EscrowException(f"圈存完成失敗: {str(e)}")
     
+    async def _complete_escrow_logic(self, escrow_id: str, actual_amount: int = None, session=None) -> bool:
+        """圈存完成的核心邏輯"""
+        # 獲取圈存記錄
+        escrow_doc = await self.db[Collections.ESCROWS].find_one(
+            {"_id": ObjectId(escrow_id), "status": "active"},
+            session=session
+        )
+        
+        if not escrow_doc:
+            raise EscrowException("圈存記錄不存在或已處理")
+        
+        user_id = escrow_doc["user_id"]
+        escrowed_amount = escrow_doc["amount"]
+        final_amount = actual_amount if actual_amount is not None else escrowed_amount
+        
+        # 計算退還金額
+        refund_amount = escrowed_amount - final_amount
+        
+        # 更新使用者餘額
+        user_update = {
+            "$inc": {
+                "escrow_amount": -escrowed_amount,  # 減少圈存金額
+            }
+        }
+        
+        if refund_amount > 0:
+            # 如果有退款，返還到可用餘額
+            user_update["$inc"]["points"] = refund_amount
+        
+        await self.db[Collections.USERS].update_one(
+            {"_id": user_id},
+            user_update,
+            session=session
+        )
+        
+        # 標記圈存為已完成
+        await self.db[Collections.ESCROWS].update_one(
+            {"_id": ObjectId(escrow_id)},
+            {
+                "$set": {
+                    "status": "completed",
+                    "actual_amount": final_amount,
+                    "refund_amount": refund_amount,
+                    "completed_at": datetime.now(timezone.utc)
+                }
+            },
+            session=session
+        )
+        
+        # 記錄完成日誌
+        await self._log_escrow_change(
+            user_id, "complete", final_amount, escrow_id,
+            f"圈存完成 - 消費: {final_amount}, 退還: {refund_amount}", session
+        )
+        
+        logger.info(f"Escrow completed: {escrow_id}, consumed: {final_amount}, refunded: {refund_amount}")
+        return True
     async def cancel_escrow(self, escrow_id: str, reason: str = "cancelled") -> bool:
         """
         取消圈存 - 退還全部資金

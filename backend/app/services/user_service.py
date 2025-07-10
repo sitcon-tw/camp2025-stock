@@ -1722,43 +1722,24 @@ class UserService:
             # 更新使用者資產
             logger.info(f"Updating user assets: user_id={user_oid}, deducting {trade_amount} points, adding {quantity} stocks")
             
-            # 為市價買單創建即時圈存並完成交易
+            # 市價單直接更新使用者資產（不使用圈存系統，因為市價單是即時交易）
             if side == "buy":
-                from app.services.escrow_service import get_escrow_service
-                escrow_service = get_escrow_service()
-                
-                try:
-                    # 創建即時圈存
-                    escrow_id = await escrow_service.create_escrow(
-                        user_id=user_oid,
-                        amount=trade_amount,
-                        escrow_type="market_order",
-                        reference_id=str(result.inserted_id),
-                        metadata={
-                            "side": side,
-                            "quantity": quantity,
-                            "price": current_price,
-                            "order_type": "market"
-                        }
-                    )
-                    
-                    # 立即完成圈存
-                    await escrow_service.complete_escrow(escrow_id, trade_amount)
-                    logger.info(f"Market buy order escrow completed: {escrow_id}, consumed: {trade_amount}")
-                    
-                    # 更新訂單記錄圈存ID
-                    await self.db[Collections.STOCK_ORDERS].update_one(
-                        {"_id": result.inserted_id},
-                        {"$set": {"escrow_id": escrow_id}},
-                        session=session
-                    )
-                    
-                except Exception as e:
-                    logger.error(f"Failed to create/complete escrow for market buy order: {e}")
-                    raise Exception(f"市價買單圈存失敗：{str(e)}")
-            else:
-                # 賣單不需要圈存，不扣除點數
-                pass
+                # 直接扣除點數，增加股票
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_oid},
+                    {"$inc": {"points": -trade_amount}},
+                    session=session
+                )
+                logger.info(f"Market buy order: deducted {trade_amount} points from user {user_oid}")
+            
+            elif side == "sell":
+                # 直接增加點數，減少股票（股票扣除在下面的更新邏輯中處理）
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_oid},
+                    {"$inc": {"points": trade_amount}},
+                    session=session
+                )
+                logger.info(f"Market sell order: added {trade_amount} points to user {user_oid}")
             
             # 買單增加股票持有
             stocks_update_result = await self.db[Collections.STOCKS].update_one(
