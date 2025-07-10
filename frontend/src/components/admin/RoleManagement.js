@@ -267,14 +267,11 @@ export const RoleManagement = ({ token }) => {
                             className="w-full rounded-md border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:ring-2 focus:ring-[#469FD2] focus:outline-none"
                         >
                             <option value="all">所有角色</option>
-                            <option value="student">學員</option>
-                            <option value="qrcode_manager">QR Code管理員</option>
-                            <option value="point_manager">
-                                點數管理員
-                            </option>
-                            <option value="qr_point_manager">QR碼與點數管理員</option>
-                            <option value="announcer">公告員</option>
-                            <option value="admin">管理員</option>
+                            {Object.values(ROLES).map((role) => (
+                                <option key={role} value={role}>
+                                    {formatRoleName(role)}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>
