@@ -77,6 +77,8 @@ export const MembersList = ({ token }) => {
                     created_at: student.created_at,
                     updated_at: student.updated_at,
                     points: student.points || 0,
+                    owed_points: student.owed_points || 0,
+                    frozen: student.frozen || false,
                     stock_amount: student.stock_amount || 0,
                     total_value: student.total_value || 0,
                     // 添加 debug 資訊
