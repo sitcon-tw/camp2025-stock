@@ -49,7 +49,52 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
         return [];
     };
 
-    // 檢查某個時間是否在交易時段內
+    // 將時間字符串轉換為分鐘數（從0:00開始計算）
+    const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    };
+
+    // 生成交易時段的視覺化區塊
+    const generateTradingSegments = () => {
+        const sessions = getTradingSessions();
+        if (sessions.length === 0) return [];
+
+        const segments = [];
+        
+        sessions.forEach((session, index) => {
+            if (!session.start || !session.end) return;
+
+            const startMinutes = timeToMinutes(session.start);
+            const endMinutes = timeToMinutes(session.end);
+
+            // 處理跨日情況
+            if (endMinutes < startMinutes) {
+                // 分成兩段：從開始時間到24:00，從0:00到結束時間
+                segments.push({
+                    key: `${index}-part1`,
+                    left: (startMinutes / (24 * 60)) * 100,
+                    width: ((24 * 60 - startMinutes) / (24 * 60)) * 100,
+                });
+                segments.push({
+                    key: `${index}-part2`,
+                    left: 0,
+                    width: (endMinutes / (24 * 60)) * 100,
+                });
+            } else {
+                // 正常情況：同一天內的時間段
+                segments.push({
+                    key: `${index}`,
+                    left: (startMinutes / (24 * 60)) * 100,
+                    width: ((endMinutes - startMinutes) / (24 * 60)) * 100,
+                });
+            }
+        });
+
+        return segments;
+    };
+
+    // 檢查某個時間是否在交易時段內（保持原邏輯用於其他用途）
     const isMarketOpen = (hour) => {
         const sessions = getTradingSessions();
         if (sessions.length === 0) return false;
@@ -78,6 +123,15 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
         });
     };
 
+    // 獲取現在時間的精確位置（分鐘級別）
+    const getCurrentTimePosition = () => {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        return (currentMinutes / (24 * 60)) * 100;
+    };
+
+    const tradingSegments = generateTradingSegments();
+
     return (
         <div className="mb-4 rounded-lg border border-[#294565] bg-[#0f203e] p-4">
             {/* 時間軸 */}
@@ -103,25 +157,23 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
                         ))}
                     </div>
 
-                    {/* 交易時段標記 */}
-                    <div className="absolute inset-0 flex">
-                        {hours.map((hour) => (
-                            <div
-                                key={hour}
-                                className={`flex-1 transition-all duration-300 ${
-                                    isMarketOpen(hour)
-                                        ? "bg-green-500/80 shadow-lg"
-                                        : "bg-transparent"
-                                }`}
-                            />
-                        ))}
-                    </div>
+                    {/* 交易時段標記 - 精確到分鐘 */}
+                    {tradingSegments.map((segment) => (
+                        <div
+                            key={segment.key}
+                            className="absolute top-0 h-full bg-green-500/80 shadow-lg transition-all duration-300"
+                            style={{
+                                left: `${segment.left}%`,
+                                width: `${segment.width}%`,
+                            }}
+                        />
+                    ))}
 
-                    {/* 現在時間指示器 */}
+                    {/* 現在時間指示器 - 精確到分鐘 */}
                     <div
                         className="absolute top-0 h-full w-0.5 bg-yellow-400 shadow-lg"
                         style={{
-                            left: `${(new Date().getHours() / 24) * 100}%`,
+                            left: `${getCurrentTimePosition()}%`,
                         }}
                     ></div>
                 </div>
