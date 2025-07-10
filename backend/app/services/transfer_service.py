@@ -4,7 +4,6 @@ from app.core.database import get_database, Collections
 from app.schemas.user import TransferRequest, TransferResponse
 from datetime import datetime, timezone
 from bson import ObjectId
-from typing import Optional
 import logging
 import uuid
 

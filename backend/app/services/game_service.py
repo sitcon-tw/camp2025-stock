@@ -94,10 +94,40 @@ class GameService:
                     message="使用者不存在，請先註冊"
                 )
             
-            if user.get("points", 0) < amount:
+            # 使用債務驗證服務檢查發起者狀態和資金
+            from app.core.user_validation import UserValidationService
+            validation_service = UserValidationService(self.db)
+            
+            validation_result = await validation_service.validate_user_can_spend(
+                user_id=user["_id"],
+                amount=amount,
+                operation_type="發起PvP挑戰"
+            )
+            
+            if not validation_result['can_spend']:
+                error_code = validation_result.get('error_code', 'UNKNOWN')
+                
+                if error_code == 'ACCOUNT_DISABLED':
+                    message = "帳戶未啟用，無法發起 PvP 挑戰"
+                elif error_code == 'ACCOUNT_FROZEN':
+                    message = "帳戶已凍結，無法發起 PvP 挑戰"
+                elif error_code == 'HAS_DEBT':
+                    owed_points = validation_result.get('user_data', {}).get('owed_points', 0)
+                    message = f"帳戶有欠款 {owed_points} 點，請先償還後才能發起 PvP 挑戰"
+                elif error_code == 'INSUFFICIENT_BALANCE':
+                    available_balance = validation_result.get('available_balance', 0)
+                    current_points = validation_result.get('user_data', {}).get('points', 0)
+                    owed_points = validation_result.get('user_data', {}).get('owed_points', 0)
+                    if owed_points > 0:
+                        message = f"可用點數不足！需要：{amount} 點，目前點數：{current_points} 點，欠款：{owed_points} 點，實際可用：{available_balance} 點"
+                    else:
+                        message = f"點數不足！需要：{amount} 點，目前點數：{available_balance} 點"
+                else:
+                    message = validation_result['message']
+                
                 return PVPResponse(
                     success=False,
-                    message=f"點數不足！你的點數：{user.get('points', 0)}，需要：{amount}"
+                    message=message
                 )
             
             # 檢查是否已有進行中的挑戰
@@ -289,10 +319,41 @@ class GameService:
                 )
             
             amount = challenge["amount"]
-            if accepter.get("points", 0) < amount:
+            
+            # 使用債務驗證服務檢查用戶狀態和資金
+            from app.core.user_validation import UserValidationService
+            validation_service = UserValidationService(self.db)
+            
+            validation_result = await validation_service.validate_user_can_spend(
+                user_id=accepter["_id"],
+                amount=amount,
+                operation_type="PvP挑戰"
+            )
+            
+            if not validation_result['can_spend']:
+                error_code = validation_result.get('error_code', 'UNKNOWN')
+                
+                if error_code == 'ACCOUNT_DISABLED':
+                    message = "帳戶未啟用，無法參與 PvP 挑戰"
+                elif error_code == 'ACCOUNT_FROZEN':
+                    message = "帳戶已凍結，無法參與 PvP 挑戰"
+                elif error_code == 'HAS_DEBT':
+                    owed_points = validation_result.get('user_data', {}).get('owed_points', 0)
+                    message = f"帳戶有欠款 {owed_points} 點，請先償還後才能參與 PvP 挑戰"
+                elif error_code == 'INSUFFICIENT_BALANCE':
+                    available_balance = validation_result.get('available_balance', 0)
+                    current_points = validation_result.get('user_data', {}).get('points', 0)
+                    owed_points = validation_result.get('user_data', {}).get('owed_points', 0)
+                    if owed_points > 0:
+                        message = f"可用點數不足！需要：{amount} 點，目前點數：{current_points} 點，欠款：{owed_points} 點，實際可用：{available_balance} 點"
+                    else:
+                        message = f"點數不足！需要：{amount} 點，目前點數：{available_balance} 點"
+                else:
+                    message = validation_result['message']
+                
                 return PVPResponse(
                     success=False,
-                    message=f"點數不足！你的點數：{accepter.get('points', 0)}，需要：{amount}"
+                    message=message
                 )
             
             # 使用發起者預先選擇的猜拳
