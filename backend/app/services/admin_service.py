@@ -136,19 +136,60 @@ class AdminService:
                 if not user:
                     raise UserNotFoundException(request.username)
 
-                # 更新使用者點數
-                await self.db[Collections.USERS].update_one(
-                    {"_id": user["_id"]},
-                    {"$inc": {"points": request.amount}}
-                )
+                # 檢查是否有欠款，優先償還欠款
+                current_owed = user.get("owed_points", 0)
+                
+                if current_owed > 0:
+                    # 有欠款，優先償還
+                    repay_amount = min(request.amount, current_owed)
+                    remaining_amount = request.amount - repay_amount
+                    
+                    # 更新點數和欠款
+                    update_doc = {"$inc": {"owed_points": -repay_amount}}
+                    if remaining_amount > 0:
+                        update_doc["$inc"]["points"] = remaining_amount
+                    
+                    # 如果完全償還欠款，解除凍結
+                    if current_owed <= request.amount:
+                        update_doc["$set"] = {"frozen": False}
+                    
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": user["_id"]},
+                        update_doc
+                    )
+                    
+                    # 記錄償還信息
+                    if repay_amount > 0:
+                        await self._log_point_change(
+                            user["_id"],
+                            "debt_repayment",
+                            repay_amount,
+                            f"管理員給予點數自動償還欠款: {repay_amount} 點"
+                        )
+                    
+                    # 記錄剩餘點數增加（如果有）
+                    if remaining_amount > 0:
+                        await self._log_point_change(
+                            user["_id"],
+                            "admin_grant",
+                            remaining_amount,
+                            f"管理員給予點數（償還欠款後剩餘）: {remaining_amount} 點"
+                        )
+                else:
+                    # 沒有欠款，直接增加點數
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": user["_id"]},
+                        {"$inc": {"points": request.amount}}
+                    )
+                    
+                    # 記錄點數變化
+                    await self._log_point_change(
+                        user["_id"],
+                        "admin_grant",
+                        request.amount,
+                        f"管理員給予點數: {request.amount} 點"
+                    )
 
-                # 記錄點數變化
-                await self._log_point_change(
-                    user["_id"],
-                    "admin_give",
-                    request.amount,
-                    note=f"管理員給予點數"
-                )
 
                 message = f"Successfully gave {request.amount} points to user {request.username}"
 
