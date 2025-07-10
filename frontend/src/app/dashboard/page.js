@@ -919,6 +919,19 @@ export default function Dashboard() {
                 setPointHistory(points);
                 setOrderHistory(stocks);
                 setUserPermissions(permissions);
+                
+                // 自動載入圈存詳情（如果有圈存金額）
+                if (portfolio?.escrowAmount > 0) {
+                    try {
+                        console.log("正在載入 Escrow Details...");
+                        const escrowData = await loadWithTimeout(getUserEscrows(token), "Escrow Details");
+                        console.log("Escrow Details 載入完成:", escrowData);
+                        setUserEscrows(escrowData.data?.escrows || []);
+                    } catch (escrowError) {
+                        console.warn("無法載入圈存詳情:", escrowError);
+                    }
+                }
+                
                 setIsLoading(false);
             } catch (error) {
                 console.error("載入使用者資料失敗:", error);
@@ -2173,7 +2186,16 @@ export default function Dashboard() {
             {/* 圈存詳情 Modal */}
             <Modal isOpen={showEscrowDetails} onClose={() => setShowEscrowDetails(false)}>
                 <div className="p-6">
-                    <h2 className="text-xl font-bold text-white mb-4">圈存記錄詳情</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-white">圈存記錄詳情</h2>
+                        <button
+                            onClick={loadEscrowDetails}
+                            disabled={escrowLoading}
+                            className="px-3 py-1 text-sm bg-[#469FD2] text-white rounded hover:bg-[#357abd] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {escrowLoading ? '載入中...' : '重新整理'}
+                        </button>
+                    </div>
                     
                     {escrowLoading ? (
                         <div className="text-center py-8">
@@ -2183,7 +2205,17 @@ export default function Dashboard() {
                     ) : (
                         <div className="space-y-4">
                             {userEscrows.length === 0 ? (
-                                <p className="text-[#557797] text-center py-8">目前沒有圈存記錄</p>
+                                <div className="text-center py-8">
+                                    <p className="text-[#557797] mb-2">目前沒有圈存記錄</p>
+                                    <p className="text-sm text-[#557797] opacity-75">
+                                        圈存記錄會在您下限價單、參與PVP對戰等時產生
+                                    </p>
+                                    {user?.escrowAmount > 0 && (
+                                        <p className="text-sm text-yellow-400 mt-2">
+                                            💡 您的帳戶顯示有 {user.escrowAmount} 點圈存金額，請點擊「重新整理」
+                                        </p>
+                                    )}
+                                </div>
                             ) : (
                                 <>
                                     <div className="mb-4 p-4 bg-[#0f203e] rounded-lg">
