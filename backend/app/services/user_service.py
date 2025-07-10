@@ -3518,6 +3518,38 @@ class UserService:
             
             logger.info(f"訂單已取消: {order_id}, 使用者: {user_id}, 原因: {reason}")
             
+            # 處理相關圈存的取消和退款
+            try:
+                from app.services.escrow_service import get_escrow_service
+                escrow_service = get_escrow_service()
+                
+                # 查找與此訂單相關的活躍圈存記錄
+                user_escrows = await escrow_service.get_user_escrows(str(current_user_oid), "active")
+                
+                # 找到與此訂單相關的圈存（通過 reference_id 或類型匹配）
+                related_escrows = [
+                    escrow for escrow in user_escrows 
+                    if (escrow.get("reference_id") == order_id or 
+                        escrow.get("reference_id") == str(order_oid)) and
+                       escrow.get("type") == "stock_order"
+                ]
+                
+                # 取消相關的圈存記錄
+                for escrow in related_escrows:
+                    escrow_id = str(escrow.get("_id"))
+                    cancelled = await escrow_service.cancel_escrow(
+                        escrow_id=escrow_id,
+                        reason=f"訂單取消: {reason}"
+                    )
+                    if cancelled:
+                        logger.info(f"已取消相關圈存: {escrow_id}, 金額: {escrow.get('amount', 0)}")
+                    else:
+                        logger.warning(f"取消圈存失敗: {escrow_id}")
+                        
+            except Exception as escrow_error:
+                logger.error(f"處理圈存取消時發生錯誤: {escrow_error}")
+                # 不中斷訂單取消流程，但記錄錯誤
+            
             # 發送取消通知
             await self._send_cancellation_notification_legacy(
                 user_id=user_id,
