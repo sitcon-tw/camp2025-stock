@@ -4,7 +4,7 @@ from telegram.ext import (CommandHandler, CallbackQueryHandler, ConversationHand
                           MessageHandler, filters, ContextTypes)
 from telegram.helpers import escape_markdown
 
-from bot.helper.existing_user import verify_existing_user
+from bot.helper.existing_user import verify_existing_user, verify_user_can_trade
 from utils import api_helper
 
 INPUT_AMOUNT, CHOOSE_TEAM, CHOOSE_PERSON, CONFIRM_TRANSFER = range(4)
@@ -16,6 +16,10 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     })
 
     if await verify_existing_user(response, update):
+        return ConversationHandler.END
+    
+    # 檢查用戶是否可以進行轉帳（包括欠款和凍結檢查）
+    if await verify_user_can_trade(response, update):
         return ConversationHandler.END
 
     if context.user_data.get("in_transfer_convo"):
@@ -44,8 +48,14 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def input_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.text.isdigit():
-        await update.message.reply_text("😾 請輸入一個正確的金額")
+    # 檢查輸入是否為有效的正整數
+    try:
+        amount = int(update.message.text)
+        if amount <= 0:
+            await update.message.reply_text("😾 請輸入大於 0 的正整數金額")
+            return INPUT_AMOUNT
+    except ValueError:
+        await update.message.reply_text("😾 請輸入一個有效的數字金額")
         return INPUT_AMOUNT
 
     amount = int(update.message.text)

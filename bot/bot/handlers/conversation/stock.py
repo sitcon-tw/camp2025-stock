@@ -11,7 +11,7 @@ from os import environ
 from dotenv import load_dotenv
 
 from bot.helper.chat_ids import MAIN_GROUP
-from bot.helper.existing_user import verify_existing_user
+from bot.helper.existing_user import verify_existing_user, verify_user_can_trade
 from utils import api_helper
 
 load_dotenv()
@@ -38,6 +38,10 @@ async def start_stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     })
 
     if await verify_existing_user(response, update):
+        return ConversationHandler.END
+    
+    # 檢查用戶是否可以進行交易（包括欠款和凍結檢查）
+    if await verify_user_can_trade(response, update):
         return ConversationHandler.END
 
     if context.user_data.get("in_stock_convo"):

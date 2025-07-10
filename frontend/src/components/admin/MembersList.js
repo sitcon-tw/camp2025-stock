@@ -114,7 +114,7 @@ export const MembersList = ({ token }) => {
             let bValue = b[sortBy] || "";
             
             // 數字類型特殊處理
-            if (["points", "stock_amount", "total_value"].includes(sortBy)) {
+            if (["points", "stock_amount", "total_value", "owed_points"].includes(sortBy)) {
                 aValue = parseFloat(aValue) || 0;
                 bValue = parseFloat(bValue) || 0;
             }
@@ -242,7 +242,7 @@ export const MembersList = ({ token }) => {
 
                     {/* 統計摘要 */}
                     {members.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-5">
                             <div className="rounded border border-[#294565] bg-[#0f203e] p-2 sm:p-3 text-center">
                                 <div className="text-lg sm:text-xl font-bold text-[#92cbf4]">{members.length}</div>
                                 <div className="text-xs sm:text-sm text-[#7BC2E6]">總成員數</div>
@@ -258,6 +258,12 @@ export const MembersList = ({ token }) => {
                                     {formatNumber(members.reduce((sum, m) => sum + (m.stock_amount || 0), 0))}
                                 </div>
                                 <div className="text-xs sm:text-sm text-[#7BC2E6]">總持股數</div>
+                            </div>
+                            <div className="rounded border border-[#294565] bg-[#0f203e] p-2 sm:p-3 text-center">
+                                <div className="text-lg sm:text-xl font-bold text-red-400">
+                                    {formatNumber(members.reduce((sum, m) => sum + (m.owed_points || 0), 0))}
+                                </div>
+                                <div className="text-xs sm:text-sm text-[#7BC2E6]">總欠款</div>
                             </div>
                             <div className="rounded border border-[#294565] bg-[#0f203e] p-2 sm:p-3 text-center">
                                 <div className="text-lg sm:text-xl font-bold text-yellow-400">
@@ -322,6 +328,12 @@ export const MembersList = ({ token }) => {
                                             </th>
                                             <th 
                                                 className="px-4 py-3 text-right text-sm font-medium text-[#7BC2E6] cursor-pointer hover:text-[#92cbf4]"
+                                                onClick={() => handleSort("owed_points")}
+                                            >
+                                                欠款 {getSortIcon("owed_points")}
+                                            </th>
+                                            <th 
+                                                className="px-4 py-3 text-right text-sm font-medium text-[#7BC2E6] cursor-pointer hover:text-[#92cbf4]"
                                                 onClick={() => handleSort("total_value")}
                                             >
                                                 總資產 {getSortIcon("total_value")}
@@ -368,6 +380,22 @@ export const MembersList = ({ token }) => {
                                                 </td>
                                                 <td className="px-4 py-3 text-right text-sm font-semibold text-blue-400">
                                                     {formatNumber(member.stock_amount)}
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-sm">
+                                                    {member.owed_points > 0 ? (
+                                                        <div className="space-y-1">
+                                                            <div className="font-semibold text-red-400">
+                                                                -{formatNumber(member.owed_points)}
+                                                            </div>
+                                                            {member.frozen && (
+                                                                <div className="inline-block px-2 py-1 rounded text-xs bg-red-600 text-red-100">
+                                                                    凍結
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-400">-</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3 text-right text-sm font-semibold text-yellow-400">
                                                     {formatNumber(member.total_value)}

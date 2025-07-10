@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.services.admin_service import AdminService, get_admin_service
 from app.services.user_service import UserService, get_user_service
+from app.services.debt_service import DebtService, get_debt_service
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
@@ -2170,4 +2171,260 @@ async def trigger_manual_matching(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="手動撮合觸發失敗"
+        )
+
+
+# ========== 債務管理 API ==========
+
+@router.get(
+    "/debt/debtors",
+    summary="獲取所有欠款用戶",
+    description="獲取系統中所有有欠款的用戶列表"
+)
+async def get_all_debtors(
+    current_user: dict = Depends(get_current_user),
+    debt_service: DebtService = Depends(get_debt_service)
+) -> dict:
+    """獲取所有欠款用戶列表"""
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_USERS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要用戶管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        result = await debt_service.get_all_debtors()
+        return result
+    except Exception as e:
+        logger.error(f"Failed to get debtors list: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取欠款用戶列表失敗: {str(e)}"
+        )
+
+
+@router.get(
+    "/debt/user/{user_id}",
+    summary="獲取用戶債務信息",
+    description="獲取指定用戶的詳細債務信息"
+)
+async def get_user_debt_info(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    debt_service: DebtService = Depends(get_debt_service)
+) -> dict:
+    """獲取用戶債務信息"""
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_USERS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要用戶管理權限（目前角色：{user_role.value}）"
+        )
+    
+    try:
+        from bson import ObjectId
+        user_oid = ObjectId(user_id)
+        result = await debt_service.get_user_debt_info(user_oid)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to get user debt info for {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"獲取用戶債務信息失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/debt/add",
+    summary="添加用戶欠款",
+    description="管理員為指定用戶添加欠款"
+)
+async def add_user_debt(
+    user_id: str,
+    amount: int,
+    reason: str,
+    current_user: dict = Depends(get_current_user),
+    debt_service: DebtService = Depends(get_debt_service)
+) -> dict:
+    """添加用戶欠款"""
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_POINTS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要點數管理權限（目前角色：{user_role.value}）"
+        )
+    
+    if amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="欠款金額必須大於 0"
+        )
+    
+    if not reason or len(reason.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="必須提供欠款原因"
+        )
+    
+    try:
+        from bson import ObjectId
+        user_oid = ObjectId(user_id)
+        admin_oid = ObjectId(current_user["user_id"])
+        
+        result = await debt_service.add_debt(user_oid, amount, reason.strip(), admin_oid)
+        
+        if result['success']:
+            logger.info(f"Admin {current_user['user_id']} added {amount} debt to user {user_id}, reason: {reason}")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Failed to add debt for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"添加欠款失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/debt/repay",
+    summary="償還用戶欠款",
+    description="管理員協助用戶償還欠款"
+)
+async def repay_user_debt(
+    user_id: str,
+    amount: int,
+    current_user: dict = Depends(get_current_user),
+    debt_service: DebtService = Depends(get_debt_service)
+) -> dict:
+    """償還用戶欠款"""
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.MANAGE_POINTS not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要點數管理權限（目前角色：{user_role.value}）"
+        )
+    
+    if amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="償還金額必須大於 0"
+        )
+    
+    try:
+        from bson import ObjectId
+        user_oid = ObjectId(user_id)
+        admin_oid = ObjectId(current_user["user_id"])
+        
+        result = await debt_service.repay_debt(user_oid, amount, admin_oid)
+        
+        if result['success']:
+            logger.info(f"Admin {current_user['user_id']} helped user {user_id} repay {amount} debt")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Failed to repay debt for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"償還欠款失敗: {str(e)}"
+        )
+
+
+@router.post(
+    "/debt/clear/{user_id}",
+    summary="清除用戶所有欠款",
+    description="管理員清除指定用戶的所有欠款（免償）"
+)
+async def clear_user_debt(
+    user_id: str,
+    reason: str,
+    current_user: dict = Depends(get_current_user),
+    debt_service: DebtService = Depends(get_debt_service)
+) -> dict:
+    """清除用戶所有欠款"""
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.ADMIN not in user_permissions:  # 需要最高權限
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要管理員權限（目前角色：{user_role.value}）"
+        )
+    
+    if not reason or len(reason.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="必須提供清除欠款的原因"
+        )
+    
+    try:
+        from bson import ObjectId
+        from app.core.database import get_database, Collections
+        
+        user_oid = ObjectId(user_id)
+        admin_oid = ObjectId(current_user["user_id"])
+        db = get_database()
+        
+        # 獲取當前欠款信息
+        debt_info = await debt_service.get_user_debt_info(user_oid)
+        if not debt_info['success'] or not debt_info['user_exists']:
+            return debt_info
+        
+        if debt_info['owed_points'] == 0:
+            return {
+                'success': False,
+                'message': '該用戶沒有欠款需要清除'
+            }
+        
+        cleared_amount = debt_info['owed_points']
+        
+        # 清除欠款並解除凍結
+        async with await db.client.start_session() as session:
+            async with session.start_transaction():
+                await db[Collections.USERS].update_one(
+                    {"_id": user_oid},
+                    {
+                        "$set": {
+                            "owed_points": 0,
+                            "frozen": False,
+                            "updated_at": datetime.now()
+                        }
+                    },
+                    session=session
+                )
+                
+                # 記錄清除歷史
+                clear_log = {
+                    "user_id": user_oid,
+                    "admin_id": admin_oid,
+                    "cleared_amount": cleared_amount,
+                    "reason": reason.strip(),
+                    "timestamp": datetime.now(),
+                    "type": "debt_cleared"
+                }
+                
+                await db[Collections.POINT_LOGS].insert_one(clear_log, session=session)
+        
+        logger.info(f"Admin {current_user['user_id']} cleared {cleared_amount} debt for user {user_id}, reason: {reason}")
+        
+        return {
+            'success': True,
+            'message': f'已清除 {cleared_amount} 點欠款',
+            'cleared_amount': cleared_amount,
+            'account_unfrozen': True
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to clear debt for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"清除欠款失敗: {str(e)}"
         )

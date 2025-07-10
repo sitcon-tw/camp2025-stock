@@ -1061,7 +1061,7 @@ class UserService:
     async def _safe_deduct_points(self, user_id: ObjectId, amount: int, 
                                 operation_note: str, session=None) -> dict:
         """
-        安全地扣除使用者點數，防止產生負數餘額
+        安全地扣除使用者點數，防止產生負數餘額（含欠款檢查）
         
         Args:
             user_id: 使用者ID
@@ -1073,31 +1073,89 @@ class UserService:
             dict: {'success': bool, 'message': str, 'balance_before': int, 'balance_after': int}
         """
         try:
-            # 使用 MongoDB 的條件更新確保原子性
+            # 首先檢查用戶狀態和欠款情況
+            user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+            if not user:
+                return {
+                    'success': False,
+                    'message': '使用者不存在',
+                    'balance_before': 0,
+                    'balance_after': 0
+                }
+            
+            # 檢查帳戶狀態
+            if not user.get("enabled", True):
+                return {
+                    'success': False,
+                    'message': '帳戶未啟用',
+                    'balance_before': user.get("points", 0),
+                    'balance_after': user.get("points", 0)
+                }
+            
+            if user.get("frozen", False):
+                return {
+                    'success': False,
+                    'message': '帳戶已凍結，無法進行交易',
+                    'balance_before': user.get("points", 0),
+                    'balance_after': user.get("points", 0)
+                }
+            
+            # 檢查欠款情況
+            points = user.get("points", 0)
+            owed_points = user.get("owed_points", 0)
+            
+            if owed_points > 0:
+                return {
+                    'success': False,
+                    'message': f'帳戶有欠款 {owed_points} 點，請先償還後才能進行交易',
+                    'balance_before': points,
+                    'balance_after': points,
+                    'owed_points': owed_points
+                }
+            
+            # 計算實際可用餘額
+            available_balance = points - owed_points
+            
+            if available_balance < amount:
+                return {
+                    'success': False,
+                    'message': f'餘額不足（含欠款檢查）。需要: {amount} 點，可用: {available_balance} 點',
+                    'balance_before': points,
+                    'balance_after': points,
+                    'available_balance': available_balance
+                }
+            
+            # 使用 MongoDB 的條件更新確保原子性（包含凍結和欠款檢查）
             update_result = await self.db[Collections.USERS].update_one(
                 {
                     "_id": user_id,
-                    "points": {"$gte": amount}  # 確保扣除後不會變負數
+                    "points": {"$gte": amount},  # 確保扣除後不會變負數
+                    "frozen": {"$ne": True},     # 確保不是凍結狀態
+                    "$or": [
+                        {"owed_points": {"$exists": False}},  # 沒有欠款字段
+                        {"owed_points": {"$lte": 0}}          # 或者欠款為0
+                    ]
                 },
                 {"$inc": {"points": -amount}},
                 session=session
             )
             
             if update_result.modified_count == 0:
-                # 扣除失敗，檢查使用者目前餘額
-                user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
-                current_balance = user.get("points", 0) if user else 0
+                # 扣除失敗，重新檢查原因
+                user_recheck = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+                current_balance = user_recheck.get("points", 0) if user_recheck else 0
+                current_owed = user_recheck.get("owed_points", 0) if user_recheck else 0
                 
                 return {
                     'success': False,
-                    'message': f'點數不足，需要 {amount} 點，目前餘額: {current_balance} 點',
+                    'message': f'扣除失敗。可能原因：餘額不足、帳戶凍結或有欠款。目前餘額: {current_balance} 點，欠款: {current_owed} 點',
                     'balance_before': current_balance,
                     'balance_after': current_balance
                 }
             
             # 扣除成功，取得更新後的餘額
-            user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
-            balance_after = user.get("points", 0) if user else 0
+            user_after = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+            balance_after = user_after.get("points", 0) if user_after else 0
             balance_before = balance_after + amount
             
             # 記錄點數變化
