@@ -193,12 +193,22 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # 檢查是否在交易時間內
     try:
         market_response = api_helper.get("/api/status")
-        if market_response and not market_response.get("isOpen", False):
+        
+        # 檢查 API 是否正常回應
+        if not market_response or market_response.get("detail") == "error":
+            logger.warning("Unable to get market status from backend")
+            await update.message.reply_text("⚠️ 無法確認市場狀態，請稍後再試")
+            return
+        
+        # 檢查市場是否開放
+        if not market_response.get("isOpen", False):
             await update.message.reply_text("⏰ PVP 挑戰只能在交易時間內進行！")
             return
+            
     except Exception as e:
         logger.warning(f"Failed to check market status: {e}")
-        # 如果無法確定市場狀態，允許繼續（避免因為網絡問題阻止功能）
+        await update.message.reply_text("⚠️ 無法確認市場狀態，請稍後再試")
+        return
 
     # 檢查是否提供了金額參數
     if not context.args:
