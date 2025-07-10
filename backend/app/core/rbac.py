@@ -14,6 +14,7 @@ class Role(str, Enum):
     STUDENT = "student"           # 一般學員
     QRCODE_MANAGER = "qrcode_manager"  # QR Code管理員
     POINT_MANAGER = "point_manager"  # 發放點數權限
+    QR_POINT_MANAGER = "qr_point_manager"  # QR Code和點數管理員
     ANNOUNCER = "announcer"       # 發公告權限
     ADMIN = "admin"              # 完整管理員權限
 
@@ -54,6 +55,14 @@ ROLE_PERMISSIONS: Dict[Role, Set[Permission]] = {
         Permission.TRANSFER_POINTS,
         Permission.VIEW_ALL_USERS,
         Permission.GIVE_POINTS,
+    },
+    Role.QR_POINT_MANAGER: {
+        Permission.VIEW_OWN_DATA,
+        Permission.TRADE_STOCKS,
+        Permission.TRANSFER_POINTS,
+        Permission.VIEW_ALL_USERS,
+        Permission.GIVE_POINTS,
+        Permission.GENERATE_QRCODE,
     },
     Role.ANNOUNCER: {
         Permission.VIEW_OWN_DATA,
@@ -375,6 +384,20 @@ def require_point_manager_role():
             )
         return current_user
     return check_point_manager_role
+
+def require_qr_point_manager_role():
+    """需要QR Code和點數管理員角色"""
+    from app.core.security import get_current_user
+    
+    def check_qr_point_manager_role(current_user: dict = Depends(get_current_user)):
+        user_role = RBACService.get_user_role(current_user)
+        if user_role != Role.QR_POINT_MANAGER and user_role != Role.ADMIN:  # 管理員可以存取所有功能
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"權限不足：需要 {Role.QR_POINT_MANAGER.value} 角色"
+            )
+        return current_user
+    return check_qr_point_manager_role
 
 def require_announcer_role():
     """需要公告員角色"""

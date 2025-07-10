@@ -60,6 +60,7 @@ export const ROLES = {
     STUDENT: "student",
     QRCODE_MANAGER: "qrcode_manager",
     POINT_MANAGER: "point_manager",
+    QR_POINT_MANAGER: "qr_point_manager",
     ANNOUNCER: "announcer", 
     ADMIN: "admin",
 };
@@ -132,6 +133,14 @@ export const ROLE_PERMISSIONS = {
         PERMISSIONS.TRANSFER_POINTS,
         PERMISSIONS.VIEW_ALL_USERS,
         PERMISSIONS.GIVE_POINTS,
+    ],
+    [ROLES.QR_POINT_MANAGER]: [
+        PERMISSIONS.VIEW_OWN_DATA,
+        PERMISSIONS.TRADE_STOCKS,
+        PERMISSIONS.TRANSFER_POINTS,
+        PERMISSIONS.VIEW_ALL_USERS,
+        PERMISSIONS.GIVE_POINTS,
+        PERMISSIONS.GENERATE_QRCODE,
     ],
     [ROLES.ANNOUNCER]: [
         PERMISSIONS.VIEW_OWN_DATA,

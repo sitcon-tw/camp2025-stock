@@ -168,8 +168,12 @@ export const RoleManagement = ({ token }) => {
         const colors = {
             student:
                 "bg-blue-600/20 text-blue-400 border border-blue-500/30",
+            qrcode_manager:
+                "bg-cyan-600/20 text-cyan-400 border border-cyan-500/30",
             point_manager:
                 "bg-yellow-600/20 text-yellow-400 border border-yellow-500/30",
+            qr_point_manager:
+                "bg-orange-600/20 text-orange-400 border border-orange-500/30",
             announcer:
                 "bg-purple-600/20 text-purple-400 border border-purple-500/30",
             admin: "bg-red-600/20 text-red-400 border border-red-500/30",
@@ -264,9 +268,11 @@ export const RoleManagement = ({ token }) => {
                         >
                             <option value="all">所有角色</option>
                             <option value="student">學員</option>
+                            <option value="qrcode_manager">QR Code管理員</option>
                             <option value="point_manager">
                                 點數管理員
                             </option>
+                            <option value="qr_point_manager">QR碼與點數管理員</option>
                             <option value="announcer">公告員</option>
                             <option value="admin">管理員</option>
                         </select>
@@ -439,8 +445,12 @@ const RoleChangeModal = ({
         const descriptions = {
             student:
                 "基本使用者權限：查看個人資料、股票交易、轉帳點數",
+            qrcode_manager:
+                "QR Code管理權限：包含基本權限 + 生成QR Code",
             point_manager:
                 "點數管理權限：包含基本權限 + 發放點數、查看所有使用者",
+            qr_point_manager:
+                "QR碼與點數管理權限：包含基本權限 + 生成QR Code、發放點數、查看所有使用者",
             announcer:
                 "公告管理權限：包含基本權限 + 發布公告、查看所有使用者",
             admin: "完整管理員權限：包含所有系統功能和管理權限",

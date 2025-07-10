@@ -190,6 +190,16 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if DEBUG and update.message.chat_id != MAIN_GROUP:
         logger.info(f"🐛 DEBUG 模式：允許在非主群組 {update.message.chat_id} 中使用 PVP")
 
+    # 檢查是否在交易時間內
+    try:
+        market_response = api_helper.get("/api/status")
+        if market_response and not market_response.get("isOpen", False):
+            await update.message.reply_text("⏰ PVP 挑戰只能在交易時間內進行！")
+            return
+    except Exception as e:
+        logger.warning(f"Failed to check market status: {e}")
+        # 如果無法確定市場狀態，允許繼續（避免因為網絡問題阻止功能）
+
     # 檢查是否提供了金額參數
     if not context.args:
         await update.message.reply_text(

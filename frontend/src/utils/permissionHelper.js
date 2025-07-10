@@ -71,6 +71,7 @@ export const formatRoleName = (role) => {
         [ROLES.STUDENT]: "學員",
         [ROLES.QRCODE_MANAGER]: "QR Code管理員",
         [ROLES.POINT_MANAGER]: "點數管理員",
+        [ROLES.QR_POINT_MANAGER]: "QR碼與點數管理員",
         [ROLES.ANNOUNCER]: "公告員",
         [ROLES.ADMIN]: "管理員",
     };
@@ -88,6 +89,7 @@ export const getRoleLevel = (role) => {
         [ROLES.STUDENT]: 1,
         [ROLES.QRCODE_MANAGER]: 2,
         [ROLES.POINT_MANAGER]: 3,
+        [ROLES.QR_POINT_MANAGER]: 4,
         [ROLES.ANNOUNCER]: 3,
         [ROLES.ADMIN]: 5,
     };
