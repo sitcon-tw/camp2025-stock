@@ -3638,8 +3638,8 @@ class UserService:
                 return
             
             # 分離買單和賣單
-            buy_orders = [order for order in pending_orders if order["direction"] == "buy"]
-            sell_orders = [order for order in pending_orders if order["direction"] == "sell"]
+            buy_orders = [order for order in pending_orders if order["side"] == "buy"]
+            sell_orders = [order for order in pending_orders if order["side"] == "sell"]
             
             # 按價格排序：買單按價格降序，賣單按價格升序
             buy_orders.sort(key=lambda x: (-x["price"], x["created_at"]))
