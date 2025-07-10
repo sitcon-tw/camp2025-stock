@@ -161,12 +161,26 @@ class TransferService:
                 message=deduction_result['message']
             )
         
-        # 增加接收方點數
-        await self.db[Collections.USERS].update_one(
-            {"_id": to_user["_id"]},
-            {"$inc": {"points": request.amount}},
+        # 檢查接收方狀態
+        if not to_user.get("enabled", True):
+            return TransferResponse(
+                success=False,
+                message="接收方帳戶已被禁用，無法接收轉帳"
+            )
+        
+        # 增加接收方點數，並處理債務償還
+        repay_result = await self._add_points_with_debt_repay(
+            user_id=to_user["_id"],
+            amount=request.amount,
+            operation_note=f"收到來自 {from_user.get('name', from_user.get('id', 'unknown'))} 的轉帳",
             session=session
         )
+        
+        if not repay_result['success']:
+            return TransferResponse(
+                success=False,
+                message=f"轉帳處理失敗：{repay_result['message']}"
+            )
         
         # 記錄轉帳日誌
         await self._log_point_change(
@@ -197,9 +211,18 @@ class TransferService:
             operation_name=f"轉帳 - {request.amount} 點 (含手續費 {fee} 點)"
         )
         
+        # 構建轉帳成功訊息
+        success_message = "轉帳成功"
+        if repay_result.get('debt_repaid', 0) > 0:
+            success_message += f"，接收方自動償還欠款 {repay_result['debt_repaid']} 點"
+            if repay_result.get('remaining_debt', 0) > 0:
+                success_message += f"，剩餘欠款 {repay_result['remaining_debt']} 點"
+            else:
+                success_message += "，欠款已完全償還"
+        
         return TransferResponse(
             success=True,
-            message="轉帳成功",
+            message=success_message,
             transaction_id=transaction_id,
             fee=fee
         )
@@ -382,6 +405,107 @@ class TransferService:
         except Exception as e:
             logger.error(f"Failed to validate transaction integrity: {e}")
     
+    async def _add_points_with_debt_repay(self, user_id: ObjectId, amount: int, 
+                                         operation_note: str, session=None) -> dict:
+        """
+        增加用戶點數，如果有欠款則優先償還
+        
+        Args:
+            user_id: 用戶ID
+            amount: 要增加的點數
+            operation_note: 操作說明
+            session: 資料庫session（用於交易）
+            
+        Returns:
+            dict: 操作結果
+        """
+        try:
+            # 獲取用戶當前狀態
+            user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
+            if not user:
+                return {
+                    'success': False,
+                    'message': '用戶不存在'
+                }
+            
+            current_points = user.get("points", 0)
+            current_owed = user.get("owed_points", 0)
+            
+            if current_owed > 0:
+                # 有欠款，優先償還
+                # 總可用於償還的金額 = 現有點數 + 新轉入的點數
+                total_available = current_points + amount
+                
+                # 計算實際償還金額（不能超過欠款總額）
+                actual_repay = min(total_available, current_owed)
+                
+                # 計算償還後剩餘的點數
+                remaining_points = total_available - actual_repay
+                
+                # 更新用戶資料：設定新的點數，減少欠款
+                update_doc = {
+                    "$set": {"points": remaining_points},
+                    "$inc": {"owed_points": -actual_repay}
+                }
+                
+                # 如果完全償還，解除凍結
+                if actual_repay == current_owed:
+                    update_doc["$set"]["frozen"] = False
+                
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_id},
+                    update_doc,
+                    session=session
+                )
+                
+                # 記錄債務償還日誌
+                repay_log = {
+                    "user_id": user_id,
+                    "repay_amount": actual_repay,
+                    "transfer_amount": amount,
+                    "previous_debt": current_owed,
+                    "remaining_debt": current_owed - actual_repay,
+                    "previous_points": current_points,
+                    "final_points": remaining_points,
+                    "timestamp": datetime.now(timezone.utc),
+                    "type": "transfer_debt_repayment",
+                    "note": f"轉帳自動償還欠款：{operation_note}"
+                }
+                
+                await self.db[Collections.POINT_LOGS].insert_one(repay_log, session=session)
+                
+                logger.info(f"Transfer with debt repay: user {user_id}, transfer {amount}, repaid {actual_repay}, remaining debt {current_owed - actual_repay}")
+                
+                return {
+                    'success': True,
+                    'message': f'轉帳成功，自動償還欠款 {actual_repay} 點',
+                    'debt_repaid': actual_repay,
+                    'remaining_debt': current_owed - actual_repay,
+                    'final_points': remaining_points
+                }
+            else:
+                # 沒有欠款，直接增加點數
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_id},
+                    {"$inc": {"points": amount}},
+                    session=session
+                )
+                
+                return {
+                    'success': True,
+                    'message': '轉帳成功',
+                    'debt_repaid': 0,
+                    'remaining_debt': 0,
+                    'final_points': current_points + amount
+                }
+                
+        except Exception as e:
+            logger.error(f"Error adding points with debt repay for user {user_id}: {e}")
+            return {
+                'success': False,
+                'message': f'處理轉帳失敗: {str(e)}'
+            }
+
     async def _check_and_alert_negative_balance(self, user_id: ObjectId, operation_context: str = "") -> bool:
         """
         檢查指定使用者是否有負點數，如有則傳送警報
