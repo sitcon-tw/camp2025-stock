@@ -787,9 +787,11 @@ export default function Dashboard() {
         setEscrowLoading(true);
         try {
             const data = await getUserEscrows(token);
+            console.log('Escrow API response:', data); // 調試用
             setUserEscrows(data.data?.escrows || []);
         } catch (error) {
             console.error('Error loading escrow details:', error);
+            console.error('Full error:', error); // 更詳細的錯誤信息
         } finally {
             setEscrowLoading(false);
         }
