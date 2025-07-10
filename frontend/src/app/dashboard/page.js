@@ -952,13 +952,13 @@ export default function Dashboard() {
                     <div className="space-y-3">
                         <button
                             onClick={() => window.location.reload()}
-                            className="w-full rounded-lg bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                            className="w-full rounded-xl bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8]"
                         >
                             重新載入
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="w-full rounded-lg border border-[#294565] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#1A325F]"
+                            className="w-full rounded-xl border border-[#294565] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#1A325F]"
                         >
                             重新登入
                         </button>
@@ -983,7 +983,7 @@ export default function Dashboard() {
     return (
         <div className="flex min-h-screen w-full bg-[#0f203e] pt-10 pb-20 md:items-center">
             <div className="w-full space-y-4 p-4">
-                <div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                <div className="mx-auto flex max-w-2xl space-x-8 rounded-xl border border-[#294565] bg-[#1A325F] p-6">
                     {authData?.photo_url && !useAvatarFallback ? (
                         <img
                             src={authData.photo_url}
@@ -1028,7 +1028,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         資產總覽
                     </h3>
@@ -1084,7 +1084,7 @@ export default function Dashboard() {
 
                 {/* 點數轉帳功能 */}
                 {userPermissions && userPermissions.permissions && userPermissions.permissions.includes('transfer_points') && (
-                    <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
                         <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                             點數轉帳
                         </h3>
@@ -1092,20 +1092,20 @@ export default function Dashboard() {
                             <div className="text-center">
                                 <button
                                     onClick={openQRCode}
-                                    className="w-full rounded-lg bg-[#469FD2] px-6 py-4 text-white transition-colors hover:bg-[#357AB8] focus:outline-none focus:ring-2 focus:ring-[#469FD2]/50"
+                                    className="w-full rounded-xl bg-[#3483b0] px-6 py-4 text-white transition-colors hover:bg-[#357AB8] focus:outline-none focus:ring-2 focus:ring-[#469FD2]/50"
                                 >
                                     <QrCode className="mx-auto mb-2 h-8 w-8" />
-                                    <div className="text-lg font-medium">顯示我的 QR Code</div>
+                                    <div className="text-lg font-bold">顯示我的 QR Code</div>
                                     <div className="text-sm text-blue-100">讓別人掃描轉帳給你</div>
                                 </button>
                             </div>
                             <div className="text-center">
                                 <button
                                     onClick={startQRScanner}
-                                    className="w-full rounded-lg bg-green-600 px-6 py-4 text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600/50"
+                                    className="w-full rounded-xl bg-green-600 px-6 py-4 text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600/50"
                                 >
                                     <Camera className="mx-auto mb-2 h-8 w-8" />
-                                    <div className="text-lg font-medium">掃描 QR Code</div>
+                                    <div className="text-lg font-bold">掃描 QR Code</div>
                                     <div className="text-sm text-green-100">掃描轉帳或兌換點數</div>
                                 </button>
                             </div>
@@ -1115,119 +1115,10 @@ export default function Dashboard() {
                         <div className="mt-4 text-center">
                             <button
                                 onClick={() => openTransferModal()}
-                                className="inline-flex items-center rounded-lg border border-[#294565] bg-transparent px-4 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
+                                className="inline-flex items-center rounded-xl border border-[#294565] bg-transparent px-4 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
                             >
                                 手動輸入轉帳
                             </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 權限資訊 */}
-                {userPermissions && (
-                    <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                        <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
-                            帳號權限資訊
-                        </h3>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-[#557797]">
-                                    角色
-                                </span>
-                                <span className="rounded bg-[#294565] px-2 py-1 text-sm font-medium text-[#92cbf4]">
-                                    {userPermissions.role ===
-                                        "student" && "一般學員"}
-                                    {userPermissions.role ===
-                                        "qrcode_manager" && "QR Code管理員"}
-                                    {userPermissions.role ===
-                                        "point_manager" &&
-                                        "點數管理員"}
-                                    {userPermissions.role ===
-                                        "announcer" && "公告員"}
-                                    {userPermissions.role ===
-                                        "admin" && "系統管理員"}
-                                    {![
-                                        "student",
-                                        "qrcode_manager",
-                                        "point_manager",
-                                        "announcer",
-                                        "admin",
-                                    ].includes(
-                                        userPermissions.role,
-                                    ) && userPermissions.role}
-                                </span>
-                            </div>
-
-                            <div>
-                                <p className="mb-2 text-sm text-[#557797]">
-                                    可用權限
-                                </p>
-                                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                                    {userPermissions.permissions &&
-                                    userPermissions.permissions
-                                        .length > 0 ? (
-                                        userPermissions.permissions.map(
-                                            (permission, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="flex items-center space-x-2"
-                                                >
-                                                    <span className="text-green-400">
-                                                        ✓
-                                                    </span>
-                                                    <span className="text-xs text-white">
-                                                        {permission ===
-                                                            "view_own_data" &&
-                                                            "查看自己的資料"}
-                                                        {permission ===
-                                                            "trade_stocks" &&
-                                                            "股票交易"}
-                                                        {permission ===
-                                                            "transfer_points" &&
-                                                            "轉帳點數"}
-                                                        {permission ===
-                                                            "view_all_users" &&
-                                                            "查看所有使用者"}
-                                                        {permission ===
-                                                            "give_points" &&
-                                                            "發放點數"}
-                                                        {permission ===
-                                                            "create_announcement" &&
-                                                            "發布公告"}
-                                                        {permission ===
-                                                            "manage_users" &&
-                                                            "管理使用者"}
-                                                        {permission ===
-                                                            "manage_market" &&
-                                                            "管理市場"}
-                                                        {permission ===
-                                                            "system_admin" &&
-                                                            "系統管理"}
-                                                        {![
-                                                            "view_own_data",
-                                                            "trade_stocks",
-                                                            "transfer_points",
-                                                            "view_all_users",
-                                                            "give_points",
-                                                            "create_announcement",
-                                                            "manage_users",
-                                                            "manage_market",
-                                                            "system_admin",
-                                                        ].includes(
-                                                            permission,
-                                                        ) &&
-                                                            permission}
-                                                    </span>
-                                                </div>
-                                            ),
-                                        )
-                                    ) : (
-                                        <p className="text-xs text-[#557797]">
-                                            暫無特殊權限
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 )}
@@ -1250,7 +1141,7 @@ export default function Dashboard() {
                   userPermissions.can_view_all_users ||
                   userPermissions.can_manage_system ||
                   userPermissions.can_generate_qrcode) && (
-                    <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                    <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
                         <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                             管理功能
                         </h3>
@@ -1260,7 +1151,7 @@ export default function Dashboard() {
                             </p>
                             <button
                                 onClick={() => router.push("/admin")}
-                                className="inline-flex items-center rounded-lg bg-gradient-to-r from-[#469FD2] to-[#357AB8] px-6 py-3 font-medium text-white transition-all duration-200 hover:from-[#357AB8] hover:to-[#2B5A8B] hover:shadow-lg active:scale-95"
+                                className="inline-flex items-center rounded-xl bg-gradient-to-r from-[#469FD2] to-[#357AB8] px-6 py-3 font-medium text-white transition-all duration-200 hover:from-[#357AB8] hover:to-[#2B5A8B] hover:shadow-lg active:scale-95"
                             >
                                 <svg
                                     className="mr-2 h-5 w-5"
@@ -1288,89 +1179,7 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* TODO: Blocked due to API */}
-                {/*<div className="mx-auto flex max-w-2xl space-x-8 rounded-lg border border-[#294565] bg-[#1A325F] p-6">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            // value={givePointsForm.username}
-                            // onChange={(e) =>
-                            //     // handleUsernameChange(
-                            //     //     e.target.value,
-                            //     // )
-                            // }
-                            onFocus={() => {
-                                // 重新觸發搜尋以顯示建議
-                                // if (
-                                //     givePointsForm.username.trim() !==
-                                //     ""
-                                // ) {
-                                //     handleUsernameChange(
-                                //         givePointsForm.username,
-                                //     );
-                                // }
-                            }}
-                            onBlur={() => {
-                                // 延遲隱藏建議，讓點選事件能夠觸發
-                                // setTimeout(
-                                //     () =>
-                                //         setShowSuggestions(
-                                //             false,
-                                //         ),
-                                //     200,
-                                // );
-                            }}
-                            // disabled={studentsLoading}
-                            className="w-full rounded-xl border border-[#469FD2] bg-[#1A325F] px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-[#0f203e] disabled:opacity-50"
-                            placeholder={"正在載入使用者資料..."}
-                        />
-                        {showSuggestions &&
-                            suggestions.length > 0 && (
-                                <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[#469FD2] bg-[#0f203e] shadow-lg">
-                                    {suggestions.map(
-                                        (suggestion, index) => (
-                                            <div
-                                                key={index}
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault(); // 防止blur事件影響點選
-                                                    if (
-                                                        givePointsForm.type.startsWith(
-                                                            "multi_",
-                                                        )
-                                                    ) {
-                                                        addMultiTarget(
-                                                            suggestion,
-                                                        );
-                                                    } else {
-                                                        selectSuggestion(
-                                                            suggestion,
-                                                        );
-                                                    }
-                                                }}
-                                                className="cursor-pointer border-b border-[#469FD2] px-3 py-2 text-sm text-white transition-colors last:border-b-0 hover:bg-[#1A325F]"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span>
-                                                        {
-                                                            suggestion.label
-                                                        }
-                                                    </span>
-                                                    <span className="text-xs text-gray-400">
-                                                        {suggestion.type ===
-                                                        "user"
-                                                            ? "個人"
-                                                            : "團隊"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ),
-                                    )}
-                                </div>
-                            )}
-                    </div>
-                </div>*/}
-
-                <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         點數紀錄
                     </h3>
@@ -1422,21 +1231,21 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="mx-auto max-w-2xl rounded-lg border border-[#294565] bg-[#1A325F] p-6">
+                <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
                     <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
                         股票購買紀錄
                     </h3>
 
                     {/* 取消訂單的通知訊息 */}
                     {cancelSuccess && (
-                        <div className="mb-4 rounded-lg border border-green-500/30 bg-green-600/20 p-3">
+                        <div className="mb-4 rounded-xl border border-green-500/30 bg-green-600/20 p-3">
                             <p className="text-sm text-green-400">
                                 ✅ {cancelSuccess}
                             </p>
                         </div>
                     )}
                     {cancelError && (
-                        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-600/20 p-3">
                             <p className="text-sm text-red-400">
                                 ❌ {cancelError}
                             </p>
@@ -1459,7 +1268,7 @@ export default function Dashboard() {
 
                                 return (
                                     <div
-                                        className="rounded-lg border border-[#294565] bg-[#0f203e] p-4"
+                                        className="rounded-xl border border-[#294565] bg-[#0f203e] p-4"
                                         key={orderId || i.created_at}
                                     >
                                         {/* 訂單基本資訊 */}
@@ -1590,7 +1399,7 @@ export default function Dashboard() {
                                                         isCancelling
                                                     }
                                                     className={twMerge(
-                                                        "rounded-lg px-3 py-1 text-sm font-medium transition-colors",
+                                                        "rounded-xl px-3 py-1 text-sm font-medium transition-colors",
                                                         isCancelling
                                                             ? "cursor-not-allowed bg-gray-600/50 text-gray-400"
                                                             : "border border-red-500/30 bg-red-600/20 text-red-400 hover:bg-red-600/30",
@@ -1612,6 +1421,115 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
+
+                {/* 權限資訊 */}
+                {userPermissions && (
+                    <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
+                        <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
+                            帳號權限資訊
+                        </h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-[#557797]">
+                                    角色
+                                </span>
+                                <span className="rounded bg-[#294565] px-2 py-1 text-sm font-medium text-[#92cbf4]">
+                                    {userPermissions.role ===
+                                        "student" && "一般學員"}
+                                    {userPermissions.role ===
+                                        "qrcode_manager" && "QR Code管理員"}
+                                    {userPermissions.role ===
+                                        "point_manager" &&
+                                        "點數管理員"}
+                                    {userPermissions.role ===
+                                        "announcer" && "公告員"}
+                                    {userPermissions.role ===
+                                        "admin" && "系統管理員"}
+                                    {![
+                                        "student",
+                                        "qrcode_manager",
+                                        "point_manager",
+                                        "announcer",
+                                        "admin",
+                                    ].includes(
+                                        userPermissions.role,
+                                    ) && userPermissions.role}
+                                </span>
+                            </div>
+
+                            <div>
+                                <p className="mb-2 text-sm text-[#557797]">
+                                    可用權限
+                                </p>
+                                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                    {userPermissions.permissions &&
+                                    userPermissions.permissions
+                                        .length > 0 ? (
+                                        userPermissions.permissions.map(
+                                            (permission, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center space-x-2"
+                                                >
+                                                    <span className="text-green-400">
+                                                        ✓
+                                                    </span>
+                                                    <span className="text-xs text-white">
+                                                        {permission ===
+                                                            "view_own_data" &&
+                                                            "查看自己的資料"}
+                                                        {permission ===
+                                                            "trade_stocks" &&
+                                                            "股票交易"}
+                                                        {permission ===
+                                                            "transfer_points" &&
+                                                            "轉帳點數"}
+                                                        {permission ===
+                                                            "view_all_users" &&
+                                                            "查看所有使用者"}
+                                                        {permission ===
+                                                            "give_points" &&
+                                                            "發放點數"}
+                                                        {permission ===
+                                                            "create_announcement" &&
+                                                            "發布公告"}
+                                                        {permission ===
+                                                            "manage_users" &&
+                                                            "管理使用者"}
+                                                        {permission ===
+                                                            "manage_market" &&
+                                                            "管理市場"}
+                                                        {permission ===
+                                                            "system_admin" &&
+                                                            "系統管理"}
+                                                        {![
+                                                            "view_own_data",
+                                                            "trade_stocks",
+                                                            "transfer_points",
+                                                            "view_all_users",
+                                                            "give_points",
+                                                            "create_announcement",
+                                                            "manage_users",
+                                                            "manage_market",
+                                                            "system_admin",
+                                                        ].includes(
+                                                            permission,
+                                                        ) &&
+                                                            permission}
+                                                    </span>
+                                                </div>
+                                            ),
+                                        )
+                                    ) : (
+                                        <p className="text-xs text-[#557797]">
+                                            暫無特殊權限
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 取消訂單確認 Modal */}
@@ -1623,7 +1541,7 @@ export default function Dashboard() {
             >
                 {pendingCancelOrder && (
                     <div className="space-y-4">
-                        <div className="rounded-lg border border-orange-500/30 bg-orange-600/10 p-4">
+                        <div className="rounded-xl border border-orange-500/30 bg-orange-600/10 p-4">
                             <div className="mb-3 flex items-center gap-2">
                                 <h3 className="text-lg font-semibold text-orange-400">
                                     你確定要取消這張訂單？
@@ -1663,13 +1581,13 @@ export default function Dashboard() {
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={closeCancelModal}
-                                className="flex-1 rounded-lg border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                className="flex-1 rounded-xl border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
                             >
                                 保留訂單
                             </button>
                             <button
                                 onClick={confirmCancelOrder}
-                                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+                                className="flex-1 rounded-xl bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
                             >
                                 確認取消
                             </button>
@@ -1686,7 +1604,7 @@ export default function Dashboard() {
                 size="md"
             >
                 <div className="space-y-4 text-center">
-                    <div className="relative mx-auto bg-white p-4 rounded-lg" style={{ width: 'fit-content' }}>
+                    <div className="relative mx-auto bg-white p-4 rounded-xl" style={{ width: 'fit-content' }}>
                         <QRCode
                             level="M"
                             value={(() => {
@@ -1707,7 +1625,7 @@ export default function Dashboard() {
                             bgColor="#ffffff"
                             fgColor="#000000"
                         />
-                        <img src="/SITQR.svg" alt="QR Code Icon" className="absolute w-12 bg-white py-2 px-1 rounded-lg top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                        <img src="/SITQR.svg" alt="QR Code Icon" className="absolute w-12 bg-white py-2 px-1 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
                     </div>
                     <div className="space-y-3">
                         <p className="text-sm text-[#92cbf4]">
@@ -1744,14 +1662,14 @@ export default function Dashboard() {
                 <div className="space-y-4">
                     {/* 成功和錯誤訊息 */}
                     {transferSuccess && (
-                        <div className="rounded-lg border border-green-500/30 bg-green-600/20 p-3">
+                        <div className="rounded-xl border border-green-500/30 bg-green-600/20 p-3">
                             <p className="text-sm text-green-400">
                                 ✅ {transferSuccess}
                             </p>
                         </div>
                     )}
                     {transferError && (
-                        <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                        <div className="rounded-xl border border-red-500/30 bg-red-600/20 p-3">
                             <p className="text-sm text-red-400">
                                 ❌ {transferError}
                             </p>
@@ -1768,14 +1686,14 @@ export default function Dashboard() {
                                     type="text"
                                     value={transferForm.to_username}
                                     onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
-                                    className="flex-1 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    className="flex-1 rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
                                     placeholder="輸入收款人使用者名"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={startQRScanner}
-                                    className="rounded-lg bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
+                                    className="rounded-xl bg-[#469FD2] px-3 py-2 text-white transition-colors hover:bg-[#357AB8]"
                                 >
                                     <QrCode className="h-4 w-4" />
                                 </button>
@@ -1790,7 +1708,7 @@ export default function Dashboard() {
                                 type="number"
                                 value={transferForm.amount}
                                 onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
-                                className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
                                 placeholder="輸入轉帳金額"
                                 min="1"
                                 max={user?.points || 0}
@@ -1809,7 +1727,7 @@ export default function Dashboard() {
                                 type="text"
                                 value={transferForm.note}
                                 onChange={(e) => setTransferForm(prev => ({ ...prev, note: e.target.value }))}
-                                className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
                                 placeholder="輸入備註訊息"
                                 maxLength="200"
                             />
@@ -1819,14 +1737,14 @@ export default function Dashboard() {
                             <button
                                 type="button"
                                 onClick={closeTransferModal}
-                                className="flex-1 rounded-lg border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                className="flex-1 rounded-xl border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
                             >
                                 取消
                             </button>
                             <button
                                 type="submit"
                                 disabled={transferLoading}
-                                className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600"
+                                className="flex-1 rounded-xl bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600"
                             >
                                 {transferLoading ? '轉帳中...' : '確認轉帳'}
                             </button>
@@ -1846,7 +1764,7 @@ export default function Dashboard() {
                     <div className="relative">
                         <video
                             ref={videoRef}
-                            className="w-full rounded-lg bg-black"
+                            className="w-full rounded-xl bg-black"
                             style={{ 
                                 width: '100%', 
                                 height: '300px', 
@@ -1896,7 +1814,7 @@ export default function Dashboard() {
                     </div>
                     
                     {transferError && (
-                        <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                        <div className="rounded-xl border border-red-500/30 bg-red-600/20 p-3">
                             <p className="text-sm text-red-400">
                                 ❌ {transferError}
                             </p>
@@ -1916,14 +1834,14 @@ export default function Dashboard() {
                     <div className="space-y-4">
                         {/* 成功和錯誤訊息 */}
                         {transferSuccess && (
-                            <div className="rounded-lg border border-green-500/30 bg-green-600/20 p-3">
+                            <div className="rounded-xl border border-green-500/30 bg-green-600/20 p-3">
                                 <p className="text-sm text-green-400">
                                     ✅ {transferSuccess}
                                 </p>
                             </div>
                         )}
                         {transferError && (
-                            <div className="rounded-lg border border-red-500/30 bg-red-600/20 p-3">
+                            <div className="rounded-xl border border-red-500/30 bg-red-600/20 p-3">
                                 <p className="text-sm text-red-400">
                                     ❌ {transferError}
                                 </p>
@@ -1931,7 +1849,7 @@ export default function Dashboard() {
                         )}
 
                         {/* 收款人資訊確認 */}
-                        <div className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
+                        <div className="rounded-xl border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
                             <div className="flex items-center gap-3">
                                 {quickTransferData.photo_url ? (
                                     <img
@@ -1972,7 +1890,7 @@ export default function Dashboard() {
                                 <input
                                     type="number"
                                     name="amount"
-                                    className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
                                     placeholder="輸入轉帳金額"
                                     min="1"
                                     max={user?.points || 0}
@@ -1991,7 +1909,7 @@ export default function Dashboard() {
                                 <input
                                     type="text"
                                     name="note"
-                                    className="w-full rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
                                     placeholder={`轉帳給 ${quickTransferData.username}`}
                                     maxLength="200"
                                 />
@@ -2001,14 +1919,14 @@ export default function Dashboard() {
                                 <button
                                     type="button"
                                     onClick={closeQuickTransfer}
-                                    className="flex-1 rounded-lg border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                    className="flex-1 rounded-xl border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
                                 >
                                     取消
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={transferLoading}
-                                    className="flex-1 rounded-lg bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8] disabled:cursor-not-allowed disabled:bg-gray-600"
+                                    className="flex-1 rounded-xl bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8] disabled:cursor-not-allowed disabled:bg-gray-600"
                                 >
                                     {transferLoading ? '轉帳中...' : '確認轉帳'}
                                 </button>
@@ -2066,14 +1984,14 @@ export default function Dashboard() {
 
                             {/* 轉帳詳情 */}
                             <div className="space-y-3 mb-6">
-                                <div className="flex items-center justify-between rounded-lg bg-green-800/30 p-3">
+                                <div className="flex items-center justify-between rounded-xl bg-green-800/30 p-3">
                                     <span className="text-sm text-green-300">轉帳人</span>
                                     <span className="font-medium text-green-100">
                                         {receivedPayment.from}
                                     </span>
                                 </div>
                                 
-                                <div className="flex items-center justify-between rounded-lg bg-green-800/30 p-3">
+                                <div className="flex items-center justify-between rounded-xl bg-green-800/30 p-3">
                                     <span className="text-sm text-green-300">時間</span>
                                     <span className="font-medium text-green-100">
                                         {dayjs(receivedPayment.timestamp)
@@ -2083,7 +2001,7 @@ export default function Dashboard() {
                                 </div>
                                 
                                 {receivedPayment.note && (
-                                    <div className="rounded-lg bg-green-800/30 p-3">
+                                    <div className="rounded-xl bg-green-800/30 p-3">
                                         <span className="text-sm text-green-300 block mb-1">備註</span>
                                         <span className="text-green-100">
                                             {receivedPayment.note}
@@ -2095,7 +2013,7 @@ export default function Dashboard() {
                             {/* 確認按鈕 */}
                             <button
                                 onClick={closePaymentNotification}
-                                className="w-full rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 py-3 font-medium text-white transition-all duration-200 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg active:scale-95"
+                                className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 py-3 font-medium text-white transition-all duration-200 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg active:scale-95"
                             >
                                 知道了
                             </button>
