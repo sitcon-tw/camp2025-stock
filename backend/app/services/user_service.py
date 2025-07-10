@@ -1202,7 +1202,7 @@ class UserService:
                 team = user.get("team", "無")
                 
                 # 記錄警報日誌
-                logger.error(f"NEGATIVE BALANCE DETECTED: User {username} (ID: {user_id}) has {current_balance} points after {operation_context}")
+                logger.error(f"NEGATIVE BALANCE DETECTED: User ID: {user_id} has {current_balance} points after {operation_context}")
                 
                 # 傳送即時警報到 Telegram Bot
                 try:
@@ -2103,10 +2103,9 @@ class UserService:
                 # 買方訂單更新失敗，可能是並發問題或數量不足
                 current_buy_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": buy_order["_id"]}, session=session)
                 current_quantity = current_buy_order.get("quantity", 0) if current_buy_order else 0
-                buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
-                buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
-                logger.error(f"Buy order atomic update failed for user {buy_username} (ID: {buy_order['user_id']}): needed {trade_quantity}, current quantity: {current_quantity}")
-                raise Exception(f"訂單撮合失敗 - 買方訂單數量不足：使用者 {buy_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
+                buy_user_id = buy_order["user_id"]
+                logger.error(f"Buy order atomic update failed for user ID: {buy_user_id}: needed {trade_quantity}, current quantity: {current_quantity}")
+                raise Exception(f"訂單撮合失敗 - 買方訂單數量不足：需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
             
             # 更新賣方訂單或系統庫存 (資料庫)
             if not is_system_sale:
@@ -2127,10 +2126,9 @@ class UserService:
                 if sell_update_result.modified_count == 0:
                     current_sell_order = await self.db[Collections.STOCK_ORDERS].find_one({"_id": sell_order["_id"]}, session=session)
                     current_quantity = current_sell_order.get("quantity", 0) if current_sell_order else 0
-                    sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
-                    sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
-                    logger.error(f"Sell order atomic update failed for user {sell_username} (ID: {sell_order['user_id']}): needed {trade_quantity}, current quantity: {current_quantity}")
-                    raise Exception(f"訂單撮合失敗 - 賣方訂單數量不足：使用者 {sell_username} 需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
+                    sell_user_id = sell_order["user_id"]
+                    logger.error(f"Sell order atomic update failed for user ID: {sell_user_id}: needed {trade_quantity}, current quantity: {current_quantity}")
+                    raise Exception(f"訂單撮合失敗 - 賣方訂單數量不足：需要 {trade_quantity} 股，剩餘 {current_quantity} 股")
             else:
                 # 更新系統 IPO 庫存 - 使用原子操作確保不會減成負數
                 ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
@@ -2166,10 +2164,9 @@ class UserService:
             )
             
             if not deduction_result['success']:
-                buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
-                buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
-                logger.error(f"Order matching point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
-                raise Exception(f"訂單撮合失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
+                buy_user_id = buy_order["user_id"]
+                logger.error(f"Order matching point deduction failed for user ID: {buy_user_id}: {deduction_result['message']}")
+                raise Exception(f"訂單撮合失敗 - 買方點數不足：需要 {trade_amount} 點，{deduction_result['message']}")
             await self.db[Collections.STOCKS].update_one(
                 {"user_id": buy_order["user_id"]},
                 {"$inc": {"stock_amount": trade_quantity}},
@@ -2199,10 +2196,9 @@ class UserService:
                     # 查詢實際持股數量以提供詳細錯誤訊息
                     current_holding = await self.db[Collections.STOCKS].find_one({"user_id": sell_order["user_id"]}, session=session)
                     current_stocks = current_holding.get("stock_amount", 0) if current_holding else 0
-                    sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
-                    sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
-                    logger.error(f"Order matching stock deduction failed for user {sell_username} (ID: {sell_order['user_id']}): insufficient shares, quantity {trade_quantity}, current: {current_stocks}")
-                    raise Exception(f"訂單撮合失敗 - 賣方股票不足：使用者 {sell_username} 需要賣出 {trade_quantity} 股，實際持有 {current_stocks} 股")
+                    sell_user_id = sell_order["user_id"]
+                    logger.error(f"Order matching stock deduction failed for user ID: {sell_user_id}: insufficient shares, quantity {trade_quantity}, current: {current_stocks}")
+                    raise Exception(f"訂單撮合失敗 - 賣方股票不足：需要賣出 {trade_quantity} 股，實際持有 {current_stocks} 股")
             else:
                 # 系統IPO交易，系統不需要更新點數和持股
                 logger.info(f"System IPO sale: {trade_quantity} shares @ {trade_price} to user {buy_order['user_id']}")
@@ -3196,7 +3192,7 @@ class UserService:
                     "username": username,
                     "negative_amount": amount
                 })
-                logger.warning(f"使用者 {username} (ID: {user_id}) 持有 {amount} 股")
+                logger.warning(f"用戶 ID: {user_id} 持有 {amount} 股")
             
             cancelled_orders_count = 0
             
@@ -3307,7 +3303,7 @@ class UserService:
                     "filled_quantity": order.get("filled_quantity", 0)
                 })
                 
-                logger.warning(f"無效訂單: {username} (ID: {user_id}) - Order {order['_id']}: quantity={order.get('quantity', 0)}, status={order.get('status', 'unknown')}")
+                logger.warning(f"無效訂單: User ID: {user_id} - Order {order['_id']}: quantity={order.get('quantity', 0)}, status={order.get('status', 'unknown')}")
             
             # 修復策略：將這些訂單標記為已取消
             fix_result = await self.db[Collections.STOCK_ORDERS].update_many(
@@ -3730,10 +3726,9 @@ class UserService:
                     )
                     
                     if not deduction_result['success']:
-                        buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
-                        buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
-                        logger.error(f"Trade execution point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
-                        raise Exception(f"交易失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
+                        buy_user_id = buy_order["user_id"]
+                        logger.error(f"Trade execution point deduction failed for user ID: {buy_user_id}: {deduction_result['message']}")
+                        raise Exception(f"交易失敗 - 買方點數不足：需要 {trade_amount} 點，{deduction_result['message']}")
                     
                     await self.db[Collections.STOCKS].update_one(
                         {"user_id": buy_order["user_id"]},
@@ -3753,12 +3748,11 @@ class UserService:
                     )
                     
                     if stock_update_result.modified_count == 0:
-                        sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
-                        sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
+                        sell_user_id = sell_order["user_id"]
                         current_stock = await self.db[Collections.STOCKS].find_one({"user_id": sell_order["user_id"]}, session=session)
                         current_amount = current_stock.get("stock_amount", 0) if current_stock else 0
-                        logger.error(f"Trade execution stock deduction failed for user {sell_username} (ID: {sell_order['user_id']}): needed {quantity}, has {current_amount}")
-                        raise Exception(f"交易失敗 - 賣方股票不足：使用者 {sell_username} 需要 {quantity} 股，目前僅有 {current_amount} 股")
+                        logger.error(f"Trade execution stock deduction failed for user ID: {sell_user_id}: needed {quantity}, has {current_amount}")
+                        raise Exception(f"交易失敗 - 賣方股票不足：需要 {quantity} 股，目前僅有 {current_amount} 股")
                     
                     # 增加點數給賣方
                     await self.db[Collections.USERS].update_one(

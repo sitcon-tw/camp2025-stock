@@ -527,7 +527,7 @@ class TransferService:
                 team = user.get("team", "無")
                 
                 # 記錄警報日誌
-                logger.error(f"NEGATIVE BALANCE DETECTED: User {username} (ID: {user_id}) has {current_balance} points after {operation_context}")
+                logger.error(f"NEGATIVE BALANCE DETECTED: User ID: {user_id} has {current_balance} points after {operation_context}")
                 
                 # 傳送即時警報到 Telegram Bot
                 try:
