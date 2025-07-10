@@ -92,7 +92,7 @@ const TradingHoursVisualizer = ({ tradingHours, marketTimesForm }) => {
                 </div>
 
                 {/* 時間條 */}
-                <div className="relative h-8 overflow-hidden rounded-lg bg-[#1A325F] mx-px">
+                <div className="relative h-8 overflow-hidden rounded-lg bg-[#1A325F] mx-4">
                     {/* 背景網格線 */}
                     <div className="absolute inset-0 flex">
                         {hours.map((hour) => (
