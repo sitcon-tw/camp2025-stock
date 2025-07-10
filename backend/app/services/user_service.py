@@ -655,7 +655,9 @@ class UserService:
         deduction_result = await self._safe_deduct_points(
             user_id=from_user_oid,
             amount=total_deduct,
-            operation_note=f"轉帳給 {request.to_username}：{request.amount} 點 (含手續費 {fee} 點)",
+            operation_note=f"轉帳給 {to_user.get('name', to_user.get('id', request.to_username))}：{request.amount} 點 (含手續費 {fee} 點)",
+            change_type="transfer_out",
+            transaction_id=transaction_id,
             session=session
         )
         
@@ -672,16 +674,7 @@ class UserService:
             session=session
         )
         
-        # 記錄轉帳日誌
-        await self._log_point_change(
-            from_user_oid,
-            "transfer_out",
-            -total_deduct,
-            f"轉帳給 {to_user.get('name', to_user.get('id', request.to_username))} (含手續費 {fee})",
-            transaction_id,
-            session=session
-        )
-        
+        # 只記錄接收方的點數變化日誌（發送方的記錄已經在 _safe_deduct_points 中處理）
         await self._log_point_change(
             to_user["_id"],
             "transfer_in",
@@ -691,9 +684,8 @@ class UserService:
             session=session
         )
         
-        # 如果有事務則提交
-        if session:
-            await session.commit_transaction()
+        # 注意：當使用 async with session.start_transaction() 時，事務會自動提交
+        # 不需要手動呼叫 session.commit_transaction()
         
         # 轉帳完成後檢查點數完整性
         await self._validate_transaction_integrity(
@@ -1059,7 +1051,8 @@ class UserService:
     
     # 安全的點數扣除（防止負點數）
     async def _safe_deduct_points(self, user_id: ObjectId, amount: int, 
-                                operation_note: str, session=None) -> dict:
+                                operation_note: str, change_type: str = "deduction", 
+                                transaction_id: str = None, session=None) -> dict:
         """
         安全地扣除使用者點數，防止產生負數餘額（含欠款檢查）
         
@@ -1161,9 +1154,10 @@ class UserService:
             # 記錄點數變化
             await self._log_point_change(
                 user_id=user_id,
-                change_type="deduction",
+                change_type=change_type,
                 amount=-amount,
                 note=operation_note,
+                transaction_id=transaction_id,
                 session=session
             )
             
@@ -1510,11 +1504,12 @@ class UserService:
                     temp_result = await self.db[Collections.STOCK_ORDERS].insert_one(temp_buy_order, session=session)
                     temp_buy_order["_id"] = temp_result.inserted_id
                     
-                    # 執行撮合
+                    # 執行撮合 - 撮合邏輯會處理所有資產轉移，包括扣點數
                     await self._match_orders_logic(temp_buy_order, best_sell_order, session=session)
                     
                     message = f"市價買單已與限價賣單撮合成交，價格: {price} 元/股"
                     
+                    # 撮合完成後直接返回，不需要再次處理資產轉移
                     return StockOrderResponse(
                         success=True,
                         order_id=str(temp_result.inserted_id),
@@ -1563,11 +1558,12 @@ class UserService:
                     temp_result = await self.db[Collections.STOCK_ORDERS].insert_one(temp_sell_order, session=session)
                     temp_sell_order["_id"] = temp_result.inserted_id
                     
-                    # 執行撮合
+                    # 執行撮合 - 撮合邏輯會處理所有資產轉移，包括股票扣除和點數增加
                     await self._match_orders_logic(best_buy_order, temp_sell_order, session=session)
                     
                     message = f"市價賣單已與限價買單撮合成交，價格: {price} 元/股"
                     
+                    # 撮合完成後直接返回，不需要再次處理資產轉移
                     return StockOrderResponse(
                         success=True,
                         order_id=str(temp_result.inserted_id),
@@ -1625,19 +1621,94 @@ class UserService:
                 message = f"市價賣單已按市價成交，價格: {price} 元/股"
                 logger.info(f"Market sell order execution: user {user_oid} sold {quantity} shares at market price {price}")
 
-            current_price = price
-            
             # 計算交易金額
-            trade_amount = quantity * current_price
+            trade_amount = quantity * price
             
-            # 買入前再次確認點數，賣出前確認持股
+            # 對於買單：確認點數並執行 IPO 購買或市價交易
             if side == "buy":
                 user = await self.db[Collections.USERS].find_one({"_id": user_oid}, session=session)
                 if user.get("points", 0) < trade_amount:
                     current_points = user.get("points", 0)
                     return StockOrderResponse(success=False, message=f"點數不足，需要 {trade_amount} 點，目前你的點數: {current_points}")
+                
+                # 更新訂單狀態
+                order_doc.update({
+                    "status": "filled",
+                    "price": price,
+                    "filled_price": price,
+                    "filled_quantity": quantity,
+                    "filled_at": datetime.now(timezone.utc)
+                })
+                
+                # 插入已完成的訂單
+                result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
+                
+                # 記錄交易記錄
+                await self.db[Collections.TRADES].insert_one({
+                    "buy_order_id": result.inserted_id,
+                    "sell_order_id": None,
+                    "buy_user_id": user_oid,
+                    "sell_user_id": "SYSTEM" if is_ipo_purchase else "MARKET",
+                    "price": price,
+                    "quantity": quantity,
+                    "amount": trade_amount,
+                    "created_at": order_doc["filled_at"]
+                }, session=session)
+
+                # 安全扣除使用者點數
+                deduction_result = await self._safe_deduct_points(
+                    user_id=user_oid,
+                    amount=trade_amount,
+                    operation_note=f"市價買單成交：{quantity} 股 @ {price} 元",
+                    change_type="stock_purchase",
+                    session=session
+                )
+                
+                if not deduction_result['success']:
+                    logger.error(f"Point deduction failed: {deduction_result['message']}")
+                    return StockOrderResponse(
+                        success=False,
+                        message=deduction_result['message']
+                    )
+                
+                # 增加股票持有
+                await self.db[Collections.STOCKS].update_one(
+                    {"user_id": user_oid},
+                    {"$inc": {"stock_amount": quantity}},
+                    upsert=True,
+                    session=session
+                )
+
+                # 更新 IPO 剩餘數量 - 使用原子操作確保不會減成負數
+                if is_ipo_purchase:
+                    ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
+                        {
+                            "type": "ipo_status",
+                            "shares_remaining": {"$gte": quantity}  # 確保有足夠股數
+                        },
+                        {"$inc": {"shares_remaining": -quantity}},
+                        session=session
+                    )
+                    
+                    # 驗證 IPO 更新是否成功
+                    if ipo_update_result.modified_count == 0:
+                        # 查詢實際剩餘股數以提供更詳細的錯誤訊息
+                        current_ipo = await self.db[Collections.MARKET_CONFIG].find_one(
+                            {"type": "ipo_status"}, session=session
+                        )
+                        remaining_shares = current_ipo.get("shares_remaining", 0) if current_ipo else 0
+                        logger.error(f"Failed to update IPO stock in market order: insufficient shares for quantity {quantity}, remaining: {remaining_shares}")
+                        if session and session.in_transaction:
+                            await session.abort_transaction()
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"IPO 股數不足，無法完成交易。需要 {quantity} 股，剩餘 {remaining_shares} 股"
+                        )
+                    
+                    logger.info(f"✅ Market order IPO stock updated: reduced by {quantity} shares")
+                
             elif side == "sell":
-                # 賣單執行時也要確認持股
+                # 賣單執行時確認持股
                 stock_holding = await self.db[Collections.STOCKS].find_one({"user_id": user_oid}, session=session)
                 current_stocks = stock_holding.get("stock_amount", 0) if stock_holding else 0
                 if current_stocks < quantity:
@@ -1653,99 +1724,71 @@ class UserService:
                             message=f"持股不足，需要 {quantity} 股，僅有 {current_stocks} 股"
                         )
                 
-                # 賣單總是按市價執行
-                message = f"市價賣單已成交，價格: {price} 元/股"
-                logger.info(f"Market sell order: user {user_oid} sold {quantity} shares at {price}")
+                # 更新訂單狀態
+                order_doc.update({
+                    "status": "filled",
+                    "price": price,
+                    "filled_price": price,
+                    "filled_quantity": quantity,
+                    "filled_at": datetime.now(timezone.utc)
+                })
+                
+                # 插入已完成的訂單
+                result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
+                
+                # 記錄交易記錄
+                await self.db[Collections.TRADES].insert_one({
+                    "buy_order_id": None,
+                    "sell_order_id": result.inserted_id,
+                    "buy_user_id": "MARKET",
+                    "sell_user_id": user_oid,
+                    "price": price,
+                    "quantity": quantity,
+                    "amount": trade_amount,
+                    "created_at": order_doc["filled_at"]
+                }, session=session)
 
-            # 更新訂單狀態
-            order_doc.update({
-                "status": "filled",
-                "price": current_price,  # 確保 price 欄位被設定為成交價
-                "filled_price": current_price,
-                "filled_quantity": quantity,
-                "filled_at": datetime.now(timezone.utc)
-            })
-            
-            # 插入已完成的訂單
-            result = await self.db[Collections.STOCK_ORDERS].insert_one(order_doc, session=session)
-            
-            # 記錄交易記錄
-            await self.db[Collections.TRADES].insert_one({
-                "buy_order_id": result.inserted_id,
-                "sell_order_id": None,
-                "buy_user_id": user_oid,
-                "sell_user_id": "SYSTEM" if is_ipo_purchase else "MARKET",
-                "price": current_price,
-                "quantity": quantity,
-                "amount": trade_amount,
-                "created_at": order_doc["filled_at"]
-            }, session=session)
-
-            # 更新使用者資產
-            logger.info(f"Updating user assets: user_id={user_oid}, deducting {trade_amount} points, adding {quantity} stocks")
-            
-            # 安全扣除使用者點數
-            deduction_result = await self._safe_deduct_points(
-                user_id=user_oid,
-                amount=trade_amount,
-                operation_note=f"市價買單成交：{quantity} 股 @ {price} 元",
-                session=session
-            )
-            
-            if not deduction_result['success']:
-                logger.error(f"Point deduction failed: {deduction_result['message']}")
-                return StockOrderResponse(
-                    success=False,
-                    message=deduction_result['message']
-                )
-            
-            # 增加股票持有
-            stocks_update_result = await self.db[Collections.STOCKS].update_one(
-                {"user_id": user_oid},
-                {"$inc": {"stock_amount": quantity}},
-                upsert=True,
-                session=session
-            )
-            logger.info(f"Stocks update result: matched={stocks_update_result.matched_count}, modified={stocks_update_result.modified_count}, upserted={stocks_update_result.upserted_id}")
-
-            # 更新 IPO 剩餘數量 - 使用原子操作確保不會減成負數
-            if is_ipo_purchase:
-                ipo_update_result = await self.db[Collections.MARKET_CONFIG].update_one(
-                    {
-                        "type": "ipo_status",
-                        "shares_remaining": {"$gte": quantity}  # 確保有足夠股數
-                    },
-                    {"$inc": {"shares_remaining": -quantity}},
+                # 增加使用者點數
+                await self.db[Collections.USERS].update_one(
+                    {"_id": user_oid},
+                    {"$inc": {"points": trade_amount}},
                     session=session
                 )
                 
-                # 驗證 IPO 更新是否成功
-                if ipo_update_result.modified_count == 0:
-                    # 查詢實際剩餘股數以提供更詳細的錯誤訊息
-                    current_ipo = await self.db[Collections.MARKET_CONFIG].find_one(
-                        {"type": "ipo_status"}, session=session
-                    )
-                    remaining_shares = current_ipo.get("shares_remaining", 0) if current_ipo else 0
-                    logger.error(f"Failed to update IPO stock in market order: insufficient shares for quantity {quantity}, remaining: {remaining_shares}")
-                    await session.abort_transaction()
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"IPO 股數不足，無法完成交易。需要 {quantity} 股，剩餘 {remaining_shares} 股"
+                # 使用原子操作確保股票數量不會變成負數
+                stock_update_result = await self.db[Collections.STOCKS].update_one(
+                    {
+                        "user_id": user_oid,
+                        "stock_amount": {"$gte": quantity}  # 確保有足夠股票
+                    },
+                    {"$inc": {"stock_amount": -quantity}},
+                    session=session
+                )
+                
+                # 驗證股票更新是否成功
+                if stock_update_result.modified_count == 0:
+                    # 查詢實際持股數量以提供詳細錯誤訊息
+                    current_holding = await self.db[Collections.STOCKS].find_one({"user_id": user_oid}, session=session)
+                    current_stocks = current_holding.get("stock_amount", 0) if current_holding else 0
+                    logger.error(f"Market sell order stock deduction failed for user {user_oid}: insufficient shares, quantity {quantity}, current: {current_stocks}")
+                    return StockOrderResponse(
+                        success=False,
+                        message=f"股票不足，需要賣出 {quantity} 股，實際持有 {current_stocks} 股"
                     )
                 
-                logger.info(f"✅ Market order IPO stock updated: reduced by {quantity} shares")
-            
+                logger.info(f"Market sell order: user {user_oid} sold {quantity} shares at {price}")
+
             # 交易完成後檢查點數完整性
             await self._validate_transaction_integrity(
                 user_ids=[user_oid],
-                operation_name=f"市價單執行 - {quantity} 股 @ {current_price} 元"
+                operation_name=f"市價單執行 - {quantity} 股 @ {price} 元"
             )
             
             return StockOrderResponse(
                 success=True,
                 order_id=str(result.inserted_id),
                 message=message,
-                executed_price=current_price
+                executed_price=price
             )
             
         except Exception as e:
@@ -2118,6 +2161,7 @@ class UserService:
                 user_id=buy_order["user_id"],
                 amount=trade_amount,
                 operation_note=f"訂單撮合成交：{trade_quantity} 股 @ {trade_price} 元",
+                change_type="stock_purchase",
                 session=session
             )
             
@@ -2294,6 +2338,7 @@ class UserService:
                         user_id=buy_order["user_id"],
                         amount=trade_amount,
                         operation_note=f"訂單部分成交：{trade_quantity} 股 @ {trade_price} 元",
+                        change_type="stock_purchase",
                         session=session
                     )
                     
@@ -2343,8 +2388,8 @@ class UserService:
                         "created_at": now
                     }, session=session)
                     
-                    # 提交事務
-                    await session.commit_transaction()
+                    # 注意：當使用 async with session.start_transaction() 時，事務會自動提交
+                    # 不需要手動呼叫 session.commit_transaction()
                     
                     logger.info(f"Orders matched: {trade_quantity} shares at {trade_price}")
                     
