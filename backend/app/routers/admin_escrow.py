@@ -248,3 +248,177 @@ async def escrow_system_health(
     except Exception as e:
         logger.error(f"Failed to check escrow system health: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/refund-all")
+async def refund_all_escrows(
+    current_user: dict = Depends(get_current_user),
+    escrow_service: EscrowService = Depends(get_escrow_service)
+):
+    """
+    退還所有活躍的圈存金額
+    這是一個危險的管理員操作，會取消所有正在進行的圈存並退款
+    """
+    from app.core.rbac import require_permission, Permission
+    require_permission(current_user, Permission.MANAGE_SYSTEM)
+    
+    try:
+        from app.core.database import get_database, Collections
+        db = get_database()
+        
+        logger.info(f"管理員 {current_user.get('username', 'unknown')} 開始執行退還所有圈存操作")
+        
+        # 獲取所有活躍的圈存記錄
+        active_escrows = await db[Collections.ESCROWS].find({
+            "status": "active"
+        }).to_list(None)
+        
+        if not active_escrows:
+            return {
+                "success": True,
+                "message": "沒有需要退還的圈存記錄",
+                "refunded_count": 0,
+                "total_refunded_amount": 0
+            }
+        
+        # 統計信息
+        refunded_count = 0
+        failed_count = 0
+        total_refunded_amount = 0
+        failed_escrows = []
+        
+        # 逐一退還圈存
+        for escrow in active_escrows:
+            try:
+                escrow_id = str(escrow.get("_id"))
+                amount = escrow.get("amount", 0)
+                user_id = escrow.get("user_id")
+                escrow_type = escrow.get("type", "unknown")
+                
+                # 取消圈存
+                success = await escrow_service.cancel_escrow(
+                    escrow_id=escrow_id,
+                    reason="管理員執行批量退還操作"
+                )
+                
+                if success:
+                    refunded_count += 1
+                    total_refunded_amount += amount
+                    logger.info(f"成功退還圈存: {escrow_id}, 用戶: {user_id}, 金額: {amount}, 類型: {escrow_type}")
+                else:
+                    failed_count += 1
+                    failed_escrows.append({
+                        "escrow_id": escrow_id,
+                        "user_id": str(user_id),
+                        "amount": amount,
+                        "type": escrow_type,
+                        "reason": "取消操作失敗"
+                    })
+                    logger.warning(f"退還圈存失敗: {escrow_id}, 用戶: {user_id}")
+                    
+            except Exception as escrow_error:
+                failed_count += 1
+                failed_escrows.append({
+                    "escrow_id": str(escrow.get("_id", "unknown")),
+                    "user_id": str(escrow.get("user_id", "unknown")),
+                    "amount": escrow.get("amount", 0),
+                    "type": escrow.get("type", "unknown"),
+                    "reason": str(escrow_error)
+                })
+                logger.error(f"處理圈存 {escrow.get('_id')} 時發生錯誤: {escrow_error}")
+        
+        logger.info(f"批量退還圈存完成 - 成功: {refunded_count}, 失敗: {failed_count}, 總退還金額: {total_refunded_amount}")
+        
+        return {
+            "success": True,
+            "message": f"批量退還操作完成",
+            "refunded_count": refunded_count,
+            "failed_count": failed_count,
+            "total_refunded_amount": total_refunded_amount,
+            "failed_escrows": failed_escrows if failed_escrows else None
+        }
+        
+    except Exception as e:
+        logger.error(f"批量退還圈存操作失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"批量退還操作失敗: {str(e)}")
+
+@router.post("/refund-user/{user_id}")
+async def refund_user_escrows(
+    user_id: str,
+    current_user: dict = Depends(get_current_user),
+    escrow_service: EscrowService = Depends(get_escrow_service)
+):
+    """
+    退還特定使用者的所有圈存金額
+    """
+    from app.core.rbac import require_permission, Permission
+    require_permission(current_user, Permission.VIEW_ALL_USERS)
+    
+    try:
+        logger.info(f"管理員 {current_user.get('username', 'unknown')} 開始退還使用者 {user_id} 的圈存")
+        
+        # 獲取該使用者的所有活躍圈存
+        user_escrows = await escrow_service.get_user_escrows(user_id, "active")
+        
+        if not user_escrows:
+            return {
+                "success": True,
+                "message": f"使用者 {user_id} 沒有需要退還的圈存記錄",
+                "refunded_count": 0,
+                "total_refunded_amount": 0
+            }
+        
+        refunded_count = 0
+        failed_count = 0
+        total_refunded_amount = 0
+        failed_escrows = []
+        
+        # 退還該使用者的所有圈存
+        for escrow in user_escrows:
+            try:
+                escrow_id = str(escrow.get("_id"))
+                amount = escrow.get("amount", 0)
+                escrow_type = escrow.get("type", "unknown")
+                
+                success = await escrow_service.cancel_escrow(
+                    escrow_id=escrow_id,
+                    reason=f"管理員退還使用者 {user_id} 的圈存"
+                )
+                
+                if success:
+                    refunded_count += 1
+                    total_refunded_amount += amount
+                    logger.info(f"成功退還使用者圈存: {escrow_id}, 金額: {amount}, 類型: {escrow_type}")
+                else:
+                    failed_count += 1
+                    failed_escrows.append({
+                        "escrow_id": escrow_id,
+                        "amount": amount,
+                        "type": escrow_type,
+                        "reason": "取消操作失敗"
+                    })
+                    
+            except Exception as escrow_error:
+                failed_count += 1
+                failed_escrows.append({
+                    "escrow_id": str(escrow.get("_id", "unknown")),
+                    "amount": escrow.get("amount", 0),
+                    "type": escrow.get("type", "unknown"),
+                    "reason": str(escrow_error)
+                })
+                logger.error(f"處理使用者圈存時發生錯誤: {escrow_error}")
+        
+        logger.info(f"使用者 {user_id} 圈存退還完成 - 成功: {refunded_count}, 失敗: {failed_count}")
+        
+        return {
+            "success": True,
+            "message": f"使用者 {user_id} 的圈存退還完成",
+            "user_id": user_id,
+            "refunded_count": refunded_count,
+            "failed_count": failed_count,
+            "total_refunded_amount": total_refunded_amount,
+            "failed_escrows": failed_escrows if failed_escrows else None
+        }
+        
+    except Exception as e:
+        logger.error(f"退還使用者 {user_id} 圈存失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"退還使用者圈存失敗: {str(e)}")
