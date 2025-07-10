@@ -1,6 +1,7 @@
 from datetime import datetime
 from os import environ
 from zoneinfo import ZoneInfo
+from uuid import uuid4
 
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CopyTextButton
@@ -173,7 +174,6 @@ async def log(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """PVP 猜拳挑戰"""
     logger.info(f"User {update.effective_user.id} started a PVP request")
 
     # 檢查是否在群組中
@@ -231,97 +231,31 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("💰 金額不能超過 10000 點！")
         return
 
-    from bot.pvp_manager import get_pvp_manager
+    # Check if user already started a PVP challenge
+    if context.chat_data.get(f"pvp:{update.effective_user.id}"):
+        buttons = [
+            [InlineKeyboardButton("❌ 取消 PVP 挑戰", callback_data=f"pvp:cancel:{update.effective_user.id}")]
+        ]
+        await update.message.reply_text("⚠️ 你已經有一個正在進行的 PVP 挑戰，請先完成或取消它！",reply_markup=InlineKeyboardMarkup(buttons))
+        return
 
-    try:
-        pvp_manager = get_pvp_manager()
-        result = await pvp_manager.create_challenge(
-            user_id=str(update.effective_user.id),
-            username=update.effective_user.full_name,
-            amount=amount,
-            chat_id=str(update.message.chat.id)
-        )
-
-        if result.get("conflict"):
-            # 有衝突，顯示選擇按鈕
-            existing_challenge = result["existing_challenge"]
-            remaining_time = result["remaining_time"]
-
-            hours = remaining_time // 3600
-            minutes = (remaining_time % 3600) // 60
-            seconds = remaining_time % 60
-            time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-
-            conflict_message = (
-                f"⚠️ **你已有進行中的 PVP 挑戰！**\n\n"
-                f"**目前挑戰金額**: {existing_challenge['amount']} 點\n"
-                f"**剩餘時間**: {time_str}\n\n"
-                f"**新挑戰金額**: {amount} 點\n\n"
-                f"請選擇你要："
-            )
-
-            keyboard = [[
-                InlineKeyboardButton(
-                    "🔄 取消舊的，開始新的",
-                    callback_data=f"pvp_conflict_new_{amount}_{update.message.chat.id}"
-                ),
-                InlineKeyboardButton(
-                    "📋 繼續舊的挑戰",
-                    callback_data=f"pvp_conflict_continue_{existing_challenge['challenge_id']}"
-                )
-            ]]
-
-            await update.message.reply_text(
-                conflict_message,
-                parse_mode=ParseMode.MARKDOWN_V2,
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-
-        elif result.get("error"):
-            # API 錯誤
-            response = result["response"]
-            if await verify_existing_user(response, update):
-                return
-
-            await update.message.reply_text(
-                escape_markdown(response.get("message", "建立挑戰失敗"), 2),
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
-        else:
-            # 成功建立挑戰
-            challenge_id = result["challenge_id"]
-
-            # 發起人先選擇猜拳
-            message_text = (
-                f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
-                f"⏰ 如果 3 小時沒有回應，系統會重新提醒\n\n"
-                f"請先選擇你的猜拳："
-            )
-
-            # 建立發起人選擇的內聯鍵盤
-            keyboard = [[
-                InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
-                InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
-                InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
-            ]]
-
-            sent_message = await update.message.reply_text(
-                escape_markdown(message_text, 2),
-                parse_mode=ParseMode.MARKDOWN_V2,
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-            
-            # 將訊息ID儲存到PVP manager中
-            from bot.pvp_manager import get_pvp_manager
-            pvp_manager = get_pvp_manager()
-            pvp_manager.store_challenge_message(challenge_id, sent_message.message_id)
-
-    except Exception as e:
-        logger.error(f"Failed to create pvp instance: {e}")
-        await update.message.reply_text(
-            "😿 建立 PVP 挑戰時發生錯誤，請稍後再試",
-            parse_mode=ParseMode.MARKDOWN_V2
-        )
+    challenge_uuid = str(uuid4())
+    buttons = [
+        [InlineKeyboardButton("🤑 我接受 PVP 挑戰！", callback_data=f"pvp:accept:{update.effective_user.id}:{challenge_uuid}")],
+        [InlineKeyboardButton("❌ 取消 PVP 挑戰", callback_data=f"pvp:cancel:{update.effective_user.id}")]
+    ]
+    await update.message.reply_text(
+        f"😺 *{escape_markdown(update.effective_user.full_name, 2)}* 發起了一個 PVP 挑戰！\n\n"
+        f"💰 金額：{amount} 點\n"
+        f"🎯 挑戰者：{escape_markdown(update.effective_user.full_name, 2)}\n"
+        f"請其他人點擊下面的按鈕來接受挑戰！",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+    context.chat_data[f"pvp:{update.effective_user.id}"] = {
+        "amount": amount,
+        "challenge_uuid": challenge_uuid,
+    }
 
 
 async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

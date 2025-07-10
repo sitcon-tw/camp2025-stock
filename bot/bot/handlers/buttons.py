@@ -1,4 +1,5 @@
 import asyncio
+import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
@@ -34,13 +35,6 @@ async def handle_zombie_clicks(update: Update, context: ContextTypes.DEFAULT_TYP
     try:
         callback_data = update.callback_query.data
 
-        if (callback_data.startswith("pvp_creator_") or 
-            callback_data.startswith("pvp_accept_") or 
-            callback_data.startswith("pvp_conflict_") or
-            callback_data.startswith("orders_")):
-            logger.warning(f"Zombie handler caught valid callback: {callback_data}")
-            return
-
         context.user_data["in_transfer_convo"] = False
         context.user_data["in_stock_convo"] = False
         await update.callback_query.answer("⚠️ 此按鈕無效，請重新輸入指令來開始新的操作", show_alert=True)
@@ -52,349 +46,62 @@ async def handle_zombie_clicks(update: Update, context: ContextTypes.DEFAULT_TYP
     except Exception as e:
         logger.error(f"Error in handle_zombie_clicks: {e}")
 
-
-async def handle_pvp_creator_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """處理 PVP 發起人選擇猜拳"""
+async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
-    
-    # 解析 callback_data: pvp_creator_{challenge_id}_{choice}
-    try:
-        parts = query.data.split('_')
-        if len(parts) != 4 or parts[0] != 'pvp' or parts[1] != 'creator':
-            await safe_edit_message(query, "❌ 無效的操作！")
+    data = query.data.split(":")
+
+    market_status = api_helper.get("/api/status")
+    if not market_status.isOpen:
+        await update.message.reply_text(
+            "🚫 目前交易已經關閉，請稍後再來！",
+        )
+        return
+
+    if data[1] == "cancel":
+        original_user_id = int(data[2])
+        if update.effective_user.id != original_user_id:
+            await query.answer("❌ 你不能取消別人的 PVP 挑戰！", show_alert=True)
             return
-            
-        challenge_id = parts[2]
-        creator_choice = parts[3]
-        
-        # 調用後端 API 設定發起人選擇
-        response = api_helper.post("/api/bot/pvp/creator-choice", protected_route=True, json={
-            "from_user": str(query.from_user.id),
-            "challenge_id": challenge_id,
-            "choice": creator_choice
-        })
-        
-        if response and isinstance(response, dict):
-            if response.get("success"):
-                # 發起人已選擇，更新 PVP 管理器中的狀態
-                try:
-                    from bot.pvp_manager import get_pvp_manager
-                    pvp_manager = get_pvp_manager()
-                    pvp_manager.update_challenge_status(challenge_id, "waiting_accepter")
-                except Exception as e:
-                    logger.error(f"❌ 更新 PVP 挑戰狀態失敗: {e}")
-                
-                # 發起人已選擇，現在顯示給其他人接受挑戰的按鈕
-                challenge_message = escape_markdown(response.get("message"), 2)
-                
-                # 建立挑戰者選擇的內聯鍵盤
-                keyboard = [
-                    [
-                        InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_accept_{challenge_id}_rock"),
-                        InlineKeyboardButton("📄 布", callback_data=f"pvp_accept_{challenge_id}_paper"),
-                        InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_accept_{challenge_id}_scissors")
-                    ]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                await safe_edit_message(
-                    query,
-                    challenge_message,
-                    parse_mode=ParseMode.MARKDOWN_V2,
-                    reply_markup=reply_markup
-                )
-            else:
-                # 設定選擇失敗
-                error_message = escape_markdown(response.get("message", "設定選擇失敗"), 2)
-                await query.answer(error_message, show_alert=True)
-        else:
-            # 使用者不存在或其他 API 錯誤
-            if await verify_existing_user(response, update):
-                return
-            await query.answer("設定選擇失敗，請稍後再試", show_alert=True)
-            
-    except Exception as e:
-        await query.answer("處理選擇時發生錯誤", show_alert=True)
 
-
-async def handle_pvp_accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """處理 PVP 挑戰接受按鈕點選"""
-    query = update.callback_query
-    await query.answer()
-    
-    # 解析 callback_data: pvp_accept_{challenge_id}_{choice}
-    try:
-        parts = query.data.split('_')
-        if len(parts) != 4 or parts[0] != 'pvp' or parts[1] != 'accept':
-            await safe_edit_message(query, "❌ 無效的挑戰！")
+        await query.answer("✅ 已取消 PVP 挑戰", show_alert=True)
+        await query.edit_message_text("️⚠️ PVP 挑戰已取消")
+        context.chat_data.pop(f"pvp:{original_user_id}", None)
+    elif data[1] == "confirm":
+        if update.effective_user.id == int(data[2]):
+            await query.answer("❌ 不能點自己的 PVP 挑戰！", show_alert=True)
             return
-            
-        challenge_id = parts[2]
-        choice = parts[3]
-        
-        # 調用後端 API 接受挑戰
-        response = api_helper.post("/api/bot/pvp/accept", protected_route=True, json={
-            "from_user": str(query.from_user.id),
-            "challenge_id": challenge_id,
-            "choice": choice
-        })
-        
-        if response and isinstance(response, dict):
-            if response.get("success"):
-                # 遊戲完成，顯示結果
-                message_text = escape_markdown(response.get("message"), 2)
-                await safe_edit_message(
-                    query,
-                    message_text,
-                    parse_mode=ParseMode.MARKDOWN_V2
-                )
-                
-                # 通知 PVP 管理器挑戰已完成
-                try:
-                    from bot.pvp_manager import get_pvp_manager
-                    pvp_manager = get_pvp_manager()
-                    await pvp_manager.complete_challenge(challenge_id)
-                except Exception as e:
-                    logger.error(f"❌ 清理 PVP 挑戰資源失敗: {e}")
-                    
-            else:
-                # 接受挑戰失敗
-                error_message = escape_markdown(response.get("message", "接受挑戰失敗"), 2)
-                await query.answer(error_message, show_alert=True)
-        else:
-            # 使用者不存在或其他 API 錯誤
-            if await verify_existing_user(response, update):
-                return
-            await query.answer("接受挑戰失敗，請稍後再試", show_alert=True)
-            
-    except Exception as e:
-        await query.answer("處理挑戰時發生錯誤", show_alert=True)
 
+        if not context.chat_data.get(f"pvp:{update.effective_user.id}"):
+            await query.answer("⚠️ PVP 挑戰已經失效ㄌ", show_alert=True)
+            try:
+                await query.edit_message_text("️⚠️ PVP 挑戰已經失效，請重新發起挑戰！")
+            except Exception as e:
+                logger.error(f"Error in handle_pvp_click, editing stale message: {e}")
+            return
+        challenge_data = context.chat_data[f"pvp:{update.effective_user.id}"]
 
-async def handle_pvp_conflict(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """處理 PVP 衝突選擇按鈕"""
-    query = update.callback_query
-    await query.answer()
-    
-    try:
-        from bot.pvp_manager import get_pvp_manager
-        
-        callback_data = query.data
-        user_id = str(query.from_user.id)
-        
-        logger.info(f"PVP conflict button pressed: {callback_data} by user {user_id}")
-        
-        if callback_data.startswith("pvp_conflict_new_"):
-            # 使用者選擇取消舊的，開始新的
-            # 格式：pvp_conflict_new_{amount}_{chat_id}
-            prefix = "pvp_conflict_new_"
-            data_part = callback_data[len(prefix):]
-            parts = data_part.split("_", 1)  # 只分割一次，避免負數chat_id問題
-            if len(parts) >= 2:
-                amount = None
-                chat_id = None
-                try:
-                    amount = int(parts[0])
-                    chat_id = parts[1]
-                    
-                    logger.info(f"Parsed data - Amount: {amount} (type: {type(amount)}), Chat ID: {chat_id} (type: {type(chat_id)})")
-                    
-                    pvp_manager = get_pvp_manager()
-                    
-                    # 驗證使用者是否有現有挑戰
-                    existing_challenge_id = pvp_manager.get_user_challenge(user_id)
-                    if not existing_challenge_id:
-                        await safe_edit_message(query, "❌ 沒有找到現有挑戰")
-                        return
-                    
-                    # 取消現有挑戰
-                    logger.info(f"About to cancel existing challenge for user {user_id}")
-                    cancelled = await pvp_manager.cancel_existing_challenge(user_id)
-                    # logger.info("Cancel result: " + str(cancelled))  # 暫時註解掉
-                    
-                    if cancelled:
-                        # 稍微延遲確保後端取消操作完全完成
-                        await asyncio.sleep(0.5)
-                        
-                        # 建立新挑戰
-                        logger.info("About to create challenge...")
-                        username = query.from_user.full_name or "未知使用者"
-                        logger.info(f"Username: {username}")
-                        result = await pvp_manager.create_challenge(
-                            user_id=user_id,
-                            username=username,
-                            amount=amount,
-                            chat_id=str(chat_id)  
-                        )
-                        logger.info(f"Create challenge result: {result}")
-                        
-                        if not result.get("conflict") and not result.get("error"):
-                            challenge_id = result["challenge_id"]
-                            
-                            # 顯示新挑戰的選擇按鈕
-                            message_text = (
-                                f"🔄 **已取消舊挑戰，建立新挑戰！**\n\n"
-                                f"🎯 你發起了 {amount} 點的 PVP 挑戰！\n"
-                                f"⏰ 如果 3 小時沒有回應，系統會自動取消\n\n"
-                                f"請先選擇你的猜拳："
-                            )
-                            
-                            keyboard = [
-                                [
-                                    InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
-                                    InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
-                                    InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
-                                ]
-                            ]
-                            reply_markup = InlineKeyboardMarkup(keyboard)
-                            
-                            edited_message = await query.edit_message_text(
-                                message_text,
-                                parse_mode=ParseMode.MARKDOWN_V2,
-                                reply_markup=reply_markup
-                            )
-                            
-                            # 儲存新挑戰的訊息ID
-                            pvp_manager.store_challenge_message(challenge_id, edited_message.message_id)
-                        else:
-                            # 安全處理錯誤訊息
-                            response = result.get("response", {})
-                            if isinstance(response, dict):
-                                error_msg = str(response.get("message", "建立新挑戰失敗"))
-                            else:
-                                error_msg = "建立新挑戰失敗"
-                            await safe_edit_message(query, f"❌ {error_msg}")
-                    else:
-                        await safe_edit_message(query, "❌ 取消舊挑戰失敗，請稍後再試")
-                        
-                except ValueError:
-                    await safe_edit_message(query, "❌ 無效的金額格式")
-                    return
-                except Exception as e:
-                    logger.error(f"Error processing pvp_conflict_new: {e}")
-                    logger.error(f"Callback data: {callback_data}, Amount: {amount}, Chat ID: '{chat_id}' (type: {type(chat_id)})")
-                    await safe_edit_message(query, "❌ 處理請求時發生錯誤")
-                    return
-            else:
-                await safe_edit_message(query, "❌ 無效的callback資料格式")
-        
-        elif callback_data.startswith("pvp_conflict_continue_"):
-            # 使用者選擇繼續舊的挑戰
-            challenge_id = callback_data.replace("pvp_conflict_continue_", "")
-            
-            pvp_manager = get_pvp_manager()
-            challenge_info = pvp_manager.get_challenge_info(challenge_id)
-            
-            # 驗證使用者是否為挑戰的建立者
-            if challenge_info and challenge_info.get("user_id") != user_id:
-                await safe_edit_message(query, "❌ 你不是這個挑戰的建立者")
-                return
-            
-            if challenge_info:
-                amount = challenge_info["amount"]
-                status = challenge_info.get("status", "waiting_creator")
-                
-                if status == "waiting_creator":
-                    # 發起人還沒選擇猜拳，顯示選擇按鈕
-                    message_text = (
-                        f"📋 **繼續現有挑戰**\n\n"
-                        f"🎯 你的 {amount} 點 PVP 挑戰！\n"
-                        f"請選擇你的猜拳："
-                    )
-                    
-                    keyboard = [
-                        [
-                            InlineKeyboardButton("🪨 石頭", callback_data=f"pvp_creator_{challenge_id}_rock"),
-                            InlineKeyboardButton("📄 布", callback_data=f"pvp_creator_{challenge_id}_paper"),
-                            InlineKeyboardButton("✂️ 剪刀", callback_data=f"pvp_creator_{challenge_id}_scissors")
-                        ]
-                    ]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    
-                    edited_message = await query.edit_message_text(
-                        message_text,
-                        parse_mode=ParseMode.MARKDOWN_V2,
-                        reply_markup=reply_markup
-                    )
-                    
-                    # 儲存挑戰訊息ID
-                    pvp_manager = get_pvp_manager()
-                    pvp_manager.store_challenge_message(challenge_id, edited_message.message_id)
-                    
-                elif status == "waiting_accepter":
-                    # 發起人已選擇，等待其他人接受
-                    # 計算剩餘時間
-                    try:
-                        created_at = challenge_info.get('created_at')
-                        if created_at and isinstance(created_at, datetime):
-                            elapsed = datetime.now() - created_at
-                            remaining = timedelta(hours=3) - elapsed
-                            
-                            if remaining.total_seconds() > 0:
-                                hours = int(remaining.total_seconds()) // 3600
-                                minutes = (int(remaining.total_seconds()) % 3600) // 60
-                                seconds = int(remaining.total_seconds()) % 60
-                                time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
-                                
-                                # 轉義Markdown V2特殊字元
-                                escaped_time = escape_markdown(time_str, 2)
-                                
-                                message_text = (
-                                    f"📋 **繼續現有挑戰**\n\n"
-                                    f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n"
-                                    f"⏰ 剩餘時間：{escaped_time}\n\n"
-                                    f"✅ 你已經選擇好猜拳了\n"
-                                    f"🔄 等待其他玩家接受挑戰\\.\\.\\."
-                                )
-                                
-                                await safe_edit_message(
-                                    query,
-                                    message_text,
-                                    parse_mode=ParseMode.MARKDOWN_V2
-                                )
-                            else:
-                                await safe_edit_message(query, "❌ 挑戰已超時")
-                        else:
-                            # 如果無法計算時間，直接顯示狀態
-                            message_text = (
-                                f"📋 **繼續現有挑戰**\n\n"
-                                f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n\n"
-                                f"✅ 你已經選擇好猜拳了\n"
-                                f"🔄 等待其他玩家接受挑戰\\.\\.\\."
-                            )
-                            
-                            await safe_edit_message(
-                                query,
-                                message_text,
-                                parse_mode=ParseMode.MARKDOWN_V2
-                            )
-                    except Exception as time_error:
-                        logger.error(f"Error calculating remaining time: {time_error}")
-                        # 發生錯誤時，顯示簡化的訊息
-                        message_text = (
-                            f"📋 **繼續現有挑戰**\n\n"
-                            f"🎯 你的 {amount} 點 PVP 挑戰正在進行中！\n\n"
-                            f"✅ 你已經選擇好猜拳了\n"
-                            f"🔄 等待其他玩家接受挑戰\\.\\.\\."
-                        )
-                        
-                        await safe_edit_message(
-                            query,
-                            message_text,
-                            parse_mode=ParseMode.MARKDOWN_V2
-                        )
-                else:
-                    await safe_edit_message(query, "❌ 挑戰狀態異常")
-            else:
-                await safe_edit_message(query, "❌ 找不到該挑戰，可能已超時或被取消")
-        
-    except Exception as e:
-        logger.error(f"Error in handle_pvp_conflict: {e}")
-        try:
-            await safe_edit_message(query, "❌ 處理衝突選擇時發生錯誤，請重試")
-        except:
-            await query.answer("處理衝突選擇時發生錯誤", show_alert=True)
+        if challenge_data["challenger_id"] != data[3]:
+            await query.answer("⚠️ PVP 挑戰已經失效ㄌ", show_alert=True)
+            try:
+                await query.edit_message_text("️⚠️ PVP 挑戰已經失效，請重新發起挑戰！")
+            except Exception as e:
+                logger.error(f"Error in handle_pvp_click, editing stale message: {e}")
+            return
+
+        did_clicker_win = bool(random.getrandbits(1)) # If true, who clicked the button get the points
+        await query.answer("🤑 等下，新版 PVP 還在測試")
+        return
+        # comment above line to continue dev
+        win_text = f"🎉 恭喜 {"點按鈕的人"} 贏了 PVP 挑戰！" if did_clicker_win else f"😿 很遺憾，{"點按鈕的人"} 輸了 PVP 挑戰！"
+
+        await update.effective_message.edit_text(
+            f"{win_text}\n🤑 這個挑戰值 {challenge_data['reward']} 點"
+        )
+
+        # API calling part here
+        # Who started the PVP challenge will be int(data[2])
+        # Who clicked the button will be update.effective_user.id
+        # amount is in challenge_data['reward']
 
 
 async def handle_orders_pagination(update: Update, context: ContextTypes.DEFAULT_TYPE):
