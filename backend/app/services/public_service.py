@@ -203,9 +203,19 @@ class PublicService:
                 if price is None or price <= 0:
                     continue
                     
+                # Get quantity from filled_quantity for actual traded amount
+                quantity = trade.get("filled_quantity")
+                if quantity is None or quantity <= 0:
+                    # Fallback to stock_amount for legacy orders
+                    quantity = abs(trade.get("stock_amount", 0))
+                
+                # Skip trades with zero quantity
+                if quantity <= 0:
+                    continue
+                    
                 trade_records.append(TradeRecord(
                     price=int(price),
-                    quantity=abs(trade.get("stock_amount", 0)),
+                    quantity=int(quantity),
                     timestamp=trade.get("created_at", datetime.now(timezone.utc)).isoformat()
                 ))
             
