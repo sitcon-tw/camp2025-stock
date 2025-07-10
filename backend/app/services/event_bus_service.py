@@ -291,7 +291,7 @@ class EventBusService:
         return events
     
     def get_statistics(self) -> Dict[str, Any]:
-        """獲取統計信息"""
+        """獲取統計訊息"""
         handler_stats = {}
         for event_type, handlers in self.handlers.items():
             handler_stats[event_type.value] = [

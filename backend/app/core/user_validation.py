@@ -257,17 +257,17 @@ class UserValidationService:
     
     async def get_user_trading_info(self, user_id: ObjectId, session=None) -> Dict[str, Any]:
         """
-        獲取用戶交易相關信息
+        獲取用戶交易相關訊息
         
         Args:
             user_id: 用戶ID
             session: 資料庫session（可選）
             
         Returns:
-            dict: 用戶交易信息
+            dict: 用戶交易訊息
         """
         try:
-            # 獲取用戶基本信息
+            # 獲取用戶基本訊息
             user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
             if not user:
                 return {
@@ -276,7 +276,7 @@ class UserValidationService:
                     'user_exists': False
                 }
             
-            # 獲取持股信息
+            # 獲取持股訊息
             stock_holding = await self.db[Collections.STOCKS].find_one({"user_id": user_id}, session=session)
             current_stocks = stock_holding.get("stock_amount", 0) if stock_holding else 0
             
@@ -304,7 +304,7 @@ class UserValidationService:
             logger.error(f"Error getting user trading info for {user_id}: {e}")
             return {
                 'success': False,
-                'message': f'獲取用戶信息失敗: {str(e)}',
+                'message': f'獲取用戶訊息失敗: {str(e)}',
                 'user_exists': False
             }
 

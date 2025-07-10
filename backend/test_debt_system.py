@@ -35,10 +35,10 @@ async def test_debt_system():
         
         print(f"\n📊 測試用戶 ID: {test_user_id}")
         
-        # 1. 測試獲取用戶債務信息
-        print("\n1️⃣ 測試獲取用戶債務信息...")
+        # 1. 測試獲取用戶債務訊息
+        print("\n1️⃣ 測試獲取用戶債務訊息...")
         debt_info = await debt_service.get_user_debt_info(user_oid)
-        print(f"債務信息: {debt_info}")
+        print(f"債務訊息: {debt_info}")
         
         # 2. 測試用戶狀態驗證
         print("\n2️⃣ 測試用戶狀態驗證...")

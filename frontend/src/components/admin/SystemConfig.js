@@ -249,12 +249,12 @@ export const SystemConfig = ({ token }) => {
             );
             showNotification("交易限制更新成功！", "success");
             setTradingLimitForm({ limitPercent: "" });
-            // 重新載入價格限制信息
+            // 重新載入價格限制訊息
             try {
                 const priceLimit = await getPriceLimitInfo(token, 14.0);
                 setPriceLimitInfo(priceLimit);
             } catch (error) {
-                console.error("重新載入價格限制信息失敗:", error);
+                console.error("重新載入價格限制訊息失敗:", error);
             }
         } catch (error) {
             showNotification(

@@ -21,13 +21,13 @@ class DebtService:
     
     async def get_user_debt_info(self, user_id: ObjectId) -> Dict[str, Any]:
         """
-        獲取用戶債務信息
+        獲取用戶債務訊息
         
         Args:
             user_id: 用戶ID
             
         Returns:
-            dict: 包含債務信息的字典
+            dict: 包含債務訊息的字典
         """
         try:
             user = await self.db[Collections.USERS].find_one({"_id": user_id})
@@ -65,7 +65,7 @@ class DebtService:
             logger.error(f"Error getting debt info for user {user_id}: {e}")
             return {
                 'success': False,
-                'message': f'獲取債務信息失敗: {str(e)}',
+                'message': f'獲取債務訊息失敗: {str(e)}',
                 'user_exists': False
             }
     

@@ -2208,15 +2208,15 @@ async def get_all_debtors(
 
 @router.get(
     "/debt/user/{user_id}",
-    summary="獲取用戶債務信息",
-    description="獲取指定用戶的詳細債務信息"
+    summary="獲取用戶債務訊息",
+    description="獲取指定用戶的詳細債務訊息"
 )
 async def get_user_debt_info(
     user_id: str,
     current_user: dict = Depends(get_current_user),
     debt_service: DebtService = Depends(get_debt_service)
 ) -> dict:
-    """獲取用戶債務信息"""
+    """獲取用戶債務訊息"""
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
@@ -2235,7 +2235,7 @@ async def get_user_debt_info(
         logger.error(f"Failed to get user debt info for {user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"獲取用戶債務信息失敗: {str(e)}"
+            detail=f"獲取用戶債務訊息失敗: {str(e)}"
         )
 
 
@@ -2373,7 +2373,7 @@ async def clear_user_debt(
         admin_oid = ObjectId(current_user["user_id"])
         db = get_database()
         
-        # 獲取當前欠款信息
+        # 獲取當前欠款訊息
         debt_info = await debt_service.get_user_debt_info(user_oid)
         if not debt_info['success'] or not debt_info['user_exists']:
             return debt_info

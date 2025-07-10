@@ -141,41 +141,53 @@ class AdminService:
                 
                 if current_owed > 0:
                     # 有欠款，優先償還
-                    # 先取得目前有多少存款，照道理是0但預防萬一仍然要處理
+                    # 先取得目前有多少點數，全部用來償還欠款
                     current_points = user.get("points", 0)
-                    repay_amount = min(request.amount, current_owed +  current_points)
-                    remaining_amount = request.amount - repay_amount
                     
-                    # 更新點數和欠款
-                    update_doc = {"$inc": {"owed_points": -repay_amount}}
-                    if remaining_amount > 0:
-                        update_doc["$inc"]["points"] = remaining_amount
+                    # 總可用於償還的金額 = 現有點數 + 新給予的點數
+                    total_available = current_points + request.amount
+                    
+                    # 計算實際償還金額（不能超過欠款總額）
+                    actual_repay = min(total_available, current_owed)
+                    
+                    # 計算償還後剩餘的點數
+                    remaining_points = total_available - actual_repay
+                    
+                    # 更新邏輯：
+                    # 1. 將現有點數歸零
+                    # 2. 減少相應的欠款
+                    # 3. 設定剩餘點數（如果有的話）
+                    update_doc = {
+                        "$set": {"points": remaining_points},
+                        "$inc": {"owed_points": -actual_repay}
+                    }
                     
                     # 如果完全償還欠款，解除凍結
-                    if current_owed <= request.amount:
-                        update_doc["$set"] = {"frozen": False}
+                    if actual_repay >= current_owed:
+                        update_doc["$set"]["frozen"] = False
                     
                     await self.db[Collections.USERS].update_one(
                         {"_id": user["_id"]},
                         update_doc
                     )
                     
-                    # 記錄償還信息
-                    if repay_amount > 0:
+                    # 記錄償還訊息
+                    if actual_repay > 0:
+                        repay_note = f"管理員給予 {request.amount} 點 + 現有 {current_points} 點，共償還欠款: {actual_repay} 點"
                         await self._log_point_change(
                             user["_id"],
                             "debt_repayment",
-                            repay_amount,
-                            f"管理員給予點數自動償還欠款: {repay_amount} 點"
+                            actual_repay,
+                            repay_note
                         )
                     
-                    # 記錄剩餘點數增加（如果有）
-                    if remaining_amount > 0:
+                    # 記錄剩餘點數（如果有）
+                    if remaining_points > 0:
                         await self._log_point_change(
                             user["_id"],
                             "admin_grant",
-                            remaining_amount,
-                            f"管理員給予點數（償還欠款後剩餘）: {remaining_amount} 點"
+                            remaining_points,
+                            f"償還欠款後剩餘點數: {remaining_points} 點"
                         )
                 else:
                     # 沒有欠款，直接增加點數
