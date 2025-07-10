@@ -3719,12 +3719,21 @@ class UserService:
             # 開始會話進行原子性操作
             async with await self.db.client.start_session() as session:
                 async with session.start_transaction():
-                    # 更新買方：扣除點數，增加股票
-                    await self.db[Collections.USERS].update_one(
-                        {"_id": buy_order["user_id"]},
-                        {"$inc": {"points": -(quantity * price)}},
+                    # 更新買方：安全扣除點數
+                    trade_amount = quantity * price
+                    deduction_result = await self._safe_deduct_points(
+                        user_id=buy_order["user_id"],
+                        amount=trade_amount,
+                        operation_note=f"交易扣款：{quantity} 股 @ {price} 元",
+                        change_type="stock_purchase",
                         session=session
                     )
+                    
+                    if not deduction_result['success']:
+                        buy_user = await self.db[Collections.USERS].find_one({"_id": buy_order["user_id"]}, session=session)
+                        buy_username = buy_user.get("name", "Unknown") if buy_user else "Unknown"
+                        logger.error(f"Trade execution point deduction failed for user {buy_username} (ID: {buy_order['user_id']}): {deduction_result['message']}")
+                        raise Exception(f"交易失敗 - 買方點數不足：使用者 {buy_username} 需要 {trade_amount} 點，{deduction_result['message']}")
                     
                     await self.db[Collections.STOCKS].update_one(
                         {"user_id": buy_order["user_id"]},
@@ -3733,16 +3742,28 @@ class UserService:
                         session=session
                     )
                     
-                    # 更新賣方：增加點數，扣除股票
-                    await self.db[Collections.USERS].update_one(
-                        {"_id": sell_order["user_id"]},
-                        {"$inc": {"points": quantity * price}},
+                    # 更新賣方：檢查股票數量並安全扣除股票
+                    stock_update_result = await self.db[Collections.STOCKS].update_one(
+                        {
+                            "user_id": sell_order["user_id"],
+                            "stock_amount": {"$gte": quantity}  # 確保有足夠股票
+                        },
+                        {"$inc": {"stock_amount": -quantity}},
                         session=session
                     )
                     
-                    await self.db[Collections.STOCKS].update_one(
-                        {"user_id": sell_order["user_id"]},
-                        {"$inc": {"stock_amount": -quantity}},
+                    if stock_update_result.modified_count == 0:
+                        sell_user = await self.db[Collections.USERS].find_one({"_id": sell_order["user_id"]}, session=session)
+                        sell_username = sell_user.get("name", "Unknown") if sell_user else "Unknown"
+                        current_stock = await self.db[Collections.STOCKS].find_one({"user_id": sell_order["user_id"]}, session=session)
+                        current_amount = current_stock.get("stock_amount", 0) if current_stock else 0
+                        logger.error(f"Trade execution stock deduction failed for user {sell_username} (ID: {sell_order['user_id']}): needed {quantity}, has {current_amount}")
+                        raise Exception(f"交易失敗 - 賣方股票不足：使用者 {sell_username} 需要 {quantity} 股，目前僅有 {current_amount} 股")
+                    
+                    # 增加點數給賣方
+                    await self.db[Collections.USERS].update_one(
+                        {"_id": sell_order["user_id"]},
+                        {"$inc": {"points": quantity * price}},
                         session=session
                     )
                     
