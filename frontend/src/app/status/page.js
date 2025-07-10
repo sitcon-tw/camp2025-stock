@@ -222,13 +222,13 @@ export default function Status() {
                         <div className="mb-4 flex-shrink-0">
                             <div className="space-y-2">
                                 {/* 第一行：價格相關 */}
-                                <div className="grid grid-cols-3 gap-2 text-center lg:gap-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-center lg:gap-4">
                                     <div className="rounded-lg bg-[#1A325F] px-3 py-2 xl:px-4 xl:py-3 flex items-center justify-between">
                                         <h5 className="text-xs text-white lg:text-sm xl:text-base">
                                             開盤價
                                         </h5>
                                         <div className="flex items-center gap-1">
-                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl">
+                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl mr-2">
                                                 {Math.round(stockData.open)}
                                             </p>
                                             <p className="text-xs text-white lg:text-sm xl:text-base">
@@ -241,7 +241,7 @@ export default function Status() {
                                             今日最低
                                         </h5>
                                         <div className="flex items-center gap-1">
-                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl">
+                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl mr-2">
                                                 {Math.round(stockData.low)}
                                             </p>
                                             <p className="text-xs text-white lg:text-sm xl:text-base">
@@ -254,7 +254,7 @@ export default function Status() {
                                             今日最高
                                         </h5>
                                         <div className="flex items-center gap-1">
-                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl">
+                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl mr-2">
                                                 {Math.round(stockData.high)}
                                             </p>
                                             <p className="text-xs text-white lg:text-sm xl:text-base">
@@ -262,16 +262,12 @@ export default function Status() {
                                             </p>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                {/* 第二行：交易統計 */}
-                                <div className="grid grid-cols-3 gap-2 text-center lg:gap-4">
-                                    <div className="rounded-lg bg-[#1A325F] px-3 py-2 xl:px-4 xl:py-3 flex items-center justify-between">
+                                     <div className="rounded-lg bg-[#1A325F] px-3 py-2 xl:px-4 xl:py-3 flex items-center justify-between">
                                         <h5 className="text-xs text-white lg:text-sm xl:text-base">
                                             今日成交量
                                         </h5>
                                         <div className="flex items-center gap-1">
-                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl">
+                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl mr-2">
                                                 {tradingStats.total_volume.toLocaleString()}
                                             </p>
                                             <p className="text-xs text-white lg:text-sm xl:text-base">
@@ -284,7 +280,7 @@ export default function Status() {
                                             成交額
                                         </h5>
                                         <div className="flex items-center gap-1">
-                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl">
+                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl mr-2">
                                                 {tradingStats.total_amount.toLocaleString()}
                                             </p>
                                             <p className="text-xs text-white lg:text-sm xl:text-base">
@@ -297,7 +293,7 @@ export default function Status() {
                                             成交筆數
                                         </h5>
                                         <div className="flex items-center gap-1">
-                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl">
+                                            <p className="text-lg font-bold lg:text-2xl xl:text-3xl mr-2">
                                                 {tradingStats.total_trades.toLocaleString()}
                                             </p>
                                             <p className="text-xs text-white lg:text-sm xl:text-base">
