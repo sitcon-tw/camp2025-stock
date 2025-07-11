@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
-import { redeemQRCode, verifyCommunityPassword } from "@/lib/api";
+import { verifyCommunityPassword, communityGivePoints } from "@/lib/api";
 import QrScanner from "qr-scanner";
 
 // 社群密碼配置 (Fallback用)
@@ -159,42 +159,137 @@ export default function CommunityPage() {
 
     // 處理 QR Code 掃描結果
     const handleQRResult = async (qrData) => {
+        console.log('=== QR Code 掃描Debug ===');
+        console.log('原始 QR Data:', qrData);
+        console.log('數據類型:', typeof qrData);
+        console.log('數據長度:', qrData ? qrData.length : 0);
+        
         try {
             if (!qrData || qrData.trim() === '') {
                 setScanError('QR Code 數據為空，請重新掃描');
                 return;
             }
 
-            const parsedData = JSON.parse(qrData);
-            console.log('解析後的 QR Data:', parsedData);
+            // 先嘗試解析 JSON
+            let parsedData;
+            try {
+                parsedData = JSON.parse(qrData);
+                console.log('JSON 解析成功:', parsedData);
+            } catch (jsonError) {
+                console.log('JSON 解析失敗:', jsonError);
+                
+                // 如果不是 JSON，嘗試其他常見格式
+                console.log('嘗試直接處理為純文字或其他格式...');
+                
+                // 檢查是否為簡單的文字格式
+                if (qrData.includes('points') || qrData.includes('redeem')) {
+                    console.log('檢測到可能的點數兌換相關文字');
+                    setScanError('QR Code 格式不正確，請確認為有效的點數兌換 QR Code');
+                } else {
+                    console.log('無法識別的 QR Code 格式');
+                    setScanError(`無法解析的 QR Code 格式。數據內容: ${qrData.substring(0, 50)}...`);
+                }
+                setTimeout(() => setScanError(''), 5000);
+                return;
+            }
             
-            // 檢查是否為點數兌換 QR Code
-            if (parsedData.type === 'points_redeem' && parsedData.id && parsedData.points) {
-                await handlePointsRedemption(qrData);
+            console.log('解析後的 QR Data:', parsedData);
+            console.log('類型檢查:', {
+                type: parsedData.type,
+                hasId: !!parsedData.id,
+                hasPoints: !!parsedData.points,
+                points: parsedData.points
+            });
+            
+            // 檢查是否為學員轉帳 QR Code
+            if (parsedData.type === 'transfer' && parsedData.id) {
+                console.log('符合學員轉帳 QR Code 格式，開始處理...');
+                await handleStudentQRCode(parsedData);
             } else {
-                setScanError('無效的 QR Code 格式');
-                setTimeout(() => setScanError(''), 3000);
+                console.log('不符合預期格式');
+                console.log('預期格式: {type: "transfer", id: "telegram_id"}');
+                console.log('實際格式:', parsedData);
+                
+                let errorMsg = '無效的 QR Code 格式。';
+                if (!parsedData.type) {
+                    errorMsg += ' 缺少 type 欄位。';
+                } else if (parsedData.type !== 'transfer') {
+                    errorMsg += ` type 應為 "transfer"，實際為 "${parsedData.type}"。`;
+                }
+                if (!parsedData.id) {
+                    errorMsg += ' 缺少 id 欄位。';
+                }
+                
+                setScanError(errorMsg);
+                setTimeout(() => setScanError(''), 5000);
             }
         } catch (error) {
-            console.error('QR Code 解析失敗:', error);
-            setScanError('QR Code 格式錯誤或數據損壞');
-            setTimeout(() => setScanError(''), 3000);
+            console.error('QR Code 處理失敗:', error);
+            setScanError(`QR Code 處理錯誤: ${error.message}`);
+            setTimeout(() => setScanError(''), 5000);
         }
+        
+        console.log('=== QR Code Debug 結束 ===');
     };
 
-    // 處理點數兌換
-    const handlePointsRedemption = async (qrData) => {
+    // 處理學員 QR Code
+    const handleStudentQRCode = async (qrData) => {
         try {
-            const token = localStorage.getItem('userToken');
-            if (!token) {
-                throw new Error('未找到認證令牌，請重新登入');
-            }
-
-            const result = await redeemQRCode(token, qrData);
+            console.log('開始處理學員 QR Code...', qrData);
             
-            if (result.ok) {
+            // 從 localStorage 獲取社群密碼
+            const communityLogin = localStorage.getItem('communityLogin');
+            if (!communityLogin) {
+                throw new Error('未找到社群登入資訊，請重新登入');
+            }
+            
+            const loginData = JSON.parse(communityLogin);
+            const communityName = loginData.community;
+            
+            // 根據社群名稱獲取密碼
+            const communityPassword = COMMUNITY_PASSWORDS[communityName];
+            if (!communityPassword) {
+                throw new Error('無法獲取社群密碼，請重新登入');
+            }
+            
+            // 暫停掃描器以避免重複掃描
+            if (qrScannerRef.current) {
+                qrScannerRef.current.stop();
+            }
+            
+            // 提示輸入要發放的點數
+            const pointsToGive = prompt('請輸入要發放給學員的點數 (1-100):', '10');
+            if (!pointsToGive || isNaN(pointsToGive) || pointsToGive <= 0 || pointsToGive > 100) {
+                setScanError('無效的點數，請輸入1-100之間的數字');
+                // 重新啟動掃描器
+                if (qrScannerRef.current) {
+                    await qrScannerRef.current.start();
+                }
+                setTimeout(() => setScanError(''), 3000);
+                return;
+            }
+            
+            const points = parseInt(pointsToGive);
+            
+            // 使用 telegram_id 作為 username（暫時方案）
+            const studentUsername = qrData.id.toString();
+            const note = `${communityName} 攤位獎勵`;
+            
+            console.log('發放點數參數:', {
+                communityPassword: communityPassword.substring(0, 5) + '...',
+                studentUsername,
+                points,
+                note
+            });
+            
+            // 呼叫 API 發放點數
+            const result = await communityGivePoints(communityPassword, studentUsername, points, note);
+            
+            console.log('發放結果:', result);
+            
+            if (result.success) {
                 stopQRScanner();
-                setScanSuccess(`🎉 QR Code 兌換成功！獲得 ${result.points} 點數！`);
+                setScanSuccess(`🎉 成功發放！給學員 ${result.student} 發放了 ${result.points} 點數`);
                 
                 // 播放成功音效
                 try {
@@ -224,13 +319,14 @@ export default function CommunityPage() {
                     setScanSuccess('');
                 }, 5000);
             } else {
-                setScanError(result.message || '兌換失敗');
-                setTimeout(() => setScanError(''), 3000);
+                setScanError(result.message || '發放點數失敗');
+                setTimeout(() => setScanError(''), 5000);
             }
+            
         } catch (error) {
-            console.error('兌換 QR Code 失敗:', error);
-            setScanError(error.message || '兌換失敗，請稍後再試');
-            setTimeout(() => setScanError(''), 3000);
+            console.error('處理學員 QR Code 失敗:', error);
+            setScanError(`處理失敗: ${error.message}`);
+            setTimeout(() => setScanError(''), 5000);
         }
     };
 
@@ -545,11 +641,14 @@ export default function CommunityPage() {
                     
                     <div className="text-center space-y-2">
                         <p className="text-sm text-[#92cbf4]">
-                            請對準點數兌換 QR Code 進行掃描
+                            請對準學員的轉帳 QR Code 進行掃描
                         </p>
                         <p className="text-xs text-[#557797]">
-                            掃描成功後將自動兌換點數
+                            掃描後可選擇發放點數給該學員
                         </p>
+                        <div className="text-xs text-[#557797] bg-[#0f203e] p-2 rounded">
+                            <p>✅ 支援格式: {"{"}"type":"transfer","id":"學員ID"{"}"}</p>
+                        </div>
                     </div>
                     
                     {scanError && (

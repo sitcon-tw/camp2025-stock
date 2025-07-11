@@ -677,4 +677,18 @@ export async function verifyCommunityPassword(password) {
     });
 }
 
+// 社群攤位發放點數
+export async function communityGivePoints(communityPassword, studentUsername, points, note = "社群攤位獎勵") {
+    const params = new URLSearchParams({
+        community_password: communityPassword,
+        student_username: studentUsername,
+        points: points,
+        note: note,
+    });
+    
+    return apiRequest(`/api/community/give-points?${params.toString()}`, {
+        method: "POST",
+    });
+}
+
 export { API_BASE_URL };
