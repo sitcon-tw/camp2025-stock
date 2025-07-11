@@ -183,7 +183,7 @@ class TransferService:
                 message=f"轉帳處理失敗：{repay_result['message']}"
             )
         
-        # 記錄轉帳日誌
+        # 記錄轉帳發送方日誌
         await self._log_point_change(
             from_user_oid,
             "transfer_out",
@@ -193,14 +193,17 @@ class TransferService:
             session=session
         )
         
-        await self._log_point_change(
-            to_user["_id"],
-            "transfer_in",
-            request.amount,
-            f"收到來自 {from_user.get('name', from_user.get('id', 'unknown'))} 的轉帳",
-            transaction_id,
-            session=session
-        )
+        # 接收方的記錄已在 _add_points_with_debt_repay 中處理
+        # 如果沒有債務，需要補充記錄
+        if repay_result.get('debt_repaid', 0) == 0:
+            await self._log_point_change(
+                to_user["_id"],
+                "transfer_in", 
+                request.amount,
+                f"收到來自 {from_user.get('name', from_user.get('id', 'unknown'))} 的轉帳",
+                transaction_id,
+                session=session
+            )
         
         # 如果有事務則提交
         if session:
@@ -350,14 +353,7 @@ class TransferService:
             balance_after = user_after.get("points", 0) if user_after else 0
             balance_before = balance_after + amount
             
-            # 記錄點數變化
-            await self._log_point_change(
-                user_id=user_id,
-                change_type="deduction",
-                amount=-amount,
-                note=operation_note,
-                session=session
-            )
+            # 點數扣除記錄由外部調用者處理，避免重複記錄
             
             logger.info(f"Safe point deduction successful: user {user_id}, amount {amount}, balance: {balance_before} -> {balance_after}")
             
@@ -481,21 +477,28 @@ class TransferService:
                     session=session
                 )
                 
-                # 記錄債務償還日誌
-                repay_log = {
-                    "user_id": user_id,
-                    "repay_amount": actual_repay,
-                    "transfer_amount": amount,
-                    "previous_debt": current_owed,
-                    "remaining_debt": current_owed - actual_repay,
-                    "previous_points": current_points,
-                    "final_points": remaining_points,
-                    "timestamp": datetime.now(timezone.utc),
-                    "type": "transfer_debt_repayment",
-                    "note": f"轉帳自動償還欠款：{operation_note}"
-                }
+                # 記錄債務償還日誌（使用標準格式）
+                if actual_repay > 0:
+                    await self._log_point_change(
+                        user_id=user_id,
+                        change_type="debt_repayment",
+                        amount=actual_repay,
+                        note=f"債務償還 {actual_repay} 點（轉帳自動償還）",
+                        transaction_id=None,
+                        session=session
+                    )
                 
-                await self.db[Collections.POINT_LOGS].insert_one(repay_log, session=session)
+                # 如果有剩餘點數，記錄為轉帳收入
+                if remaining_points > current_points:
+                    net_increase = remaining_points - current_points
+                    await self._log_point_change(
+                        user_id=user_id,
+                        change_type="transfer_in",
+                        amount=net_increase,
+                        note=f"轉帳收入 {net_increase} 點（償還債務後剩餘）",
+                        transaction_id=None,
+                        session=session
+                    )
                 
                 logger.info(f"Transfer with debt repay: user {user_id}, transfer {amount}, repaid {actual_repay}, remaining debt {current_owed - actual_repay}")
                 
@@ -513,6 +516,8 @@ class TransferService:
                     {"$inc": {"points": amount}},
                     session=session
                 )
+                
+                # 點數增加記錄由外部調用者處理，避免重複記錄
                 
                 return {
                     'success': True,

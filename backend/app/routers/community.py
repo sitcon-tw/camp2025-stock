@@ -210,12 +210,16 @@ async def community_give_points(
                 "message": "更新學員點數失敗"
             }
         
+        # 獲取更新後的餘額
+        updated_user = await db[Collections.USERS].find_one({"_id": user["_id"]})
+        balance_after = updated_user.get("points", 0) if updated_user else 0
+        
         # 記錄點數歷史
         point_record = {
             "user_id": user["_id"],  # 使用 ObjectId 以保持與查詢邏輯一致
             "username": student_username,
             "amount": points,
-            "balance_after": user["points"] + points,
+            "balance_after": balance_after,  # 使用實際更新後的餘額
             "type": "community_reward",
             "note": f"{note} (來自 {community_name})",
             "source": "community_booth",

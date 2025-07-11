@@ -248,15 +248,7 @@ async def redeem_qr_code(
         # 給予點數
         await admin_service.give_points(give_points_request)
         
-        # 記錄兌換日誌
-        await db[Collections.POINT_LOGS].insert_one({
-            "user_id": current_user["user_id"],
-            "qr_id": qr_id,
-            "amount": points,
-            "balance_after": 0,  # 這個會在 give_points 中正確設定
-            "note": f"QR Code 兌換 ({qr_id})",
-            "created_at": datetime.now()
-        })
+        # 點數記錄已由 admin_service.give_points 處理，不需要重複記錄
         
         return QRCodeRedeemResponse(
             ok=True,

@@ -64,7 +64,21 @@ class GameService:
             balance_after = user_after.get("points", 0) if user_after else 0
             balance_before = balance_after + amount
             
-            # 點數記錄在外部處理，避免重複記錄
+            # 記錄點數變動
+            try:
+                log_entry = {
+                    "user_id": user_id,
+                    "type": "game_deduction",
+                    "amount": -amount,  # 負數表示扣除
+                    "note": operation_note,
+                    "balance_after": balance_after,
+                    "created_at": datetime.now(timezone.utc)
+                }
+                await self.db[Collections.POINT_LOGS].insert_one(log_entry, session=session)
+                logger.info(f"Point deduction logged: user_id={user_id}, amount=-{amount}, balance_after={balance_after}")
+            except Exception as e:
+                logger.error(f"Failed to log point deduction: {e}")
+                # 不影響主要業務邏輯
             
             return {
                 'success': True,
@@ -625,14 +639,25 @@ class GameService:
     
     async def _log_point_change(self, user_id, change_type: str, amount: int, note: str = ""):
         """記錄點數變動"""
-        log_entry = {
-            "user_id": user_id,
-            "change_type": change_type,
-            "amount": amount,
-            "note": note,
-            "timestamp": datetime.now(timezone.utc)
-        }
-        await self.db[Collections.POINT_LOGS].insert_one(log_entry)
+        try:
+            # 獲取使用者當前餘額
+            user = await self.db[Collections.USERS].find_one({"_id": user_id})
+            balance_after = user.get("points", 0) if user else 0
+            
+            log_entry = {
+                "user_id": user_id,
+                "type": change_type,  # 使用統一的欄位名稱
+                "amount": amount,
+                "note": note,
+                "balance_after": balance_after,  # 添加餘額記錄
+                "created_at": datetime.now(timezone.utc)  # 使用統一的時間欄位名稱
+            }
+            await self.db[Collections.POINT_LOGS].insert_one(log_entry)
+            logger.info(f"Point change logged: user_id={user_id}, type={change_type}, amount={amount}, balance_after={balance_after}")
+            
+        except Exception as e:
+            logger.error(f"Failed to log point change: {e}")
+            # 不拋出異常，避免影響主要業務邏輯
     
     async def simple_accept_pvp_challenge(self, from_user: str, challenge_id: str):
         """簡單 PVP 挑戰接受 - 純 50% 機率決定勝負"""
@@ -800,25 +825,26 @@ class GameService:
                         message=f"遊戲結算失敗：{deduction_result['message']}"
                     )
                 
-                # 增加勝利者點數
-                await self.db[Collections.USERS].update_one(
+                # 增加勝利者點數並記錄
+                update_result = await self.db[Collections.USERS].update_one(
                     {"telegram_id": from_user},
                     {"$inc": {"points": amount}}
                 )
                 
-                # 記錄點數變動
-                await self._log_point_change(
-                    user_id=accepter["_id"],
-                    change_type="pvp_win",
-                    amount=amount,
-                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
-                )
-                await self._log_point_change(
-                    user_id=challenger_user["_id"],
-                    change_type="pvp_lose",
-                    amount=-amount,
-                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
-                )
+                if update_result.modified_count > 0:
+                    # 記錄勝利者點數變動（敗方的點數扣除已在 _safe_deduct_points 中記錄）
+                    await self._log_point_change(
+                        user_id=accepter["_id"],
+                        change_type="pvp_win",
+                        amount=amount,
+                        note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                    )
+                else:
+                    logger.error("Failed to update accepter's points")
+                    return PVPResponse(
+                        success=False,
+                        message="點數增加失敗"
+                    )
                 
                 return PVPResponse(
                     success=True,
@@ -848,25 +874,26 @@ class GameService:
                         message=f"遊戲結算失敗：{deduction_result['message']}"
                     )
                 
-                # 增加勝利者點數
-                await self.db[Collections.USERS].update_one(
+                # 增加勝利者點數並記錄
+                update_result = await self.db[Collections.USERS].update_one(
                     {"telegram_id": challenge["challenger"]},
                     {"$inc": {"points": amount}}
                 )
                 
-                # 記錄點數變動
-                await self._log_point_change(
-                    user_id=challenger_user["_id"],
-                    change_type="pvp_win",
-                    amount=amount,
-                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
-                )
-                await self._log_point_change(
-                    user_id=accepter["_id"],
-                    change_type="pvp_lose",
-                    amount=-amount,
-                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
-                )
+                if update_result.modified_count > 0:
+                    # 記錄勝利者點數變動（敗方的點數扣除已在 _safe_deduct_points 中記錄）
+                    await self._log_point_change(
+                        user_id=challenger_user["_id"],
+                        change_type="pvp_win",
+                        amount=amount,
+                        note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                    )
+                else:
+                    logger.error("Failed to update challenger's points")
+                    return PVPResponse(
+                        success=False,
+                        message="點數增加失敗"
+                    )
                 
                 return PVPResponse(
                     success=True,
