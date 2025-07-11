@@ -646,7 +646,7 @@ export default function CommunityPage() {
                         <div className="text-center">
                             <div className="mb-6">
                                 <img 
-                                    src="https://sitcon.org/branding/assets/logos/withname-white.svg" 
+                                    src="https://sitcon.org/2024/static/img/logo/logo-white.svg" 
                                     alt="SITCON Logo" 
                                     className="mx-auto h-32 w-auto"
                                     onError={(e) => {
