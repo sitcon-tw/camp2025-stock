@@ -942,16 +942,16 @@ export default function CommunityPage() {
                         )}
                         {transferError && (
                             <div className={`rounded-xl border p-3 ${
-                                transferError.includes('已經領取過')
+                                transferError.includes('已經領取過') || transferError.includes('領取過')
                                     ? 'border-yellow-500/30 bg-yellow-600/20'
                                     : 'border-red-500/30 bg-red-600/20'
                             }`}>
                                 <p className={`text-sm whitespace-pre-line ${
-                                    transferError.includes('已經領取過')
+                                    transferError.includes('已經領取過') || transferError.includes('領取過')
                                         ? 'text-yellow-400'
                                         : 'text-red-400'
                                 }`}>
-                                    {transferError.includes('已經領取過') ? '⚠️ ' : '❌ '}{transferError}
+                                    {transferError.includes('已經領取過') || transferError.includes('領取過') ? '⚠️ ' : '❌ '}{transferError}
                                 </p>
                             </div>
                         )}
@@ -994,7 +994,7 @@ export default function CommunityPage() {
                         </div>
 
                         {/* 檢查是否有重複發放警告 */}
-                        {transferError && transferError.includes('已經領取過') ? (
+                        {transferError && (transferError.includes('已經領取過') || transferError.includes('領取過')) ? (
                             // 已有發放紀錄時，只顯示關閉按鈕
                             <div className="pt-4">
                                 <button
