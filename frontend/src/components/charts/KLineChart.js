@@ -4,8 +4,7 @@ import { useEffect, useRef } from "react";
 
 const KLineChart = ({
     data,
-    width = 1000,
-    height = 400,
+    height = 500,
 }) => {
     const chartRef = useRef(null);
     const chartInstance = useRef(null);

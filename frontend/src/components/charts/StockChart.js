@@ -58,7 +58,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [displayMode, setDisplayMode] = useState("average");
+    const [displayMode, setDisplayMode] = useState("candlestick");
     const [zoomLevel, setZoomLevel] = useState(1);
     const [panOffset, setPanOffset] = useState(0);
     const chartRef = useRef(null);
@@ -431,7 +431,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                         <div className="h-3 w-8 animate-pulse rounded bg-[#82bee2]/20"></div>
                     </div>
                 </div>
-                <div className="flex min-h-[400px] w-full grow flex-col items-center justify-center overflow-hidden">
+                <div className="flex w-full flex-1 flex-col items-center justify-center overflow-hidden" style={{ minHeight: '350px' }}>
                     <div className="mb-2 flex w-full grow items-center justify-center rounded-lg bg-[#0f203e]">
                         <div className="text-sm text-[#82bee2]">
                             載入圖表中...
@@ -453,7 +453,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
     if (error) {
         return (
-            <div className="flex h-48 w-full items-center justify-center rounded-lg bg-[#0f203e] md:h-56">
+            <div className="flex w-full items-center justify-center rounded-lg bg-[#0f203e] h-full" style={{ minHeight: '350px' }}>
                 <div className="text-sm text-red-400">{error}</div>
             </div>
         );
@@ -476,7 +476,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                 </button>
             </div>
             <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
-                <div className="mb-2 h-[400px] w-full flex-shrink-0">
+                <div className="mb-2 w-full flex-1" style={{ minHeight: '350px' }}>
                     {displayMode === "candlestick" ? (
                         <div className="h-full">
                             <KLineChart
