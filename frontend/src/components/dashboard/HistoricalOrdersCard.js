@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import { twMerge } from "tailwind-merge";
 import Modal from "../ui/Modal";
@@ -13,6 +13,19 @@ const HistoricalOrdersCard = ({
     cancelSuccess,
     cancelError 
 }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10); // 每頁顯示10筆訂單
+
+    // 重置分頁當訂單歷史改變時
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [orderHistory]);
+
+    // 分頁邏輯
+    const totalPages = Math.ceil((orderHistory?.length || 0) / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentOrders = orderHistory?.slice(startIndex, endIndex) || [];
     return (
         <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
             <h3 className="mb-4 text-lg font-semibold text-[#92cbf4]">
@@ -36,8 +49,8 @@ const HistoricalOrdersCard = ({
             )}
 
             <div className="grid grid-flow-row gap-4">
-                {orderHistory && orderHistory.length > 0 ? (
-                    orderHistory.map((i) => {
+                {currentOrders && currentOrders.length > 0 ? (
+                    currentOrders.map((i) => {
                         const isCancellable = canCancelOrder(i);
                         const orderId =
                             i._id ||
@@ -164,10 +177,51 @@ const HistoricalOrdersCard = ({
                     })
                 ) : (
                     <div className="py-4 text-center text-[#557797]">
-                        暫無股票交易記錄
+                        {orderHistory && orderHistory.length > 0 ? "暫無符合條件的交易記錄" : "暫無股票交易記錄"}
                     </div>
                 )}
             </div>
+
+            {/* 分頁控制 */}
+            {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between border-t border-[#294565] pt-4">
+                    <div className="text-sm text-[#557797]">
+                        第 {startIndex + 1} - {Math.min(endIndex, orderHistory?.length || 0)} 筆，
+                        共 {orderHistory?.length || 0} 筆記錄
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="rounded bg-[#294565] px-3 py-1 text-sm text-[#7BC2E6] hover:bg-[#3A5578] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            上一頁
+                        </button>
+                        <div className="flex items-center space-x-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`rounded px-3 py-1 text-sm transition-colors ${
+                                        currentPage === page
+                                            ? "bg-[#469FD2] text-white"
+                                            : "bg-[#294565] text-[#7BC2E6] hover:bg-[#3A5578]"
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="rounded bg-[#294565] px-3 py-1 text-sm text-[#7BC2E6] hover:bg-[#3A5578] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            下一頁
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
