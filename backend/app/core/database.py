@@ -64,6 +64,7 @@ class Collections:
     MARKET_CONFIG = "market_config"
     PVP_CHALLENGES = "pvp_challenges"
     QR_CODES = "qr_codes"
+    PENDING_NOTIFICATIONS = "pending_notifications"
     
     @classmethod
     def all_collections(cls) -> list:
@@ -72,7 +73,7 @@ class Collections:
             cls.USERS, cls.GROUPS, cls.POINT_LOGS,
             cls.STOCKS, cls.STOCK_ORDERS, cls.TRADES,
             cls.ANNOUNCEMENTS, cls.MARKET_CONFIG, cls.PVP_CHALLENGES,
-            cls.QR_CODES
+            cls.QR_CODES, cls.PENDING_NOTIFICATIONS
         ]
 
 
@@ -110,6 +111,11 @@ async def init_database_indexes():
         
         # market_config
         await database[Collections.MARKET_CONFIG].create_index("type", unique=True)
+        
+        # pending_notifications
+        await database[Collections.PENDING_NOTIFICATIONS].create_index("user_id")
+        await database[Collections.PENDING_NOTIFICATIONS].create_index("created_at")
+        await database[Collections.PENDING_NOTIFICATIONS].create_index("notification_type")
         
         logger.info("Database indexes created successfully")
         
