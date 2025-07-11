@@ -657,9 +657,31 @@ export async function getTransferFeeConfigPublic() {
 }
 
 // 取得使用者大頭照
-// 根據 telegram_id 獲取用戶資訊
-export async function getUserByTelegramId(telegramId) {
-    return apiRequest(`/api/management/users?user=${encodeURIComponent(telegramId)}`);
+// 根據 telegram_id 從排行榜獲取用戶顯示名稱
+export async function getUserDisplayNameFromLeaderboard(telegramId) {
+    try {
+        const leaderboard = await apiRequest('/api/leaderboard');
+        // 查找匹配的用戶（排行榜中的username字段可能是顯示名稱）
+        const user = leaderboard.find(entry => {
+            // 嘗試多種匹配方式
+            return entry.username === String(telegramId) || 
+                   entry.username === telegramId ||
+                   entry.username.includes(String(telegramId));
+        });
+        
+        if (user) {
+            return {
+                display_name: user.username,
+                team: user.team,
+                points: user.points,
+                photo_url: null // 排行榜API不提供頭像
+            };
+        }
+        return null;
+    } catch (error) {
+        console.warn('從排行榜獲取用戶資訊失敗:', error);
+        return null;
+    }
 }
 
 export async function getUserAvatar(token, username) {
@@ -683,6 +705,18 @@ export async function verifyCommunityPassword(password) {
 }
 
 // 社群攤位發放點數
+// 獲取學員資訊（社群攤位用）
+export async function getStudentInfo(communityPassword, studentUsername) {
+    const params = new URLSearchParams({
+        community_password: communityPassword,
+        student_username: studentUsername,
+    });
+    
+    return apiRequest(`/api/community/student-info?${params.toString()}`, {
+        method: "GET",
+    });
+}
+
 export async function communityGivePoints(communityPassword, studentUsername, points, note = "社群攤位獎勵") {
     const params = new URLSearchParams({
         community_password: communityPassword,

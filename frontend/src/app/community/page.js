@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
-import { verifyCommunityPassword, communityGivePoints, getUserAvatar } from "@/lib/api";
+import { verifyCommunityPassword, communityGivePoints, getStudentInfo } from "@/lib/api";
 import QrScanner from "qr-scanner";
 
 // 社群密碼配置 (Fallback用)
@@ -262,27 +262,64 @@ export default function CommunityPage() {
             setTransferError("");
             setTransferSuccess("");
 
-            // 嘗試獲取學員的詳細資訊（頭像和顯示名稱）
+            // 使用新的學員資訊 API 獲取完整資訊（包括頭像）
             try {
-                const avatarResult = await getUserAvatar("", preferredIdentifier);
-                console.log('學員資訊 API 返回結果:', avatarResult);
-                
-                if (avatarResult) {
-                    const updatedData = {
-                        ...basicStudentData,
-                        username: avatarResult.display_name || basicStudentData.username,
-                        photo_url: avatarResult.photo_url
-                    };
-                    console.log('更新學員資料:', updatedData);
-                    setQuickTransferData(updatedData);
+                // 從 localStorage 獲取社群密碼
+                const communityLogin = localStorage.getItem('communityLogin');
+                if (communityLogin) {
+                    const loginData = JSON.parse(communityLogin);
+                    const communityName = loginData.community;
+                    const communityPassword = COMMUNITY_PASSWORDS[communityName];
                     
-                    console.log('成功獲取學員資訊:', {
-                        display_name: avatarResult.display_name,
-                        photo_url: avatarResult.photo_url
-                    });
+                    if (communityPassword) {
+                        console.log('嘗試獲取學員完整資訊...');
+                        const studentInfo = await getStudentInfo(communityPassword, preferredIdentifier);
+                        console.log('學員資訊 API 返回結果:', studentInfo);
+                        
+                        if (studentInfo && studentInfo.success) {
+                            const updatedData = {
+                                username: studentInfo.student_display_name || basicStudentData.username,
+                                id: studentInfo.student_id || String(qrData.id),
+                                photo_url: studentInfo.student_photo_url,
+                                team: studentInfo.student_team,
+                                points: studentInfo.student_points
+                            };
+                            console.log('更新學員完整資料:', updatedData);
+                            setQuickTransferData(updatedData);
+                            
+                            console.log('成功獲取學員完整資訊:', {
+                                display_name: studentInfo.student_display_name,
+                                photo_url: studentInfo.student_photo_url,
+                                team: studentInfo.student_team,
+                                points: studentInfo.student_points
+                            });
+                        } else {
+                            console.log('學員資訊 API 失敗，使用基本資料:', studentInfo?.message || '未知錯誤');
+                        }
+                    }
                 }
-            } catch (avatarError) {
-                console.log('獲取學員資訊失敗:', avatarError);
+            } catch (userInfoError) {
+                console.log('獲取學員資訊失敗:', userInfoError);
+                // 如果是 404 錯誤，說明 API 還沒部署，嘗試使用排行榜 API 作為 fallback
+                if (userInfoError.message && userInfoError.message.includes('404')) {
+                    console.log('新 API 未部署，嘗試使用排行榜 fallback...');
+                    try {
+                        const { getUserDisplayNameFromLeaderboard } = await import("@/lib/api");
+                        const userInfo = await getUserDisplayNameFromLeaderboard(preferredIdentifier);
+                        if (userInfo && userInfo.display_name) {
+                            const updatedData = {
+                                ...basicStudentData,
+                                username: userInfo.display_name,
+                                team: userInfo.team,
+                                photo_url: null // 排行榜不提供頭像
+                            };
+                            console.log('Fallback: 更新學員資料:', updatedData);
+                            setQuickTransferData(updatedData);
+                        }
+                    } catch (fallbackError) {
+                        console.log('Fallback 也失敗:', fallbackError);
+                    }
+                }
                 // 保持使用基本資料，不顯示錯誤給使用者
                 console.log('將使用基本資料繼續:', basicStudentData);
             }
@@ -351,9 +388,25 @@ export default function CommunityPage() {
             console.log('發放結果:', result);
             
             if (result.success) {
+                // 如果 API 返回了學員的詳細資訊，先更新 Modal 顯示
+                if (result.student_display_name || result.student_photo_url) {
+                    const updatedData = {
+                        ...quickTransferData,
+                        username: result.student_display_name || quickTransferData.username,
+                        photo_url: result.student_photo_url || quickTransferData.photo_url,
+                        team: result.student_team || quickTransferData.team
+                    };
+                    console.log('從發放結果更新學員資料:', updatedData);
+                    setQuickTransferData(updatedData);
+                    
+                    // 短暫延遲讓用戶看到更新的資訊
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
                 // 關閉快速轉帳 Modal 並顯示成功訊息
                 closeQuickTransfer();
-                setScanSuccess(`🎉 成功發放！給學員 ${result.student} 發放了 ${result.points} 點數`);
+                const displayName = result.student_display_name || result.student || quickTransferData.username;
+                setScanSuccess(`🎉 成功發放！給學員 ${displayName} 發放了 ${result.points} 點數`);
                 
                 // 播放成功音效
                 try {
@@ -448,7 +501,7 @@ export default function CommunityPage() {
                         <div className="text-center">
                             <div className="mb-6">
                                 <img 
-                                    src="/sitcon-logo.png" 
+                                    src="/SITQR.svg" 
                                     alt="SITCON Logo" 
                                     className="mx-auto h-32 w-auto"
                                     onError={(e) => {
@@ -767,6 +820,16 @@ export default function CommunityPage() {
                                     {quickTransferData.id && (
                                         <p className="text-xs text-[#557797]">
                                             ID: {quickTransferData.id}
+                                        </p>
+                                    )}
+                                    {quickTransferData.team && (
+                                        <p className="text-xs text-[#557797]">
+                                            隊伍：{quickTransferData.team}
+                                        </p>
+                                    )}
+                                    {quickTransferData.points !== undefined && (
+                                        <p className="text-xs text-[#557797]">
+                                            當前點數：{quickTransferData.points.toLocaleString()} 點
                                         </p>
                                     )}
                                     <p className="text-xs text-[#557797]">

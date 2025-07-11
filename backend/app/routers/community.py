@@ -234,7 +234,10 @@ async def community_give_points(
         return {
             "success": True,
             "message": f"成功給 {student_username} 發放 {points} 點數",
-            "student": student_username,
+            "student": user.get("username", student_username),  # 返回實際用戶名而不是 telegram_id
+            "student_display_name": user.get("username", user.get("name", student_username)),
+            "student_photo_url": user.get("photo_url"),
+            "student_team": user.get("team"),
             "points": points,
             "new_balance": user["points"] + points,
             "community": community_name
@@ -245,4 +248,120 @@ async def community_give_points(
         return {
             "success": False,
             "message": "發放點數時發生錯誤"
+        }
+
+
+@router.get(
+    "/student-info",
+    responses={
+        200: {"description": "學員資訊獲取成功"},
+        400: {"description": "請求參數錯誤"},
+        401: {"description": "社群密碼錯誤"},
+        404: {"description": "學員不存在"},
+        500: {"description": "伺服器內部錯誤"}
+    },
+    summary="獲取學員資訊",
+    description="社群攤位獲取學員的基本資訊，包括顯示名稱、頭像和隊伍"
+)
+async def get_student_info(
+    community_password: str = Query(..., description="社群密碼"),
+    student_username: str = Query(..., description="學員用戶名或 telegram_id")
+):
+    """
+    社群攤位獲取學員資訊
+    
+    Args:
+        community_password: 社群密碼
+        student_username: 學員用戶名或 telegram_id
+    
+    Returns:
+        學員的基本資訊，包括顯示名稱、頭像URL和隊伍
+    """
+    try:
+        # 社群密碼配置
+        COMMUNITY_PASSWORDS = {
+            "SITCON 學生計算機年會": "Tiger9@Vault!Mo0n#42*",
+            "OCF 開放文化基金會": "Ocean^CultuR3$Rise!888",
+            "Ubuntu 台灣社群": "Ubun2u!Taipei@2025^Rocks",
+            "MozTW 社群": "MozTw$Fox_@42Jade*Fire",
+            "COSCUP 開源人年會": "COde*0p3n#Sun5et!UP22",
+            "Taiwan Security Club": "S3curE@Tree!^Night_CLUB99",
+            "SCoML 學生機器學習社群": "M@chin3Zebra_Learn#504*",
+            "綠洲計畫 LZGH": "0@si5^L!ght$Grow*Green88",
+            "PyCon TW": "PyTh0n#Conf!Luv2TW@2025"
+        }
+        
+        # 驗證社群密碼
+        community_name = None
+        for name, password in COMMUNITY_PASSWORDS.items():
+            if password == community_password:
+                community_name = name
+                break
+        
+        if not community_name:
+            logger.warning(f"無效的社群密碼嘗試")
+            return {
+                "success": False,
+                "message": "無效的社群密碼"
+            }
+        
+        db = get_database()
+        
+        # 查找學員 (與發放點數邏輯相同)
+        user = None
+        
+        # 首先嘗試作為telegram_id查找
+        try:
+            telegram_id = int(student_username)
+            logger.info(f"嘗試用telegram_id查找學員資訊: {telegram_id}")
+            user = await db[Collections.USERS].find_one({
+                "telegram_id": telegram_id
+            })
+            if user:
+                logger.info(f"通過telegram_id找到學員: {user.get('username', 'unknown')}")
+        except ValueError:
+            logger.info(f"無法轉換為數字，嘗試用username查找學員: {student_username}")
+        
+        # 如果沒找到，嘗試作為字符串格式的telegram_id
+        if not user:
+            logger.info(f"嘗試用字符串格式的telegram_id查找學員: {student_username}")
+            user = await db[Collections.USERS].find_one({
+                "telegram_id": student_username
+            })
+            if user:
+                logger.info(f"通過字符串telegram_id找到學員: {user.get('username', 'unknown')}")
+        
+        # 最後嘗試作為username查找
+        if not user:
+            logger.info(f"嘗試用username查找學員: {student_username}")
+            user = await db[Collections.USERS].find_one({
+                "username": student_username
+            })
+            if user:
+                logger.info(f"通過username找到學員: {user.get('username', 'unknown')}")
+        
+        if not user:
+            logger.warning(f"找不到學員: {student_username}")
+            return {
+                "success": False,
+                "message": "找不到該學員"
+            }
+        
+        logger.info(f"社群 {community_name} 查詢學員 {student_username} 的資訊")
+        
+        return {
+            "success": True,
+            "student_id": student_username,
+            "student_display_name": user.get("username", user.get("name", student_username)),
+            "student_photo_url": user.get("photo_url"),
+            "student_team": user.get("team"),
+            "student_points": user.get("points", 0),
+            "community": community_name
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取學員資訊失敗: {e}")
+        return {
+            "success": False,
+            "message": "獲取學員資訊時發生錯誤"
         }
