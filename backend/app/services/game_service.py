@@ -543,6 +543,43 @@ class GameService:
                 success=False,
                 message="取消挑戰失敗，請稍後再試"
             )
+
+    async def get_user_active_challenges(self, user_id: str) -> dict:
+        """查詢使用者的活躍 PVP 挑戰"""
+        try:
+            # 查找使用者的活躍挑戰
+            challenges = await self.db[Collections.PVP_CHALLENGES].find({
+                "challenger": user_id,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            }).to_list(length=None)
+            
+            challenge_list = []
+            for challenge in challenges:
+                challenge_info = {
+                    "challenge_id": str(challenge["_id"]),
+                    "amount": challenge.get("amount", 0),
+                    "status": challenge.get("status", "unknown"),
+                    "created_at": challenge.get("created_at"),
+                    "expires_at": challenge.get("expires_at"),
+                    "chat_id": challenge.get("chat_id")
+                }
+                challenge_list.append(challenge_info)
+            
+            logger.info(f"Found {len(challenge_list)} active challenges for user {user_id}")
+            
+            return {
+                "success": True,
+                "message": f"找到 {len(challenge_list)} 個活躍挑戰",
+                "challenges": challenge_list
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting user active challenges: {e}")
+            return {
+                "success": False,
+                "message": "查詢挑戰時發生錯誤",
+                "challenges": []
+            }
     
     def _determine_winner(self, choice1: str, choice2: str) -> str:
         """判斷猜拳勝負"""

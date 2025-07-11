@@ -3371,3 +3371,18 @@ class UserService:
         except Exception as e:
             logger.error(f"交易執行失敗: {e}")
             raise
+
+    # PVP 相關方法
+    async def get_user_active_pvp_challenges(self, user_id: str) -> dict:
+        """查詢使用者的活躍 PVP 挑戰"""
+        try:
+            from app.services.game_service import get_game_service
+            game_service = get_game_service()
+            return await game_service.get_user_active_challenges(user_id)
+        except Exception as e:
+            logger.error(f"查詢使用者活躍挑戰失敗: {e}")
+            return {
+                "success": False,
+                "message": "查詢挑戰失敗",
+                "challenges": []
+            }

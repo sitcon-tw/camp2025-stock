@@ -78,19 +78,66 @@ class PVPManager:
 
     async def cancel_existing_challenge(self, user_id: str) -> bool:
         logger.info(f"cancel_existing_challenge called with user_id: {user_id}")
+        
+        # 先檢查本地狀態
         existing_challenge_id = self.user_challenges.get(user_id)
-        logger.info(f"existing_challenge_id: {existing_challenge_id} (type: {type(existing_challenge_id)})")
+        logger.info(f"local existing_challenge_id: {existing_challenge_id}")
         
         if existing_challenge_id and existing_challenge_id in self.active_challenges:
-            logger.info("About to call _cancel_challenge")
+            logger.info("Found local challenge, cancelling via _cancel_challenge")
             await self._cancel_challenge(existing_challenge_id, "使用者主動取消")
-            logger.info("_cancel_challenge completed")
-            # 檢查是否真的被清理了
             result = existing_challenge_id not in self.active_challenges
-            logger.info(f"Challenge cleanup check result: {result}")
+            logger.info(f"Local challenge cleanup result: {result}")
             return result
-        logger.info("No existing challenge found")
-        return False
+        
+        # 如果本地沒有，直接通過 API 查詢並取消使用者的活躍挑戰
+        logger.info("No local challenge found, attempting direct API cancellation")
+        try:
+            # 查詢使用者的活躍挑戰
+            response = api_helper.get(f"/api/bot/pvp/user-challenges/{user_id}", protected_route=True)
+            if response and response.get("success") and response.get("challenges"):
+                challenges = response.get("challenges", [])
+                logger.info(f"Found {len(challenges)} backend challenges for user {user_id}")
+                
+                # 取消所有活躍的挑戰
+                cancelled_any = False
+                for challenge in challenges:
+                    challenge_id = challenge.get("challenge_id")
+                    if challenge_id:
+                        cancel_result = await self._direct_api_cancel(user_id, challenge_id)
+                        if cancel_result:
+                            cancelled_any = True
+                            logger.info(f"Successfully cancelled backend challenge {challenge_id}")
+                
+                return cancelled_any
+            else:
+                logger.info("No backend challenges found or API error")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error during direct API cancellation: {e}")
+            return False
+
+    async def _direct_api_cancel(self, user_id: str, challenge_id: str) -> bool:
+        """直接通過 API 取消挑戰，不經過本地狀態管理"""
+        try:
+            logger.info(f"Direct API cancel: user {user_id}, challenge {challenge_id}")
+            cancel_response = api_helper.post("/api/bot/pvp/cancel", protected_route=True, json={
+                "challenge_id": challenge_id,
+                "user_id": user_id
+            })
+            
+            if cancel_response and cancel_response.get("success"):
+                logger.info(f"Direct API cancellation successful for challenge {challenge_id}")
+                return True
+            else:
+                error_msg = cancel_response.get("message", "Unknown error") if cancel_response else "No response"
+                logger.warning(f"Direct API cancellation failed for challenge {challenge_id}: {error_msg}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Exception in direct API cancel: {e}")
+            return False
 
     async def _timeout_challenge(self, challenge_id: str):
         try:

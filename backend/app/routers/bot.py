@@ -460,4 +460,28 @@ async def bot_simple_accept_pvp_challenge(
     """
     return await user_service.simple_accept_pvp_challenge(request.from_user, request.challenge_id)
 
+
+@router.get(
+    "/pvp/user-challenges/{user_id}",
+    response_model=dict,
+    summary="BOT 查詢使用者活躍的 PVP 挑戰",
+    description="透過 BOT 查詢指定使用者的活躍 PVP 挑戰"
+)
+async def bot_get_user_challenges(
+    user_id: str,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+):
+    """
+    BOT 查詢使用者活躍的 PVP 挑戰
+    
+    Args:
+        user_id: 使用者的 Telegram ID
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        使用者的活躍挑戰列表
+    """
+    return await user_service.get_user_active_pvp_challenges(user_id)
+
     
