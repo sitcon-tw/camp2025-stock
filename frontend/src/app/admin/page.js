@@ -85,7 +85,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
     }
 
     // 檢查是否有管理權限
-    const hasManagementAccess = role && ["admin", "qrcode_manager", "point_manager", "announcer"].includes(role);
+    const hasManagementAccess = role && ["admin", "qrcode_manager", "point_manager", "qr_point_manager", "announcer"].includes(role);
 
     if (!hasManagementAccess) {
         return (
@@ -97,7 +97,7 @@ function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
                         <p className="mb-2 text-yellow-300">您的角色是：{role || "未知"}</p>
                         <p className="mb-4 text-yellow-300">需要管理相關權限才能存取此頁面</p>
                         <p className="mb-4 text-sm text-yellow-300">
-                            允許的角色：admin、qrcode_manager、point_manager、announcer
+                            允許的角色：admin、qrcode_manager、point_manager、qr_point_manager、announcer
                         </p>
                         <button
                             onClick={() => router.push("/dashboard")}
