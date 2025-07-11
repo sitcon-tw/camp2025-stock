@@ -2,10 +2,10 @@
 
 import { Modal } from "@/components/ui";
 import HistoricalOrdersCard from "@/components/dashboard/HistoricalOrdersCard";
+import PointHistoryCard from "@/components/dashboard/PointHistoryCard";
 import {
     cancelWebStockOrder,
     getMyPermissions,
-    getWebPointHistory,
     getWebPortfolio,
     getWebStockOrders,
     webTransferPoints,
@@ -13,7 +13,7 @@ import {
     redeemQRCode,
 } from "@/lib/api";
 import dayjs from "dayjs";
-import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2, Send, ArrowRight, Sparkles, Clock, ChevronDown } from "lucide-react";
+import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2, Send, ArrowRight, Sparkles, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import QRCode from "react-qr-code";
@@ -23,7 +23,6 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [studentList, setStudentList] = useState([]);
-    const [pointHistory, setPointHistory] = useState([]);
     const [pointHistoryPage, setPointHistoryPage] = useState(0);
     const [orderHistory, setOrderHistory] = useState([]);
     const [orderHistoryPage, setOrderHistoryPage] = useState(0);
@@ -53,16 +52,11 @@ export default function Dashboard() {
     const [transferSuccess, setTransferSuccess] = useState("");
     const [receivedPayment, setReceivedPayment] = useState(null);
     const [showPaymentNotification, setShowPaymentNotification] = useState(false);
-    const [lastPointHistory, setLastPointHistory] = useState([]);
     const [transferSuccessData, setTransferSuccessData] = useState(null);
     const [showTransferSuccess, setShowTransferSuccess] = useState(false);
-    const [pointHistoryLimit, setPointHistoryLimit] = useState(10);
-    const [pointHistoryLoading, setPointHistoryLoading] = useState(false);
-    const [showLimitDropdown, setShowLimitDropdown] = useState(false);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
     const pollingIntervalRef = useRef(null);
-    const limitDropdownRef = useRef(null);
     const router = useRouter();
 
     // 檢查大頭照圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
@@ -401,13 +395,8 @@ export default function Dashboard() {
                 
                 // 重新載入使用者資料
                 try {
-                    const [portfolio, points] = await Promise.all([
-                        getWebPortfolio(token),
-                        getWebPointHistory(token, pointHistoryLimit)
-                    ]);
+                    const portfolio = await getWebPortfolio(token);
                     setUser(portfolio);
-                    setPointHistory(points);
-                    setLastPointHistory(points);
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
@@ -542,12 +531,8 @@ export default function Dashboard() {
                 
                 // 重新載入使用者資料
                 try {
-                    const [portfolio, points] = await Promise.all([
-                        getWebPortfolio(token),
-                        getWebPointHistory(token, pointHistoryLimit)
-                    ]);
+                    const portfolio = await getWebPortfolio(token);
                     setUser(portfolio);
-                    setPointHistory(points);
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
@@ -612,13 +597,8 @@ export default function Dashboard() {
                 
                 // 重新載入使用者資料
                 try {
-                    const [portfolio, points] = await Promise.all([
-                        getWebPortfolio(token),
-                        getWebPointHistory(token, pointHistoryLimit)
-                    ]);
+                    const portfolio = await getWebPortfolio(token);
                     setUser(portfolio);
-                    setPointHistory(points);
-                    setLastPointHistory(points);
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
@@ -642,100 +622,9 @@ export default function Dashboard() {
     // 輪詢檢查新的收款
     const checkForNewPayments = async () => {
         try {
-            const token = localStorage.getItem('userToken');
-            if (!token) return;
-
-            const newPointHistory = await getWebPointHistory(token, pointHistoryLimit);
-            
-            if (newPointHistory.length > 0 && lastPointHistory.length > 0) {
-                const newTransactions = newPointHistory.filter(newTransaction => {
-                    return !lastPointHistory.some(oldTransaction => 
-                        oldTransaction.created_at === newTransaction.created_at &&
-                        oldTransaction.amount === newTransaction.amount &&
-                        oldTransaction.note === newTransaction.note
-                    );
-                });
-                
-                console.log('檢查新交易:', {
-                    newHistoryLength: newPointHistory.length,
-                    lastHistoryLength: lastPointHistory.length,
-                    newTransactionsCount: newTransactions.length,
-                    newTransactions: newTransactions
-                });
-                
-                for (const transaction of newTransactions) {
-                    // 檢查是否為轉帳收入或 QR Code 兌換
-                    const isTransferIn = transaction.amount > 0 && transaction.note && 
-                        (transaction.type === 'transfer_in' ||
-                         transaction.type === 'community_reward' ||
-                         transaction.note.includes('收到來自') || 
-                         transaction.note.includes('的轉帳'));
-                         
-                    const isQRCodeRedemption = transaction.amount > 0 && transaction.note && 
-                        transaction.note.includes('QR Code 兌換');
-                    
-                    console.log('檢查交易:', {
-                        amount: transaction.amount,
-                        type: transaction.type,
-                        note: transaction.note,
-                        isTransferIn: isTransferIn,
-                        isQRCodeRedemption: isQRCodeRedemption
-                    });
-                    
-                    if (isTransferIn || isQRCodeRedemption) {
-                        
-                        // 提取轉帳人名稱或標示為 QR Code 兌換
-                        let fromUser = '一個好心人';
-                        if (isQRCodeRedemption) {
-                            fromUser = 'QR Code 兌換';
-                        } else if (transaction.note.includes('收到來自') && transaction.note.includes('的轉帳')) {
-                            const match = transaction.note.match(/收到來自\s*(.+?)\s*的轉帳/);
-                            fromUser = match?.[1]?.trim() || '一個好心人';
-                        }
-                        
-                        // 找到新的收款
-                        const paymentData = {
-                            amount: transaction.amount,
-                            from: fromUser,
-                            note: transaction.note,
-                            timestamp: transaction.created_at
-                        };
-                        
-                        console.log('觸發收款通知:', paymentData);
-                        setReceivedPayment(paymentData);
-                        setShowPaymentNotification(true);
-                        
-                        // 播放收款音效（使用簡單的音頻音效）
-                        try {
-                            // 使用 Web Audio API 生成簡單的提示音
-                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                            const oscillator = audioContext.createOscillator();
-                            const gainNode = audioContext.createGain();
-                            
-                            oscillator.connect(gainNode);
-                            gainNode.connect(audioContext.destination);
-                            
-                            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
-                            oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2);
-                            
-                            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                            
-                            oscillator.start(audioContext.currentTime);
-                            oscillator.stop(audioContext.currentTime + 0.3);
-                        } catch (e) {
-                            console.log('音效播放失敗:', e);
-                        }
-                        
-                        break; // 只顯示最新一筆收款
-                    }
-                }
-            }
-            
-            setLastPointHistory(newPointHistory);
-            setPointHistory(newPointHistory);
-            
+            // 這個功能已移至 PointHistoryCard 組件中
+            // 保留為空函數以維持兼容性
+            console.log('checkForNewPayments 功能已移至 PointHistoryCard 組件');
         } catch (error) {
             console.error('檢查新收款失敗:', error);
         }
@@ -768,25 +657,6 @@ export default function Dashboard() {
         setTransferSuccessData(null);
     };
 
-    // 更改點數記錄顯示筆數
-    const changePointHistoryLimit = async (newLimit) => {
-        setPointHistoryLimit(newLimit);
-        setShowLimitDropdown(false);
-        setPointHistoryLoading(true);
-        
-        try {
-            const token = localStorage.getItem('userToken');
-            if (!token) return;
-            
-            const newPointHistory = await getWebPointHistory(token, newLimit);
-            setPointHistory(newPointHistory);
-            setLastPointHistory(newPointHistory);
-        } catch (error) {
-            console.error('載入點數記錄失敗:', error);
-        } finally {
-            setPointHistoryLoading(false);
-        }
-    };
 
     // 清理 QR Scanner 和輪詢
     useEffect(() => {
@@ -803,19 +673,6 @@ export default function Dashboard() {
         };
     }, []);
 
-    // 點選外部關閉下拉選單
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (limitDropdownRef.current && !limitDropdownRef.current.contains(event.target)) {
-                setShowLimitDropdown(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
 
     // 當頁面可見時開始輪詢，隱藏時停止
     useEffect(() => {
@@ -841,11 +698,6 @@ export default function Dashboard() {
     }, [user, authData, lastPointHistory]);
 
     // 初始化歷史記錄
-    useEffect(() => {
-        if (pointHistory.length > 0 && lastPointHistory.length === 0) {
-            setLastPointHistory(pointHistory);
-        }
-    }, [pointHistory, lastPointHistory]);
 
     // 檢查訂單是否可以取消
     const canCancelOrder = (order) => {
@@ -940,9 +792,7 @@ export default function Dashboard() {
                 const portfolio = await loadWithTimeout(getWebPortfolio(token), "Portfolio");
                 console.log("Portfolio 載入完成:", portfolio);
 
-                console.log("正在載入 Point History...");
-                const points = await loadWithTimeout(getWebPointHistory(token, pointHistoryLimit), "Point History");
-                console.log("Point History 載入完成:", points?.length, "筆記錄");
+                console.log("Point History 載入已移至 PointHistoryCard 組件");
 
                 console.log("正在載入 Stock Orders...");
                 const stocks = await loadWithTimeout(getWebStockOrders(token), "Stock Orders");
@@ -960,13 +810,11 @@ export default function Dashboard() {
 
                 console.log("資料載入成功:", {
                     portfolio,
-                    pointsCount: points?.length || 0,
                     stocksCount: stocks?.length || 0,
                     permissions,
                 });
 
                 setUser(portfolio);
-                setPointHistory(points);
                 setOrderHistory(stocks);
                 setUserPermissions(permissions);
                 setIsLoading(false);
@@ -1252,96 +1100,7 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-[#92cbf4]">
-                            點數紀錄
-                        </h3>
-                        
-                        {/* 筆數選擇器 */}
-                        <div className="relative" ref={limitDropdownRef}>
-                            <button
-                                onClick={() => setShowLimitDropdown(!showLimitDropdown)}
-                                className="flex items-center gap-2 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
-                            >
-                                <span>顯示 {pointHistoryLimit} 筆</span>
-                                <ChevronDown className={`h-4 w-4 transition-transform ${showLimitDropdown ? 'rotate-180' : ''}`} />
-                            </button>
-                            
-                            {/* 下拉選單 */}
-                            {showLimitDropdown && (
-                                <div className="absolute right-0 top-12 z-10 w-32 rounded-lg border border-[#294565] bg-[#1A325F] py-2 shadow-lg">
-                                    {[10, 50, 100, 500, 1000].map((limit) => (
-                                        <button
-                                            key={limit}
-                                            onClick={() => changePointHistoryLimit(limit)}
-                                            className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-[#294565]/30 ${
-                                                pointHistoryLimit === limit 
-                                                    ? 'bg-[#469FD2]/20 text-[#469FD2]' 
-                                                    : 'text-[#92cbf4]'
-                                            }`}
-                                        >
-                                            {limit} 筆
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-flow-row gap-4">
-                        {pointHistoryLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#92cbf4] border-t-transparent"></div>
-                                    <span className="text-[#92cbf4]">載入中...</span>
-                                </div>
-                            </div>
-                        ) : pointHistory && pointHistory.length > 0 ? (
-                            pointHistory.map((i) => {
-                                return (
-                                    <div
-                                        className="grid grid-cols-5 space-y-1 md:space-y-0 md:space-x-4"
-                                        key={i.created_at}
-                                    >
-                                        <p className="col-span-5 font-mono text-sm md:col-span-1 md:text-base">
-                                            {dayjs(i.created_at)
-                                                .add(8, "hour")
-                                                .format(
-                                                    "MM/DD HH:mm",
-                                                )}
-                                        </p>
-                                        <div className="col-span-5 md:col-span-4 md:flex">
-                                            <p className="font-bold text-[#92cbf4]">
-                                                {i.note}
-                                            </p>
-
-                                            <p className="ml-auto w-fit font-mono">
-                                                {i.balance_after}{" "}
-                                                <span
-                                                    className={
-                                                        i.amount < 0
-                                                            ? "text-red-400"
-                                                            : "text-green-400"
-                                                    }
-                                                >
-                                                    (
-                                                    {i.amount > 0 &&
-                                                        "+"}
-                                                    {i.amount})
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <div className="py-4 text-center text-[#557797]">
-                                暫無點數記錄
-                            </div>
-                        )}
-                    </div>
-                </div>
+                <PointHistoryCard token={token} />
 
                 <HistoricalOrdersCard
                     orderHistory={orderHistory}
