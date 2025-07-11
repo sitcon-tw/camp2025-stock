@@ -72,7 +72,7 @@ export const AdminDashboard = ({ token }) => {
 
     // 檢查是否有管理權限（admin、qrcode_manager、point_manager、announcer 都可以訪問）
     const hasManagementAccess =
-        isAdmin() || role === "qrcode_manager" || role === "point_manager" || role === "announcer";
+        isAdmin() || role === "qrcode_manager" || role === "point_manager" || role === "announcer" || role === "qr_point_manager";
 
     if (!hasManagementAccess) {
         return (
@@ -85,7 +85,7 @@ export const AdminDashboard = ({ token }) => {
                         您的角色：{role}
                     </div>
                     <div className="text-sm text-gray-600">
-                        允許的角色：admin、qrcode_manager、point_manager、announcer
+                        允許的角色：admin、qrcode_manager、point_manager、announcer 或 qr_point_manager
                     </div>
                 </div>
             </div>
