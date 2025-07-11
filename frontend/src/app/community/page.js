@@ -440,14 +440,7 @@ export default function CommunityPage() {
         
         try {
             const formData = new FormData(e.target);
-            const amount = parseInt(formData.get('amount'));
             const note = formData.get('note') || `${currentCommunity} 攤位獎勵`;
-            
-            if (!amount || amount <= 0 || amount > 100) {
-                setTransferError('請輸入>1的有效點數');
-                setTransferLoading(false);
-                return;
-            }
             
             // 從 localStorage 獲取社群密碼
             const communityLogin = localStorage.getItem('communityLogin');
@@ -467,12 +460,12 @@ export default function CommunityPage() {
             console.log('發放點數參數:', {
                 communityPassword: communityPassword.substring(0, 5) + '...',
                 studentUsername,
-                amount,
-                note
+                note,
+                fixedAmount: 1000
             });
             
-            // 呼叫 API 發放點數
-            const result = await communityGivePoints(communityPassword, studentUsername, amount, note);
+            // 呼叫 API 發放點數 (固定1000點)
+            const result = await communityGivePoints(communityPassword, studentUsername, note);
             
             console.log('發放結果:', result);
             
@@ -1088,24 +1081,12 @@ export default function CommunityPage() {
                         ) : (
                             // 正常發放表單
                             <form onSubmit={handleQuickTransferSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-[#92cbf4] mb-2">
-                                        發放點數 <span className="text-red-400">*</span>
-                                    </label>
-                                    <input
-                                        inputMode="numeric"
-                                        type="number"
-                                        name="amount"
-                                        className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                        placeholder="輸入發放點數"
-                                        min="1"
-                                        max="100"
-                                        defaultValue="10"
-                                        required
-                                        autoFocus
-                                    />
-                                    <p className="mt-1 text-xs text-[#557797]">
-                                        可發放點數：1 ~ 2<sup>32</sup>-1 點
+                                <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-center">
+                                    <div className="text-2xl font-bold text-green-400 mb-2">
+                                        固定發放：1000 點
+                                    </div>
+                                    <p className="text-sm text-green-300">
+                                        社群攤位統一發放獎勵點數
                                     </p>
                                 </div>
 
@@ -1167,12 +1148,12 @@ export default function CommunityPage() {
 
                         {/* 學員資訊 */}
                         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-                            <div className="flex items-center gap-3 mb-3">
+                            <div className="flex items-center gap-3 mx-auto">
                                 {successData.studentPhoto ? (
                                     <img
                                         src={successData.studentPhoto}
                                         alt="學員大頭照"
-                                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-green-500/50"
+                                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-green-500/50 ml-1"
                                         onError={(e) => {
                                             e.target.style.display = 'none';
                                             e.target.nextElementSibling.style.display = 'flex';
@@ -1184,7 +1165,7 @@ export default function CommunityPage() {
                                 >
                                     {String(successData.studentName || '').substring(0, 1).toUpperCase() || "學"}
                                 </div>
-                                <div className="flex-1">
+                                <div className="flex-1 ml-2">
                                     <p className="text-xl font-bold text-white">
                                         {successData.studentName}
                                     </p>

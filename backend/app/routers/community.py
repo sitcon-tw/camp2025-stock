@@ -80,22 +80,20 @@ async def verify_community_password(
         500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
     },
     summary="社群攤位發放點數",
-    description="社群攤位給學員發放點數"
+    description="社群攤位給學員發放固定1000點數"
 )
 async def community_give_points(
     community_password: str = Query(..., description="社群密碼"),
     student_username: str = Query(..., description="學員用戶名"),
-    points: int = Query(..., description="發放點數", ge=1),
     note: str = Query("社群攤位獎勵", description="備註"),
     create_if_not_exists: bool = Query(False, description="如果學員不存在是否創建")
 ):
     """
-    社群攤位發放點數
+    社群攤位發放點數 (固定1000點)
     
     Args:
         community_password: 社群密碼
         student_username: 學員用戶名
-        points: 發放點數
         note: 備註
         create_if_not_exists: 如果學員不存在是否創建
         
@@ -103,6 +101,9 @@ async def community_give_points(
         dict: 發放結果
     """
     try:
+        # 固定發放點數
+        points = 1000
+        
         # 社群密碼配置
         COMMUNITY_PASSWORDS = {
             "SITCON 學生計算機年會": "Tiger9@Vault!Mo0n#42*",

@@ -729,11 +729,10 @@ export async function getCommunityGivingLogs(communityPassword, limit = 50) {
     });
 }
 
-export async function communityGivePoints(communityPassword, studentUsername, points, note = "社群攤位獎勵") {
+export async function communityGivePoints(communityPassword, studentUsername, note = "社群攤位獎勵") {
     const params = new URLSearchParams({
         community_password: communityPassword,
         student_username: studentUsername,
-        points: points,
         note: note,
     });
     
