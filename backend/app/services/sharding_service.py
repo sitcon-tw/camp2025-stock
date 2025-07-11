@@ -25,7 +25,7 @@ class ShardInfo:
     """分片資訊"""
     shard_id: int
     status: ShardStatus
-    load: int  # 當前負載
+    load: int  # 目前負載
     max_load: int  # 最大負載
     created_at: datetime
     last_heartbeat: datetime

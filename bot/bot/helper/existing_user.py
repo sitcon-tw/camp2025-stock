@@ -100,7 +100,7 @@ async def verify_user_can_trade(response, update: Update, is_callback: bool = Fa
     if not isinstance(response, dict):
         return False
     
-    # 檢查是否有用戶數據
+    # 檢查是否有用戶資料
     user_data = response.get('user') or response.get('data')
     if not user_data:
         return False

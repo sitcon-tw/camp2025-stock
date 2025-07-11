@@ -248,13 +248,13 @@ export default function Dashboard() {
                     videoRef.current,
                     result => {
                         console.log('QR Code 掃描結果:', result.data);
-                        console.log('QR Code 數據長度:', result.data.length);
-                        console.log('QR Code 數據類型:', typeof result.data);
+                        console.log('QR Code 資料長度:', result.data.length);
+                        console.log('QR Code 資料類型:', typeof result.data);
                         
-                        // 檢查是否為空字符串或無效數據
+                        // 檢查是否為空字符串或無效資料
                         if (!result.data || result.data.trim() === '') {
-                            console.error('QR Code 掃描到空數據');
-                            setTransferError('QR Code 數據為空，請重新掃描');
+                            console.error('QR Code 掃描到空資料');
+                            setTransferError('QR Code 資料為空，請重新掃描');
                             return;
                         }
                         
@@ -285,12 +285,12 @@ export default function Dashboard() {
                             }
                         } catch (e) {
                             console.error('QR Code 解析失敗:', e);
-                            console.error('原始數據:', result.data);
-                            console.error('原始數據編碼:', encodeURIComponent(result.data));
+                            console.error('原始資料:', result.data);
+                            console.error('原始資料編碼:', encodeURIComponent(result.data));
                             
                             // 嘗試不同的解析方式
                             if (result.data.includes('{"')) {
-                                console.log('數據似乎包含 JSON，嘗試修復...');
+                                console.log('資料似乎包含 JSON，嘗試修復...');
                                 // 嘗試找到 JSON 開始和結束位置
                                 const jsonStart = result.data.indexOf('{');
                                 const jsonEnd = result.data.lastIndexOf('}');
@@ -310,7 +310,7 @@ export default function Dashboard() {
                                 }
                             }
                             
-                            setTransferError('QR Code 格式錯誤或數據損壞');
+                            setTransferError('QR Code 格式錯誤或資料損壞');
                         }
                     },
                     {
@@ -829,7 +829,7 @@ export default function Dashboard() {
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         
-        // 如果使用者數據已載入，開始輪詢
+        // 如果使用者資料已載入，開始輪詢
         if (user && authData) {
             startPolling();
         }
@@ -1726,7 +1726,7 @@ export default function Dashboard() {
                                     id: authData?.id || user?.id || 'unknown'
                                 };
                                 const qrString = JSON.stringify(qrData);
-                                console.log('生成 QR Code 數據:', qrData);
+                                console.log('生成 QR Code 資料:', qrData);
                                 console.log('QR Code 字符串:', qrString);
                                 console.log('QR Code 字符串長度:', qrString.length);
                                 console.log('user 對象:', user);

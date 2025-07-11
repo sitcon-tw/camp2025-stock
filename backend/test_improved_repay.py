@@ -30,8 +30,8 @@ async def test_improved_repay():
     try:
         user_oid = ObjectId(test_user_id)
         
-        # 檢查用戶當前狀態
-        print("\n📊 用戶當前狀態:")
+        # 檢查用戶目前狀態
+        print("\n📊 用戶目前狀態:")
         user = await db[Collections.USERS].find_one({'_id': user_oid})
         current_points = user.get('points', 0)
         current_owed = user.get('owed_points', 0)

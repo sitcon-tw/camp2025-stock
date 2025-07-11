@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 function AdminPageContent({ activeTab, setActiveTab, adminToken, router }) {
     const { permissions, role, loading: permissionLoading, error } = usePermissionContext();
 
-    // 檢查當前頁簽是否對用戶可用，如果不可用則重定向到dashboard
+    // 檢查目前頁簽是否對用戶可用，如果不可用則重定向到dashboard
     useEffect(() => {
         if (!permissionLoading && permissions) {
             if (activeTab === "qr-generator" && !permissions.includes("generate_qrcode")) {

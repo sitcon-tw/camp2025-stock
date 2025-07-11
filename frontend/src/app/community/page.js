@@ -164,12 +164,12 @@ export default function CommunityPage() {
     const handleQRResult = async (qrData) => {
         console.log('=== QR Code 掃描Debug ===');
         console.log('原始 QR Data:', qrData);
-        console.log('數據類型:', typeof qrData);
-        console.log('數據長度:', qrData ? qrData.length : 0);
+        console.log('資料類型:', typeof qrData);
+        console.log('資料長度:', qrData ? qrData.length : 0);
         
         try {
             if (!qrData || qrData.trim() === '') {
-                setScanError('QR Code 數據為空，請重新掃描');
+                setScanError('QR Code 資料為空，請重新掃描');
                 return;
             }
 
@@ -190,7 +190,7 @@ export default function CommunityPage() {
                     setScanError('QR Code 格式不正確，請確認為有效的點數兌換 QR Code');
                 } else {
                     console.log('無法識別的 QR Code 格式');
-                    setScanError(`無法解析的 QR Code 格式。數據內容: ${qrData.substring(0, 50)}...`);
+                    setScanError(`無法解析的 QR Code 格式。資料內容: ${qrData.substring(0, 50)}...`);
                 }
                 setTimeout(() => setScanError(''), 5000);
                 return;
@@ -829,7 +829,7 @@ export default function CommunityPage() {
                                     )}
                                     {quickTransferData.points !== undefined && (
                                         <p className="text-xs text-[#557797]">
-                                            當前點數：{quickTransferData.points.toLocaleString()} 點
+                                            目前點數：{quickTransferData.points.toLocaleString()} 點
                                         </p>
                                     )}
                                     <p className="text-xs text-[#557797]">

@@ -2373,7 +2373,7 @@ async def clear_user_debt(
         admin_oid = ObjectId(current_user["user_id"])
         db = get_database()
         
-        # 獲取當前欠款訊息
+        # 獲取目前欠款訊息
         debt_info = await debt_service.get_user_debt_info(user_oid)
         if not debt_info['success'] or not debt_info['user_exists']:
             return debt_info

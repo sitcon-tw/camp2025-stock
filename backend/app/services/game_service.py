@@ -640,7 +640,7 @@ class GameService:
     async def _log_point_change(self, user_id, change_type: str, amount: int, note: str = ""):
         """記錄點數變動"""
         try:
-            # 獲取使用者當前餘額
+            # 獲取使用者目前餘額
             user = await self.db[Collections.USERS].find_one({"_id": user_id})
             balance_after = user.get("points", 0) if user else 0
             

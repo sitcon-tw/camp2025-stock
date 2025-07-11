@@ -67,7 +67,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                 // 生成唯一的QR Code ID
                 const qrId = `qr_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
                 
-                // QR Code 數據結構
+                // QR Code 資料結構
                 const qrData = {
                     type: 'points_redeem',
                     id: qrId,

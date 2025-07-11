@@ -416,7 +416,7 @@ class TransferService:
             dict: 操作結果
         """
         try:
-            # 獲取用戶當前狀態
+            # 獲取用戶目前狀態
             user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
             if not user:
                 return {
