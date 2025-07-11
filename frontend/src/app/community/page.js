@@ -646,7 +646,7 @@ export default function CommunityPage() {
                         <div className="text-center">
                             <div className="mb-6">
                                 <img 
-                                    src="https://sitcon.org/2024/static/img/logo/logo-white.svg" 
+                                    src="/withname-white.svg" 
                                     alt="SITCON Logo" 
                                     className="mx-auto h-32 w-auto"
                                     onError={(e) => {
@@ -654,7 +654,7 @@ export default function CommunityPage() {
                                         e.target.nextElementSibling.style.display = 'block';
                                     }}
                                 />
-                                <div className="hidden rounded-xl bg-gradient-to-br from-[#469FD2] to-[#357AB8] p-8 text-white">
+                                <div className="rounded-xl bg-gradient-to-br from-[#469FD2] to-[#357AB8] p-8 text-white" style={{display: 'none'}}>
                                     <div className="text-4xl font-bold mb-2">SITCON</div>
                                     <div className="text-lg">Students' Information Technology Conference</div>
                                 </div>
