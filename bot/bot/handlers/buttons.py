@@ -93,39 +93,29 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data[1] == "accept":
         challenge_id = data[2]
         
-        # 從 PVP Manager 獲取挑戰資訊
-        challenge_info = pvp_manager.get_challenge_info(challenge_id)
-        
-        if not challenge_info:
-            await query.answer("⚠️ PVP 挑戰已經失效，請重新發起挑戰！", show_alert=True)
-            try:
-                await safe_edit_message(query, "⚠️ PVP 挑戰已經失效，請重新發起挑戰！")
-            except Exception as e:
-                logger.error(f"Error editing stale message: {e}")
-            return
-        
-        # 檢查是否為發起者本人
-        if challenge_info["user_id"] == str(update.effective_user.id):
-            await query.answer("❌ 不能接受自己的 PVP 挑戰！", show_alert=True)
-            return
+        logger.info(f"PVP accept button clicked: user {update.effective_user.id}, challenge {challenge_id}")
 
         # 調用新的簡單 PVP API
         try:
+            logger.info(f"Calling API: /api/bot/pvp/simple-accept with user {update.effective_user.id}")
             response = api_helper.post("/api/bot/pvp/simple-accept", protected_route=True, json={
                 "from_user": str(update.effective_user.id),
                 "challenge_id": challenge_id
             })
+            
+            logger.info(f"API response: {response}")
             
             if response.get("success"):
                 # 遊戲成功完成
                 message = response.get("message", "PVP 挑戰完成！")
                 await query.answer("🎮 PVP 挑戰完成！", show_alert=False)
                 
-                # 更新訊息顯示結果
+                # 更新訊息顯示結果，移除所有按鈕
                 await safe_edit_message(
                     query, 
                     message,
-                    parse_mode=ParseMode.MARKDOWN_V2
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                    reply_markup=None  # 移除所有按鈕
                 )
                 
                 # 通知 PVP Manager 挑戰完成
@@ -142,7 +132,7 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
                 # 其他錯誤則取消挑戰
                 await pvp_manager.complete_challenge(challenge_id)
-                await safe_edit_message(query, f"❌ 挑戰失敗：{error_message}")
+                await safe_edit_message(query, f"❌ 挑戰失敗：{error_message}", reply_markup=None)
                 
         except Exception as e:
             logger.error(f"Error accepting PVP challenge: {e}")

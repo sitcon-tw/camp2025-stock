@@ -577,6 +577,14 @@ class GameService:
         }
         return names.get(choice, "未知")
     
+    def _escape_markdown(self, text: str) -> str:
+        """轉義 Markdown V2 特殊字符"""
+        # MarkdownV2 需要轉義的字符
+        escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+        for char in escape_chars:
+            text = text.replace(char, f'\\{char}')
+        return text
+    
     async def _log_point_change(self, user_id, change_type: str, amount: int, note: str = ""):
         """記錄點數變動"""
         log_entry = {
@@ -593,11 +601,14 @@ class GameService:
         from app.schemas.bot import PVPResponse
         import random
         
+        logger.info(f"Simple PVP accept: user {from_user}, challenge {challenge_id}")
+        
         try:
             # 將 challenge_id 轉換為 ObjectId
             try:
                 challenge_oid = ObjectId(challenge_id)
-            except Exception:
+            except Exception as e:
+                logger.error(f"Invalid challenge_id format: {challenge_id}, error: {e}")
                 return PVPResponse(
                     success=False,
                     message="無效的挑戰 ID"
@@ -609,7 +620,16 @@ class GameService:
                 "status": {"$in": ["pending", "waiting_accepter"]}
             })
             
+            logger.info(f"Looking for challenge {challenge_id}, found: {challenge is not None}")
+            
             if not challenge:
+                # 嘗試查找任何狀態的挑戰來調試
+                any_challenge = await self.db[Collections.PVP_CHALLENGES].find_one({"_id": challenge_oid})
+                if any_challenge:
+                    logger.warning(f"Challenge {challenge_id} exists but has status: {any_challenge.get('status')}")
+                else:
+                    logger.warning(f"Challenge {challenge_id} does not exist in database")
+                
                 return PVPResponse(
                     success=False,
                     message="挑戰不存在或已結束"
@@ -704,6 +724,7 @@ class GameService:
             
             # 50% 機率決定勝負
             accepter_wins = bool(random.getrandbits(1))
+            logger.info(f"PVP result: accepter_wins = {accepter_wins}")
             
             # 更新挑戰狀態
             await self.db[Collections.PVP_CHALLENGES].update_one(
@@ -720,10 +741,13 @@ class GameService:
             )
             
             # 處理點數轉移
+            logger.info(f"Starting point transfer: amount={amount}, accepter_wins={accepter_wins}")
+            
             if accepter_wins:
                 # 接受者勝利
                 winner_name = accepter.get("name", "未知使用者")
                 loser_name = challenge["challenger_name"]
+                logger.info(f"Accepter wins: {winner_name} gets {amount} points from {loser_name}")
                 
                 # 使用安全扣除
                 deduction_result = await self._safe_deduct_points(
@@ -761,7 +785,7 @@ class GameService:
                 
                 return PVPResponse(
                     success=True,
-                    message=f"🎉 遊戲結束！\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！\n💔 {loser_name} 失去 {amount} 點！",
+                    message=f"🎉 *遊戲結束！*\n\n🏆 *{self._escape_markdown(winner_name)}* 勝利！獲得 *{amount}* 點！\n💔 *{self._escape_markdown(loser_name)}* 失去 *{amount}* 點！",
                     winner=from_user,
                     loser=challenge["challenger"],
                     amount=amount
@@ -771,6 +795,7 @@ class GameService:
                 # 發起者勝利
                 winner_name = challenge["challenger_name"]
                 loser_name = accepter.get("name", "未知使用者")
+                logger.info(f"Challenger wins: {winner_name} gets {amount} points from {loser_name}")
                 
                 # 使用安全扣除
                 deduction_result = await self._safe_deduct_points(
@@ -808,7 +833,7 @@ class GameService:
                 
                 return PVPResponse(
                     success=True,
-                    message=f"🎉 遊戲結束！\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！\n💔 {loser_name} 失去 {amount} 點！",
+                    message=f"🎉 *遊戲結束！*\n\n🏆 *{self._escape_markdown(winner_name)}* 勝利！獲得 *{amount}* 點！\n💔 *{self._escape_markdown(loser_name)}* 失去 *{amount}* 點！",
                     winner=challenge["challenger"],
                     loser=from_user,
                     amount=amount
