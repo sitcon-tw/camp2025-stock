@@ -388,6 +388,97 @@ async def get_student_info(
 
 
 @router.get(
+    "/check-student-reward",
+    responses={
+        200: {"description": "檢查成功"},
+        400: {"description": "請求參數錯誤"},
+        401: {"description": "社群密碼錯誤"},
+        404: {"description": "找不到學員"},
+        500: {"description": "伺服器內部錯誤"}
+    },
+    summary="檢查學員是否已領取社群獎勵",
+    description="檢查特定學員是否已經領取過本社群的點數獎勵"
+)
+async def check_student_reward(
+    community_password: str = Query(..., description="社群密碼"),
+    student_username: str = Query(..., description="學員用戶名或 telegram_id")
+):
+    """
+    檢查學員是否已領取社群獎勵
+    
+    Args:
+        community_password: 社群密碼
+        student_username: 學員用戶名或 telegram_id
+    
+    Returns:
+        檢查結果，包含是否已領取和相關資訊
+    """
+    try:
+        # 社群密碼配置
+        COMMUNITY_PASSWORDS = {
+            "SITCON 學生計算機年會": "Tiger9@Vault!Mo0n#42*",
+            "OCF 開放文化基金會": "Ocean^CultuR3$Rise!888",
+            "Ubuntu 台灣社群": "Ubun2u!Taipei@2025^Rocks",
+            "MozTW 社群": "MozTw$Fox_@42Jade*Fire",
+            "COSCUP 開源人年會": "COde*0p3n#Sun5et!UP22",
+            "Taiwan Security Club": "S3curE@Tree!^Night_CLUB99",
+            "SCoML 學生機器學習社群": "M@chin3Zebra_Learn#504*",
+            "綠洲計畫 LZGH": "0@si5^L!ght$Grow*Green88",
+            "PyCon TW": "PyTh0n#Conf!Luv2TW@2025"
+        }
+        
+        # 驗證社群密碼
+        community_name = None
+        for name, password in COMMUNITY_PASSWORDS.items():
+            if password == community_password:
+                community_name = name
+                break
+        
+        if not community_name:
+            return {
+                "success": False,
+                "message": "無效的社群密碼"
+            }
+        
+        db = get_database()
+        
+        # 檢查是否已經發放過點數
+        existing_log = await db[Collections.POINT_LOGS].find_one({
+            "username": student_username,
+            "type": "community_reward",
+            "community": community_name
+        })
+        
+        if existing_log:
+            # 找到重複發放記錄
+            existing_time = existing_log.get("created_at")
+            time_str = existing_time.strftime("%Y/%m/%d %H:%M") if existing_time else "未知時間"
+            return {
+                "success": True,
+                "already_given": True,
+                "message": f"該學員已於 {time_str} 領取過 {community_name} 的點數獎勵",
+                "previous_amount": existing_log.get("amount", 0),
+                "previous_time": existing_time.isoformat() if existing_time else None,
+                "community": community_name
+            }
+        else:
+            # 未領取過
+            return {
+                "success": True,
+                "already_given": False,
+                "message": "該學員尚未領取過獎勵",
+                "community": community_name
+            }
+        
+    except Exception as e:
+        logger.error(f"檢查學員獎勵狀態失敗: {e}")
+        return {
+            "success": False,
+            "message": "檢查獎勵狀態時發生錯誤"
+        }
+
+
+@router.get(
     "/giving-logs",
     responses={
         200: {"description": "社群發放紀錄獲取成功"},

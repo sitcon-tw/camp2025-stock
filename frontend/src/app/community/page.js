@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
-import { verifyCommunityPassword, communityGivePoints, getStudentInfo, getCommunityGivingLogs, clearCommunityGivingLogs } from "@/lib/api";
+import { verifyCommunityPassword, communityGivePoints, getStudentInfo, getCommunityGivingLogs, clearCommunityGivingLogs, checkStudentReward } from "@/lib/api";
 import QrScanner from "qr-scanner";
 
 
@@ -314,6 +314,27 @@ export default function CommunityPage() {
             setShowQuickTransfer(true);
             setTransferError("");
             setTransferSuccess("");
+            
+            // 立即檢查是否已經領取過獎勵（基本資料情況）
+            const communityPassword = getCommunityPassword();
+            if (communityPassword) {
+                try {
+                    const rewardCheck = await checkStudentReward(communityPassword, preferredIdentifier);
+                    console.log('基本資料獎勵檢查結果:', rewardCheck);
+                    
+                    if (rewardCheck && rewardCheck.success && rewardCheck.already_given) {
+                        // 已經領取過，直接顯示警告
+                        setTransferError(
+                            `${rewardCheck.message}\n` +
+                            `上次發放：${rewardCheck.previous_amount} 點`
+                        );
+                        console.log('基本資料檢測到重複發放，已設定警告訊息');
+                    }
+                } catch (rewardCheckError) {
+                    console.log('基本資料獎勵檢查失敗:', rewardCheckError);
+                    // 檢查失敗不影響正常流程
+                }
+            }
 
             // 使用新的學員資訊 API 獲取完整資訊（包括頭像）
             try {
@@ -338,7 +359,26 @@ export default function CommunityPage() {
                             console.log('更新學員完整資料:', updatedData);
                             setQuickTransferData(updatedData);
                             
-                            // 不在前端檢查重複，讓後端提供準確的錯誤資訊
+                            // 立即檢查是否已經領取過獎勵
+                            try {
+                                const rewardCheck = await checkStudentReward(communityPassword, preferredIdentifier);
+                                console.log('獎勵檢查結果:', rewardCheck);
+                                
+                                if (rewardCheck && rewardCheck.success && rewardCheck.already_given) {
+                                    // 已經領取過，直接顯示警告
+                                    setTransferError(
+                                        `${rewardCheck.message}\n` +
+                                        `上次發放：${rewardCheck.previous_amount} 點`
+                                    );
+                                    console.log('檢測到重複發放，已設定警告訊息');
+                                } else {
+                                    // 未領取過，清除可能的錯誤訊息
+                                    setTransferError("");
+                                }
+                            } catch (rewardCheckError) {
+                                console.log('獎勵檢查失敗:', rewardCheckError);
+                                // 檢查失敗不影響正常流程，讓後端在實際發放時檢查
+                            }
                             
                             console.log('成功獲取學員完整資訊:', {
                                 display_name: studentInfo.student_display_name,
@@ -434,6 +474,13 @@ export default function CommunityPage() {
     // 處理快速轉帳提交
     const handleQuickTransferSubmit = async (e) => {
         e.preventDefault();
+        
+        // 檢查是否已經有重複發放的錯誤
+        if (transferError && (transferError.includes('已經領取過') || transferError.includes('領取過'))) {
+            console.log('已有重複發放警告，阻止提交');
+            return;
+        }
+        
         setTransferError("");
         setTransferSuccess("");
         setTransferLoading(true);

@@ -741,6 +741,18 @@ export async function communityGivePoints(communityPassword, studentUsername, no
     });
 }
 
+// 檢查學員是否已領取社群獎勵
+export async function checkStudentReward(communityPassword, studentUsername) {
+    const params = new URLSearchParams({
+        community_password: communityPassword,
+        student_username: studentUsername,
+    });
+    
+    return apiRequest(`/api/community/check-student-reward?${params.toString()}`, {
+        method: "GET",
+    });
+}
+
 // 清除社群發放紀錄（開發測試用）
 export async function clearCommunityGivingLogs(communityPassword) {
     const params = new URLSearchParams({
