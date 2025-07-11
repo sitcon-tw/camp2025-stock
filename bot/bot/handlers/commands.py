@@ -247,9 +247,22 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     
     if result.get("error"):
-        await update.message.reply_text(
-            f"❌ 建立挑戰失敗：{result['response'].get('message', '未知錯誤')}"
-        )
+        error_message = result['response'].get('message', '未知錯誤')
+        
+        # 檢查是否是「已有挑戰」的錯誤，如果是則提供取消按鈕
+        if "你已經有一個等待接受的挑戰" in error_message or "你已經有一個進行中的挑戰" in error_message:
+            buttons = [
+                [InlineKeyboardButton("❌ 取消現有挑戰", callback_data=f"pvp:force_cancel:{update.effective_user.id}")]
+            ]
+            
+            await update.message.reply_text(
+                f"❌ 建立挑戰失敗：{error_message}",
+                reply_markup=InlineKeyboardMarkup(buttons)
+            )
+        else:
+            await update.message.reply_text(
+                f"❌ 建立挑戰失敗：{error_message}"
+            )
         return
     
     if result.get("conflict"):
