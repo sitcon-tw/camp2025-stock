@@ -666,7 +666,8 @@ export default function Dashboard() {
                 for (const transaction of newTransactions) {
                     // 檢查是否為轉帳收入或 QR Code 兌換
                     const isTransferIn = transaction.amount > 0 && transaction.note && 
-                        (transaction.type === 'transfer_in' || 
+                        (transaction.type === 'transfer_in' ||
+                         transaction.type === 'community_reward' ||
                          transaction.note.includes('收到來自') || 
                          transaction.note.includes('的轉帳'));
                          
