@@ -43,6 +43,8 @@ export default function CommunityPage() {
     const [logsError, setLogsError] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredLogs, setFilteredLogs] = useState([]);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successData, setSuccessData] = useState(null);
 
     // 載入社群發放紀錄
     const loadGivingLogs = async () => {
@@ -388,6 +390,12 @@ export default function CommunityPage() {
         setTransferSuccess("");
     };
 
+    // 關閉成功 Modal
+    const closeSuccessModal = () => {
+        setShowSuccessModal(false);
+        setSuccessData(null);
+    };
+
     // 處理快速轉帳提交
     const handleQuickTransferSubmit = async (e) => {
         e.preventDefault();
@@ -449,10 +457,20 @@ export default function CommunityPage() {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 
-                // 關閉快速轉帳 Modal 並顯示成功訊息
+                // 關閉快速轉帳 Modal 並顯示成功 Modal
                 closeQuickTransfer();
                 const displayName = result.student_display_name || result.student || quickTransferData.username;
-                setScanSuccess(`🎉 成功發放！給學員 ${displayName} 發放了 ${result.points} 點數`);
+                
+                // 設置成功 Modal 的資料
+                setSuccessData({
+                    studentName: displayName,
+                    studentPhoto: result.student_photo_url || quickTransferData.photo_url,
+                    studentTeam: result.student_team || quickTransferData.team,
+                    points: result.points,
+                    community: currentCommunity,
+                    newBalance: result.new_balance
+                });
+                setShowSuccessModal(true);
                 
                 // 重新載入發放紀錄
                 loadGivingLogs();
@@ -479,11 +497,6 @@ export default function CommunityPage() {
                 } catch (e) {
                     console.log('音效播放失敗:', e);
                 }
-                
-                // 5秒後清除成功訊息
-                setTimeout(() => {
-                    setScanSuccess('');
-                }, 5000);
             } else {
                 // 檢查是否為重複發放錯誤
                 if (result.already_given) {
@@ -1060,6 +1073,91 @@ export default function CommunityPage() {
                                 </div>
                             </form>
                         )}
+                    </div>
+                )}
+            </Modal>
+
+            {/* 成功發放 Modal */}
+            <Modal
+                isOpen={showSuccessModal}
+                onClose={closeSuccessModal}
+                title="🎉 發放成功"
+            >
+                {successData && (
+                    <div className="space-y-6">
+                        {/* 成功訊息 */}
+                        <div className="text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
+                                <div className="text-3xl">✅</div>
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">
+                                點數發放成功！
+                            </h3>
+                            <p className="text-[#92cbf4]">
+                                已成功給學員發放點數獎勵
+                            </p>
+                        </div>
+
+                        {/* 學員資訊 */}
+                        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                                {successData.studentPhoto ? (
+                                    <img
+                                        src={successData.studentPhoto}
+                                        alt="學員大頭照"
+                                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-green-500/50"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextElementSibling.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div 
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-green-600 text-lg font-bold text-white shadow-lg ring-2 ring-white/20 border-2 border-white/10 ${successData.studentPhoto ? 'hidden' : 'flex'}`}
+                                >
+                                    {String(successData.studentName || '').substring(0, 1).toUpperCase() || "學"}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xl font-bold text-white">
+                                        {successData.studentName}
+                                    </p>
+                                    {successData.studentTeam && (
+                                        <p className="text-sm text-green-400">
+                                            隊伍：{successData.studentTeam}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 發放詳情 */}
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center py-2 border-b border-[#294565]">
+                                <span className="text-[#92cbf4]">社群攤位</span>
+                                <span className="text-white font-medium">{successData.community}</span>
+                            </div>
+                            <div className="flex justify-between items-center py-2 border-b border-[#294565]">
+                                <span className="text-[#92cbf4]">發放點數</span>
+                                <span className="text-green-400 font-bold text-lg">+{successData.points} 點</span>
+                            </div>
+                            {successData.newBalance && (
+                                <div className="flex justify-between items-center py-2">
+                                    <span className="text-[#92cbf4]">學員餘額</span>
+                                    <span className="text-white font-medium">{successData.newBalance} 點</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 關閉按鈕 */}
+                        <div className="pt-4">
+                            <button
+                                type="button"
+                                onClick={closeSuccessModal}
+                                className="w-full rounded-xl bg-green-500 px-4 py-3 text-white font-medium transition-colors hover:bg-green-600"
+                            >
+                                完成
+                            </button>
+                        </div>
                     </div>
                 )}
             </Modal>
