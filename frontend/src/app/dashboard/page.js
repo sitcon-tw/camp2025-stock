@@ -53,7 +53,7 @@ export default function Dashboard() {
     const [transferSuccess, setTransferSuccess] = useState("");
     const [receivedPayment, setReceivedPayment] = useState(null);
     const [showPaymentNotification, setShowPaymentNotification] = useState(false);
-    const [lastPointHistoryLength, setLastPointHistoryLength] = useState(0);
+    const [lastPointHistory, setLastPointHistory] = useState([]);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
     const pollingIntervalRef = useRef(null);
@@ -401,7 +401,7 @@ export default function Dashboard() {
                     ]);
                     setUser(portfolio);
                     setPointHistory(points);
-                    setLastPointHistoryLength(points.length);
+                    setLastPointHistory(points);
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
@@ -584,7 +584,7 @@ export default function Dashboard() {
             });
             
             if (result.success) {
-                setTransferSuccess(`💸 轉帳成功！轉給 ${transferForm.to_username} ${amount} 點，手續費: ${result.fee} 點`);
+                setTransferSuccess(`轉帳成功！轉給 ${transferForm.to_username} ${amount} 點，手續費: ${result.fee} 點`);
                 
                 // 重新載入使用者資料
                 try {
@@ -594,7 +594,7 @@ export default function Dashboard() {
                     ]);
                     setUser(portfolio);
                     setPointHistory(points);
-                    setLastPointHistoryLength(points.length); // 更新歷史記錄長度
+                    setLastPointHistory(points); // 更新歷史記錄長度
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
@@ -622,12 +622,18 @@ export default function Dashboard() {
 
             const newPointHistory = await getWebPointHistory(token, 10);
             
-            // 檢查是否有新的轉帳收入
-            if (newPointHistory.length > 0 && lastPointHistoryLength > 0) {
-                const newTransactions = newPointHistory.slice(0, newPointHistory.length - lastPointHistoryLength);
+            if (newPointHistory.length > 0 && lastPointHistory.length > 0) {
+                const newTransactions = newPointHistory.filter(newTransaction => {
+                    return !lastPointHistory.some(oldTransaction => 
+                        oldTransaction.created_at === newTransaction.created_at &&
+                        oldTransaction.amount === newTransaction.amount &&
+                        oldTransaction.note === newTransaction.note
+                    );
+                });
+                
                 console.log('檢查新交易:', {
-                    newLength: newPointHistory.length,
-                    lastLength: lastPointHistoryLength,
+                    newHistoryLength: newPointHistory.length,
+                    lastHistoryLength: lastPointHistory.length,
                     newTransactionsCount: newTransactions.length,
                     newTransactions: newTransactions
                 });
@@ -701,7 +707,7 @@ export default function Dashboard() {
                 }
             }
             
-            setLastPointHistoryLength(newPointHistory.length);
+            setLastPointHistory(newPointHistory);
             setPointHistory(newPointHistory);
             
         } catch (error) {
@@ -765,14 +771,14 @@ export default function Dashboard() {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             stopPolling();
         };
-    }, [user, authData, lastPointHistoryLength]);
+    }, [user, authData, lastPointHistory]);
 
-    // 初始化歷史記錄長度
+    // 初始化歷史記錄
     useEffect(() => {
-        if (pointHistory.length > 0 && lastPointHistoryLength === 0) {
-            setLastPointHistoryLength(pointHistory.length);
+        if (pointHistory.length > 0 && lastPointHistory.length === 0) {
+            setLastPointHistory(pointHistory);
         }
-    }, [pointHistory, lastPointHistoryLength]);
+    }, [pointHistory, lastPointHistory]);
 
     // 檢查訂單是否可以取消
     const canCancelOrder = (order) => {
