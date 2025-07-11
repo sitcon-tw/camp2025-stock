@@ -212,6 +212,7 @@ class Trade(BaseModel):
 # 點數紀錄
 class PointLog(BaseModel):
     user_id: str
+    user_name: str
     type: str
     amount: int
     note: str

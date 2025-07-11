@@ -117,7 +117,7 @@ export const PointHistory = ({ token }) => {
                                             className={`border-b border-[#294565] ${index % 2 === 0 ? 'bg-[#1A325F]' : 'bg-[#0f203e]'} hover:bg-[#294565] transition-colors`}
                                         >
                                             <td className="px-4 py-3 text-sm text-white">{formatTimeUTC8(entry.created_at)}</td>
-                                            <td className="px-4 py-3 text-sm text-white">{entry.user_id}</td>
+                                            <td className="px-4 py-3 text-sm text-white">{entry.user_name || entry.user_id}</td>
                                             <td className="px-4 py-3 text-sm text-white">{entry.type}</td>
                                             <td className="px-4 py-3 text-right text-sm font-semibold text-green-400">{entry.amount}</td>
                                             <td className="px-4 py-3 text-sm text-white">{entry.note}</td>
