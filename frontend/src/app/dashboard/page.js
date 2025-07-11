@@ -10,8 +10,6 @@ import {
     webTransferPoints,
     getUserAvatar,
     redeemQRCode,
-    getPendingNotifications,
-    markNotificationSent,
 } from "@/lib/api";
 import dayjs from "dayjs";
 import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2, Send, ArrowRight, Sparkles, Clock, ChevronDown } from "lucide-react";
@@ -61,14 +59,10 @@ export default function Dashboard() {
     const [pointHistoryLimit, setPointHistoryLimit] = useState(10);
     const [pointHistoryLoading, setPointHistoryLoading] = useState(false);
     const [showLimitDropdown, setShowLimitDropdown] = useState(false);
-    const [pendingNotifications, setPendingNotifications] = useState([]);
-    const [showNotificationModal, setShowNotificationModal] = useState(false);
-    const [currentNotification, setCurrentNotification] = useState(null);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
     const pollingIntervalRef = useRef(null);
     const limitDropdownRef = useRef(null);
-    const notificationPollingRef = useRef(null);
     const router = useRouter();
 
     // 檢查大頭照圖片是否太小（Telegram 隱私設定導致的 1-4 像素圖片）
@@ -644,50 +638,6 @@ export default function Dashboard() {
         }
     };
 
-    // 檢查待發送通知
-    const checkForPendingNotifications = async () => {
-        try {
-            const token = localStorage.getItem('userToken');
-            if (!token) return;
-
-            const notifications = await getPendingNotifications(token);
-            
-            if (notifications.length > 0) {
-                console.log('檢查到待發送通知:', notifications);
-                
-                // 顯示第一個通知
-                const firstNotification = notifications[0];
-                setCurrentNotification(firstNotification);
-                setShowNotificationModal(true);
-                
-                // 播放通知聲音
-                playNotificationSound();
-                
-                console.log('顯示待發送通知:', firstNotification);
-            }
-            
-        } catch (error) {
-            console.error('檢查待發送通知失敗:', error);
-        }
-    };
-
-    // 標記通知為已發送
-    const handleNotificationSent = async (notificationId) => {
-        try {
-            const token = localStorage.getItem('userToken');
-            if (!token) return;
-
-            await markNotificationSent(token, notificationId);
-            console.log('通知已標記為已發送:', notificationId);
-            
-            // 關閉通知 modal
-            setShowNotificationModal(false);
-            setCurrentNotification(null);
-            
-        } catch (error) {
-            console.error('標記通知失敗:', error);
-        }
-    };
 
     // 輪詢檢查新的收款
     const checkForNewPayments = async () => {
@@ -795,9 +745,6 @@ export default function Dashboard() {
         if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = setInterval(checkForNewPayments, 3000); // 每3秒檢查一次
         
-        // 開始通知輪詢
-        if (notificationPollingRef.current) clearInterval(notificationPollingRef.current);
-        notificationPollingRef.current = setInterval(checkForPendingNotifications, 2000); // 每2秒檢查一次
     };
 
     // 停止輪詢
@@ -805,10 +752,6 @@ export default function Dashboard() {
         if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
-        }
-        if (notificationPollingRef.current) {
-            clearInterval(notificationPollingRef.current);
-            notificationPollingRef.current = null;
         }
     };
 
@@ -2104,62 +2047,6 @@ export default function Dashboard() {
                 )}
             </Modal>
 
-            {/* 待發送通知彈出視窗 */}
-            {showNotificationModal && currentNotification && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="relative mx-4 w-full max-w-md payment-notification">
-                        {/* 通知動畫背景 */}
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 via-indigo-500/20 to-purple-500/20 blur-xl payment-glow" />
-                        
-                        {/* 主要內容 */}
-                        <div className="relative rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-900/90 via-indigo-900/90 to-purple-900/90 p-6 shadow-2xl backdrop-blur-md">
-                            {/* 關閉按鈕 */}
-                            <button
-                                onClick={() => handleNotificationSent(currentNotification.id)}
-                                className="absolute right-4 top-4 rounded-full p-1 text-blue-300 hover:bg-blue-800/50 hover:text-white transition-colors"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-
-                            {/* 通知圖示 */}
-                            <div className="mb-4 flex justify-center">
-                                <div className="rounded-full bg-blue-600/20 p-3 ring-2 ring-blue-500/30 success-pulse">
-                                    {currentNotification.notification_type === 'trade' ? (
-                                        <DollarSign className="h-12 w-12 text-blue-400" />
-                                    ) : (
-                                        <CheckCircle2 className="h-12 w-12 text-blue-400" />
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 通知標題 */}
-                            <h3 className="mb-2 text-center text-xl font-bold text-white">
-                                {currentNotification.title}
-                            </h3>
-
-                            {/* 通知內容 */}
-                            <div className="mb-4 text-center text-blue-100">
-                                <p className="whitespace-pre-line">{currentNotification.message}</p>
-                            </div>
-
-                            {/* 時間戳 */}
-                            <div className="mb-4 text-center text-sm text-blue-300">
-                                {dayjs(currentNotification.created_at).format('YYYY-MM-DD HH:mm:ss')}
-                            </div>
-
-                            {/* 確認按鈕 */}
-                            <div className="flex justify-center">
-                                <button
-                                    onClick={() => handleNotificationSent(currentNotification.id)}
-                                    className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl active:scale-95"
-                                >
-                                    確認
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* 收款通知彈出視窗 */}
             {showPaymentNotification && receivedPayment && (

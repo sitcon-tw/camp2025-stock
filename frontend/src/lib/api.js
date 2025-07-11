@@ -691,24 +691,5 @@ export async function communityGivePoints(communityPassword, studentUsername, po
     });
 }
 
-// 通知相關 API
-export async function getPendingNotifications(token) {
-    return apiRequest("/api/notifications/pending", {
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-    });
-}
-
-export async function markNotificationSent(token, notificationId) {
-    return apiRequest(`/api/notifications/mark-sent/${notificationId}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-        },
-    });
-}
 
 export { API_BASE_URL };

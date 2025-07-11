@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, notifications, arcade
+from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, arcade
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -113,11 +113,6 @@ app.include_router(
     prefix="/api"
 )
 
-app.include_router(
-    notifications.router, 
-    prefix="/api", 
-    tags=["Notifications APIs - 通知管理功能"]
-)
 
 app.include_router(
     arcade.router, 

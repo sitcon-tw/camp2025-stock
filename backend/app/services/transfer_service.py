@@ -2,7 +2,6 @@ from __future__ import annotations
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.database import get_database, Collections
 from app.schemas.user import TransferRequest, TransferResponse
-from app.services.notification_service import get_notification_service
 from datetime import datetime, timezone
 from bson import ObjectId
 import logging
@@ -22,7 +21,6 @@ class TransferService:
             self.db = get_database()
         else:
             self.db = db
-        self.notification_service = get_notification_service()
     
     async def transfer_points(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
         """轉帳點數，帶增強重試機制"""
@@ -224,27 +222,6 @@ class TransferService:
             else:
                 success_message += "，欠款已完全償還"
         
-        # 發送轉帳通知
-        try:
-            # 通知發送方
-            await self.notification_service.send_transfer_notification(
-                user_id=str(from_user_oid),
-                transfer_type="sent",
-                amount=request.amount,
-                other_user_name=to_user.get("name", "未知使用者"),
-                transfer_id=transaction_id
-            )
-            
-            # 通知接收方
-            await self.notification_service.send_transfer_notification(
-                user_id=str(to_user["_id"]),
-                transfer_type="received",
-                amount=request.amount,
-                other_user_name=from_user.get("name", "未知使用者"),
-                transfer_id=transaction_id
-            )
-        except Exception as e:
-            logger.error(f"發送轉帳通知失敗: {e}")
         
         return TransferResponse(
             success=True,
