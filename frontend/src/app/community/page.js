@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
-import { verifyCommunityPassword, communityGivePoints, getStudentInfo, getCommunityGivingLogs } from "@/lib/api";
+import { verifyCommunityPassword, communityGivePoints, getStudentInfo, getCommunityGivingLogs, clearCommunityGivingLogs } from "@/lib/api";
 import QrScanner from "qr-scanner";
 
 
@@ -45,6 +45,8 @@ export default function CommunityPage() {
     const [filteredLogs, setFilteredLogs] = useState([]);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successData, setSuccessData] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
 
     // 載入社群發放紀錄
     const loadGivingLogs = async () => {
@@ -394,6 +396,39 @@ export default function CommunityPage() {
     const closeSuccessModal = () => {
         setShowSuccessModal(false);
         setSuccessData(null);
+    };
+
+    // 清除發放紀錄（開發測試用）
+    const handleClearLogs = async () => {
+        if (!confirm('⚠️ 確定要清除所有發放紀錄嗎？\n這個操作無法復原！（僅限開發測試）')) {
+            return;
+        }
+
+        setDeleteLoading(true);
+        setDeleteError("");
+
+        try {
+            const communityPassword = getCommunityPassword();
+            if (!communityPassword) {
+                throw new Error('無法獲取社群密碼，請重新登入');
+            }
+
+            const result = await clearCommunityGivingLogs(communityPassword);
+            console.log('清除紀錄結果:', result);
+
+            if (result.success) {
+                alert(`✅ 成功清除 ${result.deleted_count} 筆發放紀錄`);
+                // 重新載入發放紀錄
+                loadGivingLogs();
+            } else {
+                setDeleteError(result.message || '清除紀錄失敗');
+            }
+        } catch (error) {
+            console.error('清除紀錄失敗:', error);
+            setDeleteError(`清除失敗: ${error.message}`);
+        } finally {
+            setDeleteLoading(false);
+        }
     };
 
     // 處理快速轉帳提交
@@ -888,6 +923,38 @@ export default function CommunityPage() {
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* 開發測試按鈕 */}
+                <div className="mx-auto max-w-2xl mt-6">
+                    <div className="rounded-xl border border-red-500/30 bg-red-600/10 p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 className="text-sm font-semibold text-red-400">
+                                    🧪 開發測試工具
+                                </h3>
+                                <p className="text-xs text-red-300/70 mt-1">
+                                    清除發放紀錄以測試重複掃描功能
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {deleteError && (
+                            <div className="mb-3 rounded-lg border border-red-500/50 bg-red-600/20 p-2">
+                                <p className="text-xs text-red-400">
+                                    ❌ {deleteError}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <button
+                            onClick={handleClearLogs}
+                            disabled={deleteLoading || !isLoggedIn}
+                            className="w-full rounded-lg border border-red-500/50 bg-red-600/20 px-4 py-2 text-red-400 transition-colors hover:bg-red-600/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {deleteLoading ? '清除中...' : '🗑️ 清除所有發放紀錄'}
+                        </button>
+                    </div>
                 </div>
             </div>
 

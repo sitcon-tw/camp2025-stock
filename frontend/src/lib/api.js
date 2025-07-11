@@ -742,5 +742,16 @@ export async function communityGivePoints(communityPassword, studentUsername, po
     });
 }
 
+// 清除社群發放紀錄（開發測試用）
+export async function clearCommunityGivingLogs(communityPassword) {
+    const params = new URLSearchParams({
+        community_password: communityPassword,
+    });
+    
+    return apiRequest(`/api/community/clear-logs?${params.toString()}`, {
+        method: "DELETE",
+    });
+}
+
 
 export { API_BASE_URL };
