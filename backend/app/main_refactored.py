@@ -35,14 +35,13 @@ app = FastAPI(
     debug=config.debug
 )
 
-# CORS 設定 - 使用重構後的設定
+# CORS 設定 - 使用重構後的配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 開發環境允許所有來源
+    allow_origins=config.security.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # 註冊路由模組
