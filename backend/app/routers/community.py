@@ -192,6 +192,25 @@ async def community_give_points(
                     "tip": "可以加上參數 create_if_not_exists=true 來自動創建學員"
                 }
         
+        # 檢查是否已經發放過點數（重複檢查）
+        existing_log = await db[Collections.POINT_LOGS].find_one({
+            "username": student_username,
+            "type": "community_reward",
+            "community": community_name
+        })
+        
+        if existing_log:
+            # 找到重複發放記錄
+            existing_time = existing_log.get("created_at")
+            time_str = existing_time.strftime("%Y/%m/%d %H:%M") if existing_time else "未知時間"
+            return {
+                "success": False,
+                "message": f"該學員已於 {time_str} 領取過 {community_name} 的點數獎勵",
+                "already_given": True,
+                "previous_amount": existing_log.get("amount", 0),
+                "previous_time": existing_time.isoformat() if existing_time else None
+            }
+        
         # 發放點數
         now = datetime.now(timezone.utc)
         

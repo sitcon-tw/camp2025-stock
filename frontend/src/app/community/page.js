@@ -334,6 +334,16 @@ export default function CommunityPage() {
                             console.log('更新學員完整資料:', updatedData);
                             setQuickTransferData(updatedData);
                             
+                            // 檢查發放紀錄中是否已經發放過給這個學員
+                            const alreadyGiven = givingLogs.some(log => 
+                                log.student_username === String(qrData.id) || 
+                                log.student_display_name === updatedData.username
+                            );
+                            
+                            if (alreadyGiven) {
+                                setTransferError(`⚠️ 注意：此學員可能已經領取過 ${currentCommunity} 的點數獎勵`);
+                            }
+                            
                             console.log('成功獲取學員完整資訊:', {
                                 display_name: studentInfo.student_display_name,
                                 photo_url: studentInfo.student_photo_url,
@@ -483,7 +493,15 @@ export default function CommunityPage() {
                     setScanSuccess('');
                 }, 5000);
             } else {
-                setTransferError(result.message || '發放點數失敗');
+                // 檢查是否為重複發放錯誤
+                if (result.already_given) {
+                    setTransferError(
+                        `⚠️ ${result.message}\n` +
+                        `上次發放：${result.previous_amount} 點`
+                    );
+                } else {
+                    setTransferError(result.message || '發放點數失敗');
+                }
             }
             
         } catch (error) {
@@ -821,7 +839,7 @@ export default function CommunityPage() {
                     ) : (
                         <div className="space-y-3 max-h-96 overflow-y-auto">
                             {filteredLogs.map((log, index) => (
-                                <div key={log.id || index} className="rounded-lg border border-[#294565] bg-[#0f203e] p-3">
+                                <div key={log.id || index} className="rounded-lg border border-[#294565] bg-[#0f203e] p-3 relative">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
@@ -931,9 +949,17 @@ export default function CommunityPage() {
                             </div>
                         )}
                         {transferError && (
-                            <div className="rounded-xl border border-red-500/30 bg-red-600/20 p-3">
-                                <p className="text-sm text-red-400">
-                                    ❌ {transferError}
+                            <div className={`rounded-xl border p-3 ${
+                                transferError.includes('已經領取過') || transferError.includes('注意：')
+                                    ? 'border-yellow-500/30 bg-yellow-600/20'
+                                    : 'border-red-500/30 bg-red-600/20'
+                            }`}>
+                                <p className={`text-sm whitespace-pre-line ${
+                                    transferError.includes('已經領取過') || transferError.includes('注意：')
+                                        ? 'text-yellow-400'
+                                        : 'text-red-400'
+                                }`}>
+                                    {transferError.includes('已經領取過') || transferError.includes('注意：') ? '⚠️' : '❌'} {transferError}
                                 </p>
                             </div>
                         )}
@@ -958,7 +984,6 @@ export default function CommunityPage() {
                                     {String(quickTransferData.username || '').substring(0, 1).toUpperCase() || "學"}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="font-medium text-[#92cbf4]">發放點數給學員</p>
                                     <p className="text-xl font-bold text-white">
                                         {quickTransferData.username}
                                     </p>
@@ -970,11 +995,6 @@ export default function CommunityPage() {
                                     {quickTransferData.team && (
                                         <p className="text-xs text-[#557797]">
                                             隊伍：{quickTransferData.team}
-                                        </p>
-                                    )}
-                                    {quickTransferData.points !== undefined && (
-                                        <p className="text-xs text-[#557797]">
-                                            目前點數：{quickTransferData.points.toLocaleString()} 點
                                         </p>
                                     )}
                                 </div>
