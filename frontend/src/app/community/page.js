@@ -1028,9 +1028,6 @@ export default function CommunityPage() {
                         <p className="text-xs text-[#557797]">
                             掃描後可選擇發放點數給該學員
                         </p>
-                        <div className="text-xs text-[#557797] bg-[#0f203e] p-2 rounded">
-                            <p>✅ 支援格式: {"{"}"type":"transfer","id":"學員ID"{"}"}</p>
-                        </div>
                     </div>
                     
                     {scanError && (
