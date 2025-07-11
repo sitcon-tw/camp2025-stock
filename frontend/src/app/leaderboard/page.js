@@ -86,7 +86,7 @@ function RankingItem({ rank, user, isGroup = false }) {
                           )}
                 </div>
                 <div className="text-xs text-gray-400">
-                    {isGroup ? "總價值" : "總資產"}
+                    {isGroup ? "總點數" : "總資產"}
                 </div>
             </div>
         </div>
