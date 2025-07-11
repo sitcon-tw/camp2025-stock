@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
 import { verifyCommunityPassword, communityGivePoints } from "@/lib/api";
@@ -33,7 +32,11 @@ export default function CommunityPage() {
     const [isScanning, setIsScanning] = useState(false);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
-    const router = useRouter();
+    const [showQuickTransfer, setShowQuickTransfer] = useState(false);
+    const [quickTransferData, setQuickTransferData] = useState(null);
+    const [transferLoading, setTransferLoading] = useState(false);
+    const [transferError, setTransferError] = useState("");
+    const [transferSuccess, setTransferSuccess] = useState("");
 
     // 檢查登入狀態
     useEffect(() => {
@@ -204,7 +207,16 @@ export default function CommunityPage() {
             // 檢查是否為學員轉帳 QR Code
             if (parsedData.type === 'transfer' && parsedData.id) {
                 console.log('符合學員轉帳 QR Code 格式，開始處理...');
-                await handleStudentQRCode(parsedData);
+                // 停止掃描器
+                if (qrScannerRef.current) {
+                    qrScannerRef.current.stop();
+                }
+                stopQRScanner();
+                // 開啟快速轉帳模式
+                setQuickTransferData(parsedData);
+                setShowQuickTransfer(true);
+                setTransferError("");
+                setTransferSuccess("");
             } else {
                 console.log('不符合預期格式');
                 console.log('預期格式: {type: "transfer", id: "telegram_id"}');
@@ -232,11 +244,31 @@ export default function CommunityPage() {
         console.log('=== QR Code Debug 結束 ===');
     };
 
-    // 處理學員 QR Code
-    const handleStudentQRCode = async (qrData) => {
+    // 關閉快速轉帳 Modal
+    const closeQuickTransfer = () => {
+        setShowQuickTransfer(false);
+        setQuickTransferData(null);
+        setTransferError("");
+        setTransferSuccess("");
+    };
+
+    // 處理快速轉帳提交
+    const handleQuickTransferSubmit = async (e) => {
+        e.preventDefault();
+        setTransferError("");
+        setTransferSuccess("");
+        setTransferLoading(true);
+        
         try {
-            console.log('開始處理學員 QR Code...', qrData);
+            const formData = new FormData(e.target);
+            const amount = parseInt(formData.get('amount'));
+            const note = formData.get('note') || `${currentCommunity} 攤位獎勵`;
             
+            if (!amount || amount <= 0 || amount > 100) {
+                setTransferError('請輸入1-100之間的有效點數');
+                setTransferLoading(false);
+                return;
+            }
             
             // 從 localStorage 獲取社群密碼
             const communityLogin = localStorage.getItem('communityLogin');
@@ -253,48 +285,29 @@ export default function CommunityPage() {
                 throw new Error('無法獲取社群密碼，請重新登入');
             }
             
-            // 暫停掃描器以避免重複掃描
-            if (qrScannerRef.current) {
-                qrScannerRef.current.stop();
-            }
-            
-            // 提示輸入要發放的點數
-            const pointsToGive = prompt('請輸入要發放給學員的點數 (1-100):', '10');
-            if (!pointsToGive || isNaN(pointsToGive) || pointsToGive <= 0 || pointsToGive > 100) {
-                setScanError('無效的點數，請輸入1-100之間的數字');
-                // 重新啟動掃描器
-                if (qrScannerRef.current) {
-                    await qrScannerRef.current.start();
-                }
-                setTimeout(() => setScanError(''), 3000);
-                return;
-            }
-            
-            const points = parseInt(pointsToGive);
-            
             // 使用 telegram_id 作為 username（暫時方案）
-            const studentUsername = qrData.id.toString();
-            const note = `${communityName} 攤位獎勵`;
+            const studentUsername = quickTransferData.id.toString();
             
             console.log('發放點數參數:', {
                 communityPassword: communityPassword.substring(0, 5) + '...',
                 studentUsername,
-                points,
+                amount,
                 note
             });
             
             // 呼叫 API 發放點數
-            const result = await communityGivePoints(communityPassword, studentUsername, points, note);
+            const result = await communityGivePoints(communityPassword, studentUsername, amount, note);
             
             console.log('發放結果:', result);
             
             if (result.success) {
-                stopQRScanner();
+                // 關閉快速轉帳 Modal 並顯示成功訊息
+                closeQuickTransfer();
                 setScanSuccess(`🎉 成功發放！給學員 ${result.student} 發放了 ${result.points} 點數`);
                 
                 // 播放成功音效
                 try {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const AudioContext = window.AudioContext;
                     const audioContext = new AudioContext();
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
@@ -320,14 +333,14 @@ export default function CommunityPage() {
                     setScanSuccess('');
                 }, 5000);
             } else {
-                setScanError(result.message || '發放點數失敗');
-                setTimeout(() => setScanError(''), 5000);
+                setTransferError(result.message || '發放點數失敗');
             }
             
         } catch (error) {
-            console.error('處理學員 QR Code 失敗:', error);
-            setScanError(`處理失敗: ${error.message}`);
-            setTimeout(() => setScanError(''), 5000);
+            console.error('發放點數失敗:', error);
+            setTransferError(`發放失敗: ${error.message}`);
+        } finally {
+            setTransferLoading(false);
         }
     };
 
@@ -650,6 +663,104 @@ export default function CommunityPage() {
                         </div>
                     )}
                 </div>
+            </Modal>
+
+            {/* 快速轉帳 Modal */}
+            <Modal
+                isOpen={showQuickTransfer}
+                onClose={closeQuickTransfer}
+                title="快速轉帳"
+                size="md"
+            >
+                {quickTransferData && (
+                    <div className="space-y-4">
+                        {/* 成功和錯誤訊息 */}
+                        {transferSuccess && (
+                            <div className="rounded-xl border border-green-500/30 bg-green-600/20 p-3">
+                                <p className="text-sm text-green-400">
+                                    ✅ {transferSuccess}
+                                </p>
+                            </div>
+                        )}
+                        {transferError && (
+                            <div className="rounded-xl border border-red-500/30 bg-red-600/20 p-3">
+                                <p className="text-sm text-red-400">
+                                    ❌ {transferError}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* 收款人資訊確認 */}
+                        <div className="rounded-xl border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#469FD2] to-[#357AB8] text-white font-bold text-lg">
+                                    學
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-medium text-[#92cbf4]">發放點數給學員</p>
+                                    <p className="text-xl font-bold text-white">
+                                        ID: {quickTransferData.id}
+                                    </p>
+                                    <p className="text-xs text-[#557797]">
+                                        來自 {currentCommunity} 攤位
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleQuickTransferSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                    發放點數 <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    name="amount"
+                                    className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder="輸入發放點數"
+                                    min="1"
+                                    max="100"
+                                    defaultValue="10"
+                                    required
+                                    autoFocus
+                                />
+                                <p className="mt-1 text-xs text-[#557797]">
+                                    可發放點數：1-100 點
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                    備註（可選）
+                                </label>
+                                <input
+                                    type="text"
+                                    name="note"
+                                    className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                    placeholder={`${currentCommunity} 攤位獎勵`}
+                                    maxLength="200"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeQuickTransfer}
+                                    className="flex-1 rounded-xl border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={transferLoading}
+                                    className="flex-1 rounded-xl bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8] disabled:cursor-not-allowed disabled:bg-gray-600"
+                                >
+                                    {transferLoading ? '發放中...' : '確認發放'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </Modal>
         </div>
     );
