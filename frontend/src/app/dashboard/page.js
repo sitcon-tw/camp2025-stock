@@ -685,12 +685,12 @@ export default function Dashboard() {
                     if (isTransferIn || isQRCodeRedemption) {
                         
                         // 提取轉帳人名稱或標示為 QR Code 兌換
-                        let fromUser = '未知使用者';
+                        let fromUser = '一個好心人';
                         if (isQRCodeRedemption) {
                             fromUser = 'QR Code 兌換';
                         } else if (transaction.note.includes('收到來自') && transaction.note.includes('的轉帳')) {
                             const match = transaction.note.match(/收到來自\s*(.+?)\s*的轉帳/);
-                            fromUser = match?.[1]?.trim() || '未知使用者';
+                            fromUser = match?.[1]?.trim() || '一個好心人';
                         }
                         
                         // 找到新的收款
