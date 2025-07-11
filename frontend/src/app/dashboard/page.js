@@ -695,7 +695,7 @@ export default function Dashboard() {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             stopPolling();
         };
-    }, [user, authData, lastPointHistory]);
+    }, [user, authData]);
 
     // 初始化歷史記錄
 
