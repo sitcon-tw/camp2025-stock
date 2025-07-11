@@ -2019,6 +2019,81 @@ class UserService:
         except Exception as e:
             logger.error(f"Failed to trigger async matching: {e}")
 
+    async def _determine_fair_trade_price(self, buy_order: dict, sell_order: dict) -> float:
+        """決定公平的成交價格"""
+        buy_price = buy_order.get("price", 0)
+        sell_price = sell_order.get("price", float('inf'))
+        buy_order_type = buy_order.get("order_type", "limit")
+        sell_order_type = sell_order.get("order_type", "limit")
+        is_system_sale = sell_order.get("is_system_order", False)
+        
+        try:
+            # 如果是系統IPO訂單，使用IPO價格
+            if is_system_sale:
+                logger.info(f"System IPO trade: using IPO price {sell_price}")
+                return sell_price
+            
+            # 市價單與限價單的撮合
+            if buy_order_type == "market" or buy_order_type == "market_converted":
+                if sell_order_type == "limit":
+                    # 市價買單 vs 限價賣單：使用賣方限價
+                    logger.info(f"Market buy vs limit sell: using sell price {sell_price}")
+                    return sell_price
+                else:
+                    # 市價買單 vs 市價賣單：使用當前市場價格
+                    current_price = await self._get_current_stock_price()
+                    logger.info(f"Market buy vs market sell: using current price {current_price}")
+                    return current_price
+            
+            elif sell_order_type == "market" or sell_order_type == "market_converted":
+                if buy_order_type == "limit":
+                    # 限價買單 vs 市價賣單：使用買方限價
+                    logger.info(f"Limit buy vs market sell: using buy price {buy_price}")
+                    return buy_price
+                else:
+                    # 市價賣單 vs 市價買單：使用當前市場價格
+                    current_price = await self._get_current_stock_price()
+                    logger.info(f"Market sell vs market buy: using current price {current_price}")
+                    return current_price
+            
+            # 限價單與限價單的撮合
+            elif buy_order_type == "limit" and sell_order_type == "limit":
+                # 檢查哪個訂單先提交（時間優先）
+                buy_time = buy_order.get("created_at")
+                sell_time = sell_order.get("created_at")
+                
+                if buy_time and sell_time:
+                    if buy_time < sell_time:
+                        # 買單先提交，使用買方價格
+                        logger.info(f"Limit vs limit (buy first): using buy price {buy_price}")
+                        return buy_price
+                    else:
+                        # 賣單先提交，使用賣方價格
+                        logger.info(f"Limit vs limit (sell first): using sell price {sell_price}")
+                        return sell_price
+                else:
+                    # 無法確定時間，使用賣方價格（對賣方有利）
+                    logger.info(f"Limit vs limit (time unknown): using sell price {sell_price}")
+                    return sell_price
+            
+            # 預設情況：使用中間價格
+            else:
+                if buy_price > 0 and sell_price < float('inf'):
+                    mid_price = (buy_price + sell_price) / 2
+                    logger.info(f"Default case: using mid price {mid_price} (buy: {buy_price}, sell: {sell_price})")
+                    return mid_price
+                else:
+                    # 如果價格異常，使用當前市場價格
+                    current_price = await self._get_current_stock_price()
+                    logger.info(f"Price anomaly: using current price {current_price}")
+                    return current_price
+                    
+        except Exception as e:
+            logger.error(f"Error determining fair trade price: {e}")
+            # 發生錯誤時回退到賣方價格
+            return sell_price if sell_price < float('inf') else buy_price
+
+
     
     async def _match_orders(self, buy_order: dict, sell_order: dict):
         """撮合訂單 - 自動選擇事務或非事務模式，帶增強重試機制"""
@@ -2078,11 +2153,18 @@ class UserService:
             
             # 計算成交數量和價格
             trade_quantity = min(buy_order["quantity"], sell_order["quantity"])
-            trade_price = buy_order["price"]  # 以買方出價成交
+            
+            # 更公平的價格決定機制
+            trade_price = await self._determine_fair_trade_price(buy_order, sell_order)
             trade_amount = trade_quantity * trade_price
             now = datetime.now(timezone.utc)
             
             is_system_sale = sell_order.get("is_system_order", False)
+            
+            # 記錄詳細的撮合信息
+            logger.info(f"💰 Trade executed: {trade_quantity} shares @ {trade_price} = {trade_amount} points")
+            logger.info(f"📊 Order details: Buy({buy_order.get('order_type', 'unknown')} @ {buy_order.get('price', 0)}) vs Sell({sell_order.get('order_type', 'unknown')} @ {sell_order.get('price', 0)}) {'[SYSTEM IPO]' if is_system_sale else ''}")
+            logger.info(f"👥 Users: {buy_order.get('user_id', 'unknown')} (buyer) vs {sell_order.get('user_id', 'unknown')} (seller)")
 
             # 使用原子操作更新買方訂單 (資料庫)
             buy_update_result = await self.db[Collections.STOCK_ORDERS].update_one(
