@@ -147,9 +147,12 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if any(err in error_message for err in user_errors):
                     return
                 
-                # 系統錯誤或挑戰狀態錯誤才編輯訊息
+                # 系統錯誤或挑戰狀態錯誤，使用彈出通知而非編輯訊息
                 await pvp_manager.complete_challenge(challenge_id)
-                await safe_edit_message(query, f"❌ 挑戰失敗：{error_message}", reply_markup=None)
+                if "挑戰不存在或已結束" in error_message:
+                    await query.answer("❌ 挑戰已經結束", show_alert=True)
+                else:
+                    await query.answer(f"❌ 挑戰失敗：{error_message}", show_alert=True)
                 
         except Exception as e:
             logger.error(f"Error accepting PVP challenge: {e}")
