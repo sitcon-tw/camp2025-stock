@@ -845,6 +845,7 @@ export default function CommunityPage() {
                                     發放點數 <span className="text-red-400">*</span>
                                 </label>
                                 <input
+                                    inputMode="numeric"
                                     type="number"
                                     name="amount"
                                     className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"

@@ -1795,6 +1795,7 @@ export default function Dashboard() {
                             </label>
                             <div className="flex gap-2">
                                 <input
+                                    inputMode="text"
                                     type="text"
                                     value={transferForm.to_username}
                                     onChange={(e) => setTransferForm(prev => ({ ...prev, to_username: e.target.value }))}
@@ -1818,6 +1819,7 @@ export default function Dashboard() {
                             </label>
                             <input
                                 type="number"
+                                inputMode="numeric"
                                 value={transferForm.amount}
                                 onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
                                 className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
