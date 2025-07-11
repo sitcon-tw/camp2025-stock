@@ -965,38 +965,7 @@ export default function CommunityPage() {
                     )}
                 </div>
 
-                {/* 開發測試按鈕 */}
-                <div className="mx-auto max-w-2xl mt-6">
-                    <div className="rounded-xl border border-red-500/30 bg-red-600/10 p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <h3 className="text-sm font-semibold text-red-400">
-                                    🧪 開發測試工具
-                                </h3>
-                                <p className="text-xs text-red-300/70 mt-1">
-                                    清除發放紀錄以測試重複掃描功能
-                                </p>
-                            </div>
-                        </div>
-                        
-                        {deleteError && (
-                            <div className="mb-3 rounded-lg border border-red-500/50 bg-red-600/20 p-2">
-                                <p className="text-xs text-red-400">
-                                    ❌ {deleteError}
-                                </p>
-                            </div>
-                        )}
-                        
-                        <button
-                            onClick={handleClearLogs}
-                            disabled={deleteLoading || !isLoggedIn}
-                            className="w-full rounded-lg border border-red-500/50 bg-red-600/20 px-4 py-2 text-red-400 transition-colors hover:bg-red-600/30 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {deleteLoading ? '清除中...' : '🗑️ 清除所有發放紀錄'}
-                        </button>
-                    </div>
-                </div>
-            </div>
+              
 
             {/* QR Scanner Modal */}
             <Modal
