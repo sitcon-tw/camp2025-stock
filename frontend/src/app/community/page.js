@@ -646,7 +646,7 @@ export default function CommunityPage() {
                         <div className="text-center">
                             <div className="mb-6">
                                 <img 
-                                    src="/SITQR.svg" 
+                                    src="https://sitcon.org/branding/assets/logos/withname-white.svg" 
                                     alt="SITCON Logo" 
                                     className="mx-auto h-32 w-auto"
                                     onError={(e) => {
@@ -964,6 +964,8 @@ export default function CommunityPage() {
                         </div>
                     )}
                 </div>
+
+                
             </div>
 
             {/* QR Scanner Modal */}
