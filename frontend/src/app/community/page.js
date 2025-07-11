@@ -334,15 +334,7 @@ export default function CommunityPage() {
                             console.log('更新學員完整資料:', updatedData);
                             setQuickTransferData(updatedData);
                             
-                            // 檢查發放紀錄中是否已經發放過給這個學員
-                            const alreadyGiven = givingLogs.some(log => 
-                                log.student_username === String(qrData.id) || 
-                                log.student_display_name === updatedData.username
-                            );
-                            
-                            if (alreadyGiven) {
-                                setTransferError(`注意：此學員可能已經領取過 ${currentCommunity} 的點數獎勵`);
-                            }
+                            // 不在前端檢查重複，讓後端提供準確的錯誤資訊
                             
                             console.log('成功獲取學員完整資訊:', {
                                 display_name: studentInfo.student_display_name,
@@ -950,16 +942,16 @@ export default function CommunityPage() {
                         )}
                         {transferError && (
                             <div className={`rounded-xl border p-3 ${
-                                transferError.includes('已經領取過') || transferError.includes('注意：')
+                                transferError.includes('已經領取過')
                                     ? 'border-yellow-500/30 bg-yellow-600/20'
                                     : 'border-red-500/30 bg-red-600/20'
                             }`}>
                                 <p className={`text-sm whitespace-pre-line ${
-                                    transferError.includes('已經領取過') || transferError.includes('注意：')
+                                    transferError.includes('已經領取過')
                                         ? 'text-yellow-400'
                                         : 'text-red-400'
                                 }`}>
-                                    {transferError.includes('已經領取過') || transferError.includes('注意：') ? '⚠️ ' : '❌ '}{transferError}
+                                    {transferError.includes('已經領取過') ? '⚠️ ' : '❌ '}{transferError}
                                 </p>
                             </div>
                         )}
@@ -1002,7 +994,7 @@ export default function CommunityPage() {
                         </div>
 
                         {/* 檢查是否有重複發放警告 */}
-                        {transferError && (transferError.includes('已經領取過') || transferError.includes('注意：')) ? (
+                        {transferError && transferError.includes('已經領取過') ? (
                             // 已有發放紀錄時，只顯示關閉按鈕
                             <div className="pt-4">
                                 <button
