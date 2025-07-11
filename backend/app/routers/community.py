@@ -85,7 +85,7 @@ async def verify_community_password(
 async def community_give_points(
     community_password: str = Query(..., description="社群密碼"),
     student_username: str = Query(..., description="學員用戶名"),
-    points: int = Query(..., description="發放點數", ge=1, le=1000),
+    points: int = Query(..., description="發放點數", ge=1),
     note: str = Query("社群攤位獎勵", description="備註"),
     create_if_not_exists: bool = Query(False, description="如果學員不存在是否創建")
 ):

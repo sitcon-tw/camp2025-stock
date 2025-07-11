@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
-import { verifyCommunityPassword, communityGivePoints } from "@/lib/api";
+import { verifyCommunityPassword, communityGivePoints, getUserAvatar } from "@/lib/api";
 import QrScanner from "qr-scanner";
 
 // 社群密碼配置 (Fallback用)
@@ -212,11 +212,8 @@ export default function CommunityPage() {
                     qrScannerRef.current.stop();
                 }
                 stopQRScanner();
-                // 開啟快速轉帳模式
-                setQuickTransferData(parsedData);
-                setShowQuickTransfer(true);
-                setTransferError("");
-                setTransferSuccess("");
+                // 獲取學員資訊並開啟快速轉帳模式
+                await fetchStudentInfo(parsedData);
             } else {
                 console.log('不符合預期格式');
                 console.log('預期格式: {type: "transfer", id: "telegram_id"}');
@@ -244,6 +241,59 @@ export default function CommunityPage() {
         console.log('=== QR Code Debug 結束 ===');
     };
 
+    // 獲取學員資訊
+    const fetchStudentInfo = async (qrData) => {
+        try {
+            console.log('開始處理學員資訊:', qrData);
+            
+            // 設定基本資料（作為fallback）
+            const preferredIdentifier = qrData.id;
+            console.log('使用學員ID:', preferredIdentifier);
+            
+            const basicStudentData = {
+                username: `學員 ${preferredIdentifier}`,
+                id: String(qrData.id),
+                photo_url: null
+            };
+
+            console.log('設定基本學員資料:', basicStudentData);
+            setQuickTransferData(basicStudentData);
+            setShowQuickTransfer(true);
+            setTransferError("");
+            setTransferSuccess("");
+
+            // 嘗試獲取學員的詳細資訊（頭像和顯示名稱）
+            try {
+                const avatarResult = await getUserAvatar("", preferredIdentifier);
+                console.log('學員資訊 API 返回結果:', avatarResult);
+                
+                if (avatarResult) {
+                    const updatedData = {
+                        ...basicStudentData,
+                        username: avatarResult.display_name || basicStudentData.username,
+                        photo_url: avatarResult.photo_url
+                    };
+                    console.log('更新學員資料:', updatedData);
+                    setQuickTransferData(updatedData);
+                    
+                    console.log('成功獲取學員資訊:', {
+                        display_name: avatarResult.display_name,
+                        photo_url: avatarResult.photo_url
+                    });
+                }
+            } catch (avatarError) {
+                console.log('獲取學員資訊失敗:', avatarError);
+                // 保持使用基本資料，不顯示錯誤給使用者
+                console.log('將使用基本資料繼續:', basicStudentData);
+            }
+            
+        } catch (error) {
+            console.error('處理學員資訊失敗:', error);
+            setScanError(`處理失敗: ${error.message}`);
+            setTimeout(() => setScanError(''), 5000);
+        }
+    };
+
     // 關閉快速轉帳 Modal
     const closeQuickTransfer = () => {
         setShowQuickTransfer(false);
@@ -265,7 +315,7 @@ export default function CommunityPage() {
             const note = formData.get('note') || `${currentCommunity} 攤位獎勵`;
             
             if (!amount || amount <= 0 || amount > 100) {
-                setTransferError('請輸入1-100之間的有效點數');
+                setTransferError('請輸入>1的有效點數');
                 setTransferLoading(false);
                 return;
             }
@@ -693,14 +743,32 @@ export default function CommunityPage() {
                         {/* 收款人資訊確認 */}
                         <div className="rounded-xl border border-[#469FD2]/30 bg-[#469FD2]/10 p-4">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#469FD2] to-[#357AB8] text-white font-bold text-lg">
-                                    學
+                                {quickTransferData.photo_url ? (
+                                    <img
+                                        src={quickTransferData.photo_url}
+                                        alt="學員大頭照"
+                                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-[#469FD2]/50"
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextElementSibling.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div 
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#469FD2] to-[#357AB8] text-lg font-bold text-white shadow-lg ring-2 ring-white/20 border-2 border-white/10 ${quickTransferData.photo_url ? 'hidden' : 'flex'}`}
+                                >
+                                    {String(quickTransferData.username || '').substring(0, 1).toUpperCase() || "學"}
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-medium text-[#92cbf4]">發放點數給學員</p>
                                     <p className="text-xl font-bold text-white">
-                                        ID: {quickTransferData.id}
+                                        {quickTransferData.username}
                                     </p>
+                                    {quickTransferData.id && (
+                                        <p className="text-xs text-[#557797]">
+                                            ID: {quickTransferData.id}
+                                        </p>
+                                    )}
                                     <p className="text-xs text-[#557797]">
                                         來自 {currentCommunity} 攤位
                                     </p>

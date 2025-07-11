@@ -657,6 +657,11 @@ export async function getTransferFeeConfigPublic() {
 }
 
 // 取得使用者大頭照
+// 根據 telegram_id 獲取用戶資訊
+export async function getUserByTelegramId(telegramId) {
+    return apiRequest(`/api/management/users?user=${encodeURIComponent(telegramId)}`);
+}
+
 export async function getUserAvatar(token, username) {
     return apiRequest(`/api/web/users/${encodeURIComponent(username)}/avatar`, {
         headers: {
