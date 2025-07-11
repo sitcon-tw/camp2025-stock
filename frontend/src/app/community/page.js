@@ -964,8 +964,7 @@ export default function CommunityPage() {
                         </div>
                     )}
                 </div>
-
-              
+            </div>
 
             {/* QR Scanner Modal */}
             <Modal
