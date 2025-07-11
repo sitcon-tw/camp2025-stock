@@ -372,3 +372,65 @@ async def get_transfer_fee_config():
             "feeRate": 10.0,
             "minFee": 1
         }
+
+
+@router.post(
+    "/community/verify",
+    responses={
+        400: {"model": ErrorResponse, "description": "請求參數錯誤"},
+        401: {"model": ErrorResponse, "description": "密碼錯誤"},
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="社群密碼驗證",
+    description="驗證密碼並自動檢測對應的社群"
+)
+async def verify_community_password(
+    password: str = Query(..., description="社群密碼")
+):
+    """
+    社群密碼驗證（自動檢測社群）
+    
+    Args:
+        password: 社群密碼
+        
+    Returns:
+        dict: 驗證結果，包含：
+        - success: 是否驗證成功
+        - community: 社群名稱（驗證成功時）
+        - message: 錯誤訊息（驗證失敗時）
+    """
+    try:
+        # 社群密碼配置
+        COMMUNITY_PASSWORDS = {
+            "SITCON 學生計算機年會": "Tiger9@Vault!Mo0n#42*",
+            "OCF 開放文化基金會": "Ocean^CultuR3$Rise!888",
+            "Ubuntu 台灣社群": "Ubun2u!Taipei@2025^Rocks",
+            "MozTW 社群": "MozTw$Fox_@42Jade*Fire",
+            "COSCUP 開源人年會": "COde*0p3n#Sun5et!UP22",
+            "Taiwan Security Club": "S3curE@Tree!^Night_CLUB99",
+            "SCoML 學生機器學習社群": "M@chin3Zebra_Learn#504*",
+            "綠洲計畫 LZGH": "0@si5^L!ght$Grow*Green88",
+            "PyCon TW": "PyTh0n#Conf!Luv2TW@2025"
+        }
+        
+        # 尋找密碼對應的社群
+        for community_name, community_password in COMMUNITY_PASSWORDS.items():
+            if community_password == password:
+                return {
+                    "success": True,
+                    "community": community_name,
+                    "message": "驗證成功"
+                }
+        
+        # 密碼不對應任何社群
+        return {
+            "success": False,
+            "message": "密碼錯誤或不存在對應的社群"
+        }
+        
+    except Exception as e:
+        logger.error(f"Community password verification failed: {e}")
+        return {
+            "success": False,
+            "message": "驗證過程發生錯誤"
+        }

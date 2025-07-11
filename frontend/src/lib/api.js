@@ -666,4 +666,15 @@ export async function getUserAvatar(token, username) {
     });
 }
 
+// 社群密碼驗證（自動檢測社群）
+export async function verifyCommunityPassword(password) {
+    const params = new URLSearchParams({
+        password: password,
+    });
+    
+    return apiRequest(`/api/community/verify?${params.toString()}`, {
+        method: "POST",
+    });
+}
+
 export { API_BASE_URL };
