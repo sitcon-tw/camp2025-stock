@@ -49,6 +49,7 @@ export default function NavBar() {
     };
     return (
         <div
+            id = "navbar"
             className={twMerge(
                 "fixed bottom-4 left-1/2 z-40 flex w-full max-w-[calc(100%-2rem)] -translate-x-1/2 transform items-center justify-between rounded-full border-2 border-[#4f6f97]/20 bg-[#0f203e]/20 px-10 py-4 shadow-lg shadow-black/40 backdrop-blur-md",
                 "md:top-1/2 md:left-8 md:h-auto md:w-auto md:max-w-none md:translate-x-0 md:-translate-y-1/2 md:flex-col md:space-y-6 md:rounded-full md:px-4 md:py-6",

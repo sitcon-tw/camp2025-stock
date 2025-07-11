@@ -717,6 +717,18 @@ export async function getStudentInfo(communityPassword, studentUsername) {
     });
 }
 
+// 獲取社群發放紀錄
+export async function getCommunityGivingLogs(communityPassword, limit = 50) {
+    const params = new URLSearchParams({
+        community_password: communityPassword,
+        limit: limit.toString(),
+    });
+    
+    return apiRequest(`/api/community/giving-logs?${params.toString()}`, {
+        method: "GET",
+    });
+}
+
 export async function communityGivePoints(communityPassword, studentUsername, points, note = "社群攤位獎勵") {
     const params = new URLSearchParams({
         community_password: communityPassword,

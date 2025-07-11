@@ -3,23 +3,24 @@
 import { useState, useRef, useEffect } from "react";
 import { Camera, Eye, EyeOff } from "lucide-react";
 import { Modal } from "@/components/ui";
-import { verifyCommunityPassword, communityGivePoints, getStudentInfo } from "@/lib/api";
+import { verifyCommunityPassword, communityGivePoints, getStudentInfo, getCommunityGivingLogs } from "@/lib/api";
 import QrScanner from "qr-scanner";
 
-// 社群密碼配置 (Fallback用)
-const COMMUNITY_PASSWORDS = {
-    "SITCON 學生計算機年會": "Tiger9@Vault!Mo0n#42*",
-    "OCF 開放文化基金會": "Ocean^CultuR3$Rise!888",
-    "Ubuntu 台灣社群": "Ubun2u!Taipei@2025^Rocks",
-    "MozTW 社群": "MozTw$Fox_@42Jade*Fire",
-    "COSCUP 開源人年會": "COde*0p3n#Sun5et!UP22",
-    "Taiwan Security Club": "S3curE@Tree!^Night_CLUB99",
-    "SCoML 學生機器學習社群": "M@chin3Zebra_Learn#504*",
-    "綠洲計畫 LZGH": "0@si5^L!ght$Grow*Green88",
-    "PyCon TW": "PyTh0n#Conf!Luv2TW@2025"
-};
 
 export default function CommunityPage() {
+    // 獲取當前社群的密碼
+    const getCommunityPassword = () => {
+        try {
+            const communityLogin = localStorage.getItem('communityLogin');
+            if (communityLogin) {
+                const loginData = JSON.parse(communityLogin);
+                return loginData.password; // 需要在登入時儲存密碼
+            }
+        } catch (e) {
+            console.error('無法獲取社群密碼:', e);
+        }
+        return null;
+    };
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [currentCommunity, setCurrentCommunity] = useState("");
     const [showLoginForm, setShowLoginForm] = useState(false);
@@ -37,6 +38,40 @@ export default function CommunityPage() {
     const [transferLoading, setTransferLoading] = useState(false);
     const [transferError, setTransferError] = useState("");
     const [transferSuccess, setTransferSuccess] = useState("");
+    const [givingLogs, setGivingLogs] = useState([]);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [logsError, setLogsError] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredLogs, setFilteredLogs] = useState([]);
+
+    // 載入社群發放紀錄
+    const loadGivingLogs = async () => {
+        if (!isLoggedIn || !currentCommunity) return;
+        
+        setLogsLoading(true);
+        setLogsError("");
+        
+        try {
+            const communityPassword = getCommunityPassword();
+            if (communityPassword) {
+                const result = await getCommunityGivingLogs(communityPassword, 20);
+                console.log('發放紀錄結果:', result);
+                
+                if (result && result.success) {
+                    const logs = result.logs || [];
+                    setGivingLogs(logs);
+                    setFilteredLogs(logs);
+                } else {
+                    setLogsError(result?.message || '載入發放紀錄失敗');
+                }
+            }
+        } catch (error) {
+            console.error('載入發放紀錄失敗:', error);
+            setLogsError('載入發放紀錄時發生錯誤');
+        } finally {
+            setLogsLoading(false);
+        }
+    };
 
     // 檢查登入狀態
     useEffect(() => {
@@ -50,10 +85,11 @@ export default function CommunityPage() {
                 const timeDiff = now - loginTime;
                 const hoursDiff = timeDiff / (1000 * 60 * 60);
                 
-                if (hoursDiff < 24 && Object.keys(COMMUNITY_PASSWORDS).includes(loginData.community)) {
+                if (hoursDiff < 24 && loginData.community && loginData.password) {
                     setIsLoggedIn(true);
                     setCurrentCommunity(loginData.community);
                 } else {
+                    // 如果超過 24 小時或缺少必要資料，清除登入狀態
                     localStorage.removeItem('communityLogin');
                 }
             } catch (e) {
@@ -61,6 +97,34 @@ export default function CommunityPage() {
             }
         }
     }, []);
+
+    // 當登入狀態或社群變更時載入發放紀錄
+    useEffect(() => {
+        if (isLoggedIn && currentCommunity) {
+            loadGivingLogs();
+        }
+    }, [isLoggedIn, currentCommunity]);
+
+    // 搜尋過濾邏輯
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setFilteredLogs(givingLogs);
+        } else {
+            const query = searchQuery.toLowerCase().trim();
+            const filtered = givingLogs.filter(log => {
+                const displayName = (log.student_display_name || '').toLowerCase();
+                const username = (log.student_username || '').toLowerCase();
+                const note = (log.note || '').toLowerCase();
+                const amount = (log.amount || '').toString();
+                
+                return displayName.includes(query) || 
+                       username.includes(query) || 
+                       note.includes(query) || 
+                       amount.includes(query);
+            });
+            setFilteredLogs(filtered);
+        }
+    }, [searchQuery, givingLogs]);
 
     // 處理登入
     const handleLogin = async (e) => {
@@ -81,6 +145,7 @@ export default function CommunityPage() {
             if (result.success) {
                 const loginData = {
                     community: result.community,
+                    password: password, // 儲存密碼以供後續 API 使用
                     timestamp: new Date().toISOString(),
                     source: 'api'
                 };
@@ -94,26 +159,10 @@ export default function CommunityPage() {
                 setLoginError(result.message || "API驗證失敗");
             }
         } catch (error) {
-            console.warn("API驗證失敗，使用fallback驗證:", error);
+            console.warn("API驗證失敗:", error);
             
-            // API 失敗時，使用本地 fallback 驗證
-            for (const [communityName, communityPassword] of Object.entries(COMMUNITY_PASSWORDS)) {
-                if (communityPassword === password) {
-                    const loginData = {
-                        community: communityName,
-                        timestamp: new Date().toISOString(),
-                        source: 'fallback'
-                    };
-                    localStorage.setItem('communityLogin', JSON.stringify(loginData));
-                    setIsLoggedIn(true);
-                    setCurrentCommunity(communityName);
-                    setShowLoginForm(false);
-                    setLoginForm({ password: "" });
-                    return;
-                }
-            }
-            
-            setLoginError("密碼錯誤或不存在對應的社群");
+            // API 失敗時，顯示錯誤訊息
+            setLoginError("密碼驗證失敗，請檢查密碼是否正確或稍後再試");
         }
     };
 
@@ -269,7 +318,7 @@ export default function CommunityPage() {
                 if (communityLogin) {
                     const loginData = JSON.parse(communityLogin);
                     const communityName = loginData.community;
-                    const communityPassword = COMMUNITY_PASSWORDS[communityName];
+                    const communityPassword = getCommunityPassword();
                     
                     if (communityPassword) {
                         console.log('嘗試獲取學員完整資訊...');
@@ -364,10 +413,9 @@ export default function CommunityPage() {
             }
             
             const loginData = JSON.parse(communityLogin);
-            const communityName = loginData.community;
             
-            // 根據社群名稱獲取密碼
-            const communityPassword = COMMUNITY_PASSWORDS[communityName];
+            // 獲取社群密碼
+            const communityPassword = getCommunityPassword();
             if (!communityPassword) {
                 throw new Error('無法獲取社群密碼，請重新登入');
             }
@@ -407,6 +455,9 @@ export default function CommunityPage() {
                 closeQuickTransfer();
                 const displayName = result.student_display_name || result.student || quickTransferData.username;
                 setScanSuccess(`🎉 成功發放！給學員 ${displayName} 發放了 ${result.points} 點數`);
+                
+                // 重新載入發放紀錄
+                loadGivingLogs();
                 
                 // 播放成功音效
                 try {
@@ -721,6 +772,104 @@ export default function CommunityPage() {
                         </p>
                     </div>
                 )}
+
+                {/* 發放紀錄 */}
+                <div className="mx-auto max-w-2xl rounded-xl border border-[#294565] bg-[#1A325F] p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-[#92cbf4]">
+                            發放紀錄
+                        </h3>
+                        <button
+                            onClick={loadGivingLogs}
+                            disabled={logsLoading}
+                            className="rounded-lg border border-[#469FD2]/30 bg-[#469FD2]/10 px-3 py-1 text-sm text-[#92cbf4] transition-colors hover:bg-[#469FD2]/20 disabled:opacity-50"
+                        >
+                            {logsLoading ? '載入中...' : '重新整理'}
+                        </button>
+                    </div>
+
+                    {/* 搜尋欄 */}
+                    <div className="mb-4">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="搜尋學員名稱、ID、備註或點數..."
+                            className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-4 py-2 text-white placeholder-[#557797] focus:border-[#469FD2] focus:outline-none"
+                        />
+                        {searchQuery && (
+                            <p className="mt-2 text-xs text-[#557797]">
+                                找到 {filteredLogs.length} 筆紀錄
+                            </p>
+                        )}
+                    </div>
+
+                    {logsError && (
+                        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-600/20 p-3">
+                            <p className="text-sm text-red-400">
+                                ❌ {logsError}
+                            </p>
+                        </div>
+                    )}
+
+                    {logsLoading ? (
+                        <div className="text-center py-8">
+                            <p className="text-[#557797]">載入中...</p>
+                        </div>
+                    ) : filteredLogs.length === 0 ? (
+                        <div className="text-center py-8">
+                            <p className="text-[#557797]">
+                                {searchQuery ? '沒有符合搜尋條件的紀錄' : '尚無發放紀錄'}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {filteredLogs.map((log, index) => (
+                                <div key={log.id || index} className="rounded-lg border border-[#294565] bg-[#0f203e] p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-white">
+                                                        {log.student_display_name || log.student_username}
+                                                    </span>
+                                                    {log.student_display_name && log.student_display_name !== log.student_username && (
+                                                        <span className="text-xs text-[#557797]">
+                                                            ID: {log.student_username}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-lg font-bold text-green-400 ml-auto">
+                                                    +{log.amount?.toLocaleString() || 0} 點
+                                                </span>
+                                            </div>
+                                            {log.note && (
+                                                <p className="text-xs text-[#557797] mb-1">
+                                                    {log.note}
+                                                </p>
+                                            )}
+                                            <div className="flex items-center gap-4 text-xs text-[#557797]">
+                                                <span>
+                                                    {log.created_at ? new Date(log.created_at).toLocaleString('zh-TW', {
+                                                        timeZone: 'Asia/Taipei',
+                                                        year: 'numeric',
+                                                        month: '2-digit',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    }) : '時間未知'}
+                                                </span>
+                                                <span>
+                                                    餘額：{log.balance_after?.toLocaleString() || 0} 點
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* QR Scanner Modal */}
@@ -894,3 +1043,19 @@ export default function CommunityPage() {
         </div>
     );
 }
+
+// StyleSheet for the page only, hiding the navbar (id "navbar") from the community page
+useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+        #navbar {
+            display: none;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Cleanup function to remove the style when component unmounts
+    return () => {
+        document.head.removeChild(style);
+    };
+}, []);

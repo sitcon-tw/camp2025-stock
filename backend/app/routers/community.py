@@ -365,3 +365,125 @@ async def get_student_info(
             "success": False,
             "message": "獲取學員資訊時發生錯誤"
         }
+
+
+@router.get(
+    "/giving-logs",
+    responses={
+        200: {"description": "社群發放紀錄獲取成功"},
+        400: {"description": "請求參數錯誤"},
+        401: {"description": "社群密碼錯誤"},
+        500: {"description": "伺服器內部錯誤"}
+    },
+    summary="獲取社群發放紀錄",
+    description="社群攤位獲取本社群的點數發放紀錄"
+)
+async def get_community_giving_logs(
+    community_password: str = Query(..., description="社群密碼"),
+    limit: int = Query(50, description="返回紀錄數量", ge=1, le=500)
+):
+    """
+    社群攤位獲取發放紀錄
+    
+    Args:
+        community_password: 社群密碼
+        limit: 返回紀錄數量 (1-500，預設50)
+    
+    Returns:
+        本社群的點數發放紀錄列表
+    """
+    try:
+        # 社群密碼配置
+        COMMUNITY_PASSWORDS = {
+            "SITCON 學生計算機年會": "Tiger9@Vault!Mo0n#42*",
+            "OCF 開放文化基金會": "Ocean^CultuR3$Rise!888",
+            "Ubuntu 台灣社群": "Ubun2u!Taipei@2025^Rocks",
+            "MozTW 社群": "MozTw$Fox_@42Jade*Fire",
+            "COSCUP 開源人年會": "COde*0p3n#Sun5et!UP22",
+            "Taiwan Security Club": "S3curE@Tree!^Night_CLUB99",
+            "SCoML 學生機器學習社群": "M@chin3Zebra_Learn#504*",
+            "綠洲計畫 LZGH": "0@si5^L!ght$Grow*Green88",
+            "PyCon TW": "PyTh0n#Conf!Luv2TW@2025"
+        }
+        
+        # 驗證社群密碼
+        community_name = None
+        for name, password in COMMUNITY_PASSWORDS.items():
+            if password == community_password:
+                community_name = name
+                break
+        
+        if not community_name:
+            logger.warning(f"無效的社群密碼嘗試")
+            return {
+                "success": False,
+                "message": "無效的社群密碼"
+            }
+        
+        db = get_database()
+        
+        # 查詢本社群的發放紀錄
+        logs_cursor = db[Collections.POINT_LOGS].find({
+            "type": "community_reward",
+            "community": community_name
+        }).sort("created_at", -1).limit(limit)
+        
+        logs = await logs_cursor.to_list(length=None)
+        
+        # 格式化返回資料，包含學員顯示名稱
+        formatted_logs = []
+        for log in logs:
+            student_username = log.get("username")
+            
+            # 嘗試獲取學員的顯示名稱
+            student_display_name = student_username
+            try:
+                # 查找學員資料
+                user = None
+                # 首先嘗試作為telegram_id查找
+                try:
+                    telegram_id = int(student_username)
+                    user = await db[Collections.USERS].find_one({"telegram_id": telegram_id})
+                except ValueError:
+                    pass
+                
+                # 如果沒找到，嘗試作為字符串格式的telegram_id
+                if not user:
+                    user = await db[Collections.USERS].find_one({"telegram_id": student_username})
+                
+                # 最後嘗試作為username查找
+                if not user:
+                    user = await db[Collections.USERS].find_one({"username": student_username})
+                
+                if user:
+                    student_display_name = user.get("username", user.get("name", student_username))
+                    
+            except Exception as e:
+                logger.warning(f"獲取學員 {student_username} 顯示名稱失敗: {e}")
+            
+            formatted_logs.append({
+                "id": str(log.get("_id")),
+                "student_username": student_username,  # 原始 telegram_id
+                "student_display_name": student_display_name,  # 可辨識的顯示名稱
+                "amount": log.get("amount"),
+                "balance_after": log.get("balance_after"),
+                "note": log.get("note"),
+                "created_at": log.get("created_at").isoformat() if log.get("created_at") else None,
+                "timestamp": log.get("created_at")
+            })
+        
+        logger.info(f"社群 {community_name} 查詢發放紀錄，共 {len(formatted_logs)} 筆")
+        
+        return {
+            "success": True,
+            "community": community_name,
+            "logs": formatted_logs,
+            "total_count": len(formatted_logs)
+        }
+        
+    except Exception as e:
+        logger.error(f"獲取社群發放紀錄失敗: {e}")
+        return {
+            "success": False,
+            "message": "獲取發放紀錄時發生錯誤"
+        }
