@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from app.core.database import get_database, Collections
-from app.core.config_refactored import config
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,8 +10,20 @@ class PendingNotificationService:
     """管理待發送通知的服務"""
     
     def __init__(self):
-        self.database = get_database()
-        self.collection = self.database[Collections.PENDING_NOTIFICATIONS]
+        self._database = None
+        self._collection = None
+    
+    @property
+    def database(self):
+        if self._database is None:
+            self._database = get_database()
+        return self._database
+    
+    @property
+    def collection(self):
+        if self._collection is None:
+            self._collection = self.database[Collections.PENDING_NOTIFICATIONS]
+        return self._collection
     
     async def add_notification(
         self,
@@ -141,5 +152,12 @@ class PendingNotificationService:
             raise
 
 
-# 全域實例
-pending_notification_service = PendingNotificationService()
+# 全域實例（延遲初始化）
+_pending_notification_service = None
+
+def get_pending_notification_service() -> PendingNotificationService:
+    """取得 PendingNotificationService 實例"""
+    global _pending_notification_service
+    if _pending_notification_service is None:
+        _pending_notification_service = PendingNotificationService()
+    return _pending_notification_service

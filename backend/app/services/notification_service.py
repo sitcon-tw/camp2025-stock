@@ -2,7 +2,7 @@ from __future__ import annotations
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.database import get_database, Collections
 from app.core.config_refactored import config
-from app.services.pending_notification_service import pending_notification_service
+from app.services.pending_notification_service import get_pending_notification_service
 from typing import Optional
 import logging
 import requests
@@ -171,7 +171,7 @@ class NotificationService:
             title = f"🔔 {action_text}交易通知"
             message = f"您的 SITC {action_text}交易已完成！\n• 訂單號碼：{order_id}\n• 數量：{quantity}\n• 價格：{price:.2f}\n• 總金額：{total_amount:.2f}"
             
-            await pending_notification_service.add_notification(
+            await get_pending_notification_service().add_notification(
                 user_id=user["_id"],
                 notification_type="trade",
                 title=title,
@@ -254,7 +254,7 @@ class NotificationService:
             if transfer_id:
                 message += f"\n• 轉帳ID：{transfer_id}"
             
-            await pending_notification_service.add_notification(
+            await get_pending_notification_service().add_notification(
                 user_id=user_id,
                 notification_type="transfer",
                 title=title,
