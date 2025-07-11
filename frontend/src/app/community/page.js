@@ -585,16 +585,6 @@ export default function CommunityPage() {
                                 掃描兌換點數
                             </div>
                         </button>
-                        
-                        {/* 返回按鈕 */}
-                        <div className="mt-4">
-                            <button
-                                onClick={() => router.push('/dashboard')}
-                                className="inline-flex items-center rounded-xl border border-[#294565] bg-transparent px-4 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
-                            >
-                                返回主頁
-                            </button>
-                        </div>
                     </div>
                 </div>
 
