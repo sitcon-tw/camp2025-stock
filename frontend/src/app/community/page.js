@@ -772,7 +772,7 @@ export default function CommunityPage() {
             <Modal
                 isOpen={showQuickTransfer}
                 onClose={closeQuickTransfer}
-                title="快速轉帳"
+                title={`${currentCommunity}快速贈點`}
                 size="md"
             >
                 {quickTransferData && (
@@ -832,9 +832,6 @@ export default function CommunityPage() {
                                             目前點數：{quickTransferData.points.toLocaleString()} 點
                                         </p>
                                     )}
-                                    <p className="text-xs text-[#557797]">
-                                        來自 {currentCommunity} 攤位
-                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -857,7 +854,7 @@ export default function CommunityPage() {
                                     autoFocus
                                 />
                                 <p className="mt-1 text-xs text-[#557797]">
-                                    可發放點數：1-100 點
+                                    可發放點數：1 ~ 2<sup>32</sup>-1 點
                                 </p>
                             </div>
 
