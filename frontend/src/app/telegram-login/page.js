@@ -12,6 +12,57 @@ export default function TelegramLogin() {
     const router = useRouter();
 
     useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const handleRedirectFlow = async () => {
+            if (urlParams.get("redirectURL")) {
+                const redirectURL = urlParams.get("redirectURL");
+
+                // Check if user is properly authenticated
+                const isUser = localStorage.getItem("isUser");
+                const token = localStorage.getItem("userToken");
+
+                if (isUser === "true" && token) {
+                    try {
+                        // Validate token before redirecting
+                        const response = await fetch(
+                            `${window.location.origin}/api/web/profile`,
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                    "Content-Type": "application/json",
+                                },
+                            },
+                        );
+
+                        if (response.ok) {
+                            // User is authenticated, redirect to the specified URL
+                            router.push(redirectURL);
+                            return;
+                        } else {
+                            // Invalid token, clear auth data and continue with login flow
+                            localStorage.removeItem("isUser");
+                            localStorage.removeItem("userToken");
+                            localStorage.removeItem("userData");
+                            localStorage.removeItem("telegramData");
+                        }
+                    } catch (error) {
+                        console.log("Token validation failed during redirect check");
+                        // Clear auth data on validation error
+                        localStorage.removeItem("isUser");
+                        localStorage.removeItem("userToken");
+                        localStorage.removeItem("userData");
+                        localStorage.removeItem("telegramData");
+                    }
+                }
+
+                // User not authenticated, save redirect URL for after login
+                localStorage.setItem("redirectURL", redirectURL);
+            }
+        };
+
+        handleRedirectFlow();
+
         // 檢查是否已經登入
         const checkUserStatus = async () => {
             const isUser = localStorage.getItem("isUser");
@@ -55,7 +106,6 @@ export default function TelegramLogin() {
         checkUserStatus();
 
         // 檢查 URL 參數中的 Telegram OAuth 資料
-        const urlParams = new URLSearchParams(window.location.search);
         const hash = urlParams.get("hash");
 
         if (hash) {
@@ -113,7 +163,17 @@ export default function TelegramLogin() {
                 // 觸發自定義事件通知其他設定登入狀態已變更
                 window.dispatchEvent(new Event("authStateChanged"));
 
-                router.push("/dashboard");
+                // Check if there's a redirect URL saved in localStorage
+                const savedRedirectURL = localStorage.getItem("redirectURL");
+                if (savedRedirectURL) {
+                    // Remove the redirect URL from localStorage
+                    localStorage.removeItem("redirectURL");
+                    // Redirect to the saved URL
+                    router.push(savedRedirectURL);
+                } else {
+                    // Default redirect to dashboard
+                    router.push("/dashboard");
+                }
             } else {
                 setError(data.message || "登入失敗");
             }
@@ -146,6 +206,15 @@ export default function TelegramLogin() {
             placeholder.remove();
         }
 
+        // Check if there's a saved redirectURL to preserve it in the auth URL
+        const savedRedirectURL = localStorage.getItem("redirectURL");
+        let authUrl = window.location.origin + "/telegram-login";
+
+        if (savedRedirectURL) {
+            // Include the redirectURL in the auth URL so it's preserved after Telegram auth
+            authUrl += `?redirectURL=${encodeURIComponent(savedRedirectURL)}`;
+        }
+
         // 建立 Telegram 登入小工具
         const telegramLoginWidget = document.createElement("script");
         telegramLoginWidget.id = "telegram-login-widget";
@@ -158,7 +227,7 @@ export default function TelegramLogin() {
         telegramLoginWidget.setAttribute("data-size", "large");
         telegramLoginWidget.setAttribute(
             "data-auth-url",
-            window.location.origin + "/telegram-login",
+            authUrl,
         );
         telegramLoginWidget.setAttribute(
             "data-request-access",
