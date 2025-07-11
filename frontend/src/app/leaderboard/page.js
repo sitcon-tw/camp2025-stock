@@ -190,7 +190,7 @@ export default function Leaderboard() {
                 
                 return {
                     ...team,
-                    totalValue: (team.totalPoints + team.totalStockValue) * multiplier,
+                    totalValue: team.totalPoints * multiplier,
                 };
             })
             .sort((a, b) => b.totalValue - a.totalValue);
