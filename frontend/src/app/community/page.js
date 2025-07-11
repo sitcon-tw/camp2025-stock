@@ -1001,58 +1001,73 @@ export default function CommunityPage() {
                             </div>
                         </div>
 
-                        <form onSubmit={handleQuickTransferSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[#92cbf4] mb-2">
-                                    發放點數 <span className="text-red-400">*</span>
-                                </label>
-                                <input
-                                    inputMode="numeric"
-                                    type="number"
-                                    name="amount"
-                                    className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                    placeholder="輸入發放點數"
-                                    min="1"
-                                    max="100"
-                                    defaultValue="10"
-                                    required
-                                    autoFocus
-                                />
-                                <p className="mt-1 text-xs text-[#557797]">
-                                    可發放點數：1 ~ 2<sup>32</sup>-1 點
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-[#92cbf4] mb-2">
-                                    備註（可選）
-                                </label>
-                                <input
-                                    type="text"
-                                    name="note"
-                                    className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
-                                    placeholder={`${currentCommunity} 攤位獎勵`}
-                                    maxLength="200"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
+                        {/* 檢查是否有重複發放警告 */}
+                        {transferError && (transferError.includes('已經領取過') || transferError.includes('注意：')) ? (
+                            // 已有發放紀錄時，只顯示關閉按鈕
+                            <div className="pt-4">
                                 <button
                                     type="button"
                                     onClick={closeQuickTransfer}
-                                    className="flex-1 rounded-xl border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                    className="w-full rounded-xl bg-[#469FD2] px-4 py-3 text-white transition-colors hover:bg-[#357AB8]"
                                 >
-                                    取消
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={transferLoading}
-                                    className="flex-1 rounded-xl bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8] disabled:cursor-not-allowed disabled:bg-gray-600"
-                                >
-                                    {transferLoading ? '發放中...' : '確認發放'}
+                                    關閉
                                 </button>
                             </div>
-                        </form>
+                        ) : (
+                            // 正常發放表單
+                            <form onSubmit={handleQuickTransferSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                        發放點數 <span className="text-red-400">*</span>
+                                    </label>
+                                    <input
+                                        inputMode="numeric"
+                                        type="number"
+                                        name="amount"
+                                        className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                        placeholder="輸入發放點數"
+                                        min="1"
+                                        max="100"
+                                        defaultValue="10"
+                                        required
+                                        autoFocus
+                                    />
+                                    <p className="mt-1 text-xs text-[#557797]">
+                                        可發放點數：1 ~ 2<sup>32</sup>-1 點
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-[#92cbf4] mb-2">
+                                        備註（可選）
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="note"
+                                        className="w-full rounded-xl border border-[#294565] bg-[#0f203e] px-3 py-2 text-white focus:border-[#469FD2] focus:outline-none"
+                                        placeholder={`${currentCommunity} 攤位獎勵`}
+                                        maxLength="200"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={closeQuickTransfer}
+                                        className="flex-1 rounded-xl border border-[#294565] bg-[#1A325F] px-4 py-2 text-[#92cbf4] transition-colors hover:bg-[#294565]"
+                                    >
+                                        取消
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={transferLoading}
+                                        className="flex-1 rounded-xl bg-[#469FD2] px-4 py-2 text-white transition-colors hover:bg-[#357AB8] disabled:cursor-not-allowed disabled:bg-gray-600"
+                                    >
+                                        {transferLoading ? '發放中...' : '確認發放'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 )}
             </Modal>
