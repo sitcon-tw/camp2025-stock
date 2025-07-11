@@ -772,7 +772,7 @@ export default function CommunityPage() {
             <Modal
                 isOpen={showQuickTransfer}
                 onClose={closeQuickTransfer}
-                title={`${currentCommunity}快速贈點`}
+                title={`${currentCommunity} 快速贈點`}
                 size="md"
             >
                 {quickTransferData && (
