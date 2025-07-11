@@ -5,7 +5,7 @@ from app.schemas.bot import (
     BotStockOrderRequest, BotTransferRequest,
     BotPortfolioRequest, BotPointHistoryRequest, BotStockOrdersRequest,
     BotProfileRequest, TelegramWebhookRequest, BroadcastRequest, BroadcastAllRequest,
-    PVPCreateRequest, PVPAcceptRequest, PVPResponse
+    PVPCreateRequest, PVPAcceptRequest, SimplePVPAcceptRequest, PVPResponse
 )
 from app.schemas.user import (
     UserRegistrationResponse, UserPortfolio, StockOrderResponse,
@@ -435,5 +435,29 @@ async def bot_cancel_pvp_challenge(
         )
     
     return await user_service.cancel_pvp_challenge(user_id, challenge_id)
+
+
+@router.post(
+    "/pvp/simple-accept",
+    response_model=PVPResponse,
+    summary="BOT 簡單接受 PVP 挑戰",
+    description="透過 BOT 接受 PVP 挑戰，使用純 50% 機率決定勝負"
+)
+async def bot_simple_accept_pvp_challenge(
+    request: SimplePVPAcceptRequest,
+    token_verified: bool = Depends(verify_bot_token),
+    user_service: UserService = Depends(get_user_service)
+) -> PVPResponse:
+    """
+    BOT 簡單接受 PVP 挑戰
+    
+    Args:
+        request: 簡單 PVP 接受請求，包含接受者和挑戰 ID
+        token_verified: token 驗證結果（透過 header 傳入）
+        
+    Returns:
+        PVP 遊戲結果
+    """
+    return await user_service.simple_accept_pvp_challenge(request.from_user, request.challenge_id)
 
     

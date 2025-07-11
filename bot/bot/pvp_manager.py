@@ -52,7 +52,7 @@ class PVPManager:
                 "amount": amount,
                 "chat_id": chat_id,
                 "created_at": datetime.now(),
-                "status": "waiting_creator"
+                "status": "waiting_accepter"
             }
 
             self.active_challenges[challenge_id] = challenge_info

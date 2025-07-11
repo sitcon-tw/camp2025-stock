@@ -168,16 +168,16 @@ class GameService:
                 "challenger_name": user.get("name", "未知使用者"),
                 "amount": amount,
                 "chat_id": chat_id,
-                "status": "pending",
+                "status": "waiting_accepter",  # 直接設為等待接受
                 "created_at": datetime.now(timezone.utc),
-                "expires_at": datetime.now(timezone.utc) + timedelta(minutes=5)  # 5分鐘過期
+                "expires_at": datetime.now(timezone.utc) + timedelta(hours=3)  # 3小時過期
             }
             
             await self.db[Collections.PVP_CHALLENGES].insert_one(challenge_doc)
             
             return PVPResponse(
                 success=True,
-                message=f"🎯 {user.get('name', '未知使用者')} 發起了 {amount} 點的猜拳挑戰！\n傳送任意訊息包含 🪨、📄、✂️ 來接受挑戰！",
+                message=f"🎯 {user.get('name', '未知使用者')} 發起了 {amount} 點的 PVP 挑戰！\n點擊按鈕接受挑戰，50% 機率決定勝負！",
                 challenge_id=str(challenge_oid),
                 amount=amount
             )
@@ -587,3 +587,236 @@ class GameService:
             "timestamp": datetime.now(timezone.utc)
         }
         await self.db[Collections.POINT_LOGS].insert_one(log_entry)
+    
+    async def simple_accept_pvp_challenge(self, from_user: str, challenge_id: str):
+        """簡單 PVP 挑戰接受 - 純 50% 機率決定勝負"""
+        from app.schemas.bot import PVPResponse
+        import random
+        
+        try:
+            # 將 challenge_id 轉換為 ObjectId
+            try:
+                challenge_oid = ObjectId(challenge_id)
+            except Exception:
+                return PVPResponse(
+                    success=False,
+                    message="無效的挑戰 ID"
+                )
+            
+            # 查找挑戰
+            challenge = await self.db[Collections.PVP_CHALLENGES].find_one({
+                "_id": challenge_oid,
+                "status": {"$in": ["pending", "waiting_accepter"]}
+            })
+            
+            if not challenge:
+                return PVPResponse(
+                    success=False,
+                    message="挑戰不存在或已結束"
+                )
+            
+            # 檢查是否過期
+            expires_at = challenge["expires_at"]
+            if not expires_at.tzinfo:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) > expires_at:
+                await self.db[Collections.PVP_CHALLENGES].update_one(
+                    {"_id": challenge_oid},
+                    {"$set": {"status": "expired"}}
+                )
+                return PVPResponse(
+                    success=False,
+                    message="挑戰已過期"
+                )
+            
+            # 檢查是否為發起者本人
+            if challenge["challenger"] == from_user:
+                return PVPResponse(
+                    success=False,
+                    message="不能接受自己的挑戰！"
+                )
+            
+            # 檢查接受者是否存在
+            accepter = await self.db[Collections.USERS].find_one({"telegram_id": from_user})
+            if not accepter:
+                return PVPResponse(
+                    success=False,
+                    message="使用者不存在，請先註冊"
+                )
+            
+            amount = challenge["amount"]
+            
+            # 使用債務驗證服務檢查接受者狀態和資金
+            from app.core.user_validation import UserValidationService
+            validation_service = UserValidationService(self.db)
+            
+            validation_result = await validation_service.validate_user_can_spend(
+                user_id=accepter["_id"],
+                amount=amount,
+                operation_type="PvP挑戰"
+            )
+            
+            if not validation_result['can_spend']:
+                error_code = validation_result.get('error_code', 'UNKNOWN')
+                
+                if error_code == 'ACCOUNT_DISABLED':
+                    message = "帳戶未啟用，無法參與 PvP 挑戰"
+                elif error_code == 'ACCOUNT_FROZEN':
+                    message = "帳戶已凍結，無法參與 PvP 挑戰"
+                elif error_code == 'HAS_DEBT':
+                    owed_points = validation_result.get('user_data', {}).get('owed_points', 0)
+                    message = f"帳戶有欠款 {owed_points} 點，請先償還後才能參與 PvP 挑戰"
+                elif error_code == 'INSUFFICIENT_BALANCE':
+                    available_balance = validation_result.get('available_balance', 0)
+                    current_points = validation_result.get('user_data', {}).get('points', 0)
+                    owed_points = validation_result.get('user_data', {}).get('owed_points', 0)
+                    if owed_points > 0:
+                        message = f"可用點數不足！需要：{amount} 點，目前點數：{current_points} 點，欠款：{owed_points} 點，實際可用：{available_balance} 點"
+                    else:
+                        message = f"點數不足！需要：{amount} 點，目前點數：{available_balance} 點"
+                else:
+                    message = validation_result['message']
+                
+                return PVPResponse(
+                    success=False,
+                    message=message
+                )
+            
+            # 檢查發起者也有足夠點數
+            challenger_user = await self.db[Collections.USERS].find_one({"telegram_id": challenge["challenger"]})
+            if not challenger_user:
+                return PVPResponse(
+                    success=False,
+                    message="發起者不存在"
+                )
+                
+            challenger_validation = await validation_service.validate_user_can_spend(
+                user_id=challenger_user["_id"],
+                amount=amount,
+                operation_type="PvP挑戰"
+            )
+            
+            if not challenger_validation['can_spend']:
+                return PVPResponse(
+                    success=False,
+                    message="發起者點數不足，挑戰無效"
+                )
+            
+            # 50% 機率決定勝負
+            accepter_wins = bool(random.getrandbits(1))
+            
+            # 更新挑戰狀態
+            await self.db[Collections.PVP_CHALLENGES].update_one(
+                {"_id": challenge_oid},
+                {
+                    "$set": {
+                        "accepter": from_user,
+                        "accepter_name": accepter.get("name", "未知使用者"),
+                        "result": "accepter_wins" if accepter_wins else "challenger_wins",
+                        "status": "completed",
+                        "completed_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # 處理點數轉移
+            if accepter_wins:
+                # 接受者勝利
+                winner_name = accepter.get("name", "未知使用者")
+                loser_name = challenge["challenger_name"]
+                
+                # 使用安全扣除
+                deduction_result = await self._safe_deduct_points(
+                    user_id=challenger_user["_id"],
+                    amount=amount,
+                    operation_note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                if not deduction_result['success']:
+                    logger.error(f"PVP game point deduction failed: {deduction_result['message']}")
+                    return PVPResponse(
+                        success=False,
+                        message=f"遊戲結算失敗：{deduction_result['message']}"
+                    )
+                
+                # 增加勝利者點數
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": from_user},
+                    {"$inc": {"points": amount}}
+                )
+                
+                # 記錄點數變動
+                await self._log_point_change(
+                    user_id=accepter["_id"],
+                    change_type="pvp_win",
+                    amount=amount,
+                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                )
+                await self._log_point_change(
+                    user_id=challenger_user["_id"],
+                    change_type="pvp_lose",
+                    amount=-amount,
+                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                return PVPResponse(
+                    success=True,
+                    message=f"🎉 遊戲結束！\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！\n💔 {loser_name} 失去 {amount} 點！",
+                    winner=from_user,
+                    loser=challenge["challenger"],
+                    amount=amount
+                )
+                
+            else:
+                # 發起者勝利
+                winner_name = challenge["challenger_name"]
+                loser_name = accepter.get("name", "未知使用者")
+                
+                # 使用安全扣除
+                deduction_result = await self._safe_deduct_points(
+                    user_id=accepter["_id"],
+                    amount=amount,
+                    operation_note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                if not deduction_result['success']:
+                    logger.error(f"PVP game point deduction failed: {deduction_result['message']}")
+                    return PVPResponse(
+                        success=False,
+                        message=f"遊戲結算失敗：{deduction_result['message']}"
+                    )
+                
+                # 增加勝利者點數
+                await self.db[Collections.USERS].update_one(
+                    {"telegram_id": challenge["challenger"]},
+                    {"$inc": {"points": amount}}
+                )
+                
+                # 記錄點數變動
+                await self._log_point_change(
+                    user_id=challenger_user["_id"],
+                    change_type="pvp_win",
+                    amount=amount,
+                    note=f"PVP 勝利獲得 {amount} 點 (對手: {loser_name})"
+                )
+                await self._log_point_change(
+                    user_id=accepter["_id"],
+                    change_type="pvp_lose",
+                    amount=-amount,
+                    note=f"PVP 失敗失去 {amount} 點 (對手: {winner_name})"
+                )
+                
+                return PVPResponse(
+                    success=True,
+                    message=f"🎉 遊戲結束！\n\n🏆 {winner_name} 勝利！獲得 {amount} 點！\n💔 {loser_name} 失去 {amount} 點！",
+                    winner=challenge["challenger"],
+                    loser=from_user,
+                    amount=amount
+                )
+                
+        except Exception as e:
+            logger.error(f"Error in simple PVP challenge: {e}")
+            return PVPResponse(
+                success=False,
+                message="接受挑戰失敗，請稍後再試"
+            )

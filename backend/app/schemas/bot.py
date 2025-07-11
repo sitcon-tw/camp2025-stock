@@ -121,6 +121,12 @@ class PVPAcceptRequest(BaseModel):
         return v
 
 
+class SimplePVPAcceptRequest(BaseModel):
+    """簡單 PVP 挑戰接受請求 - 純 50% 機率"""
+    from_user: str = Field(..., description="接受者 Telegram ID")
+    challenge_id: str = Field(..., description="挑戰 ID")
+
+
 class PVPResponse(BaseModel):
     """PVP 操作回應"""
     success: bool = Field(..., description="操作是否成功")

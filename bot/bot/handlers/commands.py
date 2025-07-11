@@ -231,31 +231,70 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("💰 金額不能超過 10000 點！")
         return
 
-    # Check if user already started a PVP challenge
-    if context.chat_data.get(f"pvp:{update.effective_user.id}"):
-        buttons = [
-            [InlineKeyboardButton("❌ 取消 PVP 挑戰", callback_data=f"pvp:cancel:{update.effective_user.id}")]
-        ]
-        await update.message.reply_text("⚠️ 你已經有一個正在進行的 PVP 挑戰，請先完成或取消它！",reply_markup=InlineKeyboardMarkup(buttons))
+    # 使用 PVP Manager 建立挑戰
+    from bot.pvp_manager import get_pvp_manager
+    pvp_manager = get_pvp_manager()
+    
+    # 先取消任何現有的挑戰
+    await pvp_manager.cancel_existing_challenge(str(update.effective_user.id))
+    
+    # 建立新挑戰
+    result = await pvp_manager.create_challenge(
+        user_id=str(update.effective_user.id),
+        username=update.effective_user.full_name,
+        amount=amount,
+        chat_id=str(update.message.chat_id)
+    )
+    
+    if result.get("error"):
+        await update.message.reply_text(
+            f"❌ 建立挑戰失敗：{result['response'].get('message', '未知錯誤')}"
+        )
         return
-
-    challenge_uuid = str(uuid4())
+    
+    if result.get("conflict"):
+        # 有衝突的挑戰
+        existing = result["existing_challenge"]
+        remaining_time = result["remaining_time"]
+        hours = remaining_time // 3600
+        minutes = (remaining_time % 3600) // 60
+        
+        time_str = f"{hours}小時{minutes}分鐘" if hours > 0 else f"{minutes}分鐘"
+        
+        buttons = [
+            [InlineKeyboardButton("❌ 取消現有挑戰", callback_data=f"pvp:force_cancel:{update.effective_user.id}")]
+        ]
+        
+        await update.message.reply_text(
+            f"⚠️ 你已經有一個進行中的 PVP 挑戰！\n"
+            f"💰 金額：{existing['amount']} 點\n"
+            f"⏰ 剩餘時間：{time_str}\n\n"
+            f"請等待挑戰完成或取消後再建立新挑戰。",
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        return
+    
+    challenge_id = result["challenge_id"]
+    
+    # 建立按鈕
     buttons = [
-        [InlineKeyboardButton("🤑 我接受 PVP 挑戰！", callback_data=f"pvp:accept:{update.effective_user.id}:{challenge_uuid}")],
+        [InlineKeyboardButton("🤑 我接受 PVP 挑戰！", callback_data=f"pvp:accept:{challenge_id}")],
         [InlineKeyboardButton("❌ 取消 PVP 挑戰", callback_data=f"pvp:cancel:{update.effective_user.id}")]
     ]
-    await update.message.reply_text(
+    
+    # 傳送挑戰訊息
+    message = await update.message.reply_text(
         f"😺 *{escape_markdown(update.effective_user.full_name, 2)}* 發起了一個 PVP 挑戰！\n\n"
         f"💰 金額：{amount} 點\n"
         f"🎯 挑戰者：{escape_markdown(update.effective_user.full_name, 2)}\n"
+        f"⏰ 挑戰將在 3 小時後過期\n\n"
         f"請其他人點擊下面的按鈕來接受挑戰！",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(buttons)
     )
-    context.chat_data[f"pvp:{update.effective_user.id}"] = {
-        "amount": amount,
-        "challenge_uuid": challenge_uuid,
-    }
+    
+    # 儲存訊息 ID 供後續編輯
+    pvp_manager.store_challenge_message(challenge_id, message.message_id)
 
 
 async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
