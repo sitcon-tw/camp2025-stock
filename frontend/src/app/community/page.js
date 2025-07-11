@@ -341,7 +341,7 @@ export default function CommunityPage() {
                             );
                             
                             if (alreadyGiven) {
-                                setTransferError(`⚠️ 注意：此學員可能已經領取過 ${currentCommunity} 的點數獎勵`);
+                                setTransferError(`注意：此學員可能已經領取過 ${currentCommunity} 的點數獎勵`);
                             }
                             
                             console.log('成功獲取學員完整資訊:', {
@@ -496,7 +496,7 @@ export default function CommunityPage() {
                 // 檢查是否為重複發放錯誤
                 if (result.already_given) {
                     setTransferError(
-                        `⚠️ ${result.message}\n` +
+                        `${result.message}\n` +
                         `上次發放：${result.previous_amount} 點`
                     );
                 } else {
@@ -959,7 +959,7 @@ export default function CommunityPage() {
                                         ? 'text-yellow-400'
                                         : 'text-red-400'
                                 }`}>
-                                    {transferError.includes('已經領取過') || transferError.includes('注意：') ? '⚠️' : '❌'} {transferError}
+                                    {transferError.includes('已經領取過') || transferError.includes('注意：') ? '⚠️ ' : '❌ '}{transferError}
                                 </p>
                             </div>
                         )}
