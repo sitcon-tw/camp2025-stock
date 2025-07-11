@@ -191,3 +191,67 @@ button {
 .success-pulse {
     animation: success-pulse 2s ease-in-out infinite;
 }
+
+/* 轉帳成功動畫效果 */
+@keyframes transfer-glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.6), 0 0 60px rgba(147, 51, 234, 0.4);
+    }
+}
+
+@keyframes transfer-slide-in {
+    0% {
+        transform: scale(0.9) translateY(20px);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes sparkle-rotate {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(180deg) scale(1.2);
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+@keyframes transfer-arrow-flow {
+    0% {
+        transform: translateX(-10px);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateX(0px);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(10px);
+        opacity: 0.5;
+    }
+}
+
+.transfer-success-modal {
+    animation: transfer-slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.transfer-glow {
+    animation: transfer-glow 3s ease-in-out infinite;
+}
+
+.transfer-sparkle {
+    animation: sparkle-rotate 3s ease-in-out infinite;
+}
+
+.transfer-arrow-flow {
+    animation: transfer-arrow-flow 2s ease-in-out infinite;
+}

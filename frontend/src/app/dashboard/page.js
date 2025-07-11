@@ -12,7 +12,7 @@ import {
     redeemQRCode,
 } from "@/lib/api";
 import dayjs from "dayjs";
-import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2 } from "lucide-react";
+import { LogOut, QrCode, Camera, X, DollarSign, CheckCircle2, Send, ArrowRight, Sparkles, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { twMerge } from "tailwind-merge";
@@ -54,6 +54,8 @@ export default function Dashboard() {
     const [receivedPayment, setReceivedPayment] = useState(null);
     const [showPaymentNotification, setShowPaymentNotification] = useState(false);
     const [lastPointHistory, setLastPointHistory] = useState([]);
+    const [transferSuccessData, setTransferSuccessData] = useState(null);
+    const [showTransferSuccess, setShowTransferSuccess] = useState(false);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
     const pollingIntervalRef = useRef(null);
@@ -523,7 +525,16 @@ export default function Dashboard() {
             });
             
             if (result.success) {
-                setTransferSuccess(`💸 轉帳成功！轉給 ${quickTransferData.username} ${amount} 點，手續費: ${result.fee} 點`);
+                // 準備轉帳成功的資料
+                const successData = {
+                    recipient: quickTransferData.username,
+                    recipientPhoto: quickTransferData.photo_url,
+                    amount: amount,
+                    fee: result.fee,
+                    note: note,
+                    timestamp: new Date().toISOString(),
+                    transactionId: result.transaction_id || `TXN-${Date.now()}`
+                };
                 
                 // 重新載入使用者資料
                 try {
@@ -537,10 +548,10 @@ export default function Dashboard() {
                     console.error('重新載入資料失敗:', refreshError);
                 }
                 
-                // 3秒後關閉 Modal
-                setTimeout(() => {
-                    closeQuickTransfer();
-                }, 3000);
+                // 關閉快速轉帳 Modal 並顯示成功 Modal
+                closeQuickTransfer();
+                setTransferSuccessData(successData);
+                setShowTransferSuccess(true);
             } else {
                 setTransferError(result.message || '轉帳失敗');
             }
@@ -584,7 +595,16 @@ export default function Dashboard() {
             });
             
             if (result.success) {
-                setTransferSuccess(`轉帳成功！轉給 ${transferForm.to_username} ${amount} 點，手續費: ${result.fee} 點`);
+                // 準備轉帳成功的資料
+                const successData = {
+                    recipient: transferForm.to_username,
+                    recipientPhoto: null, // 手動輸入的沒有照片
+                    amount: amount,
+                    fee: result.fee,
+                    note: transferForm.note || `轉帳給 ${transferForm.to_username}`,
+                    timestamp: new Date().toISOString(),
+                    transactionId: result.transaction_id || `TXN-${Date.now()}`
+                };
                 
                 // 重新載入使用者資料
                 try {
@@ -594,15 +614,15 @@ export default function Dashboard() {
                     ]);
                     setUser(portfolio);
                     setPointHistory(points);
-                    setLastPointHistory(points); // 更新歷史記錄長度
+                    setLastPointHistory(points);
                 } catch (refreshError) {
                     console.error('重新載入資料失敗:', refreshError);
                 }
                 
-                // 3秒後關閉 Modal
-                setTimeout(() => {
-                    closeTransferModal();
-                }, 3000);
+                // 關閉轉帳 Modal 並顯示成功 Modal
+                closeTransferModal();
+                setTransferSuccessData(successData);
+                setShowTransferSuccess(true);
             } else {
                 setTransferError(result.message || '轉帳失敗');
             }
@@ -733,6 +753,12 @@ export default function Dashboard() {
     const closePaymentNotification = () => {
         setShowPaymentNotification(false);
         setReceivedPayment(null);
+    };
+
+    // 關閉轉帳成功通知
+    const closeTransferSuccess = () => {
+        setShowTransferSuccess(false);
+        setTransferSuccessData(null);
     };
 
     // 清理 QR Scanner 和輪詢
@@ -2019,14 +2045,149 @@ export default function Dashboard() {
                             {/* 確認按鈕 */}
                             <button
                                 onClick={closePaymentNotification}
-                                className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 py-3 font-medium text-white transition-all duration-200 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg active:scale-95"
+                                className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 py-3 font-medium text-white transition-all duration-300 hover:from-green-700 hover:to-emerald-700 hover:shadow-lg active:scale-95"
                             >
                                 知道了
                             </button>
-                            
-                            {/* 裝飾性元素 */}
-                            <div className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-green-500 animate-ping" />
-                            <div className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-green-500" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 轉帳成功彈出視窗 */}
+            {showTransferSuccess && transferSuccessData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="relative mx-4 w-full max-w-md transfer-success-modal">
+                        {/* 成功動畫背景 */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 blur-xl transfer-glow" />
+                        
+                        {/* 主要內容 */}
+                        <div className="relative rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-900/90 via-purple-900/90 to-pink-900/90 p-6 shadow-2xl backdrop-blur-md">
+                            {/* 關閉按鈕 */}
+                            <button
+                                onClick={closeTransferSuccess}
+                                className="absolute right-4 top-4 rounded-full p-1 text-blue-300 hover:bg-blue-800/50 hover:text-white transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+
+                            {/* 成功圖示動畫 */}
+                            <div className="mb-6 flex justify-center">
+                                <div className="relative">
+                                    <div className="rounded-full bg-gradient-to-r from-blue-500 to-purple-500 p-4 shadow-lg success-pulse">
+                                        <Send className="h-12 w-12 text-white" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 標題 */}
+                            <div className="mb-6 text-center">
+                                <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 mb-2">
+                                    轉帳成功！
+                                </h3>
+                                <p className="text-sm text-blue-300">
+                                    您的轉帳已成功送達
+                                </p>
+                            </div>
+
+                            {/* 轉帳流程視覺化 */}
+                            <div className="mb-6 flex items-center justify-center gap-4">
+                                {/* 發送者 */}
+                                <div className="flex flex-col items-center">
+                                    {authData?.photo_url && !useAvatarFallback ? (
+                                        <img
+                                            src={authData.photo_url}
+                                            alt="我的頭像"
+                                            className="h-12 w-12 rounded-full border-2 border-blue-400 shadow-lg"
+                                            onError={() => setUseAvatarFallback(true)}
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center border-2 border-blue-400 shadow-lg">
+                                            <span className="text-white font-bold">
+                                                {String(user?.username || '').substring(0, 1).toUpperCase() || "U"}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <span className="text-xs text-blue-300 mt-2">你</span>
+                                </div>
+
+                                {/* 箭頭動畫 */}
+                                <div className="flex flex-col items-center">
+                                    <div className="relative transfer-arrow-flow mx-2">
+                                        <ArrowRight className="h-8 w-8 text-blue-400" />
+                                        <div className="absolute inset-0 rounded-full bg-blue-400/20 animate-ping" />
+                                    </div>
+                                </div>
+
+                                {/* 接收者 */}
+                                <div className="flex flex-col items-center">
+                                    {transferSuccessData.recipientPhoto ? (
+                                        <img
+                                            src={transferSuccessData.recipientPhoto}
+                                            className="h-12 w-12 rounded-full border-2 border-purple-400 shadow-lg"
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center border-2 border-purple-400 shadow-lg">
+                                            <span className="text-white font-bold">
+                                                {String(transferSuccessData.recipient || '').substring(0, 1).toUpperCase() || "R"}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <span className="text-xs text-purple-300 mt-2 max-w-16">
+                                        {transferSuccessData.recipient}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* 交易詳情 */}
+                            <div className="space-y-3 mb-6">
+                                <div className="rounded-xl bg-gradient-to-r from-blue-800/30 to-purple-800/30 p-4 border border-blue-500/20">
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <DollarSign className="h-4 w-4 text-green-400" />
+                                            <span className="text-blue-300">轉帳金額</span>
+                                        </div>
+                                        <div className="text-right font-bold text-white">
+                                            {transferSuccessData.amount.toLocaleString()} 點
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <DollarSign className="h-4 w-4 text-orange-300" />
+                                            <span className="text-blue-300">手續費</span>
+                                        </div>
+                                        <div className="text-right font-bold text-orange-300">
+                                            {transferSuccessData.fee.toLocaleString()} 點
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 text-blue-200" />
+                                            <span className="text-blue-300">時間</span>
+                                        </div>
+                                        <div className="text-right font-bold text-white">
+                                            {dayjs(transferSuccessData.timestamp)
+                                                .add(8, 'hour')
+                                                .format('MM/DD HH:mm:ss')}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {transferSuccessData.note && (
+                                    <div className="rounded-xl bg-gradient-to-r from-purple-800/30 to-pink-800/30 p-3 border border-purple-500/20">
+                                        <span className="text-sm text-purple-300 block mb-1">備註</span>
+                                        <span className="text-white text-sm break-words">
+                                            {transferSuccessData.note}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 確認按鈕 */}
+                            <button
+                                onClick={closeTransferSuccess}
+                                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 py-3 font-medium text-white transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                OK
+                            </button>
                         </div>
                     </div>
                 </div>
