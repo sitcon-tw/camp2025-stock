@@ -1,8 +1,8 @@
 "use client";
 
 import botAvatar from "@/assets/uwu.svg";
-import { Modal } from "@/components/ui";
 import { TradingHoursVisualizer } from "@/components/trading";
+import { Modal } from "@/components/ui";
 import useModal from "@/hooks/useModal";
 import { getAnnouncements, getTradingHours } from "@/lib/api";
 import { apiService } from "@/services/apiService";
@@ -23,12 +23,15 @@ export default function Home() {
             if (!isMounted) return;
 
             try {
-                const [marketData, announcementData, tradingHoursData] =
-                    await Promise.all([
-                        apiService.getMarketData(),
-                        getAnnouncements(10),
-                        getTradingHours(),
-                    ]);
+                const [
+                    marketData,
+                    announcementData,
+                    tradingHoursData,
+                ] = await Promise.all([
+                    apiService.getMarketData(),
+                    getAnnouncements(10),
+                    getTradingHours(),
+                ]);
 
                 if (isMounted) {
                     setMarketStatus(marketData);
@@ -132,7 +135,7 @@ export default function Home() {
     };
 
     return (
-        <div className="flex min-h-dvh place-items-center justify-center overflow-hidden bg-[#101f3e] py-8 px-8 pb-20">
+        <div className="flex min-h-dvh place-items-center justify-center overflow-hidden bg-[#101f3e] px-8 py-8 pb-20">
             <div className="flex flex-col items-center">
                 <Image
                     src={botAvatar}
@@ -180,6 +183,17 @@ export default function Home() {
                         </p>
                     )}
                 </div>
+                <a
+                    href="https://camp.sitcon.party/arcade"
+                    className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6 block"
+                    style={{
+                        backgroundImage:
+                            "url('https://camp.sitcon.party/arcade/og.webp')",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        aspectRatio: "1512 / 668",
+                    }}
+                ></a>
 
                 {/* 交易時間可視化 */}
                 <div className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6">
@@ -188,11 +202,13 @@ export default function Home() {
                     </h3>
                     {loading ? (
                         <div className="animate-pulse">
-                            <div className="h-8 w-full rounded bg-[#7BC2E6]/50 mb-2"></div>
+                            <div className="mb-2 h-8 w-full rounded bg-[#7BC2E6]/50"></div>
                             <div className="h-20 w-full rounded bg-[#7BC2E6]/30"></div>
                         </div>
                     ) : (
-                        <TradingHoursVisualizer tradingHours={tradingHours} />
+                        <TradingHoursVisualizer
+                            tradingHours={tradingHours}
+                        />
                     )}
                 </div>
 
