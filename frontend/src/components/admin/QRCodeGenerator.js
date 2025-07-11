@@ -461,7 +461,7 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     <ul className="space-y-1 text-sm text-green-300">
                         <li>• 設定每個 QR Code 要給的點數量</li>
                         <li>• 設定要生成的 QR Code 數量</li>
-                        <li>• 點擊「生成 QR Code」按鈕生成並保存到資料庫</li>
+                        <li>• 點選「生成 QR Code」按鈕生成並保存到資料庫</li>
                         <li>• 使用狀態篩選可以查看未使用或已使用的 QR Code</li>
                         <li>• 使用「列印全部」功能可以列印所有 QR Code</li>
                         <li>• 學生可以在個人面板掃描 QR Code 來獲得點數</li>

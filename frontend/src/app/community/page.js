@@ -426,7 +426,7 @@ export default function CommunityPage() {
                                     社群登入
                                 </div>
                                 <div className="text-sm text-blue-100">
-                                    點擊進入登入頁面
+                                    點選進入登入頁面
                                 </div>
                             </button>
                         </div>
@@ -570,7 +570,7 @@ export default function CommunityPage() {
                     
                     <div className="text-center">
                         <p className="mb-6 text-sm text-[#557797]">
-                            點擊下方按鈕開始掃描，兌換專屬點數獎勵
+                            點選下方按鈕開始掃描，兌換專屬點數獎勵
                         </p>
                         
                         <button

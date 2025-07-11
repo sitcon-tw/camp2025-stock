@@ -192,7 +192,7 @@ class GameService:
             
             return PVPResponse(
                 success=True,
-                message=f"🎯 {user.get('name', '未知使用者')} 發起了 {amount} 點的 PVP 挑戰！\n點擊按鈕接受挑戰，50% 機率決定勝負！",
+                message=f"🎯 {user.get('name', '未知使用者')} 發起了 {amount} 點的 PVP 挑戰！\n點選按鈕接受挑戰，50% 機率決定勝負！",
                 challenge_id=str(challenge_oid),
                 amount=amount
             )

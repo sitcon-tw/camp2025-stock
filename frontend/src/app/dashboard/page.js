@@ -859,7 +859,7 @@ export default function Dashboard() {
         };
     }, []);
 
-    // 點擊外部關閉下拉選單
+    // 點選外部關閉下拉選單
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (limitDropdownRef.current && !limitDropdownRef.current.contains(event.target)) {

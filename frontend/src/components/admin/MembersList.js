@@ -555,7 +555,7 @@ const MemberDetailModal = ({ member, showDebugInfo, onClose }) => {
         }
     };
 
-    // 處理背景點擊關閉
+    // 處理背景點選關閉
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
             onClose();

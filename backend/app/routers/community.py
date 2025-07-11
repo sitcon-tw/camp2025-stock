@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/community", tags=["community"])
+router = APIRouter(prefix="/community", tags=["Community APIs - 社群攤位功能"])
 
 
 @router.post(

@@ -8,6 +8,13 @@ class ArcadeActionRequest(BaseModel):
     game_type: str = Field(..., description="遊戲類型")
     note: Optional[str] = Field(None, description="操作備註")
 
+class ArcadePointsRequest(BaseModel):
+    """遊戲廳點數操作請求（支援加減）"""
+    from_user: str = Field(..., description="使用者id")
+    amount: int = Field(..., description="點數金額（正數為加點，負數為扣點）", ne=0)
+    game_type: str = Field(..., description="遊戲類型")
+    note: Optional[str] = Field(None, description="操作備註")
+
 class ArcadeActionResponse(BaseModel):
     """遊戲廳操作回應"""
     success: bool = Field(..., description="操作是否成功")

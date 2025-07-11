@@ -301,7 +301,7 @@ async def pvp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"💰 金額：{amount} 點\n"
         f"🎯 挑戰者：{escape_markdown(update.effective_user.full_name, 2)}\n"
         f"⏰ 挑戰將在 3 小時後過期\n\n"
-        f"請其他人點擊下面的按鈕來接受挑戰！",
+        f"請其他人點選下面的按鈕來接受挑戰！",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(buttons)
     )

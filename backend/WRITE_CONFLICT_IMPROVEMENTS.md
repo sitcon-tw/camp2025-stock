@@ -173,7 +173,7 @@ python test_write_conflict.py
 
 ### 7. 注意事項
 
-1. **MongoDB 配置**：確保 MongoDB 運行在 replica set 模式以支持事務
+1. **MongoDB 配置**：確保 MongoDB 運行在 replica set 模式以支援事務
 2. **監控日誌**：留意 WriteConflict 統計報告，了解系統負載情況
 3. **性能調優**：根據實際負載調整重試參數
 4. **資源消耗**：重試機制會增加系統負載，需平衡性能和可靠性

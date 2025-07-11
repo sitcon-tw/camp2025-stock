@@ -64,7 +64,7 @@ export const SystemConfig = ({ token }) => {
     const showNotification = (message, type = "info") => {
         setNotification({ show: true, message, type });
         
-        // 成功時添加觸覺反饋（如果支持）
+        // 成功時添加觸覺反饋（如果支援）
         if (type === "success" && "vibrate" in navigator) {
             navigator.vibrate([100, 50, 100]); // 短-停-短震動模式
         }

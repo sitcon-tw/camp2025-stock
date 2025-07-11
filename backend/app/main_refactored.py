@@ -110,8 +110,7 @@ app.include_router(
 
 app.include_router(
     community.router, 
-    prefix="/api", 
-    tags=["Community APIs - 社群攤位功能"]
+    prefix="/api"
 )
 
 app.include_router(
