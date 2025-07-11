@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache
+from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -105,6 +105,12 @@ app.include_router(
     cache.router, 
     prefix="/api/cache", 
     tags=["Cache APIs - 快取管理功能"]
+)
+
+app.include_router(
+    community.router, 
+    prefix="/api", 
+    tags=["Community APIs - 社群攤位功能"]
 )
 
 
