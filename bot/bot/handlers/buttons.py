@@ -73,6 +73,13 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         success = await pvp_manager.cancel_existing_challenge(original_user_id)
         if success:
             await query.answer("✅ 已取消 PVP 挑戰", show_alert=True)
+            # 編輯訊息顯示已取消狀態，移除按鈕
+            await safe_edit_message(
+                query,
+                f"❌ *PVP 挑戰已取消*\n\n此挑戰已被發起者取消，無法再進行操作。",
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=None
+            )
         else:
             await query.answer("❌ 取消挑戰失敗或挑戰不存在", show_alert=True)
             
@@ -105,7 +112,7 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             logger.info(f"API response: {response}")
             
-            if response.get("success"):
+            if response and response.get("success"):
                 # 遊戲成功完成
                 message = response.get("message", "PVP 挑戰完成！")
                 await query.answer("🎮 PVP 挑戰完成！", show_alert=False)
@@ -126,11 +133,21 @@ async def handle_pvp_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 error_message = response.get("message", "接受挑戰失敗")
                 await query.answer(f"❌ {error_message}", show_alert=True)
                 
-                # 如果是點數不足等錯誤，保持挑戰活躍
-                if "點數不足" in error_message or "餘額" in error_message:
+                # 檢查錯誤類型：使用者錯誤不應該改變訊息狀態
+                user_errors = [
+                    "不能接受自己的挑戰",
+                    "點數不足",
+                    "餘額",
+                    "欠款",
+                    "帳戶未啟用",
+                    "帳戶已凍結"
+                ]
+                
+                # 如果是使用者錯誤，保持挑戰活躍，不編輯訊息
+                if any(err in error_message for err in user_errors):
                     return
                 
-                # 其他錯誤則取消挑戰
+                # 系統錯誤或挑戰狀態錯誤才編輯訊息
                 await pvp_manager.complete_challenge(challenge_id)
                 await safe_edit_message(query, f"❌ 挑戰失敗：{error_message}", reply_markup=None)
                 

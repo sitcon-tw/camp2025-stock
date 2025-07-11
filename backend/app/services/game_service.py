@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 from typing import Optional
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -599,7 +600,6 @@ class GameService:
     async def simple_accept_pvp_challenge(self, from_user: str, challenge_id: str):
         """簡單 PVP 挑戰接受 - 純 50% 機率決定勝負"""
         from app.schemas.bot import PVPResponse
-        import random
         
         logger.info(f"Simple PVP accept: user {from_user}, challenge {challenge_id}")
         
