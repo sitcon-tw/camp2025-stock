@@ -238,7 +238,7 @@ export default function CommunityPage() {
                     console.log('檢測到可能的點數兌換相關文字');
                     setScanError('QR Code 格式不正確，請確認為有效的點數兌換 QR Code');
                 } else {
-                    console.log('無法識別的 QR Code 格式');
+                    console.log('無法辨識的 QR Code 格式');
                     setScanError(`無法解析的 QR Code 格式。資料內容: ${qrData.substring(0, 50)}...`);
                 }
                 setTimeout(() => setScanError(''), 5000);
@@ -614,7 +614,7 @@ export default function CommunityPage() {
                         
                         <div className="text-center mb-4">
                             <p className="text-sm text-[#92cbf4]">
-                                請輸入您的社群專屬密碼，系統將自動識別對應的社群
+                                請輸入您的社群專屬密碼，系統將自動辨識對應的社群
                             </p>
                         </div>
                         
@@ -641,7 +641,7 @@ export default function CommunityPage() {
                                 </button>
                             </div>
                             <p className="mt-1 text-xs text-[#557797]">
-                                輸入密碼後系統將自動識別您的社群身份
+                                輸入密碼後系統將自動辨識您的社群身份
                             </p>
                         </div>
                         

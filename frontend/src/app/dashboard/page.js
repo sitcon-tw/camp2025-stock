@@ -447,7 +447,7 @@ export default function Dashboard() {
             // 設定基本資料（作為fallback）
             // 優先使用 ID，如果 ID 不存在或無效，則使用 username
             const preferredIdentifier = qrData.id || qrData.username;
-            console.log('使用識別符:', preferredIdentifier);
+            console.log('使用辨識符:', preferredIdentifier);
             
             const basicRecipientData = {
                 username: String(preferredIdentifier),

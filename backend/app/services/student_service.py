@@ -26,7 +26,7 @@ class StudentService:
         建立新學員
         
         Args:
-            student_id: 學員ID（唯一不變的識別碼）
+            student_id: 學員ID（唯一不變的辨識碼）
             username: 學員姓名
             
         Returns:

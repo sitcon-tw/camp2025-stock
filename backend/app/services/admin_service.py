@@ -47,7 +47,7 @@ class AdminService:
             if not verify_CAMP_ADMIN_PASSWORD(request.password):
                 raise AuthenticationException("Invalid admin password")
 
-            # 建立 JWT Token（包含角色資訊以便 RBAC 系統識別）
+            # 建立 JWT Token（包含角色資訊以便 RBAC 系統辨識）
             access_token = create_access_token(data={
                 "sub": "admin",
                 "type": "admin",
