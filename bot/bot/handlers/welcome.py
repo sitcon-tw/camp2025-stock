@@ -9,11 +9,11 @@ logger = setup_logger(__name__)
 
 
 async def welcome_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.message.chat_id not in STUDENT_GROUPS.values():
+    if update.effective_chat.id not in STUDENT_GROUPS.values():
         return
 
     team_name = list(STUDENT_GROUPS.keys())[list(
-        STUDENT_GROUPS.values()).index(update.message.chat_id)]
+        STUDENT_GROUPS.values()).index(update.effective_chat.id)]
 
     chat_member_update = update.chat_member
 
