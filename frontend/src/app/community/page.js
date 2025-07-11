@@ -237,6 +237,7 @@ export default function CommunityPage() {
         try {
             console.log('開始處理學員 QR Code...', qrData);
             
+            
             // 從 localStorage 獲取社群密碼
             const communityLogin = localStorage.getItem('communityLogin');
             if (!communityLogin) {

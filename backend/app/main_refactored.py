@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, notifications
+from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, notifications, arcade
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -38,10 +38,11 @@ app = FastAPI(
 # CORS 設定 - 使用重構後的設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.security.cors_origins,
+    allow_origins=["*"],  # 開發環境允許所有來源
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # 註冊路由模組
@@ -117,6 +118,12 @@ app.include_router(
     notifications.router, 
     prefix="/api", 
     tags=["Notifications APIs - 通知管理功能"]
+)
+
+app.include_router(
+    arcade.router, 
+    prefix="/api/bot", 
+    tags=["Bot APIs - 遊戲廳功能"]
 )
 
 
