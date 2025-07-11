@@ -54,6 +54,8 @@ export default function Dashboard() {
     const [showPaymentNotification, setShowPaymentNotification] = useState(false);
     const [transferSuccessData, setTransferSuccessData] = useState(null);
     const [showTransferSuccess, setShowTransferSuccess] = useState(false);
+    const [token, setToken] = useState(null);
+    const [lastPointHistory, setLastPointHistory] = useState(null);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
     const pollingIntervalRef = useRef(null);
@@ -717,25 +719,28 @@ export default function Dashboard() {
         const checkAuthAndLoadData = async () => {
             // 檢查必要的認證資料
             const isUser = localStorage.getItem("isUser");
-            const token = localStorage.getItem("userToken");
+            const userToken = localStorage.getItem("userToken");
             const telegramData = localStorage.getItem("telegramData");
 
             console.log("認證檢查:", {
                 isUser,
-                hasToken: !!token,
+                hasToken: !!userToken,
                 hasTelegramData: !!telegramData,
             });
 
             // 如果缺少任何必要的認證資料，重新導向到登入頁
-            if (!isUser || !token || !telegramData) {
+            if (!isUser || !userToken || !telegramData) {
                 console.log("缺少認證資料，重新導向到登入頁");
                 handleLogout(); // 清理可能不完整的資料
                 return;
             }
 
+            // 設定 token 狀態
+            setToken(userToken);
+
             // 檢查 token 格式是否正確
             try {
-                const tokenParts = token.split(".");
+                const tokenParts = userToken.split(".");
                 if (tokenParts.length !== 3) {
                     console.log("Token 格式無效");
                     handleLogout();
@@ -789,18 +794,18 @@ export default function Dashboard() {
                 };
 
                 console.log("正在載入 Portfolio...");
-                const portfolio = await loadWithTimeout(getWebPortfolio(token), "Portfolio");
+                const portfolio = await loadWithTimeout(getWebPortfolio(userToken), "Portfolio");
                 console.log("Portfolio 載入完成:", portfolio);
 
                 console.log("Point History 載入已移至 PointHistoryCard 組件");
 
                 console.log("正在載入 Stock Orders...");
-                const stocks = await loadWithTimeout(getWebStockOrders(token), "Stock Orders");
+                const stocks = await loadWithTimeout(getWebStockOrders(userToken), "Stock Orders");
                 console.log("Stock Orders 載入完成:", stocks?.length, "筆記錄");
 
                 console.log("正在載入 Permissions...");
                 const permissions = await loadWithTimeout(
-                    getMyPermissions(token).catch((error) => {
+                    getMyPermissions(userToken).catch((error) => {
                         console.warn("無法載入權限資訊:", error);
                         return null;
                     }),
