@@ -316,8 +316,6 @@ export default function CommunityPage() {
                 // 從 localStorage 獲取社群密碼
                 const communityLogin = localStorage.getItem('communityLogin');
                 if (communityLogin) {
-                    const loginData = JSON.parse(communityLogin);
-                    const communityName = loginData.community;
                     const communityPassword = getCommunityPassword();
                     
                     if (communityPassword) {
@@ -411,8 +409,6 @@ export default function CommunityPage() {
             if (!communityLogin) {
                 throw new Error('未找到社群登入資訊，請重新登入');
             }
-            
-            const loginData = JSON.parse(communityLogin);
             
             // 獲取社群密碼
             const communityPassword = getCommunityPassword();
@@ -1043,19 +1039,3 @@ export default function CommunityPage() {
         </div>
     );
 }
-
-// StyleSheet for the page only, hiding the navbar (id "navbar") from the community page
-useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-        #navbar {
-            display: none;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Cleanup function to remove the style when component unmounts
-    return () => {
-        document.head.removeChild(style);
-    };
-}, []);
