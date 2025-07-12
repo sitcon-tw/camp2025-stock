@@ -92,7 +92,7 @@ async def get_portfolio(
     description="查詢整個系統的點數變動記錄"
 )
 async def get_point_history(
-    limit: int = 3000,
+    limit: int = None,
     current_user: dict = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
 ) -> List[PointLog]:
@@ -100,7 +100,7 @@ async def get_point_history(
     查詢所有點數記錄
 
     Args:
-        limit: 查詢筆數限制（預設 3000）
+        limit: 查詢筆數限制（None 表示無限制，返回所有記錄）
         current_user: 目前使用者資訊（從 JWT Token 解析）
         user_service: 使用者服務（自動注入）
 

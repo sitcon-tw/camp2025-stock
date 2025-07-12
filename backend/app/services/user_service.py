@@ -748,7 +748,7 @@ class UserService:
             return []
 
     # 取得所有點數記錄（給一般使用者）
-    async def get_all_point_logs(self, limit: int = 3000) -> List[dict]:
+    async def get_all_point_logs(self, limit: int = None) -> List[dict]:
         try:
             # 使用聚合管道來聯接使用者資料
             pipeline = [
@@ -756,8 +756,14 @@ class UserService:
                 {"$match": {"amount": {"$exists": True}}},
                 # 排序：最新的記錄在前
                 {"$sort": {"created_at": -1}},
-                # 限制結果數量
-                {"$limit": limit},
+            ]
+            
+            # 只在有限制時才加入 $limit 階段
+            if limit is not None and limit > 0:
+                pipeline.append({"$limit": limit})
+            
+            # 繼續添加其他管道階段
+            pipeline.extend([
                 # 聯接使用者資料
                 {
                     "$lookup": {
@@ -782,10 +788,15 @@ class UserService:
                         "transaction_id": 1
                     }
                 }
-            ]
+            ])
             
             cursor = self.db[Collections.POINT_LOGS].aggregate(pipeline)
-            logs = await cursor.to_list(length=limit)
+            
+            # 如果沒有限制，使用 to_list() 不指定 length
+            if limit is None:
+                logs = await cursor.to_list(length=None)
+            else:
+                logs = await cursor.to_list(length=limit)
             
             # 處理轉帳記錄，提取轉帳對象資訊
             processed_logs = []
@@ -811,6 +822,7 @@ class UserService:
                 log["transfer_partner"] = transfer_partner
                 processed_logs.append(log)
             
+            logger.info(f"Successfully retrieved {len(processed_logs)} point logs (limit: {limit})")
             return processed_logs
             
         except Exception as e:

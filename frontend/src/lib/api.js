@@ -86,8 +86,12 @@ export async function getPointHistory(token, limit = 1000, options = {}) {
 }
 
 // 取得所有點數紀錄 (一般使用者)
-export async function getAllPointHistory(token, limit = 300, options = {}) {
-    return apiRequest(`/api/web/points/history?limit=${limit}`, {
+export async function getAllPointHistory(token, limit = null, options = {}) {
+    const url = limit !== null 
+        ? `/api/web/points/history?limit=${limit}` 
+        : `/api/web/points/history`;
+    
+    return apiRequest(url, {
         ...options,
         headers: {
             ...options.headers,
