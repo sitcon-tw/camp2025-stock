@@ -78,7 +78,7 @@ const PointHistoryCard = ({ token }) => {
                         onClick={() => setShowLimitDropdown(!showLimitDropdown)}
                         className="flex items-center gap-2 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
                     >
-                        <span>顯示 {pointHistoryLimit === null ? '全部' : `${pointHistoryLimit} 筆`}</span>
+                        <span>顯示 {pointHistoryLimit === 999999 ? '全部' : `${pointHistoryLimit} 筆`}</span>
                         <ChevronDown className={`h-4 w-4 transition-transform ${showLimitDropdown ? 'rotate-180' : ''}`} />
                     </button>
                     
@@ -99,9 +99,9 @@ const PointHistoryCard = ({ token }) => {
                                 </button>
                             ))}
                             <button
-                                onClick={() => changePointHistoryLimit(null)}
+                                onClick={() => changePointHistoryLimit(999999)}
                                 className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-[#294565]/30 ${
-                                    pointHistoryLimit === null 
+                                    pointHistoryLimit === 999999 
                                         ? 'bg-[#469FD2]/20 text-[#469FD2]' 
                                         : 'text-[#92cbf4]'
                                 }`}

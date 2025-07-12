@@ -43,14 +43,18 @@ export default function PointsHistoryDBMSPage() {
             setLoading(true);
             setError(null);
             console.log("開始載入所有點數紀錄（無限制）...");
+            console.log("API Base URL:", process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000");
+            console.log("調用 API 路徑: /api/web/points/history");
             
             const startTime = Date.now();
             
-            // 不設定 limit，載入所有資料
-            const data = await getAllPointHistory(token, null);
+            // 使用一個非常大的數字來確保載入所有資料（避免環境差異）
+            const data = await getAllPointHistory(token, 999999);
             
             const loadTime = Date.now() - startTime;
             console.log(`成功載入 ${data?.length || 0} 筆點數紀錄，耗時 ${loadTime}ms`);
+            console.log("實際收到的資料長度:", data?.length);
+            console.log("前幾筆資料 preview:", data?.slice(0, 3));
             setPointHistory(data || []);
             
             // 效能提示
