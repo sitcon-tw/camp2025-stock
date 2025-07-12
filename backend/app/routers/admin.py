@@ -2146,15 +2146,7 @@ async def get_all_point_logs(
     current_user: dict = Depends(get_current_user),
     admin_service: AdminService = Depends(get_admin_service)
 ) -> List[PointLog]:
-    user_role = await RBACService.get_user_role_from_db(current_user)
-    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
-    
-    if Permission.VIEW_ALL_USERS not in user_permissions:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要查看所有使用者權限（目前角色：{user_role.value}）"
-        )
-    
+    # 移除權限檢查，開放給所有登入使用者查看完整點數紀錄
     return await admin_service.get_all_point_logs(limit)
 
 

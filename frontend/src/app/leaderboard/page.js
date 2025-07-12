@@ -2,6 +2,7 @@
 
 import { apiService } from "@/services/apiService";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 function RankingItemSkeleton() {
     return (
@@ -123,6 +124,7 @@ function RankingList({ title, items, isGroup = false }) {
 }
 
 export default function Leaderboard() {
+    const router = useRouter();
     const [leaderboardData, setLeaderboardData] = useState([]);
     const [groupLeaderboard, setGroupLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -308,6 +310,15 @@ export default function Leaderboard() {
                                 title="個人排行"
                                 items={leaderboardData}
                             />
+                            
+                            <div className="mt-8 text-center">
+                                <button
+                                    onClick={() => router.push('/point-history')}
+                                    className="rounded-xl bg-[#1A325F] px-6 py-3 text-lg font-semibold text-[#82bee2] transition-all duration-300 hover:bg-[#2A426F] hover:text-[#AFE1F5]"
+                                >
+                                    查看完整點數紀錄
+                                </button>
+                            </div>
                         </>
                     )}
                 </div>
