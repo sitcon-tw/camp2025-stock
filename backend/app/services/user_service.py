@@ -764,22 +764,56 @@ class UserService:
             
             # 繼續添加其他管道階段
             pipeline.extend([
-                # 聯接使用者資料
+                # 先嘗試用 _id 關聯（ObjectId 類型的 user_id）
                 {
                     "$lookup": {
                         "from": Collections.USERS,
                         "localField": "user_id",
                         "foreignField": "_id",
-                        "as": "user_info"
+                        "as": "user_info_by_objectid"
                     }
                 },
-                # 展開使用者資料陣列
-                {"$unwind": {"path": "$user_info", "preserveNullAndEmptyArrays": True}},
+                # 再嘗試用 id 關聯（字串類型的 user_id）
+                {
+                    "$lookup": {
+                        "from": Collections.USERS,
+                        "localField": "user_id",
+                        "foreignField": "id",
+                        "as": "user_info_by_id"
+                    }
+                },
+                # 合併兩個結果，優先使用 ObjectId 匹配的結果
+                {
+                    "$addFields": {
+                        "user_info": {
+                            "$cond": {
+                                "if": {"$gt": [{"$size": "$user_info_by_objectid"}, 0]},
+                                "then": {"$arrayElemAt": ["$user_info_by_objectid", 0]},
+                                "else": {
+                                    "$cond": {
+                                        "if": {"$gt": [{"$size": "$user_info_by_id"}, 0]},
+                                        "then": {"$arrayElemAt": ["$user_info_by_id", 0]},
+                                        "else": "$$REMOVE"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                # 移除中間結果
+                {
+                    "$unset": ["user_info_by_objectid", "user_info_by_id"]
+                },
                 # 投影最終結果
                 {
                     "$project": {
                         "user_id": {"$toString": "$user_id"},
-                        "user_name": {"$ifNull": ["$user_info.name", "Unknown"]},
+                        "user_name": {
+                            "$ifNull": [
+                                "$user_info.name",
+                                {"$ifNull": ["$user_info.username", "Unknown"]}
+                            ]
+                        },
                         "type": {"$ifNull": ["$type", "unknown"]},
                         "amount": {"$ifNull": ["$amount", 0]},
                         "note": {"$ifNull": ["$note", ""]},
