@@ -5,7 +5,7 @@ from app.schemas.user import (
     UserPortfolio, StockOrderRequest, StockOrderResponse,
     TransferRequest, TransferResponse, UserPointLog, UserStockOrder, UserBasicInfo
 )
-from app.schemas.public import UserAssetDetail, ErrorResponse, QRCodeRedeemRequest, QRCodeRedeemResponse, GivePointsRequest
+from app.schemas.public import UserAssetDetail, ErrorResponse, QRCodeRedeemRequest, QRCodeRedeemResponse, GivePointsRequest, PointLog
 from pydantic import BaseModel, Field
 from datetime import datetime
 from app.core.security import get_current_user
@@ -87,20 +87,20 @@ async def get_portfolio(
 
 @router.get(
     "/points/history",
-    response_model=List[UserPointLog],
-    summary="查詢點數記錄",
-    description="查詢使用者的點數變動記錄"
+    response_model=List[PointLog],
+    summary="查詢所有點數記錄",
+    description="查詢整個系統的點數變動記錄"
 )
 async def get_point_history(
-    limit: int = 50,
+    limit: int = 3000,
     current_user: dict = Depends(get_current_user),
     user_service: UserService = Depends(get_user_service)
-) -> List[UserPointLog]:
+) -> List[PointLog]:
     """
-    查詢使用者點數記錄
+    查詢所有點數記錄
 
     Args:
-        limit: 查詢筆數限制（預設 50）
+        limit: 查詢筆數限制（預設 3000）
         current_user: 目前使用者資訊（從 JWT Token 解析）
         user_service: 使用者服務（自動注入）
 
@@ -108,22 +108,29 @@ async def get_point_history(
         點數變動記錄列表
     """
     try:
-        user_id = current_user.get("user_id")
-        telegram_id = current_user.get("telegram_id")
-
-        if not user_id:
+        # 驗證使用者身份
+        if not current_user.get("user_id"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="無效的使用者 Token"
             )
 
-        # 使用現有的 bot API 方法
-        if telegram_id:
-            user = await user_service.get_user_by_telegram_id(telegram_id)
-            if user:
-                return await user_service.get_user_point_logs_by_username(user.get("id"), limit)
-
-        return await user_service.get_user_point_logs_by_username(user_id, limit)
+        # 使用 user service 的方法來取得所有點數記錄
+        logs = await user_service.get_all_point_logs(limit)
+        
+        # 轉換為 PointLog 格式
+        return [
+            PointLog(
+                user_id=log.get("user_id", ""),
+                user_name=log.get("user_name", "Unknown"),
+                type=log.get("type", ""),
+                amount=log.get("amount", 0),
+                note=log.get("note", ""),
+                created_at=log.get("created_at"),
+                balance_after=log.get("balance_after", 0)
+            )
+            for log in logs
+        ]
 
     except Exception as e:
         logger.error(

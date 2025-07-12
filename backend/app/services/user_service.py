@@ -746,6 +746,51 @@ class UserService:
         except Exception as e:
             logger.error(f"Failed to get user point logs: {e}")
             return []
+
+    # 取得所有點數記錄（給一般使用者）
+    async def get_all_point_logs(self, limit: int = 3000) -> List[dict]:
+        try:
+            # 使用聚合管道來聯接使用者資料
+            pipeline = [
+                # 只查詢有 amount 欄位的記錄（排除 role_change 等非點數交易記錄）
+                {"$match": {"amount": {"$exists": True}}},
+                # 排序：最新的記錄在前
+                {"$sort": {"created_at": -1}},
+                # 限制結果數量
+                {"$limit": limit},
+                # 聯接使用者資料
+                {
+                    "$lookup": {
+                        "from": Collections.USERS,
+                        "localField": "user_id",
+                        "foreignField": "_id",
+                        "as": "user_info"
+                    }
+                },
+                # 展開使用者資料陣列
+                {"$unwind": {"path": "$user_info", "preserveNullAndEmptyArrays": True}},
+                # 投影最終結果
+                {
+                    "$project": {
+                        "user_id": {"$toString": "$user_id"},
+                        "user_name": {"$ifNull": ["$user_info.name", "Unknown"]},
+                        "type": 1,
+                        "amount": 1,
+                        "note": 1,
+                        "created_at": 1,
+                        "balance_after": 1
+                    }
+                }
+            ]
+            
+            cursor = self.db[Collections.POINT_LOGS].aggregate(pipeline)
+            logs = await cursor.to_list(length=limit)
+            
+            return logs
+            
+        except Exception as e:
+            logger.error(f"Failed to get all point logs: {e}")
+            return []
     
     # 取得使用者股票訂單記錄
     async def get_user_stock_orders(self, user_id: str, limit: int = 50) -> List[UserStockOrder]:
