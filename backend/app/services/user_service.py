@@ -213,24 +213,29 @@ class UserService:
     async def _check_price_limit(self, order_price: float) -> bool:
         """檢查訂單價格是否在漲跌限制內（基於前日收盤價）"""
         try:
-            # 取得前日收盤價作為基準價格（更符合現實股市）
-            reference_price = await self._get_reference_price_for_limit()
+            # 🚨 砸盤測試模式：暫時允許所有價格
+            logger.info(f"🧪 TESTING MODE: Price limit check bypassed for price {order_price}")
+            return True
             
-            if reference_price is None:
-                logger.warning("Unable to determine reference price for price limit check")
-                return True  # 無法確定基準價格時允許交易
-            
-            # 取得固定漲跌限制
-            limit_percent = await self._get_fixed_price_limit()
-            
-            # 計算漲跌停價格
-            max_price = reference_price * (1 + limit_percent / 100.0)
-            min_price = reference_price * (1 - limit_percent / 100.0)
-            
-            logger.info(f"Price limit check: order_price={order_price}, reference_price={reference_price}, limit={limit_percent}%, range=[{min_price:.2f}, {max_price:.2f}]")
-            
-            # 檢查訂單價格是否在限制範圍內
-            return min_price <= order_price <= max_price
+            # === 原始限制邏輯（已註解） ===
+            # # 取得前日收盤價作為基準價格（更符合現實股市）
+            # reference_price = await self._get_reference_price_for_limit()
+            # 
+            # if reference_price is None:
+            #     logger.warning("Unable to determine reference price for price limit check")
+            #     return True  # 無法確定基準價格時允許交易
+            # 
+            # # 取得固定漲跌限制
+            # limit_percent = await self._get_fixed_price_limit()
+            # 
+            # # 計算漲跌停價格
+            # max_price = reference_price * (1 + limit_percent / 100.0)
+            # min_price = reference_price * (1 - limit_percent / 100.0)
+            # 
+            # logger.info(f"Price limit check: order_price={order_price}, reference_price={reference_price}, limit={limit_percent}%, range=[{min_price:.2f}, {max_price:.2f}]")
+            # 
+            # # 檢查訂單價格是否在限制範圍內
+            # return min_price <= order_price <= max_price
             
         except Exception as e:
             logger.error(f"Failed to check price limit: {e}")
@@ -240,35 +245,48 @@ class UserService:
     async def _get_price_limit_info(self, order_price: float) -> dict:
         """取得價格限制的詳細資訊"""
         try:
-            # 取得前一日收盤價作為基準價格
-            reference_price = await self._get_reference_price_for_limit()
-            
-            # 如果無法取得前一日收盤價，使用預設值
-            if reference_price is None or reference_price <= 0:
-                logger.warning("Cannot determine reference price, using default price 20.0")
-                reference_price = 20.0
-            
-            # 取得固定漲跌限制
-            limit_percent = await self._get_fixed_price_limit()
-            
-            # 計算漲跌停價格
-            max_price = reference_price * (1 + limit_percent / 100.0)
-            min_price = reference_price * (1 - limit_percent / 100.0)
-            
-            # 檢查是否在限制範圍內
-            within_limit = min_price <= order_price <= max_price
-            
-            logger.info(f"Price limit check: reference={reference_price}, limit={limit_percent}%, " +
-                       f"range={min_price:.2f}~{max_price:.2f}, order={order_price}, within={within_limit}")
-            
+            # 🚨 砸盤測試模式：所有價格都在限制範圍內
+            logger.info(f"🧪 TESTING MODE: Price limit info bypassed for price {order_price}")
             return {
-                "within_limit": within_limit,
-                "reference_price": reference_price,
-                "limit_percent": limit_percent,
-                "min_price": min_price,
-                "max_price": max_price,
-                "order_price": order_price
+                "within_limit": True,  # 強制返回 True
+                "reference_price": 20.0,
+                "limit_percent": 0.0,
+                "min_price": 0.0,
+                "max_price": float('inf'),
+                "order_price": order_price,
+                "note": "Testing mode: all prices allowed"
             }
+            
+            # === 原始限制邏輯（已註解） ===
+            # # 取得前一日收盤價作為基準價格
+            # reference_price = await self._get_reference_price_for_limit()
+            # 
+            # # 如果無法取得前一日收盤價，使用預設值
+            # if reference_price is None or reference_price <= 0:
+            #     logger.warning("Cannot determine reference price, using default price 20.0")
+            #     reference_price = 20.0
+            # 
+            # # 取得固定漲跌限制
+            # limit_percent = await self._get_fixed_price_limit()
+            # 
+            # # 計算漲跌停價格
+            # max_price = reference_price * (1 + limit_percent / 100.0)
+            # min_price = reference_price * (1 - limit_percent / 100.0)
+            # 
+            # # 檢查是否在限制範圍內
+            # within_limit = min_price <= order_price <= max_price
+            # 
+            # logger.info(f"Price limit check: reference={reference_price}, limit={limit_percent}%, " +
+            #            f"range={min_price:.2f}~{max_price:.2f}, order={order_price}, within={within_limit}")
+            # 
+            # return {
+            #     "within_limit": within_limit,
+            #     "reference_price": reference_price,
+            #     "limit_percent": limit_percent,
+            #     "min_price": min_price,
+            #     "max_price": max_price,
+            #     "order_price": order_price
+            # }
             
         except Exception as e:
             logger.error(f"Failed to get price limit info: {e}")
