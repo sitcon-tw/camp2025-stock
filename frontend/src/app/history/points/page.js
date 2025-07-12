@@ -22,6 +22,7 @@ export default function PointsHistoryDBMSPage() {
     const [filterDateTo, setFilterDateTo] = useState("");
     const [filterAmountMin, setFilterAmountMin] = useState("");
     const [filterAmountMax, setFilterAmountMax] = useState("");
+    const [mergeTransfers, setMergeTransfers] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -46,9 +47,72 @@ export default function PointsHistoryDBMSPage() {
         }
     };
 
+    // 處理轉帳合併邏輯
+    const processedData = useMemo(() => {
+        if (!mergeTransfers) {
+            return pointHistory;
+        }
+
+        // 合併轉帳記錄
+        const merged = [];
+        const processedTransactionIds = new Set();
+
+        for (const record of pointHistory) {
+            if (record.type === 'transfer_out' || record.type === 'transfer_in') {
+                // 如果已經處理過這個交易ID，跳過
+                if (processedTransactionIds.has(record.transaction_id)) {
+                    continue;
+                }
+
+                // 尋找配對的轉帳記錄
+                const pairedRecord = pointHistory.find(r => 
+                    r.transaction_id === record.transaction_id && 
+                    r.user_id !== record.user_id &&
+                    ((record.type === 'transfer_out' && r.type === 'transfer_in') ||
+                     (record.type === 'transfer_in' && r.type === 'transfer_out'))
+                );
+
+                if (pairedRecord) {
+                    // 創建合併記錄
+                    const senderRecord = record.type === 'transfer_out' ? record : pairedRecord;
+                    const receiverRecord = record.type === 'transfer_in' ? record : pairedRecord;
+                    
+                    // 從發送者的備註中提取實際轉帳金額和手續費
+                    const transferAmount = Math.abs(receiverRecord.amount);
+                    const fee = Math.abs(senderRecord.amount) - transferAmount;
+
+                    const mergedRecord = {
+                        ...record,
+                        type: 'transfer_merged',
+                        user_name: `${senderRecord.user_name} → ${receiverRecord.user_name}`,
+                        amount: transferAmount,
+                        note: `轉帳：${transferAmount} 點 ${fee > 0 ? `(手續費 ${fee} 點)` : ''}`,
+                        transfer_partner: `${senderRecord.user_name} → ${receiverRecord.user_name}`,
+                        balance_after: null, // 合併記錄不顯示餘額
+                        created_at: Math.min(new Date(senderRecord.created_at), new Date(receiverRecord.created_at)),
+                        sender_data: senderRecord,
+                        receiver_data: receiverRecord,
+                        transfer_fee: fee
+                    };
+
+                    merged.push(mergedRecord);
+                    processedTransactionIds.add(record.transaction_id);
+                } else {
+                    // 沒有找到配對記錄，保持原樣
+                    merged.push(record);
+                }
+            } else {
+                // 非轉帳記錄，直接加入
+                merged.push(record);
+            }
+        }
+
+        return merged;
+    }, [pointHistory, mergeTransfers]);
+
     // 篩選和搜尋邏輯
     const filteredData = useMemo(() => {
-        return pointHistory.filter(record => {
+        return processedData.filter(record => {
             // 文字搜尋 (搜尋用戶名稱、備註、轉帳對象)
             const searchMatch = !searchTerm || 
                 record.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,7 +137,7 @@ export default function PointsHistoryDBMSPage() {
 
             return searchMatch && typeMatch && userMatch && dateFromMatch && dateToMatch && amountMinMatch && amountMaxMatch;
         });
-    }, [pointHistory, searchTerm, filterType, filterUser, filterDateFrom, filterDateTo, filterAmountMin, filterAmountMax]);
+    }, [processedData, searchTerm, filterType, filterUser, filterDateFrom, filterDateTo, filterAmountMin, filterAmountMax]);
 
     // 排序邏輯
     const sortedData = useMemo(() => {
@@ -153,6 +217,7 @@ export default function PointsHistoryDBMSPage() {
         const typeMap = {
             'transfer_in': '收到轉帳',
             'transfer_out': '發送轉帳',
+            'transfer_merged': '轉帳交易',
             'arcade_deduct': '遊戲廳扣款',
             'arcade_win': '遊戲廳獲勝',
             'qr_redeem': 'QR碼兌換',
@@ -168,6 +233,7 @@ export default function PointsHistoryDBMSPage() {
         const colorMap = {
             'transfer_in': 'text-green-600',
             'transfer_out': 'text-red-600',
+            'transfer_merged': 'text-blue-700',
             'arcade_deduct': 'text-red-500',
             'arcade_win': 'text-green-500',
             'qr_redeem': 'text-blue-600',
@@ -180,7 +246,7 @@ export default function PointsHistoryDBMSPage() {
     };
 
     // 取得所有類型選項
-    const allTypes = [...new Set(pointHistory.map(record => record.type))];
+    const allTypes = [...new Set(processedData.map(record => record.type))];
 
     if (loading) {
         return (
@@ -233,6 +299,8 @@ export default function PointsHistoryDBMSPage() {
                     <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
                         <span>總計 {pointHistory.length} 筆紀錄</span>
                         <span>•</span>
+                        <span>處理後 {processedData.length} 筆</span>
+                        <span>•</span>
                         <span>篩選後 {filteredData.length} 筆</span>
                         <span>•</span>
                         <span>第 {currentPage} / {totalPages} 頁</span>
@@ -241,6 +309,24 @@ export default function PointsHistoryDBMSPage() {
 
                 {/* 篩選控制區 */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                    {/* 轉帳合併選項 */}
+                    <div className="mb-4 flex items-center">
+                        <label className="flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={mergeTransfers}
+                                onChange={(e) => setMergeTransfers(e.target.checked)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm font-medium text-gray-700">
+                                合併轉帳記錄 
+                                <span className="text-gray-500 font-normal">
+                                    (將 transfer_in 和 transfer_out 合併為單一轉帳交易)
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         {/* 文字搜尋 */}
                         <div>
@@ -432,7 +518,7 @@ export default function PointsHistoryDBMSPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                                            {record.balance_after?.toLocaleString()}
+                                            {record.balance_after !== null ? record.balance_after?.toLocaleString() : '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {record.transfer_partner && (
