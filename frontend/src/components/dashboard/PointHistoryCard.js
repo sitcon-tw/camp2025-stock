@@ -10,7 +10,6 @@ const PointHistoryCard = ({ token }) => {
     const [pointHistoryLimit, setPointHistoryLimit] = useState(100);
     const [pointHistoryLoading, setPointHistoryLoading] = useState(false);
     const [showLimitDropdown, setShowLimitDropdown] = useState(false);
-    const [lastPointHistory, setLastPointHistory] = useState([]);
     const limitDropdownRef = useRef(null);
 
     // 點選外部關閉下拉選單
@@ -35,7 +34,6 @@ const PointHistoryCard = ({ token }) => {
         try {
             const newPointHistory = await getWebPointHistory(token, pointHistoryLimit);
             setPointHistory(newPointHistory);
-            setLastPointHistory(newPointHistory);
         } catch (error) {
             console.error('載入點數記錄失敗:', error);
         } finally {
@@ -52,7 +50,6 @@ const PointHistoryCard = ({ token }) => {
         try {
             const newPointHistory = await getWebPointHistory(token, newLimit);
             setPointHistory(newPointHistory);
-            setLastPointHistory(newPointHistory);
         } catch (error) {
             console.error('載入點數記錄失敗:', error);
         } finally {

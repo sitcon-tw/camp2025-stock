@@ -91,8 +91,6 @@ export async function getAllPointHistory(token, limit = null, options = {}) {
         ? `/api/web/points/history?limit=${limit}` 
         : `/api/web/points/history`;
     
-    console.log("getAllPointHistory 調用參數:", {limit, url, baseURL: API_BASE_URL});
-    
     return apiRequest(url, {
         ...options,
         headers: {
