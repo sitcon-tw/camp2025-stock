@@ -236,18 +236,18 @@ export default function PointsHistoryDBMSPage() {
 
     const getTypeColor = (type) => {
         const colorMap = {
-            'transfer_in': 'text-green-600',
-            'transfer_out': 'text-red-600',
-            'transfer_merged': 'text-blue-700',
-            'arcade_deduct': 'text-red-500',
-            'arcade_win': 'text-green-500',
-            'qr_redeem': 'text-blue-600',
-            'trading_buy': 'text-purple-600',
-            'trading_sell': 'text-indigo-600',
-            'system_adjustment': 'text-yellow-600',
-            'initial_points': 'text-gray-600'
+            'transfer_in': 'text-green-400',
+            'transfer_out': 'text-red-400',
+            'transfer_merged': 'text-[#469FD2]',
+            'arcade_deduct': 'text-red-400',
+            'arcade_win': 'text-green-400',
+            'qr_redeem': 'text-[#92cbf4]',
+            'trading_buy': 'text-purple-400',
+            'trading_sell': 'text-indigo-400',
+            'system_adjustment': 'text-yellow-400',
+            'initial_points': 'text-[#557797]'
         };
-        return colorMap[type] || 'text-gray-500';
+        return colorMap[type] || 'text-[#557797]';
     };
 
     // 取得所有類型選項
@@ -255,10 +255,10 @@ export default function PointsHistoryDBMSPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
-                    <p className="mt-4 text-xl text-gray-600">載入點數紀錄中...</p>
+                    <div className="animate-spin rounded-full h-32 w-32 border-4 border-[#92cbf4] border-t-transparent mx-auto"></div>
+                    <p className="mt-4 text-xl text-[#92cbf4]">載入點數紀錄中...</p>
                 </div>
             </div>
         );
@@ -266,25 +266,25 @@ export default function PointsHistoryDBMSPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full mx-4">
-                    <div className="text-red-500 text-center mb-4">
+            <div className="min-h-screen bg-[#0f203e] flex items-center justify-center">
+                <div className="bg-[#1A325F] border border-[#294565] p-8 rounded-xl shadow-lg max-w-md w-full mx-4">
+                    <div className="text-red-400 text-center mb-4">
                         <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-center mb-4">載入失敗</h2>
-                    <p className="text-gray-600 text-center mb-6">{error}</p>
+                    <h2 className="text-xl font-bold text-center mb-4 text-[#92cbf4]">載入失敗</h2>
+                    <p className="text-[#557797] text-center mb-6">{error}</p>
                     <div className="flex gap-4">
                         <button
                             onClick={() => window.location.reload()}
-                            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                            className="flex-1 bg-[#469FD2] text-white px-4 py-2 rounded-xl hover:bg-[#357AB8] transition-colors"
                         >
                             重新載入
                         </button>
                         <button
                             onClick={() => window.open('/dashboard', '_blank')}
-                            className="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                            className="flex-1 border border-[#294565] bg-[#1A325F] text-[#92cbf4] px-4 py-2 rounded-xl hover:bg-[#294565] transition-colors"
                         >
                             前往 Dashboard
                         </button>
@@ -295,13 +295,13 @@ export default function PointsHistoryDBMSPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-[#0f203e] py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">點數紀錄 DBMS</h1>
-                    <p className="text-gray-600">查詢、篩選、排序所有點數變動紀錄</p>
-                    <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                    <h1 className="text-3xl font-bold text-[#92cbf4] mb-2">點數紀錄 DBMS</h1>
+                    <p className="text-[#557797]">查詢、篩選、排序所有點數變動紀錄</p>
+                    <div className="mt-4 flex items-center gap-4 text-sm text-[#557797]">
                         <span>總計 {pointHistory.length} 筆紀錄</span>
                         <span>•</span>
                         <span>處理後 {processedData.length} 筆</span>
@@ -313,7 +313,7 @@ export default function PointsHistoryDBMSPage() {
                 </div>
 
                 {/* 篩選控制區 */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div className="bg-[#1A325F] border border-[#294565] rounded-xl shadow-lg p-6 mb-6">
                     {/* 轉帳合併選項 */}
                     <div className="mb-4 flex items-center">
                         <label className="flex items-center">
@@ -321,11 +321,11 @@ export default function PointsHistoryDBMSPage() {
                                 type="checkbox"
                                 checked={mergeTransfers}
                                 onChange={(e) => setMergeTransfers(e.target.checked)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                className="h-4 w-4 text-[#469FD2] focus:ring-[#469FD2] border-[#294565] rounded bg-[#0f203e]"
                             />
-                            <span className="ml-2 text-sm font-medium text-gray-700">
+                            <span className="ml-2 text-sm font-medium text-[#92cbf4]">
                                 合併轉帳記錄 
-                                <span className="text-gray-500 font-normal">
+                                <span className="text-[#557797] font-normal">
                                     (將 transfer_in 和 transfer_out 合併為單一轉帳交易)
                                 </span>
                             </span>
@@ -335,23 +335,23 @@ export default function PointsHistoryDBMSPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         {/* 文字搜尋 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">搜尋</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">搜尋</label>
                             <input
                                 type="text"
                                 placeholder="用戶名稱、備註、交易ID..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2] placeholder-[#557797]"
                             />
                         </div>
 
                         {/* 類型篩選 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">交易類型</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">交易類型</label>
                             <select
                                 value={filterType}
                                 onChange={(e) => setFilterType(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2]"
                             >
                                 <option value="">所有類型</option>
                                 {allTypes.map(type => (
@@ -362,26 +362,26 @@ export default function PointsHistoryDBMSPage() {
 
                         {/* 用戶篩選 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">用戶名稱</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">用戶名稱</label>
                             <input
                                 type="text"
                                 placeholder="篩選特定用戶..."
                                 value={filterUser}
                                 onChange={(e) => setFilterUser(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2] placeholder-[#557797]"
                             />
                         </div>
 
                         {/* 每頁筆數 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">每頁筆數</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">每頁筆數</label>
                             <select
                                 value={itemsPerPage}
                                 onChange={(e) => {
                                     setItemsPerPage(Number(e.target.value));
                                     setCurrentPage(1);
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2]"
                             >
                                 <option value={25}>25</option>
                                 <option value={50}>50</option>
@@ -393,45 +393,45 @@ export default function PointsHistoryDBMSPage() {
 
                         {/* 日期範圍 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">開始日期</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">開始日期</label>
                             <input
                                 type="date"
                                 value={filterDateFrom}
                                 onChange={(e) => setFilterDateFrom(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2]"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">結束日期</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">結束日期</label>
                             <input
                                 type="date"
                                 value={filterDateTo}
                                 onChange={(e) => setFilterDateTo(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2]"
                             />
                         </div>
 
                         {/* 金額範圍 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">最小金額</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">最小金額</label>
                             <input
                                 type="number"
                                 placeholder="最小金額"
                                 value={filterAmountMin}
                                 onChange={(e) => setFilterAmountMin(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2] placeholder-[#557797]"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">最大金額</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">最大金額</label>
                             <input
                                 type="number"
                                 placeholder="最大金額"
                                 value={filterAmountMax}
                                 onChange={(e) => setFilterAmountMax(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2] placeholder-[#557797]"
                             />
                         </div>
                     </div>
@@ -440,16 +440,18 @@ export default function PointsHistoryDBMSPage() {
                     <div className="flex gap-4">
                         <button
                             onClick={clearFilters}
-                            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                            className="px-4 py-2 border border-[#294565] bg-[#1A325F] text-[#92cbf4] rounded-xl hover:bg-[#294565] transition-colors"
                         >
                             清除篩選
                         </button>
                         <button
                             onClick={() => {
-                                const token = localStorage.getItem("token");
+                                const token = localStorage.getItem("token") || 
+                                             localStorage.getItem("userToken") || 
+                                             localStorage.getItem("adminToken");
                                 if (token) fetchPointHistory(token);
                             }}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                            className="px-4 py-2 bg-[#469FD2] text-white rounded-xl hover:bg-[#357AB8] transition-colors"
                         >
                             重新載入
                         </button>
@@ -457,59 +459,59 @@ export default function PointsHistoryDBMSPage() {
                 </div>
 
                 {/* 資料表格 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="bg-[#1A325F] border border-[#294565] rounded-xl shadow-lg overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                        <table className="min-w-full divide-y divide-[#294565]">
+                            <thead className="bg-[#0f203e]">
                                 <tr>
                                     <th 
                                         onClick={() => handleSort("created_at")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
                                     >
                                         時間 {sortField === "created_at" && (sortOrder === "asc" ? "↑" : "↓")}
                                     </th>
                                     <th 
                                         onClick={() => handleSort("user_name")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
                                     >
                                         用戶 {sortField === "user_name" && (sortOrder === "asc" ? "↑" : "↓")}
                                     </th>
                                     <th 
                                         onClick={() => handleSort("type")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
                                     >
                                         類型 {sortField === "type" && (sortOrder === "asc" ? "↑" : "↓")}
                                     </th>
                                     <th 
                                         onClick={() => handleSort("amount")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
                                     >
                                         金額 {sortField === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
                                     </th>
                                     <th 
                                         onClick={() => handleSort("balance_after")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
                                     >
                                         餘額 {sortField === "balance_after" && (sortOrder === "asc" ? "↑" : "↓")}
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                         轉帳對象
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                         備註
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                         交易ID
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-[#1A325F] divide-y divide-[#294565]">
                                 {paginatedData.map((record, index) => (
-                                    <tr key={`${record.user_id}-${record.created_at}-${index}`} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <tr key={`${record.user_id}-${record.created_at}-${index}`} className="hover:bg-[#294565] transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                                             {formatDateTime(record.created_at)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#92cbf4]">
                                             {record.user_name}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -518,24 +520,24 @@ export default function PointsHistoryDBMSPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
-                                            <span className={record.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                            <span className={record.amount >= 0 ? 'text-green-400' : 'text-red-400'}>
                                                 {formatAmount(record.amount)}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-white">
                                             {record.balance_after !== null ? record.balance_after?.toLocaleString() : '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                                             {record.transfer_partner && (
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#469FD2] text-white">
                                                     {record.transfer_partner}
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title={record.note}>
+                                        <td className="px-6 py-4 text-sm text-[#557797] max-w-xs truncate" title={record.note}>
                                             {record.note}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#557797] font-mono">
                                             {record.transaction_id && (
                                                 <span className="text-xs">
                                                     {record.transaction_id.substring(0, 8)}...
@@ -550,37 +552,37 @@ export default function PointsHistoryDBMSPage() {
 
                     {/* 分頁控制 */}
                     {totalPages > 1 && (
-                        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                        <div className="bg-[#1A325F] px-4 py-3 flex items-center justify-between border-t border-[#294565] sm:px-6">
                             <div className="flex-1 flex justify-between sm:hidden">
                                 <button
                                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                     disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                                    className="relative inline-flex items-center px-4 py-2 border border-[#294565] text-sm font-medium rounded-xl text-[#92cbf4] bg-[#1A325F] hover:bg-[#294565] disabled:opacity-50 transition-colors"
                                 >
                                     上一頁
                                 </button>
                                 <button
                                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-[#294565] text-sm font-medium rounded-xl text-[#92cbf4] bg-[#1A325F] hover:bg-[#294565] disabled:opacity-50 transition-colors"
                                 >
                                     下一頁
                                 </button>
                             </div>
                             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                                 <div>
-                                    <p className="text-sm text-gray-700">
-                                        顯示第 <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> 到{" "}
-                                        <span className="font-medium">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> 筆，
-                                        共 <span className="font-medium">{sortedData.length}</span> 筆
+                                    <p className="text-sm text-[#557797]">
+                                        顯示第 <span className="font-medium text-[#92cbf4]">{(currentPage - 1) * itemsPerPage + 1}</span> 到{" "}
+                                        <span className="font-medium text-[#92cbf4]">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> 筆，
+                                        共 <span className="font-medium text-[#92cbf4]">{sortedData.length}</span> 筆
                                     </p>
                                 </div>
                                 <div>
-                                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                                    <nav className="relative z-0 inline-flex rounded-xl shadow-sm -space-x-px">
                                         <button
                                             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                             disabled={currentPage === 1}
-                                            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                            className="relative inline-flex items-center px-2 py-2 rounded-l-xl border border-[#294565] bg-[#1A325F] text-sm font-medium text-[#92cbf4] hover:bg-[#294565] disabled:opacity-50 transition-colors"
                                         >
                                             上一頁
                                         </button>
@@ -592,10 +594,10 @@ export default function PointsHistoryDBMSPage() {
                                                 <button
                                                     key={page}
                                                     onClick={() => setCurrentPage(page)}
-                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
                                                         currentPage === page
-                                                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                            ? 'z-10 bg-[#469FD2] border-[#469FD2] text-white'
+                                                            : 'bg-[#1A325F] border-[#294565] text-[#92cbf4] hover:bg-[#294565]'
                                                     }`}
                                                 >
                                                     {page}
@@ -606,7 +608,7 @@ export default function PointsHistoryDBMSPage() {
                                         <button
                                             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                                             disabled={currentPage === totalPages}
-                                            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                            className="relative inline-flex items-center px-2 py-2 rounded-r-xl border border-[#294565] bg-[#1A325F] text-sm font-medium text-[#92cbf4] hover:bg-[#294565] disabled:opacity-50 transition-colors"
                                         >
                                             下一頁
                                         </button>
