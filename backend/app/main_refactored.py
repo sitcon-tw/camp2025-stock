@@ -4,7 +4,8 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, arcade
+from app.middleware.rate_limiter import rate_limiter
+from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, arcade, rate_limit_admin
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
 from app.application.dependencies import get_service_container
@@ -34,6 +35,9 @@ app = FastAPI(
     redoc_url="/redoc",
     debug=config.debug
 )
+
+# Rate limiting middleware for Fail2Ban protection
+app.middleware("http")(rate_limiter)
 
 # CORS 設定 - 使用重構後的配置
 app.add_middleware(
@@ -117,6 +121,12 @@ app.include_router(
     arcade.router, 
     prefix="/api/bot", 
     tags=["Bot APIs - 遊戲廳功能"]
+)
+
+app.include_router(
+    rate_limit_admin.router, 
+    prefix="/api/admin", 
+    tags=["Admin Management - Rate Limiting"]
 )
 
 
