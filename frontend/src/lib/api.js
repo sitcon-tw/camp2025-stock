@@ -85,6 +85,17 @@ export async function getPointHistory(token, limit = 1000, options = {}) {
     });
 }
 
+// 取得所有點數紀錄 (一般使用者)
+export async function getAllPointHistory(token, limit = 300, options = {}) {
+    return apiRequest(`/api/web/points/history?limit=${limit}`, {
+        ...options,
+        headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+        },
+    });
+}
+
 // 取得歷史價格資料
 export async function getHistoricalPrices(hours = 24, options = {}) {
     return apiRequest(`/api/price/history?hours=${hours}`, options);
