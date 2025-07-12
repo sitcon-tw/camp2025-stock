@@ -1564,6 +1564,16 @@ async def get_transfer_fee_config(
     current_user: dict = Depends(get_current_user)
 ):
     """查詢轉點數手續費設定"""
+    # 檢查權限 - 只有系統管理員可以查看手續費設定
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         
@@ -1615,24 +1625,36 @@ async def update_transfer_fee_config(
     current_user: dict = Depends(get_current_user)
 ):
     """更新轉點數手續費設定"""
+    # 檢查權限 - 只有系統管理員可以修改手續費設定
+    user_role = await RBACService.get_user_role_from_db(current_user)
+    user_permissions = ROLE_PERMISSIONS.get(user_role, set())
+    
+    if Permission.SYSTEM_ADMIN not in user_permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
+        )
+    
     try:
         from app.core.database import get_database, Collections
         from datetime import datetime, timezone
         
         db = get_database()
         
-        # 驗證參數
-        if fee_rate is not None and (fee_rate < 0 or fee_rate > 100):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="手續費率必須在 0-100% 之間"
-            )
+        # 強化參數驗證
+        if fee_rate is not None:
+            if not isinstance(fee_rate, (int, float)) or fee_rate < 0 or fee_rate > 50:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="手續費率必須在 0-50% 之間"
+                )
         
-        if min_fee is not None and min_fee < 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="最低手續費不能小於 0"
-            )
+        if min_fee is not None:
+            if not isinstance(min_fee, int) or min_fee < 0 or min_fee > 10000:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="最低手續費必須在 0-10000 範圍內"
+                )
         
         # 構建更新字段
         update_fields = {"updated_at": datetime.now(timezone.utc)}

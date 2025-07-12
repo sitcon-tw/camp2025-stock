@@ -26,7 +26,7 @@ async def get_rate_limit_stats(
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
-    if Permission.MANAGE_SYSTEM not in user_permissions:
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -49,7 +49,7 @@ async def unban_ip(
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
-    if Permission.MANAGE_SYSTEM not in user_permissions:
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -91,7 +91,7 @@ async def get_banned_ips(
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
-    if Permission.MANAGE_SYSTEM not in user_permissions:
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
@@ -133,7 +133,7 @@ async def clear_all_bans(
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
-    if Permission.MANAGE_SYSTEM not in user_permissions:
+    if Permission.SYSTEM_ADMIN not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"權限不足：需要系統管理權限（目前角色：{user_role.value}）"
