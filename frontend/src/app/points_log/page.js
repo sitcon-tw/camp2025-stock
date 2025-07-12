@@ -42,8 +42,27 @@ export default function PointsHistoryDBMSPage() {
         try {
             setLoading(true);
             setError(null);
-            const data = await getAllPointHistory(token, 5000);
-            setPointHistory(data);
+            console.log("開始載入所有點數紀錄...");
+            
+            // 先嘗試載入大量資料，如果不夠再增加
+            let limit = 10000;
+            let data = await getAllPointHistory(token, limit);
+            
+            // 如果回傳的資料等於 limit，表示可能還有更多資料
+            if (data && data.length === limit) {
+                console.log(`載入了 ${limit} 筆，嘗試載入更多...`);
+                limit = 50000; // 增加到 5 萬筆
+                data = await getAllPointHistory(token, limit);
+                
+                if (data && data.length === limit) {
+                    console.log(`載入了 ${limit} 筆，已達上限`);
+                    setError(`已載入 ${limit} 筆記錄，可能還有更多資料未載入`);
+                }
+            }
+            
+            console.log(`成功載入 ${data?.length || 0} 筆點數紀錄`);
+            setPointHistory(data || []);
+            
         } catch (error) {
             console.error("取得點數紀錄失敗:", error);
             setError(error.message || "無法載入點數紀錄");
@@ -510,11 +529,14 @@ export default function PointsHistoryDBMSPage() {
                                 const token = localStorage.getItem("token") || 
                                              localStorage.getItem("userToken") || 
                                              localStorage.getItem("adminToken");
-                                if (token) fetchPointHistory(token);
+                                if (token) {
+                                    console.log("手動重新載入所有點數紀錄");
+                                    fetchPointHistory(token);
+                                }
                             }}
                             className="px-4 py-2 bg-[#469FD2] text-white rounded-xl hover:bg-[#357AB8] transition-colors"
                         >
-                            重新載入
+                            重新載入全部
                         </button>
                         <button
                             onClick={exportToCSV}
