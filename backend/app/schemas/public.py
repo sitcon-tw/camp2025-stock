@@ -218,3 +218,5 @@ class PointLog(BaseModel):
     note: str
     created_at: datetime
     balance_after: int
+    transfer_partner: Optional[str] = None  # 轉帳對象（發送者或接收者）
+    transaction_id: Optional[str] = None    # 交易ID

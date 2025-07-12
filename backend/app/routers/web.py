@@ -127,7 +127,9 @@ async def get_point_history(
                 amount=log.get("amount", 0),
                 note=log.get("note", ""),
                 created_at=log.get("created_at"),
-                balance_after=log.get("balance_after", 0)
+                balance_after=log.get("balance_after", 0),
+                transfer_partner=log.get("transfer_partner"),
+                transaction_id=log.get("transaction_id")
             )
             for log in logs
         ]

@@ -778,7 +778,8 @@ class UserService:
                         "amount": 1,
                         "note": 1,
                         "created_at": 1,
-                        "balance_after": 1
+                        "balance_after": 1,
+                        "transaction_id": 1
                     }
                 }
             ]
@@ -786,7 +787,31 @@ class UserService:
             cursor = self.db[Collections.POINT_LOGS].aggregate(pipeline)
             logs = await cursor.to_list(length=limit)
             
-            return logs
+            # 處理轉帳記錄，提取轉帳對象資訊
+            processed_logs = []
+            for log in logs:
+                transfer_partner = None
+                
+                # 處理轉帳記錄
+                if log.get("type") in ["transfer_out", "transfer_in"]:
+                    note = log.get("note", "")
+                    if log.get("type") == "transfer_out":
+                        # 從 "轉帳給 Alice (含手續費 5)" 提取 "Alice"
+                        import re
+                        match = re.search(r"轉帳給 ([^(]+)", note)
+                        if match:
+                            transfer_partner = match.group(1).strip()
+                    elif log.get("type") == "transfer_in":
+                        # 從 "收到來自 Bob 的轉帳" 提取 "Bob"
+                        import re
+                        match = re.search(r"收到來自 ([^的]+) 的轉帳", note)
+                        if match:
+                            transfer_partner = match.group(1).strip()
+                
+                log["transfer_partner"] = transfer_partner
+                processed_logs.append(log)
+            
+            return processed_logs
             
         except Exception as e:
             logger.error(f"Failed to get all point logs: {e}")
