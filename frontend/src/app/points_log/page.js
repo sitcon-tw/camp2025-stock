@@ -729,22 +729,103 @@ export default function PointsHistoryDBMSPage() {
                                         </button>
                                         
                                         {/* 頁碼按鈕 */}
-                                        {Array.from({ length: Math.min(10, totalPages) }, (_, i) => {
-                                            const page = i + 1;
-                                            return (
-                                                <button
-                                                    key={page}
-                                                    onClick={() => setCurrentPage(page)}
-                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
-                                                        currentPage === page
-                                                            ? 'z-10 bg-[#469FD2] border-[#469FD2] text-white'
-                                                            : 'bg-[#1A325F] border-[#294565] text-[#92cbf4] hover:bg-[#294565]'
-                                                    }`}
-                                                >
-                                                    {page}
-                                                </button>
-                                            );
-                                        })}
+                                        {(() => {
+                                            const pageButtons = [];
+                                            const maxVisiblePages = 20; // 增加到20個可見頁面
+                                            const sidePages = 2; // 當前頁面兩側顯示的頁面數
+                                            
+                                            if (totalPages <= maxVisiblePages) {
+                                                // 總頁數少於最大可見頁數，顯示所有頁面
+                                                for (let i = 1; i <= totalPages; i++) {
+                                                    pageButtons.push(
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setCurrentPage(i)}
+                                                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
+                                                                currentPage === i
+                                                                    ? 'z-10 bg-[#469FD2] border-[#469FD2] text-white'
+                                                                    : 'bg-[#1A325F] border-[#294565] text-[#92cbf4] hover:bg-[#294565]'
+                                                            }`}
+                                                        >
+                                                            {i}
+                                                        </button>
+                                                    );
+                                                }
+                                            } else {
+                                                // 總頁數很多，使用智能分頁
+                                                // 始終顯示第一頁
+                                                pageButtons.push(
+                                                    <button
+                                                        key={1}
+                                                        onClick={() => setCurrentPage(1)}
+                                                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
+                                                            currentPage === 1
+                                                                ? 'z-10 bg-[#469FD2] border-[#469FD2] text-white'
+                                                                : 'bg-[#1A325F] border-[#294565] text-[#92cbf4] hover:bg-[#294565]'
+                                                        }`}
+                                                    >
+                                                        1
+                                                    </button>
+                                                );
+                                                
+                                                // 添加省略號（如果需要）
+                                                if (currentPage > sidePages + 3) {
+                                                    pageButtons.push(
+                                                        <span key="ellipsis1" className="relative inline-flex items-center px-4 py-2 border border-[#294565] bg-[#1A325F] text-sm font-medium text-[#92cbf4]">
+                                                            ...
+                                                        </span>
+                                                    );
+                                                }
+                                                
+                                                // 顯示當前頁面周圍的頁面
+                                                const startPage = Math.max(2, currentPage - sidePages);
+                                                const endPage = Math.min(totalPages - 1, currentPage + sidePages);
+                                                
+                                                for (let i = startPage; i <= endPage; i++) {
+                                                    pageButtons.push(
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setCurrentPage(i)}
+                                                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
+                                                                currentPage === i
+                                                                    ? 'z-10 bg-[#469FD2] border-[#469FD2] text-white'
+                                                                    : 'bg-[#1A325F] border-[#294565] text-[#92cbf4] hover:bg-[#294565]'
+                                                            }`}
+                                                        >
+                                                            {i}
+                                                        </button>
+                                                    );
+                                                }
+                                                
+                                                // 添加省略號（如果需要）
+                                                if (currentPage < totalPages - sidePages - 2) {
+                                                    pageButtons.push(
+                                                        <span key="ellipsis2" className="relative inline-flex items-center px-4 py-2 border border-[#294565] bg-[#1A325F] text-sm font-medium text-[#92cbf4]">
+                                                            ...
+                                                        </span>
+                                                    );
+                                                }
+                                                
+                                                // 始終顯示最後一頁（如果不是第一頁）
+                                                if (totalPages > 1) {
+                                                    pageButtons.push(
+                                                        <button
+                                                            key={totalPages}
+                                                            onClick={() => setCurrentPage(totalPages)}
+                                                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
+                                                                currentPage === totalPages
+                                                                    ? 'z-10 bg-[#469FD2] border-[#469FD2] text-white'
+                                                                    : 'bg-[#1A325F] border-[#294565] text-[#92cbf4] hover:bg-[#294565]'
+                                                            }`}
+                                                        >
+                                                            {totalPages}
+                                                        </button>
+                                                    );
+                                                }
+                                            }
+                                            
+                                            return pageButtons;
+                                        })()}
                                         
                                         <button
                                             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
