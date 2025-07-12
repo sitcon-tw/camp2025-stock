@@ -252,7 +252,7 @@ class UserService:
                 "reference_price": 20.0,
                 "limit_percent": 0.0,
                 "min_price": 0.0,
-                "max_price": float('inf'),
+                "max_price": 999999.0,  # 使用大數值代替 infinity
                 "order_price": order_price,
                 "note": "Testing mode: all prices allowed"
             }
@@ -295,7 +295,7 @@ class UserService:
                 "reference_price": 20.0,
                 "limit_percent": 0.0,
                 "min_price": 0.0,
-                "max_price": float('inf'),
+                "max_price": 999999.0,  # 使用大數值代替 infinity
                 "order_price": order_price,
                 "note": f"取得價格限制資訊失敗: {str(e)}"
             }
