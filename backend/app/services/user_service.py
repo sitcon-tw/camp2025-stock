@@ -780,12 +780,12 @@ class UserService:
                     "$project": {
                         "user_id": {"$toString": "$user_id"},
                         "user_name": {"$ifNull": ["$user_info.name", "Unknown"]},
-                        "type": 1,
-                        "amount": 1,
-                        "note": 1,
-                        "created_at": 1,
-                        "balance_after": 1,
-                        "transaction_id": 1
+                        "type": {"$ifNull": ["$type", "unknown"]},
+                        "amount": {"$ifNull": ["$amount", 0]},
+                        "note": {"$ifNull": ["$note", ""]},
+                        "created_at": {"$ifNull": ["$created_at", "$$NOW"]},
+                        "balance_after": {"$ifNull": ["$balance_after", 0]},
+                        "transaction_id": {"$ifNull": ["$transaction_id", ""]}
                     }
                 }
             ])

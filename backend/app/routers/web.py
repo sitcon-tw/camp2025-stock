@@ -118,21 +118,40 @@ async def get_point_history(
         # 使用 user service 的方法來取得所有點數記錄
         logs = await user_service.get_all_point_logs(limit)
         
-        # 轉換為 PointLog 格式
-        return [
-            PointLog(
-                user_id=log.get("user_id", ""),
-                user_name=log.get("user_name", "Unknown"),
-                type=log.get("type", ""),
-                amount=log.get("amount", 0),
-                note=log.get("note", ""),
-                created_at=log.get("created_at"),
-                balance_after=log.get("balance_after", 0),
-                transfer_partner=log.get("transfer_partner"),
-                transaction_id=log.get("transaction_id")
-            )
-            for log in logs
-        ]
+        # 轉換為 PointLog 格式，確保所有欄位都有有效值
+        from datetime import datetime, timezone
+        
+        result = []
+        for log in logs:
+            # 確保 created_at 有效
+            created_at = log.get("created_at")
+            if created_at is None:
+                created_at = datetime.now(timezone.utc)
+            elif isinstance(created_at, str):
+                try:
+                    created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                except:
+                    created_at = datetime.now(timezone.utc)
+            
+            try:
+                point_log = PointLog(
+                    user_id=log.get("user_id", ""),
+                    user_name=log.get("user_name", "Unknown"),
+                    type=log.get("type", "unknown"),
+                    amount=log.get("amount", 0),
+                    note=log.get("note", ""),
+                    created_at=created_at,
+                    balance_after=log.get("balance_after", 0),
+                    transfer_partner=log.get("transfer_partner"),
+                    transaction_id=log.get("transaction_id", "")
+                )
+                result.append(point_log)
+            except Exception as e:
+                # 記錄有問題的資料但不中斷整個請求
+                logger.warning(f"Skipping invalid point log record: {e}, log: {log}")
+                continue
+        
+        return result
 
     except Exception as e:
         logger.error(

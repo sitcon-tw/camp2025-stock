@@ -211,12 +211,17 @@ class Trade(BaseModel):
 
 # 點數紀錄
 class PointLog(BaseModel):
-    user_id: str
-    user_name: str
-    type: str
-    amount: int
-    note: str
+    user_id: str = ""
+    user_name: str = "Unknown"
+    type: str = "unknown"
+    amount: int = 0
+    note: str = ""
     created_at: datetime
-    balance_after: int
+    balance_after: int = 0
     transfer_partner: Optional[str] = None  # 轉帳對象（發送者或接收者）
     transaction_id: Optional[str] = None    # 交易ID
+    
+    model_config = {
+        "str_strip_whitespace": True,
+        "validate_default": True
+    }
