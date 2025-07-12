@@ -202,6 +202,67 @@ export default function PointsHistoryDBMSPage() {
         setCurrentPage(1);
     };
 
+    const exportToCSV = () => {
+        // 準備 CSV 資料
+        const headers = [
+            '時間',
+            '用戶名稱', 
+            '交易類型',
+            '金額',
+            '餘額',
+            '轉帳對象',
+            '備註',
+            '交易ID'
+        ];
+
+        // 轉換資料為 CSV 格式
+        const csvData = filteredData.map(record => [
+            formatDateTime(record.created_at),
+            record.user_name || '',
+            getTypeDisplay(record.type),
+            record.amount || 0,
+            record.balance_after !== null ? record.balance_after : '',
+            record.transfer_partner || '',
+            record.note || '',
+            record.transaction_id || ''
+        ]);
+
+        // 建立 CSV 內容
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => 
+                row.map(field => {
+                    // 處理包含逗號、引號或換行的欄位
+                    const fieldStr = String(field);
+                    if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+                        return `"${fieldStr.replace(/"/g, '""')}"`;
+                    }
+                    return fieldStr;
+                }).join(',')
+            )
+        ].join('\n');
+
+        // 建立並下載檔案
+        const blob = new Blob(['\uFEFF' + csvContent], { 
+            type: 'text/csv;charset=utf-8;' 
+        });
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+        const filename = `點數紀錄_${timestamp}.csv`;
+        
+        if (navigator.msSaveBlob) {
+            // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
     const formatDateTime = (dateString) => {
         return new Date(dateString).toLocaleString('zh-TW', {
             timeZone: 'Asia/Taipei',
@@ -437,7 +498,7 @@ export default function PointsHistoryDBMSPage() {
                     </div>
 
                     {/* 操作按鈕 */}
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 flex-wrap">
                         <button
                             onClick={clearFilters}
                             className="px-4 py-2 border border-[#294565] bg-[#1A325F] text-[#92cbf4] rounded-xl hover:bg-[#294565] transition-colors"
@@ -454,6 +515,15 @@ export default function PointsHistoryDBMSPage() {
                             className="px-4 py-2 bg-[#469FD2] text-white rounded-xl hover:bg-[#357AB8] transition-colors"
                         >
                             重新載入
+                        </button>
+                        <button
+                            onClick={exportToCSV}
+                            className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            匯出 CSV ({filteredData.length} 筆)
                         </button>
                     </div>
                 </div>
