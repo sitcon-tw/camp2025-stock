@@ -466,33 +466,83 @@ export default function PointsHistoryDBMSPage() {
                                 <tr>
                                     <th 
                                         onClick={() => handleSort("created_at")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors select-none"
                                     >
-                                        時間 {sortField === "created_at" && (sortOrder === "asc" ? "↑" : "↓")}
+                                        <div className="flex items-center space-x-1">
+                                            <span>時間</span>
+                                            <div className="flex flex-col">
+                                                <svg className={`w-3 h-3 ${sortField === "created_at" && sortOrder === "asc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                                                </svg>
+                                                <svg className={`w-3 h-3 ${sortField === "created_at" && sortOrder === "desc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th 
                                         onClick={() => handleSort("user_name")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors select-none"
                                     >
-                                        用戶 {sortField === "user_name" && (sortOrder === "asc" ? "↑" : "↓")}
+                                        <div className="flex items-center space-x-1">
+                                            <span>用戶</span>
+                                            <div className="flex flex-col">
+                                                <svg className={`w-3 h-3 ${sortField === "user_name" && sortOrder === "asc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                                                </svg>
+                                                <svg className={`w-3 h-3 ${sortField === "user_name" && sortOrder === "desc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th 
                                         onClick={() => handleSort("type")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors select-none"
                                     >
-                                        類型 {sortField === "type" && (sortOrder === "asc" ? "↑" : "↓")}
+                                        <div className="flex items-center space-x-1">
+                                            <span>類型</span>
+                                            <div className="flex flex-col">
+                                                <svg className={`w-3 h-3 ${sortField === "type" && sortOrder === "asc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                                                </svg>
+                                                <svg className={`w-3 h-3 ${sortField === "type" && sortOrder === "desc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th 
                                         onClick={() => handleSort("amount")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors select-none"
                                     >
-                                        金額 {sortField === "amount" && (sortOrder === "asc" ? "↑" : "↓")}
+                                        <div className="flex items-center space-x-1">
+                                            <span>金額</span>
+                                            <div className="flex flex-col">
+                                                <svg className={`w-3 h-3 ${sortField === "amount" && sortOrder === "asc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                                                </svg>
+                                                <svg className={`w-3 h-3 ${sortField === "amount" && sortOrder === "desc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th 
                                         onClick={() => handleSort("balance_after")}
-                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors"
+                                        className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors select-none"
                                     >
-                                        餘額 {sortField === "balance_after" && (sortOrder === "asc" ? "↑" : "↓")}
+                                        <div className="flex items-center space-x-1">
+                                            <span>餘額</span>
+                                            <div className="flex flex-col">
+                                                <svg className={`w-3 h-3 ${sortField === "balance_after" && sortOrder === "asc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                                                </svg>
+                                                <svg className={`w-3 h-3 ${sortField === "balance_after" && sortOrder === "desc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider">
                                         轉帳對象
