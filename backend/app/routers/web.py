@@ -9,6 +9,7 @@ from app.schemas.public import UserAssetDetail, ErrorResponse, QRCodeRedeemReque
 from pydantic import BaseModel, Field
 from datetime import datetime
 from app.core.security import get_current_user
+from app.core.rbac import RBACService, Permission
 from typing import List, Dict, Any, Optional
 import logging
 
@@ -613,15 +614,44 @@ async def create_qr_code(
     """
     import json
     
+    # 檢查權限
+    if not RBACService.has_permission(current_user, Permission.GENERATE_QRCODE):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="權限不足：需要 QR Code 生成權限"
+        )
+    
+    # 驗證點數範圍
+    if not isinstance(request.points, int) or request.points < 1 or request.points > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="點數必須在 1-1000 範圍內"
+        )
+    
     try:
         # 解析 QR Code 資料以驗證格式
         qr_data = json.loads(request.qr_data)
         qr_id = qr_data.get("id")
+        qr_type = qr_data.get("type")
+        qr_points = qr_data.get("points")
         
         if not qr_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="QR Code 資料中缺少 ID"
+            )
+        
+        # 驗證 QR Code 資料結構
+        if qr_type != "points_redeem":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="QR Code 類型必須為 points_redeem"
+            )
+        
+        if qr_points != request.points:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="QR Code 資料中的點數與請求點數不一致"
             )
         
         # 保存到資料庫
@@ -678,12 +708,19 @@ async def list_qr_codes(
     Returns:
         QR Code 記錄列表
     """
+    # 檢查權限 - 只有有 QR Code 權限的用戶才能查看所有記錄，否則只能查看自己創建的
+    has_qr_permission = RBACService.has_permission(current_user, Permission.GENERATE_QRCODE)
+    
     try:
         from app.core.database import get_database, Collections
         db = get_database()
         
         # 構建查詢條件
-        query = {"created_by": current_user["user_id"]}
+        query = {}
+        if not has_qr_permission:
+            # 沒有 QR Code 權限的用戶只能查看自己創建的記錄
+            query["created_by"] = current_user["user_id"]
+        
         if used is not None:
             query["used"] = used
         

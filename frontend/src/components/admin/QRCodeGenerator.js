@@ -112,6 +112,19 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
         showNotification("已重新載入 QR Code 記錄", "info");
     };
 
+    // HTML 轉義函數，防止 XSS 攻擊
+    const escapeHtml = (unsafe) => {
+        if (typeof unsafe !== 'string') {
+            return String(unsafe);
+        }
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    };
+
     // 列印功能
     const printQRCodes = async () => {
         if (qrCodes.length === 0) {
@@ -134,8 +147,8 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
                     color: { dark: '#000000', light: '#ffffff' }
                 });
                 qrImages.push({
-                    id: qr.id,
-                    points: qr.points,
+                    id: escapeHtml(qr.id),
+                    points: parseInt(qr.points) || 0,
                     imageUrl: qrImageUrl
                 });
             } catch (error) {
@@ -269,8 +282,12 @@ export const QRCodeGenerator = ({ token, showNotification }) => {
             </html>
         `;
 
-        printWindow.document.write(printContent);
-        printWindow.document.close();
+        // 安全地設置內容，避免使用 document.write
+        if (printWindow && printWindow.document) {
+            printWindow.document.open();
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+        }
     };
 
     return (
