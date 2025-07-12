@@ -25,9 +25,14 @@ export default function PointsHistoryDBMSPage() {
     const [mergeTransfers, setMergeTransfers] = useState(false);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        // 優先順序：token > userToken > adminToken
+        const token = localStorage.getItem("token") || 
+                     localStorage.getItem("userToken") || 
+                     localStorage.getItem("adminToken");
+        
         if (!token) {
-            router.push("/login");
+            setError("請先登入以查看點數紀錄");
+            setLoading(false);
             return;
         }
         fetchPointHistory(token);
@@ -278,10 +283,10 @@ export default function PointsHistoryDBMSPage() {
                             重新載入
                         </button>
                         <button
-                            onClick={() => router.push('/dashboard')}
+                            onClick={() => window.open('/dashboard', '_blank')}
                             className="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
                         >
-                            返回首頁
+                            前往 Dashboard
                         </button>
                     </div>
                 </div>
