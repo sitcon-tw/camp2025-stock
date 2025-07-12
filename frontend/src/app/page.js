@@ -185,11 +185,10 @@ export default function Home() {
                 </div>
                 <a
                     href="https://camp.sitcon.party/arcade"
-                    className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6 block"
+                    className="mt-10 w-[95%] max-w-lg rounded-xl bg-[#1A325F] p-6 block bg-[auto_100%] hover:bg-[length:auto_105%] active:bg-[length:auto_110%]  transition-all"
                     style={{
                         backgroundImage:
                             "url('https://camp.sitcon.party/arcade/og.webp')",
-                        backgroundSize: "cover",
                         backgroundPosition: "center",
                         aspectRatio: "1512 / 668",
                     }}
