@@ -7,7 +7,7 @@ import { ChevronDown } from "lucide-react";
 
 const PointHistoryCard = ({ token }) => {
     const [pointHistory, setPointHistory] = useState([]);
-    const [pointHistoryLimit, setPointHistoryLimit] = useState(10);
+    const [pointHistoryLimit, setPointHistoryLimit] = useState(100);
     const [pointHistoryLoading, setPointHistoryLoading] = useState(false);
     const [showLimitDropdown, setShowLimitDropdown] = useState(false);
     const [lastPointHistory, setLastPointHistory] = useState([]);
@@ -78,7 +78,7 @@ const PointHistoryCard = ({ token }) => {
                         onClick={() => setShowLimitDropdown(!showLimitDropdown)}
                         className="flex items-center gap-2 rounded-lg border border-[#294565] bg-[#0f203e] px-3 py-2 text-sm text-[#92cbf4] transition-colors hover:bg-[#294565]/30"
                     >
-                        <span>顯示 {pointHistoryLimit} 筆</span>
+                        <span>顯示 {pointHistoryLimit === null ? '全部' : `${pointHistoryLimit} 筆`}</span>
                         <ChevronDown className={`h-4 w-4 transition-transform ${showLimitDropdown ? 'rotate-180' : ''}`} />
                     </button>
                     
@@ -98,6 +98,16 @@ const PointHistoryCard = ({ token }) => {
                                     {limit} 筆
                                 </button>
                             ))}
+                            <button
+                                onClick={() => changePointHistoryLimit(null)}
+                                className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-[#294565]/30 ${
+                                    pointHistoryLimit === null 
+                                        ? 'bg-[#469FD2]/20 text-[#469FD2]' 
+                                        : 'text-[#92cbf4]'
+                                }`}
+                            >
+                                全部
+                            </button>
                         </div>
                     )}
                 </div>

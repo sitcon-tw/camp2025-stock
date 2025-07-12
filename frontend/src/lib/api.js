@@ -451,8 +451,12 @@ export async function getWebPortfolio(token) {
 }
 
 // 查詢點數記錄
-export async function getWebPointHistory(token, limit = 50) {
-    return apiRequest(`/api/web/points/history?limit=${limit}`, {
+export async function getWebPointHistory(token, limit = null) {
+    const url = limit !== null 
+        ? `/api/web/points/history?limit=${limit}` 
+        : `/api/web/points/history`;
+    
+    return apiRequest(url, {
         headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
