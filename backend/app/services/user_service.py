@@ -761,12 +761,39 @@ class UserService:
             
             logs = await cursor.to_list(length=None)
             
-            # 簡單處理，只返回基本資訊
+            # 收集所有唯一的 user_id 來批量查詢使用者資訊
+            user_ids = set()
+            for log in logs:
+                user_id = log.get("user_id")
+                if user_id:
+                    user_ids.add(user_id)
+            
+            # 建立 user_id 到使用者名稱的映射
+            user_name_map = {}
+            
+            if user_ids:
+                # 批量查詢所有相關使用者
+                # 處理 ObjectId 類型的 user_id（透過 _id 查詢）
+                objectid_user_ids = [uid for uid in user_ids if isinstance(uid, ObjectId)]
+                if objectid_user_ids:
+                    async for user in self.db[Collections.USERS].find({"_id": {"$in": objectid_user_ids}}, {"_id": 1, "name": 1}):
+                        user_name_map[user["_id"]] = user.get("name", "Unknown")
+                
+                # 處理字串類型的 user_id（透過 id 查詢）
+                string_user_ids = [uid for uid in user_ids if isinstance(uid, str)]
+                if string_user_ids:
+                    async for user in self.db[Collections.USERS].find({"id": {"$in": string_user_ids}}, {"id": 1, "name": 1}):
+                        user_name_map[user["id"]] = user.get("name", "Unknown")
+            
+            # 處理記錄，加入使用者名稱
             processed_logs = []
             for log in logs:
+                user_id = log.get("user_id")
+                user_name = user_name_map.get(user_id, "Unknown")
+                
                 processed_log = {
-                    "user_id": str(log.get("user_id", "")),
-                    "user_name": log.get("user_name", "Unknown"),  # 使用原有的user_name欄位
+                    "user_id": str(user_id) if user_id else "",
+                    "user_name": user_name,
                     "type": log.get("type", "unknown"),
                     "amount": log.get("amount", 0),
                     "note": log.get("note", ""),

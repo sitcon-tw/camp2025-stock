@@ -881,35 +881,65 @@ class AdminService:
                 {"$sort": {"created_at": -1}},
                 # 限制結果數量
                 {"$limit": limit},
-                # 聯接使用者資料
+                # 先嘗試用 _id 關聯（ObjectId 類型的 user_id）
                 {
                     "$lookup": {
                         "from": Collections.USERS,
                         "localField": "user_id",
                         "foreignField": "_id",
-                        "as": "user_info"
+                        "as": "user_info_by_objectid"
                     }
+                },
+                # 再嘗試用 id 關聯（字串類型的 user_id）
+                {
+                    "$lookup": {
+                        "from": Collections.USERS,
+                        "localField": "user_id",
+                        "foreignField": "id",
+                        "as": "user_info_by_id"
+                    }
+                },
+                # 合併兩個結果，優先使用 ObjectId 匹配的結果
+                {
+                    "$addFields": {
+                        "user_info": {
+                            "$cond": {
+                                "if": {"$gt": [{"$size": "$user_info_by_objectid"}, 0]},
+                                "then": {"$arrayElemAt": ["$user_info_by_objectid", 0]},
+                                "else": {
+                                    "$cond": {
+                                        "if": {"$gt": [{"$size": "$user_info_by_id"}, 0]},
+                                        "then": {"$arrayElemAt": ["$user_info_by_id", 0]},
+                                        "else": "$$REMOVE"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                # 移除中間結果
+                {
+                    "$unset": ["user_info_by_objectid", "user_info_by_id"]
                 },
                 # 轉換為期望的格式
                 {
                     "$project": {
                         "user_id": {"$toString": "$user_id"},
                         "user_name": {
-                            "$cond": {
-                                "if": {"$eq": [{"$size": "$user_info"}, 0]},
-                                "then": "未知使用者",
-                                "else": {
+                            "$ifNull": [
+                                "$user_info.telegram_nickname",
+                                {
                                     "$ifNull": [
-                                        {"$arrayElemAt": ["$user_info.telegram_nickname", 0]},
+                                        "$user_info.name",
                                         {
                                             "$ifNull": [
-                                                {"$arrayElemAt": ["$user_info.name", 0]},
-                                                {"$arrayElemAt": ["$user_info.username", 0]}
+                                                "$user_info.username",
+                                                "未知使用者"
                                             ]
                                         }
                                     ]
                                 }
-                            }
+                            ]
                         },
                         "type": {"$ifNull": ["$type", "qr_scan"]},
                         "amount": 1,
