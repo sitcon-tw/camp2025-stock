@@ -747,6 +747,41 @@ class UserService:
             logger.error(f"Failed to get user point logs: {e}")
             return []
 
+    # 取得所有點數記錄（給一般使用者）- 簡化版
+    async def get_all_point_logs_simple(self, limit: int = None) -> List[dict]:
+        """簡化版點數記錄查詢，避免複雜聚合管道timeout"""
+        try:
+            # 簡單查詢，只查詢基本欄位
+            query = {"amount": {"$exists": True}}
+            
+            cursor = self.db[Collections.POINT_LOGS].find(query).sort("created_at", -1)
+            
+            if limit is not None and limit > 0:
+                cursor = cursor.limit(limit)
+            
+            logs = await cursor.to_list(length=None)
+            
+            # 簡單處理，只返回基本資訊
+            processed_logs = []
+            for log in logs:
+                processed_log = {
+                    "user_id": str(log.get("user_id", "")),
+                    "user_name": log.get("user_name", "Unknown"),  # 使用原有的user_name欄位
+                    "type": log.get("type", "unknown"),
+                    "amount": log.get("amount", 0),
+                    "note": log.get("note", ""),
+                    "created_at": log.get("created_at"),
+                    "balance_after": log.get("balance_after", 0),
+                    "transaction_id": log.get("transaction_id", "")
+                }
+                processed_logs.append(processed_log)
+            
+            return processed_logs
+            
+        except Exception as e:
+            logger.error(f"Failed to get all point logs (simple): {e}")
+            raise
+    
     # 取得所有點數記錄（給一般使用者）
     async def get_all_point_logs(self, limit: int = None) -> List[dict]:
         try:

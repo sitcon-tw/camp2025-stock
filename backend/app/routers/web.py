@@ -115,8 +115,8 @@ async def get_point_history(
                 detail="無效的使用者 Token"
             )
 
-        # 使用 user service 的方法來取得所有點數記錄
-        logs = await user_service.get_all_point_logs(limit)
+        # 使用簡化版查詢來避免聚合管道timeout問題
+        logs = await user_service.get_all_point_logs_simple(limit)
         
         # 轉換為 PointLog 格式，確保所有欄位都有有效值
         from datetime import datetime, timezone
