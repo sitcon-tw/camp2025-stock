@@ -29,6 +29,9 @@ uv run ./main.py
 # Alternative start method
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
+# Generate environment template
+python scripts/env_config.py --generate
+
 # API documentation available at:
 # - http://localhost:8000/docs (Swagger)
 # - http://localhost:8000/redoc
@@ -41,11 +44,14 @@ cd frontend
 # Install dependencies
 pnpm install
 
-# Start development server
+# Start development server (with turbopack)
 pnpm dev
 
 # Build for production
 pnpm build
+
+# Start production server
+pnpm start
 
 # Lint code
 pnpm lint
@@ -65,23 +71,34 @@ uv run main.py
 ## Architecture Overview
 
 ### Backend Structure
-- **Services Layer**: Business logic in `app/services/` (admin_service.py, user_service.py, etc.)
+- **Services Layer**: Modular business logic in `app/services/` organized by domain (user_management/, trading/, market/, admin/, etc.)
 - **Routers Layer**: API endpoints in `app/routers/` organized by domain
 - **RBAC System**: Role-based access control with permissions in `app/core/rbac.py`
 - **Database**: MongoDB with async Motor driver, collections defined in `app/core/database.py`
+- **Domain Architecture**: Clean architecture with domain/, infrastructure/, and application/ layers
 
 ### Frontend Architecture
 - **App Router**: Next.js 15 with app directory structure
 - **Components**: Organized by domain (`/admin`, `/trading`, `/ui`)
-- **Context**: Permission management via React Context
+- **Context**: Permission management via React Context (`PermissionContext`, `DataCacheContext`)
 - **API Integration**: Centralized in `src/lib/api.js`
+- **Package Manager**: Uses pnpm with workspace configuration
+- **Styling**: Tailwind CSS with custom components
+
+### Bot Architecture
+- **Telegram Bot**: Uses python-telegram-bot library
+- **API Server**: FastAPI server for webhooks and notifications
+- **Handlers**: Organized by feature (commands, buttons, conversation flows)
+- **Integration**: Communicates with backend via HTTP APIs
+- **PVP Manager**: Handles player vs player challenges and games
 
 ### Key Systems
 
 **Permission System**: 
-- Backend: Enum-based roles (STUDENT, POINT_MANAGER, ANNOUNCER, ADMIN) with granular permissions
+- Backend: Enum-based roles (STUDENT, QRCODE_MANAGER, POINT_MANAGER, QR_POINT_MANAGER, ANNOUNCER, ADMIN) with granular permissions
 - Frontend: Permission guards and context providers for UI access control
 - Consistent permission constants between frontend/backend
+- Use `@require_permission()` decorator or `RBACService.has_permission()` for access control
 
 **Market Trading**:
 - Real-time price updates and order matching
@@ -130,7 +147,17 @@ Key MongoDB collections:
 Backend tests are in `/test` directory:
 ```bash
 cd backend
+
+# Run integration tests
 python test/integration/test_system_api.py
+
+# Run specific test suites
+python test/integration/test_refactored_system.py
+python test/integration/complete_refactor_test.py
+
+# Run test scripts
+bash test/scripts/test_admin_api.sh
+python test/scripts/quick_setup.py
 ```
 
 ### Configuration
@@ -145,7 +172,30 @@ Frontend configuration is in Next.js config files and environment variables.
 ### MongoDB Setup
 Ensure MongoDB is running on localhost:27017 or configure connection string in backend config.
 
+### Service Architecture
+The backend uses a modular service architecture with dependency injection:
+
+```python
+# Import services from domain modules
+from app.services.user_management import get_user_service
+from app.services.trading import get_trading_service
+from app.services.market import get_market_service
+from app.services.admin import get_admin_service
+from app.services.core import get_public_service, get_cache_service
+```
+
+Key service modules:
+- `user_management/`: User accounts, transfers, base service
+- `trading/`: Stock trading execution
+- `market/`: Market state management, IPO
+- `matching/`: Order matching engine
+- `admin/`: Administrative functions
+- `core/`: Cache, public APIs, RBAC
+- `system/`: Student management, debt service
+- `infrastructure/`: Event bus, sharding, queues
+
 ### Common Issues
 - **Manual market control**: Ensure `_is_market_open()` checks manual override first
 - **Time zones**: Always specify `Asia/Taipei` for consistent display
 - **Permissions**: Use RBAC system consistently between frontend and backend
+- **Service dependencies**: Use dependency injection functions from `app.services` modules
