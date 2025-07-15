@@ -236,6 +236,38 @@ async def get_price_history(
 
 
 @router.get(
+    "/price/history/date-range",
+    response_model=List[dict],
+    responses={
+        400: {"model": ErrorResponse, "description": "請求參數錯誤"},
+        500: {"model": ErrorResponse, "description": "伺服器內部錯誤"}
+    },
+    summary="查詢指定日期區間的歷史價格資料",
+    description="查詢指定日期區間的歷史股價資料，支援最多30天的查詢範圍"
+)
+async def get_price_history_by_date_range(
+    start_date: str = Query(..., description="開始日期 (YYYY-MM-DD 格式)", regex=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: str = Query(..., description="結束日期 (YYYY-MM-DD 格式)", regex=r"^\d{4}-\d{2}-\d{2}$"),
+    public_service: PublicService = Depends(get_public_service)
+) -> List[dict]:
+    """
+    查詢指定日期區間的歷史價格資料
+    
+    Args:
+        start_date: 開始日期 (YYYY-MM-DD 格式)
+        end_date: 結束日期 (YYYY-MM-DD 格式)
+        
+    Returns:
+        List[dict]: 歷史價格資料列表，包含時間戳和價格
+        
+    Raises:
+        400: 日期格式錯誤、開始日期晚於結束日期、或查詢範圍超過30天
+        500: 伺服器內部錯誤
+    """
+    return await public_service.get_price_history_by_date_range(start_date, end_date)
+
+
+@router.get(
     "/announcements",
     response_model=List[PublicAnnouncement],
     responses={

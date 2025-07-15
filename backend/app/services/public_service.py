@@ -391,6 +391,67 @@ class PublicService:
             logger.error(f"Failed to get price history: {e}")
             # 發生錯誤時回傳空陣列
             return []
+
+    # 取得指定日期區間的歷史價格資料
+    async def get_price_history_by_date_range(self, start_date: str, end_date: str) -> List[dict]:
+        """
+        取得指定日期區間的歷史價格資料
+        
+        Args:
+            start_date: 開始日期 (YYYY-MM-DD 格式)
+            end_date: 結束日期 (YYYY-MM-DD 格式)
+            
+        Returns:
+            List[dict]: 歷史價格資料列表，包含時間戳和價格
+        """
+        try:
+            from datetime import datetime, timezone
+            
+            # 解析日期字串並轉換為 UTC 時間
+            # 開始時間為指定日期的 00:00:00
+            start_dt = datetime.fromisoformat(f"{start_date}T00:00:00").replace(tzinfo=timezone.utc)
+            # 結束時間為指定日期的 23:59:59
+            end_dt = datetime.fromisoformat(f"{end_date}T23:59:59").replace(tzinfo=timezone.utc)
+            
+            # 驗證日期範圍
+            if start_dt > end_dt:
+                raise ValueError("開始日期不能晚於結束日期")
+            
+            # 限制查詢範圍不超過 30 天
+            max_days = 30
+            if (end_dt - start_dt).days > max_days:
+                raise ValueError(f"查詢範圍不能超過 {max_days} 天")
+            
+            # 從真實交易記錄獲取資料
+            trades_cursor = self.db[Collections.STOCK_ORDERS].find({
+                "status": "filled",
+                "created_at": {"$gte": start_dt, "$lte": end_dt}
+            }).sort("created_at", 1)
+            
+            real_trades = await trades_cursor.to_list(length=None)
+            
+            # 轉換為回應格式
+            history = []
+            for trade in real_trades:
+                price = trade.get("price")
+                if price is not None:  # Skip trades with None price
+                    history.append({
+                        "timestamp": trade.get("created_at", end_dt).isoformat(),
+                        "price": int(price)
+                    })
+            
+            return history
+                
+        except ValueError as e:
+            logger.error(f"Invalid date range parameters: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+        except Exception as e:
+            logger.error(f"Failed to get price history by date range: {e}")
+            # 發生錯誤時回傳空陣列
+            return []
     
     # 取得交易時間列表
     async def get_trading_hours(self) -> TradingHoursResponse:
