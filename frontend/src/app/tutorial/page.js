@@ -478,7 +478,7 @@ export default function TutorialPage() {
                             <ul className="list-disc pl-6 text-white space-y-1">
                                 <li>預設漲跌限制為 <strong>{marketData.loading ? '...' : marketData.tradingLimit}%</strong>（{marketData.loading ? '...' : marketData.tradingLimit * 100} basis points）</li>
                                 <li>基準價格基於最近成交價格計算</li>
-                                <li>超出限制的訂單會暫停，狀態變為 <span className="text-yellow-400">"pending_limit"</span></li>
+                                <li>超出限制的訂單會暫停，狀態變為 <span className="text-yellow-400">&quot;pending_limit&quot;</span></li>
                                 <li>當價格回到允許範圍內時，訂單會自動重新啟用</li>
                             </ul>
                         </div>

@@ -656,7 +656,7 @@ export default function CommunityPage() {
                                 />
                                 <div className="rounded-xl bg-gradient-to-br from-[#469FD2] to-[#357AB8] p-8 text-white" style={{display: 'none'}}>
                                     <div className="text-4xl font-bold mb-2">SITCON</div>
-                                    <div className="text-lg">Students' Information Technology Conference</div>
+                                    <div className="text-lg">Students&apos; Information Technology Conference</div>
                                 </div>
                             </div>
                             <h2 className="text-2xl font-semibold text-[#92cbf4] mb-2">
