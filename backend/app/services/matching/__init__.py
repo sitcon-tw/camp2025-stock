@@ -7,11 +7,12 @@
 """
 
 from .order_matching_service import OrderMatchingService, get_order_matching_service
-from .matching_scheduler import MatchingScheduler, get_matching_scheduler
+from .matching_scheduler import MatchingScheduler, get_matching_scheduler, initialize_matching_scheduler
 
 __all__ = [
     "OrderMatchingService",
     "get_order_matching_service",
     "MatchingScheduler", 
-    "get_matching_scheduler"
+    "get_matching_scheduler",
+    "initialize_matching_scheduler"
 ]

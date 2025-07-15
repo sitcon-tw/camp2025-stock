@@ -33,7 +33,7 @@ from .system import DebtService, get_debt_service
 from .system import StudentService, get_student_service
 from .notification import NotificationService, get_notification_service
 from .game import GameService, get_game_service
-from .matching import MatchingScheduler, get_matching_scheduler
+from .matching import MatchingScheduler, get_matching_scheduler, initialize_matching_scheduler
 from .market import IPOService, get_ipo_service
 
 __all__ = [
@@ -55,6 +55,7 @@ __all__ = [
     "get_order_matching_service",
     "MatchingScheduler",
     "get_matching_scheduler",
+    "initialize_matching_scheduler",
     # 管理
     "AdminService",
     "get_admin_service",

@@ -152,8 +152,8 @@ async def startup_event():
         await validate_services(service_container)
         
         # 初始化撮合調度器
-        from app.services.matching_scheduler import initialize_matching_scheduler
-        from app.services.user_service import get_user_service
+        from app.services import initialize_matching_scheduler
+        from app.services import get_user_service
         
         user_service = get_user_service()
         await initialize_matching_scheduler(user_service, start_immediately=True)
