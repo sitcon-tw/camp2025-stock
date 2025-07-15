@@ -7,7 +7,7 @@ from app.core.rbac import (
     Role, Permission, RBACService, 
     require_system_admin_permission, require_admin_role
 )
-from app.services.rbac_service import RBACManagementService, get_rbac_management_service
+from app.services import RBACManagementService, get_rbac_management_service
 from app.schemas.rbac import (
     UserRoleInfo, RoleUpdateRequest, RoleUpdateResponse,
     PermissionCheckRequest, PermissionCheckResponse,

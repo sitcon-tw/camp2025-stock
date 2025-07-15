@@ -234,7 +234,7 @@ async def redeem_qr_code(
             )
         
         # 給予點數
-        from app.services.admin_service import AdminService
+        from app.services import AdminService
         admin_service = AdminService(db)
         
         # 使用 admin_service 的 give_points 功能

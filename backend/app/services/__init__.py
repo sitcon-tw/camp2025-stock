@@ -27,6 +27,8 @@ from .matching import OrderMatchingService, get_order_matching_service
 from .admin import AdminService, get_admin_service
 from .core import PublicService, get_public_service
 from .core import CacheService, get_cache_service
+from .core import get_cache_invalidator
+from .core import RBACManagementService, get_rbac_management_service
 from .system import DebtService, get_debt_service
 from .system import StudentService, get_student_service
 from .notification import NotificationService, get_notification_service
@@ -61,6 +63,9 @@ __all__ = [
     "get_public_service",
     "CacheService",
     "get_cache_service",
+    "get_cache_invalidator",
+    "RBACManagementService",
+    "get_rbac_management_service",
     # 系統
     "DebtService",
     "get_debt_service",

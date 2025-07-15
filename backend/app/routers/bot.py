@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.services import UserService, get_user_service
-from app.services.admin_service import AdminService, get_admin_service
+from app.services import AdminService, get_admin_service
 from app.schemas.bot import (
     BotStockOrderRequest, BotTransferRequest,
     BotPortfolioRequest, BotPointHistoryRequest, BotStockOrdersRequest,

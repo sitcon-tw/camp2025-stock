@@ -7,7 +7,7 @@ from app.core.rbac import (
     Permission, require_give_points_permission, require_announcement_permission,
     require_view_all_users_permission, RBACService
 )
-from app.services.admin_service import AdminService, get_admin_service
+from app.services import AdminService, get_admin_service
 from app.schemas.public import (
     UserAssetDetail, GivePointsRequest, GivePointsResponse, 
     AnnouncementRequest, AnnouncementResponse

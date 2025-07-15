@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from app.services.public_service import PublicService, get_public_service
+from app.services import PublicService, get_public_service
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
     MarketStatus, TradingHoursResponse, ErrorResponse, PublicAnnouncement,
