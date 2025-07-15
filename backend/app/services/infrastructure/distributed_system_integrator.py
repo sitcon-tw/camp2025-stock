@@ -475,6 +475,10 @@ def get_distributed_system() -> Optional[DistributedSystemIntegrator]:
     """獲取分散式系統整合器實例"""
     return _distributed_system
 
+def get_distributed_system_integrator() -> Optional[DistributedSystemIntegrator]:
+    """DistributedSystemIntegrator 的依賴注入函數"""
+    return _distributed_system
+
 async def initialize_distributed_system(user_service, 
                                        config: DistributedSystemConfig = None) -> DistributedSystemIntegrator:
     """初始化分散式系統"""

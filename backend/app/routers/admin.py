@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.services.admin_service import AdminService, get_admin_service
-from app.services.user_service import UserService, get_user_service
+from app.services import UserService, get_user_service
 from app.services.debt_service import DebtService, get_debt_service
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
@@ -2077,7 +2077,7 @@ async def get_price_limit_info(
         )
     
     try:
-        from app.services.user_service import get_user_service
+        from app.services import get_user_service
         from datetime import datetime, timezone
         
         user_service = get_user_service()

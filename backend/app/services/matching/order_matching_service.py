@@ -1,6 +1,6 @@
 from __future__ import annotations
-from app.services.base_service import BaseService
-from app.services.market_service import get_market_service
+from ..user_management.base_service import BaseService
+from ..market import get_market_service
 from app.core.database import Collections
 from datetime import datetime, timezone
 from bson import ObjectId

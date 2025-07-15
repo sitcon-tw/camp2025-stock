@@ -1,6 +1,6 @@
 from __future__ import annotations
-from app.services.base_service import BaseService
-from app.services.market_service import get_market_service
+from ..user_management.base_service import BaseService
+from ..market import get_market_service
 from app.core.database import Collections
 from app.schemas.user import StockOrderRequest, StockOrderResponse
 from datetime import datetime, timezone
@@ -427,7 +427,7 @@ class TradingService(BaseService):
             )
         else:
             # 觸發異步撮合
-            from app.services.order_matching_service import get_order_matching_service
+            from ..matching import get_order_matching_service
             matching_service = get_order_matching_service()
             await matching_service.trigger_async_matching("limit_order_placed")
             

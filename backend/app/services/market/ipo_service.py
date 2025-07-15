@@ -36,8 +36,8 @@ class IPOService:
             
         # 如果不存在，則從環境變數讀取設定並以原子操作寫入
         try:
-            initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES", "1000000"))
-            initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE", "20"))
+            initial_shares = int(os.getenv("CAMP_IPO_INITIAL_SHARES"))
+            initial_price = int(os.getenv("CAMP_IPO_INITIAL_PRICE"))
         except (ValueError, TypeError):
             logger.error("無效的 IPO 環境變數，使用預設值。")
             initial_shares = 1000000

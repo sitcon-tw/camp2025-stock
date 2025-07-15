@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.services.user_service import UserService, get_user_service
+from app.services import UserService, get_user_service
 from app.schemas.user import (
     UserRegistrationRequest, UserRegistrationResponse,
     UserLoginRequest, UserLoginResponse, UserPortfolio,

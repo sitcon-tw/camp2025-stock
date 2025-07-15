@@ -1,7 +1,7 @@
 """
 快取失效機制 - 當資料變更時自動清除相關快取
 """
-from app.services.cache_service import get_cache_service, CacheKeys
+from .cache_service import get_cache_service, CacheKeys
 import logging
 
 logger = logging.getLogger(__name__)

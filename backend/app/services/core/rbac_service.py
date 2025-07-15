@@ -351,6 +351,10 @@ class RBACManagementService:
         return descriptions.get(role, "未知角色")
 
 # 依賴注入函數
-def get_rbac_management_service() -> RBACManagementService:
+def get_rbac_service() -> RBACManagementService:
     """RBAC 管理服務的依賴注入函數"""
+    return RBACManagementService()
+
+def get_rbac_management_service() -> RBACManagementService:
+    """RBAC 管理服務的依賴注入函數（向後相容）"""
     return RBACManagementService()

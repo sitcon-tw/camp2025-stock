@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.security import verify_bot_token
 from app.schemas.arcade import ArcadeActionRequest, ArcadeActionResponse, ArcadeHealthResponse, ArcadePointsRequest
-from app.services.user_service import UserService, get_user_service
+from app.services import UserService, get_user_service
 from app.core.database import Collections
 from bson import ObjectId
 from datetime import datetime, timezone

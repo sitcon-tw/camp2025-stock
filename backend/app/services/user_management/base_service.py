@@ -1,8 +1,8 @@
 from __future__ import annotations
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.database import get_database, Collections
-from app.services.cache_service import get_cache_service
-from app.services.cache_invalidation import get_cache_invalidator
+from ..core.cache_service import get_cache_service
+from ..core.cache_invalidation import get_cache_invalidator
 from datetime import datetime, timezone
 from bson import ObjectId
 import logging
@@ -11,6 +11,11 @@ from collections import defaultdict
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
+
+
+def get_base_service() -> BaseService:
+    """BaseService 的依賴注入函數"""
+    return BaseService()
 
 
 class BaseService:
