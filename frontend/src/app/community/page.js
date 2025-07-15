@@ -528,7 +528,7 @@ export default function CommunityPage() {
                     console.log('從發放結果更新學員資料:', updatedData);
                     setQuickTransferData(updatedData);
                     
-                    // 短暫延遲讓用戶看到更新的資訊
+                    // 短暫延遲讓使用者看到更新的資訊
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 

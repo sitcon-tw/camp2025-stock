@@ -1,9 +1,9 @@
 """
-用戶管理服務模組
+使用者管理服務模組
 
 包含：
 - BaseService: 基礎服務類別
-- UserService: 用戶管理服務
+- UserService: 使用者管理服務
 - TransferService: 點數轉帳服務
 """
 

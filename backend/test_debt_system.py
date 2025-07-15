@@ -27,23 +27,23 @@ async def test_debt_system():
     user_service = UserService(db)
     validation_service = UserValidationService(db)
     
-    # 測試用戶 - 使用你提供的欠款用戶資料
+    # 測試使用者 - 使用你提供的欠款使用者資料
     test_user_id = "686cd6bacfd2989c617b59ee"
     
     try:
         user_oid = ObjectId(test_user_id)
         
-        print(f"\n📊 測試用戶 ID: {test_user_id}")
+        print(f"\n📊 測試使用者 ID: {test_user_id}")
         
-        # 1. 測試獲取用戶債務訊息
-        print("\n1️⃣ 測試獲取用戶債務訊息...")
+        # 1. 測試獲取使用者債務訊息
+        print("\n1️⃣ 測試獲取使用者債務訊息...")
         debt_info = await debt_service.get_user_debt_info(user_oid)
         print(f"債務訊息: {debt_info}")
         
-        # 2. 測試用戶狀態驗證
-        print("\n2️⃣ 測試用戶狀態驗證...")
+        # 2. 測試使用者狀態驗證
+        print("\n2️⃣ 測試使用者狀態驗證...")
         status_result = await validation_service.validate_user_status(user_oid)
-        print(f"用戶狀態: {status_result}")
+        print(f"使用者狀態: {status_result}")
         
         # 3. 測試消費驗證
         print("\n3️⃣ 測試消費驗證...")
@@ -60,13 +60,13 @@ async def test_debt_system():
         deduct_result = await user_service._safe_deduct_points(user_oid, 50, "測試扣除")
         print(f"扣除 50 點結果: {deduct_result}")
         
-        # 6. 測試獲取所有欠款用戶
-        print("\n6️⃣ 測試獲取所有欠款用戶...")
+        # 6. 測試獲取所有欠款使用者
+        print("\n6️⃣ 測試獲取所有欠款使用者...")
         debtors_result = await debt_service.get_all_debtors()
-        print(f"欠款用戶數量: {debtors_result.get('total_debtors', 0)}")
+        print(f"欠款使用者數量: {debtors_result.get('total_debtors', 0)}")
         print(f"總欠款金額: {debtors_result.get('total_debt', 0)}")
         
-        # 7. 測試償還部分欠款（如果用戶有足夠點數）
+        # 7. 測試償還部分欠款（如果使用者有足夠點數）
         if debt_info.get('success') and debt_info.get('points', 0) > 0:
             print("\n7️⃣ 測試償還部分欠款...")
             repay_amount = min(debt_info['points'], 1)  # 償還 1 點或全部可用點數
@@ -81,13 +81,13 @@ async def test_debt_system():
         traceback.print_exc()
 
 async def test_normal_user():
-    """測試正常用戶（無欠款）的功能"""
-    print("\n🔍 測試正常用戶功能...")
+    """測試正常使用者（無欠款）的功能"""
+    print("\n🔍 測試正常使用者功能...")
     
     db = get_database()
     validation_service = UserValidationService(db)
     
-    # 查找一個沒有欠款的用戶
+    # 查找一個沒有欠款的使用者
     users_cursor = db[Collections.USERS].find({
         "$or": [
             {"owed_points": {"$exists": False}},
@@ -100,18 +100,18 @@ async def test_normal_user():
     users = await users_cursor.to_list(length=1)
     
     if not users:
-        print("⚠️ 沒有找到正常用戶進行測試")
+        print("⚠️ 沒有找到正常使用者進行測試")
         return
     
     user = users[0]
     user_oid = user["_id"]
     
-    print(f"測試用戶: {user.get('name', 'Unknown')} (ID: {user_oid})")
+    print(f"測試使用者: {user.get('name', 'Unknown')} (ID: {user_oid})")
     print(f"點數: {user.get('points', 0)}, 欠款: {user.get('owed_points', 0)}")
     
     # 測試狀態驗證
     status_result = await validation_service.validate_user_status(user_oid)
-    print(f"用戶狀態: {status_result}")
+    print(f"使用者狀態: {status_result}")
     
     # 測試小額消費驗證
     if user.get('points', 0) >= 10:

@@ -84,7 +84,7 @@ async def verify_community_password(
 )
 async def community_give_points(
     community_password: str = Query(..., description="社群密碼"),
-    student_username: str = Query(..., description="學員用戶名"),
+    student_username: str = Query(..., description="學員使用者名"),
     note: str = Query("社群攤位獎勵", description="備註"),
     create_if_not_exists: bool = Query(False, description="如果學員不存在是否創建")
 ):
@@ -93,7 +93,7 @@ async def community_give_points(
     
     Args:
         community_password: 社群密碼
-        student_username: 學員用戶名
+        student_username: 學員使用者名
         note: 備註
         create_if_not_exists: 如果學員不存在是否創建
         
@@ -143,7 +143,7 @@ async def community_give_points(
                 "telegram_id": telegram_id
             })
             if user:
-                logger.info(f"通過telegram_id找到用戶: {user.get('username', 'unknown')}")
+                logger.info(f"通過telegram_id找到使用者: {user.get('username', 'unknown')}")
         except ValueError:
             logger.info(f"無法轉換為數字，嘗試用username查找: {student_username}")
         
@@ -154,7 +154,7 @@ async def community_give_points(
                 "telegram_id": student_username
             })
             if user:
-                logger.info(f"通過字符串telegram_id找到用戶: {user.get('username', 'unknown')}")
+                logger.info(f"通過字符串telegram_id找到使用者: {user.get('username', 'unknown')}")
         
         # 最後嘗試作為username查找
         if not user:
@@ -163,7 +163,7 @@ async def community_give_points(
                 "username": student_username
             })
             if user:
-                logger.info(f"通過username找到用戶: {user.get('username', 'unknown')}")
+                logger.info(f"通過username找到使用者: {user.get('username', 'unknown')}")
         
         if not user:
             if create_if_not_exists:
@@ -254,7 +254,7 @@ async def community_give_points(
         return {
             "success": True,
             "message": f"成功給 {student_username} 發放 {points} 點數",
-            "student": user.get("username", student_username),  # 返回實際用戶名而不是 telegram_id
+            "student": user.get("username", student_username),  # 返回實際使用者名而不是 telegram_id
             "student_display_name": user.get("username", user.get("name", student_username)),
             "student_photo_url": user.get("photo_url"),
             "student_team": user.get("team"),
@@ -285,14 +285,14 @@ async def community_give_points(
 )
 async def get_student_info(
     community_password: str = Query(..., description="社群密碼"),
-    student_username: str = Query(..., description="學員用戶名或 telegram_id")
+    student_username: str = Query(..., description="學員使用者名或 telegram_id")
 ):
     """
     社群攤位獲取學員資訊
     
     Args:
         community_password: 社群密碼
-        student_username: 學員用戶名或 telegram_id
+        student_username: 學員使用者名或 telegram_id
     
     Returns:
         學員的基本資訊，包括顯示名稱、頭像URL和隊伍
@@ -401,14 +401,14 @@ async def get_student_info(
 )
 async def check_student_reward(
     community_password: str = Query(..., description="社群密碼"),
-    student_username: str = Query(..., description="學員用戶名或 telegram_id")
+    student_username: str = Query(..., description="學員使用者名或 telegram_id")
 ):
     """
     檢查學員是否已領取社群獎勵
     
     Args:
         community_password: 社群密碼
-        student_username: 學員用戶名或 telegram_id
+        student_username: 學員使用者名或 telegram_id
     
     Returns:
         檢查結果，包含是否已領取和相關資訊

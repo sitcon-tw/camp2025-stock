@@ -2,7 +2,7 @@
 服務層模組
 
 重構後的服務架構：
-- user_management/: 用戶管理相關服務
+- user_management/: 使用者管理相關服務
 - trading/: 交易相關服務  
 - market/: 市場管理服務
 - matching/: 撮合引擎服務
@@ -35,7 +35,7 @@ from .matching import MatchingScheduler, get_matching_scheduler
 from .market import IPOService, get_ipo_service
 
 __all__ = [
-    # 用戶管理
+    # 使用者管理
     "UserService",
     "get_user_service",
     "TransferService", 

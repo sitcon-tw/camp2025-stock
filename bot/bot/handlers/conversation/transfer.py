@@ -18,7 +18,7 @@ async def start_transfer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await verify_existing_user(response, update):
         return ConversationHandler.END
     
-    # 檢查用戶是否可以進行轉帳（包括欠款和凍結檢查）
+    # 檢查使用者是否可以進行轉帳（包括欠款和凍結檢查）
     if await verify_user_can_trade(response, update):
         return ConversationHandler.END
 

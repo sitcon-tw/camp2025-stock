@@ -49,7 +49,7 @@ class BaseService:
         logger.info(f"{operation} WriteConflict 第 {attempt + 1}/{max_retries} 次嘗試失敗，將重試...")
     
     async def _get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """根據 ID 獲取用戶資料"""
+        """根據 ID 獲取使用者資料"""
         try:
             user_oid = ObjectId(user_id)
             return await self.db[Collections.USERS].find_one({"_id": user_oid})
@@ -58,7 +58,7 @@ class BaseService:
             return None
     
     async def _get_user_by_telegram_id(self, telegram_id: int) -> Optional[Dict[str, Any]]:
-        """根據 Telegram ID 獲取用戶資料"""
+        """根據 Telegram ID 獲取使用者資料"""
         try:
             return await self.db[Collections.USERS].find_one({"telegram_id": telegram_id})
         except Exception as e:

@@ -577,7 +577,7 @@ class OrderMatchingService(BaseService):
     async def _invalidate_trade_caches(self, buy_order: Dict[str, Any], sell_order: Dict[str, Any]):
         """清除交易相關快取"""
         try:
-            # 清除用戶組合快取
+            # 清除使用者組合快取
             if buy_order.get("user_id") != "SYSTEM":
                 await self.cache_invalidator.invalidate_user_portfolio_cache(str(buy_order["user_id"]))
             

@@ -335,7 +335,7 @@ class GameService:
             
             amount = challenge["amount"]
             
-            # 使用債務驗證服務檢查用戶狀態和資金
+            # 使用債務驗證服務檢查使用者狀態和資金
             from app.core.user_validation import UserValidationService
             validation_service = UserValidationService(self.db)
             

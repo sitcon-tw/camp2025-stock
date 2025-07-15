@@ -1,6 +1,6 @@
 """
-用戶狀態驗證中間件
-處理用戶狀態檢查，包括凍結、欠款等情況
+使用者狀態驗證中間件
+處理使用者狀態檢查，包括凍結、欠款等情況
 """
 
 import logging
@@ -13,17 +13,17 @@ logger = logging.getLogger(__name__)
 
 
 class UserValidationService:
-    """用戶狀態驗證服務"""
+    """使用者狀態驗證服務"""
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
     
     async def validate_user_status(self, user_id: ObjectId, session=None) -> Dict[str, Any]:
         """
-        驗證用戶狀態，包括凍結和欠款檢查
+        驗證使用者狀態，包括凍結和欠款檢查
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             session: 資料庫session（可選）
             
         Returns:
@@ -119,10 +119,10 @@ class UserValidationService:
     
     async def validate_user_can_spend(self, user_id: ObjectId, amount: int, operation_type: str = "spend", session=None) -> Dict[str, Any]:
         """
-        驗證用戶是否可以消費指定金額
+        驗證使用者是否可以消費指定金額
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             amount: 消費金額
             operation_type: 操作類型（spend, transfer, trade等）
             session: 資料庫session（可選）
@@ -131,7 +131,7 @@ class UserValidationService:
             dict: 驗證結果
         """
         try:
-            # 首先檢查用戶狀態
+            # 首先檢查使用者狀態
             status_result = await self.validate_user_status(user_id, session)
             
             if not status_result['valid']:
@@ -184,10 +184,10 @@ class UserValidationService:
     
     async def validate_user_can_trade(self, user_id: ObjectId, side: str, quantity: int, session=None) -> Dict[str, Any]:
         """
-        驗證用戶是否可以進行交易
+        驗證使用者是否可以進行交易
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             side: 交易方向（buy/sell）
             quantity: 交易數量
             session: 資料庫session（可選）
@@ -196,7 +196,7 @@ class UserValidationService:
             dict: 驗證結果
         """
         try:
-            # 檢查用戶狀態
+            # 檢查使用者狀態
             status_result = await self.validate_user_status(user_id, session)
             
             if not status_result['valid']:
@@ -257,17 +257,17 @@ class UserValidationService:
     
     async def get_user_trading_info(self, user_id: ObjectId, session=None) -> Dict[str, Any]:
         """
-        獲取用戶交易相關訊息
+        獲取使用者交易相關訊息
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             session: 資料庫session（可選）
             
         Returns:
-            dict: 用戶交易訊息
+            dict: 使用者交易訊息
         """
         try:
-            # 獲取用戶基本訊息
+            # 獲取使用者基本訊息
             user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
             if not user:
                 return {
@@ -304,14 +304,14 @@ class UserValidationService:
             logger.error(f"Error getting user trading info for {user_id}: {e}")
             return {
                 'success': False,
-                'message': f'獲取用戶訊息失敗: {str(e)}',
+                'message': f'獲取使用者訊息失敗: {str(e)}',
                 'user_exists': False
             }
 
 
 # 依賴注入
 def get_user_validation_service() -> UserValidationService:
-    """獲取用戶驗證服務實例"""
+    """獲取使用者驗證服務實例"""
     from app.core.database import get_database
     db = get_database()
     return UserValidationService(db)
@@ -320,10 +320,10 @@ def get_user_validation_service() -> UserValidationService:
 # 快速驗證函數
 async def quick_validate_user_can_spend(user_id: ObjectId, amount: int, operation_type: str = "spend") -> Dict[str, Any]:
     """
-    快速驗證用戶是否可以消費
+    快速驗證使用者是否可以消費
     
     Args:
-        user_id: 用戶ID
+        user_id: 使用者ID
         amount: 消費金額
         operation_type: 操作類型
         
@@ -338,10 +338,10 @@ async def quick_validate_user_can_spend(user_id: ObjectId, amount: int, operatio
 
 async def quick_validate_user_can_trade(user_id: ObjectId, side: str, quantity: int) -> Dict[str, Any]:
     """
-    快速驗證用戶是否可以交易
+    快速驗證使用者是否可以交易
     
     Args:
-        user_id: 用戶ID
+        user_id: 使用者ID
         side: 交易方向
         quantity: 交易數量
         

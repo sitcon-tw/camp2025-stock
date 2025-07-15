@@ -1262,7 +1262,7 @@ class UserService:
             dict: {'success': bool, 'message': str, 'balance_before': int, 'balance_after': int}
         """
         try:
-            # 首先檢查用戶狀態和欠款情況
+            # 首先檢查使用者狀態和欠款情況
             user = await self.db[Collections.USERS].find_one({"_id": user_id}, session=session)
             if not user:
                 return {
@@ -3031,7 +3031,7 @@ class UserService:
                     "username": username,
                     "negative_amount": amount
                 })
-                logger.warning(f"用戶 ID: {user_id} 持有 {amount} 股")
+                logger.warning(f"使用者 ID: {user_id} 持有 {amount} 股")
             
             cancelled_orders_count = 0
             

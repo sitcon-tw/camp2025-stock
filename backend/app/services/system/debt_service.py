@@ -1,6 +1,6 @@
 """
 債務管理服務
-處理用戶欠款相關邏輯
+處理使用者欠款相關邏輯
 """
 
 import logging
@@ -21,10 +21,10 @@ class DebtService:
     
     async def get_user_debt_info(self, user_id: ObjectId) -> Dict[str, Any]:
         """
-        獲取用戶債務訊息
+        獲取使用者債務訊息
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             
         Returns:
             dict: 包含債務訊息的字典
@@ -71,10 +71,10 @@ class DebtService:
     
     async def validate_user_can_spend(self, user_id: ObjectId, amount: int) -> Dict[str, Any]:
         """
-        驗證用戶是否可以消費指定金額
+        驗證使用者是否可以消費指定金額
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             amount: 消費金額
             
         Returns:
@@ -144,7 +144,7 @@ class DebtService:
         償還欠款功能
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             amount: 償還金額
             admin_id: 管理員ID (可選)
             
@@ -168,7 +168,7 @@ class DebtService:
                     if owed_points == 0:
                         return {
                             'success': False,
-                            'message': '該用戶沒有欠款'
+                            'message': '該使用者沒有欠款'
                         }
                     
                     if current_points < amount:
@@ -180,7 +180,7 @@ class DebtService:
                     # 計算實際償還金額（不能超過欠款總額）
                     repay_amount = min(amount, owed_points)
                     
-                    # 更新用戶資料
+                    # 更新使用者資料
                     await self.db[Collections.USERS].update_one(
                         {"_id": user_id},
                         {
@@ -233,7 +233,7 @@ class DebtService:
         添加欠款（管理員功能）
         
         Args:
-            user_id: 用戶ID
+            user_id: 使用者ID
             amount: 欠款金額
             reason: 欠款原因
             admin_id: 管理員ID
@@ -261,7 +261,7 @@ class DebtService:
                     current_debt = user.get("owed_points", 0)
                     new_debt = current_debt + amount
                     
-                    # 更新用戶資料
+                    # 更新使用者資料
                     await self.db[Collections.USERS].update_one(
                         {"_id": user_id},
                         {
@@ -305,10 +305,10 @@ class DebtService:
     
     async def get_all_debtors(self) -> Dict[str, Any]:
         """
-        獲取所有有欠款的用戶列表
+        獲取所有有欠款的使用者列表
         
         Returns:
-            dict: 欠款用戶列表
+            dict: 欠款使用者列表
         """
         try:
             debtors_cursor = self.db[Collections.USERS].find(
@@ -357,7 +357,7 @@ class DebtService:
             logger.error(f"Error getting debtors list: {e}")
             return {
                 'success': False,
-                'message': f'獲取欠款用戶列表失敗: {str(e)}',
+                'message': f'獲取欠款使用者列表失敗: {str(e)}',
                 'debtors': [],
                 'total_debtors': 0,
                 'total_debt': 0

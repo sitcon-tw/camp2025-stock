@@ -19,7 +19,7 @@ async def arcade_deduct_points(
 ) -> ArcadeActionResponse:
     """遊戲廳扣除點數 (已棄用，請使用 /arcade/points)"""
     try:
-        # 根據username獲取用戶ID
+        # 根據username獲取使用者ID
         user = await user_service.db[Collections.USERS].find_one({
             "$or": [
                 {"name": request.from_user},
@@ -83,7 +83,7 @@ async def arcade_add_points(
 ) -> ArcadeActionResponse:
     """遊戲廳增加點數 (已棄用，請使用 /arcade/points)"""
     try:
-        # 根據username獲取用戶ID
+        # 根據username獲取使用者ID
         user = await user_service.db[Collections.USERS].find_one({
             "$or": [
                 {"name": request.from_user},
@@ -222,7 +222,7 @@ async def arcade_manage_points(
 ) -> ArcadeActionResponse:
     """遊戲廳點數管理（支持加點和扣點）"""
     try:
-        # 根據username獲取用戶ID
+        # 根據username獲取使用者ID
         user = await user_service.db[Collections.USERS].find_one({
             "$or": [
                 {"name": request.from_user},

@@ -24,14 +24,14 @@ async def test_enhanced_transfer():
     db = get_database()
     transfer_service = TransferService(db)
     
-    # 查找一個有欠款的用戶作為接收方
+    # 查找一個有欠款的使用者作為接收方
     debtor = await db[Collections.USERS].find_one({"owed_points": {"$gt": 0}})
     
     if not debtor:
-        print("⚠️ 沒有找到有欠款的用戶進行測試")
+        print("⚠️ 沒有找到有欠款的使用者進行測試")
         return
     
-    # 查找一個沒有欠款的用戶作為發送方
+    # 查找一個沒有欠款的使用者作為發送方
     sender = await db[Collections.USERS].find_one({
         "$or": [
             {"owed_points": {"$exists": False}},
@@ -43,7 +43,7 @@ async def test_enhanced_transfer():
     })
     
     if not sender:
-        print("⚠️ 沒有找到合適的發送方用戶進行測試")
+        print("⚠️ 沒有找到合適的發送方使用者進行測試")
         return
     
     print(f"\n📊 測試設置:")

@@ -2192,21 +2192,21 @@ async def trigger_manual_matching(
 
 @router.get(
     "/debt/debtors",
-    summary="獲取所有欠款用戶",
-    description="獲取系統中所有有欠款的用戶列表"
+    summary="獲取所有欠款使用者",
+    description="獲取系統中所有有欠款的使用者列表"
 )
 async def get_all_debtors(
     current_user: dict = Depends(get_current_user),
     debt_service: DebtService = Depends(get_debt_service)
 ) -> dict:
-    """獲取所有欠款用戶列表"""
+    """獲取所有欠款使用者列表"""
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
     if Permission.MANAGE_USERS not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要用戶管理權限（目前角色：{user_role.value}）"
+            detail=f"權限不足：需要使用者管理權限（目前角色：{user_role.value}）"
         )
     
     try:
@@ -2216,28 +2216,28 @@ async def get_all_debtors(
         logger.error(f"Failed to get debtors list: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"獲取欠款用戶列表失敗: {str(e)}"
+            detail=f"獲取欠款使用者列表失敗: {str(e)}"
         )
 
 
 @router.get(
     "/debt/user/{user_id}",
-    summary="獲取用戶債務訊息",
-    description="獲取指定用戶的詳細債務訊息"
+    summary="獲取使用者債務訊息",
+    description="獲取指定使用者的詳細債務訊息"
 )
 async def get_user_debt_info(
     user_id: str,
     current_user: dict = Depends(get_current_user),
     debt_service: DebtService = Depends(get_debt_service)
 ) -> dict:
-    """獲取用戶債務訊息"""
+    """獲取使用者債務訊息"""
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
     if Permission.MANAGE_USERS not in user_permissions:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"權限不足：需要用戶管理權限（目前角色：{user_role.value}）"
+            detail=f"權限不足：需要使用者管理權限（目前角色：{user_role.value}）"
         )
     
     try:
@@ -2249,14 +2249,14 @@ async def get_user_debt_info(
         logger.error(f"Failed to get user debt info for {user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"獲取用戶債務訊息失敗: {str(e)}"
+            detail=f"獲取使用者債務訊息失敗: {str(e)}"
         )
 
 
 @router.post(
     "/debt/add",
-    summary="添加用戶欠款",
-    description="管理員為指定用戶添加欠款"
+    summary="添加使用者欠款",
+    description="管理員為指定使用者添加欠款"
 )
 async def add_user_debt(
     user_id: str,
@@ -2265,7 +2265,7 @@ async def add_user_debt(
     current_user: dict = Depends(get_current_user),
     debt_service: DebtService = Depends(get_debt_service)
 ) -> dict:
-    """添加用戶欠款"""
+    """添加使用者欠款"""
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
@@ -2308,8 +2308,8 @@ async def add_user_debt(
 
 @router.post(
     "/debt/repay",
-    summary="償還用戶欠款",
-    description="管理員協助用戶償還欠款"
+    summary="償還使用者欠款",
+    description="管理員協助使用者償還欠款"
 )
 async def repay_user_debt(
     user_id: str,
@@ -2317,7 +2317,7 @@ async def repay_user_debt(
     current_user: dict = Depends(get_current_user),
     debt_service: DebtService = Depends(get_debt_service)
 ) -> dict:
-    """償還用戶欠款"""
+    """償還使用者欠款"""
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
@@ -2354,8 +2354,8 @@ async def repay_user_debt(
 
 @router.post(
     "/debt/clear/{user_id}",
-    summary="清除用戶所有欠款",
-    description="管理員清除指定用戶的所有欠款（免償）"
+    summary="清除使用者所有欠款",
+    description="管理員清除指定使用者的所有欠款（免償）"
 )
 async def clear_user_debt(
     user_id: str,
@@ -2363,7 +2363,7 @@ async def clear_user_debt(
     current_user: dict = Depends(get_current_user),
     debt_service: DebtService = Depends(get_debt_service)
 ) -> dict:
-    """清除用戶所有欠款"""
+    """清除使用者所有欠款"""
     user_role = await RBACService.get_user_role_from_db(current_user)
     user_permissions = ROLE_PERMISSIONS.get(user_role, set())
     
@@ -2395,7 +2395,7 @@ async def clear_user_debt(
         if debt_info['owed_points'] == 0:
             return {
                 'success': False,
-                'message': '該用戶沒有欠款需要清除'
+                'message': '該使用者沒有欠款需要清除'
             }
         
         cleared_amount = debt_info['owed_points']

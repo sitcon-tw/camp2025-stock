@@ -87,7 +87,7 @@ async def verify_existing_user(response, update: Update, is_callback: bool = Fal
 
 async def verify_user_can_trade(response, update: Update, is_callback: bool = False) -> bool:
     """
-    檢查用戶是否可以進行交易（包括欠款和凍結檢查）
+    檢查使用者是否可以進行交易（包括欠款和凍結檢查）
     
     Args:
         response: API 回應
@@ -100,7 +100,7 @@ async def verify_user_can_trade(response, update: Update, is_callback: bool = Fa
     if not isinstance(response, dict):
         return False
     
-    # 檢查是否有用戶資料
+    # 檢查是否有使用者資料
     user_data = response.get('user') or response.get('data')
     if not user_data:
         return False

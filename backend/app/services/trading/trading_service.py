@@ -35,7 +35,7 @@ class TradingService(BaseService):
                     message="市場目前未開放交易"
                 )
             
-            # 驗證用戶和訂單
+            # 驗證使用者和訂單
             user_oid = ObjectId(user_id)
             user = await self._get_user_by_id(user_id)
             if not user:
@@ -64,7 +64,7 @@ class TradingService(BaseService):
                     limit_exceeded = True
                     logger.info(f"Order price {request.price} exceeds daily limit, order will be queued")
             
-            # 檢查用戶資金和持股
+            # 檢查使用者資金和持股
             balance_check = await self._check_user_balance(user, request)
             if not balance_check["valid"]:
                 return StockOrderResponse(
@@ -143,7 +143,7 @@ class TradingService(BaseService):
             }
     
     async def get_user_stock_orders(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-        """獲取用戶股票訂單"""
+        """獲取使用者股票訂單"""
         try:
             user_oid = ObjectId(user_id)
             
@@ -193,7 +193,7 @@ class TradingService(BaseService):
         return {"valid": True, "message": ""}
     
     async def _check_user_balance(self, user: Dict[str, Any], request: StockOrderRequest) -> Dict[str, Any]:
-        """檢查用戶餘額和持股"""
+        """檢查使用者餘額和持股"""
         user_oid = user["_id"]
         
         if request.side == "buy":
@@ -332,7 +332,7 @@ class TradingService(BaseService):
             if update_result.matched_count == 0:
                 return StockOrderResponse(
                     success=False,
-                    message="點數不足或用戶不存在"
+                    message="點數不足或使用者不存在"
                 )
             
             # 增加持股

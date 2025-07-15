@@ -736,7 +736,7 @@ async def list_qr_codes(
     Returns:
         QR Code 記錄列表
     """
-    # 檢查權限 - 只有有 QR Code 權限的用戶才能查看所有記錄，否則只能查看自己創建的
+    # 檢查權限 - 只有有 QR Code 權限的使用者才能查看所有記錄，否則只能查看自己創建的
     has_qr_permission = RBACService.has_permission(current_user, Permission.GENERATE_QRCODE)
     
     try:
@@ -746,7 +746,7 @@ async def list_qr_codes(
         # 構建查詢條件
         query = {}
         if not has_qr_permission:
-            # 沒有 QR Code 權限的用戶只能查看自己創建的記錄
+            # 沒有 QR Code 權限的使用者只能查看自己創建的記錄
             query["created_by"] = current_user["user_id"]
         
         if used is not None:

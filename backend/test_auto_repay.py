@@ -24,14 +24,14 @@ async def test_auto_repay():
     db = get_database()
     admin_service = AdminService(db)
     
-    # 測試用戶 - 萬宸星
+    # 測試使用者 - 萬宸星
     test_user_id = "686cd6bacfd2989c617b59ee"
     
     try:
         user_oid = ObjectId(test_user_id)
         
-        # 檢查用戶目前狀態
-        print("\n📊 用戶目前狀態:")
+        # 檢查使用者目前狀態
+        print("\n📊 使用者目前狀態:")
         user = await db[Collections.USERS].find_one({'_id': user_oid})
         print(f"姓名: {user.get('name')}")
         print(f"點數: {user.get('points', 0)}")
@@ -50,7 +50,7 @@ async def test_auto_repay():
         print(f"給予點數結果: {result}")
         
         # 檢查更新後的狀態
-        print("\n📊 更新後的用戶狀態:")
+        print("\n📊 更新後的使用者狀態:")
         user_after = await db[Collections.USERS].find_one({'_id': user_oid})
         print(f"姓名: {user_after.get('name')}")
         print(f"點數: {user_after.get('points', 0)}")

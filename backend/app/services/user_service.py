@@ -1,9 +1,9 @@
 from __future__ import annotations
-from .base_service import BaseService
-from ..market import get_market_service
-from ..trading import get_trading_service
-from .transfer_service import get_transfer_service
-from ..matching import get_order_matching_service
+from app.services.base_service import BaseService
+from app.services.market_service import get_market_service
+from app.services.trading_service import get_trading_service
+from app.services.transfer_service import get_transfer_service
+from app.services.order_matching_service import get_order_matching_service
 from app.core.database import Collections
 from app.schemas.user import (
     UserRegistrationRequest, UserRegistrationResponse,

@@ -681,11 +681,11 @@ export async function getTransferFeeConfigPublic() {
 }
 
 // 取得使用者大頭照
-// 根據 telegram_id 從排行榜獲取用戶顯示名稱
+// 根據 telegram_id 從排行榜獲取使用者顯示名稱
 export async function getUserDisplayNameFromLeaderboard(telegramId) {
     try {
         const leaderboard = await apiRequest('/api/leaderboard');
-        // 查找匹配的用戶（排行榜中的username字段可能是顯示名稱）
+        // 查找匹配的使用者（排行榜中的username字段可能是顯示名稱）
         const user = leaderboard.find(entry => {
             // 嘗試多種匹配方式
             return entry.username === String(telegramId) || 
@@ -703,7 +703,7 @@ export async function getUserDisplayNameFromLeaderboard(telegramId) {
         }
         return null;
     } catch (error) {
-        console.warn('從排行榜獲取用戶資訊失敗:', error);
+        console.warn('從排行榜獲取使用者資訊失敗:', error);
         return null;
     }
 }

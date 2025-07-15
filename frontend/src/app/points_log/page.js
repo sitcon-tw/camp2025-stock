@@ -136,7 +136,7 @@ export default function PointsHistoryDBMSPage() {
     // 篩選和搜尋邏輯
     const filteredData = useMemo(() => {
         return processedData.filter(record => {
-            // 文字搜尋 (搜尋用戶名稱、備註、轉帳對象)
+            // 文字搜尋 (搜尋使用者名稱、備註、轉帳對象)
             const searchMatch = !searchTerm || 
                 record.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 record.note?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -146,7 +146,7 @@ export default function PointsHistoryDBMSPage() {
             // 類型篩選
             const typeMatch = !filterType || record.type === filterType;
 
-            // 用戶篩選
+            // 使用者篩選
             const userMatch = !filterUser || record.user_name?.toLowerCase().includes(filterUser.toLowerCase());
 
             // 日期範圍篩選
@@ -224,7 +224,7 @@ export default function PointsHistoryDBMSPage() {
         // 準備 CSV 資料
         const headers = [
             '時間',
-            '用戶名稱', 
+            '使用者名稱', 
             '交易類型',
             '金額',
             '餘額',
@@ -417,7 +417,7 @@ export default function PointsHistoryDBMSPage() {
                             <label className="block text-sm font-medium text-[#92cbf4] mb-1">搜尋</label>
                             <input
                                 type="text"
-                                placeholder="用戶名稱、備註、交易ID..."
+                                placeholder="使用者名稱、備註、交易ID..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2] placeholder-[#557797]"
@@ -439,12 +439,12 @@ export default function PointsHistoryDBMSPage() {
                             </select>
                         </div>
 
-                        {/* 用戶篩選 */}
+                        {/* 使用者篩選 */}
                         <div>
-                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">用戶名稱</label>
+                            <label className="block text-sm font-medium text-[#92cbf4] mb-1">使用者名稱</label>
                             <input
                                 type="text"
-                                placeholder="篩選特定用戶..."
+                                placeholder="篩選特定使用者..."
                                 value={filterUser}
                                 onChange={(e) => setFilterUser(e.target.value)}
                                 className="w-full px-3 py-2 border border-[#294565] bg-[#0f203e] text-white rounded-xl focus:outline-none focus:border-[#469FD2] placeholder-[#557797]"
@@ -576,7 +576,7 @@ export default function PointsHistoryDBMSPage() {
                                         className="px-6 py-3 text-left text-xs font-medium text-[#92cbf4] uppercase tracking-wider cursor-pointer hover:bg-[#294565] transition-colors select-none"
                                     >
                                         <div className="flex items-center space-x-1">
-                                            <span>用戶</span>
+                                            <span>使用者</span>
                                             <div className="flex flex-col">
                                                 <svg className={`w-3 h-3 ${sortField === "user_name" && sortOrder === "asc" ? "text-[#469FD2]" : "text-[#557797]"}`} fill="currentColor" viewBox="0 0 20 20">
                                                     <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
