@@ -105,6 +105,11 @@ export async function getHistoricalPrices(hours = 24, options = {}) {
     return apiRequest(`/api/price/history?hours=${hours}`, options);
 }
 
+// 取得指定日期區間的歷史價格資料
+export async function getHistoricalPricesByDateRange(startDate, endDate, options = {}) {
+    return apiRequest(`/api/price/history/date-range?start_date=${startDate}&end_date=${endDate}`, options);
+}
+
 // 取得排行榜資料
 export async function getLeaderboard(options = {}) {
     return apiRequest("/api/leaderboard", options);

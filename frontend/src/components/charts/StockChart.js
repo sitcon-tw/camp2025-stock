@@ -65,7 +65,13 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
     const isDragging = useRef(false);
     const lastMouseX = useRef(0);
 
+    // 日期區間選擇功能
+    const [dateRangeMode, setDateRangeMode] = useState(false);
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+
     const chartModeModal = useModal();
+    const dateRangeModal = useModal();
 
     const fetchingRef = useRef(false);
     const lastFetchTimeRef = useRef(0);
@@ -95,8 +101,15 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
 
                 try {
                     const now = Date.now();
-                    const historicalData =
-                        await apiService.getHistoricalData(24);
+                    let historicalData;
+                    
+                    if (dateRangeMode && startDate && endDate) {
+                        // 使用日期區間模式
+                        historicalData = await apiService.getHistoricalDataByDateRange(startDate, endDate);
+                    } else {
+                        // 使用原有的小時數模式
+                        historicalData = await apiService.getHistoricalData(24);
+                    }
 
                     if (!isMounted) break;
 
@@ -209,9 +222,14 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     fetchingRef.current = false;
                 }
 
-                await new Promise((resolve) =>
-                    setTimeout(resolve, 15_000),
-                );
+                // 在日期區間模式下，不需要定期刷新
+                if (!dateRangeMode) {
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, 15_000),
+                    );
+                } else {
+                    break; // 日期區間模式只執行一次
+                }
             }
         };
 
@@ -220,7 +238,7 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         return () => {
             isMounted = false;
         };
-    }, []);
+    }, [dateRangeMode, startDate, endDate]);
 
     const handleMouseDown = (e) => {
         e.preventDefault();
@@ -465,15 +483,78 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         chartModeModal.closeModal();
     };
 
+    // 處理日期區間選擇
+    const handleDateRangeSubmit = () => {
+        if (!startDate || !endDate) {
+            alert("請選擇開始和結束日期");
+            return;
+        }
+        
+        if (new Date(startDate) > new Date(endDate)) {
+            alert("開始日期不能晚於結束日期");
+            return;
+        }
+        
+        // 檢查日期範圍是否超過30天
+        const daysDiff = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 30) {
+            alert("日期範圍不能超過30天");
+            return;
+        }
+        
+        setDateRangeMode(true);
+        dateRangeModal.closeModal();
+    };
+
+    // 重置為小時模式
+    const resetToHourMode = () => {
+        setDateRangeMode(false);
+        setStartDate("");
+        setEndDate("");
+    };
+
+    // 快速日期選擇
+    const setQuickDateRange = (days) => {
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setDate(today.getDate() - days);
+        
+        setStartDate(startDate.toISOString().split('T')[0]);
+        setEndDate(today.toISOString().split('T')[0]);
+    };
+
     return (
         <div className="relative flex h-full w-full flex-col rounded-lg bg-[#0f203e]">
-            <div className="mb-2 flex w-full flex-shrink-0 justify-end">
-                <button
-                    onClick={chartModeModal.openModal}
-                    className="ml-auto rounded-2xl bg-[#1A325F] px-3 py-1 text-xs font-medium text-[#AFE1F5] transition-colors hover:bg-[#2A4F7F]"
-                >
-                    檢視
-                </button>
+            <div className="mb-2 flex w-full flex-shrink-0 justify-between">
+                <div className="flex items-center space-x-2">
+                    {dateRangeMode && (
+                        <div className="flex items-center space-x-2">
+                            <span className="text-xs text-[#AFE1F5]">
+                                {startDate} ~ {endDate}
+                            </span>
+                            <button
+                                onClick={resetToHourMode}
+                                className="rounded-2xl bg-[#1A325F] px-2 py-1 text-xs font-medium text-[#AFE1F5] transition-colors hover:bg-[#2A4F7F]"
+                            >
+                                重置
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={dateRangeModal.openModal}
+                        className="rounded-2xl bg-[#1A325F] px-3 py-1 text-xs font-medium text-[#AFE1F5] transition-colors hover:bg-[#2A4F7F]"
+                    >
+                        日期區間
+                    </button>
+                    <button
+                        onClick={chartModeModal.openModal}
+                        className="rounded-2xl bg-[#1A325F] px-3 py-1 text-xs font-medium text-[#AFE1F5] transition-colors hover:bg-[#2A4F7F]"
+                    >
+                        檢視
+                    </button>
+                </div>
             </div>
             <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-lg">
                 <div className="mb-2 w-full flex-1" style={{ minHeight: '350px' }}>
@@ -551,6 +632,93 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                     </div>
                 )}
             </div>
+
+            {/* 日期區間選擇 Modal */}
+            <Modal
+                isOpen={dateRangeModal.isOpen}
+                isClosing={dateRangeModal.isClosing}
+                onClose={dateRangeModal.closeModal}
+                title="選擇日期區間"
+                size="md"
+                className="w-96"
+            >
+                <div className="space-y-4">
+                    {/* 快速選擇按鈕 */}
+                    <div>
+                        <label className="block text-sm font-medium text-[#82bee2] mb-2">
+                            快速選擇
+                        </label>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => setQuickDateRange(7)}
+                                className="px-3 py-1 text-xs rounded bg-[#1A325F] text-[#AFE1F5] hover:bg-[#2A4F7F] transition-colors"
+                            >
+                                最近7天
+                            </button>
+                            <button
+                                onClick={() => setQuickDateRange(14)}
+                                className="px-3 py-1 text-xs rounded bg-[#1A325F] text-[#AFE1F5] hover:bg-[#2A4F7F] transition-colors"
+                            >
+                                最近14天
+                            </button>
+                            <button
+                                onClick={() => setQuickDateRange(30)}
+                                className="px-3 py-1 text-xs rounded bg-[#1A325F] text-[#AFE1F5] hover:bg-[#2A4F7F] transition-colors"
+                            >
+                                最近30天
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 日期選擇 */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-[#82bee2] mb-1">
+                                開始日期
+                            </label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full px-3 py-2 bg-[#1A325F] text-[#AFE1F5] border border-[#82bee2]/20 rounded focus:border-[#82bee2] focus:outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-[#82bee2] mb-1">
+                                結束日期
+                            </label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full px-3 py-2 bg-[#1A325F] text-[#AFE1F5] border border-[#82bee2]/20 rounded focus:border-[#82bee2] focus:outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* 說明文字 */}
+                    <div className="text-xs text-[#AFE1F5]/70">
+                        <p>• 最多可查詢30天的歷史資料</p>
+                        <p>• 開始日期不能晚於結束日期</p>
+                    </div>
+
+                    {/* 操作按鈕 */}
+                    <div className="flex justify-end space-x-2">
+                        <button
+                            onClick={dateRangeModal.closeModal}
+                            className="px-4 py-2 text-sm bg-[#1A325F] text-[#AFE1F5] rounded hover:bg-[#2A4F7F] transition-colors"
+                        >
+                            取消
+                        </button>
+                        <button
+                            onClick={handleDateRangeSubmit}
+                            className="px-4 py-2 text-sm bg-[#82bee2] text-[#0f203e] rounded hover:bg-[#82bee2]/80 transition-colors"
+                        >
+                            確定
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* 圖表模式選擇 Modal */}
             <Modal

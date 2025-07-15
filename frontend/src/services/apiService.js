@@ -2,6 +2,7 @@
 
 import {
     getHistoricalPrices,
+    getHistoricalPricesByDateRange,
     getLeaderboard,
     getMarketStatus,
     getPriceDepth,
@@ -90,6 +91,14 @@ class ApiService {
         return this.request(
             `historical-${hours}`,
             () => getHistoricalPrices(hours),
+            30000,
+        );
+    }
+
+    async getHistoricalDataByDateRange(startDate, endDate) {
+        return this.request(
+            `historical-range-${startDate}-${endDate}`,
+            () => getHistoricalPricesByDateRange(startDate, endDate),
             30000,
         );
     }
