@@ -19,14 +19,12 @@ export const PermissionGuard = ({
         <div className="text-gray-500">檢查權限中...</div>
     ),
 }) => {
-    // Try to use context first, fallback to direct hook call if context not available
-    let permissionData;
-    try {
-        permissionData = usePermissionContext();
-    } catch (error) {
-        // Context not available, use direct hook call
-        permissionData = usePermissions(token);
-    }
+    // Always call both hooks, then choose which to use
+    const contextData = usePermissionContext();
+    const directData = usePermissions(token);
+    
+    // Use context data if available, otherwise use direct data
+    const permissionData = contextData.permissions ? contextData : directData;
 
     const {
         permissions,
@@ -151,14 +149,12 @@ export const PermissionButton = ({
     onClick,
     ...props
 }) => {
-    // Try to use context first, fallback to direct hook call if context not available
-    let permissionData;
-    try {
-        permissionData = usePermissionContext();
-    } catch (error) {
-        // Context not available, use direct hook call
-        permissionData = usePermissions(token);
-    }
+    // Always call both hooks, then choose which to use
+    const contextData = usePermissionContext();
+    const directData = usePermissions(token);
+    
+    // Use context data if available, otherwise use direct data
+    const permissionData = contextData.permissions ? contextData : directData;
 
     const {
         hasPermission,
