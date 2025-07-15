@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.services import UserService, get_user_service
-from app.services import AdminService, get_admin_service
+# 使用新的模組化架構 - 直接從專門的模組導入
+from app.services.user_management import UserService, get_user_service
+from app.services.admin import AdminService, get_admin_service
 from app.schemas.bot import (
     BotStockOrderRequest, BotTransferRequest,
     BotPortfolioRequest, BotPointHistoryRequest, BotStockOrdersRequest,

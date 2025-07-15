@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
-from app.services import PublicService, get_public_service
+# 使用新的模組化架構 - 直接從專門的模組導入
+from app.services.core import PublicService, get_public_service
 from app.schemas.public import (
     PriceSummary, PriceDepth, TradeRecord, LeaderboardEntry, 
     MarketStatus, TradingHoursResponse, ErrorResponse, PublicAnnouncement,

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from app.services import AdminService, get_admin_service
-from app.services import UserService, get_user_service
-from app.services import DebtService, get_debt_service
+# 使用新的模組化架構 - 直接從專門的模組導入
+from app.services.admin import AdminService, get_admin_service
+from app.services.user_management import UserService, get_user_service
+from app.services.system import DebtService, get_debt_service
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest, 
@@ -705,7 +706,7 @@ async def reset_ipo(
         
         # 傳送系統公告到 Telegram Bot
         try:
-            from app.services import AdminService
+            from app.services.admin import AdminService
             admin_service = AdminService(db)
             await admin_service._send_system_announcement(
                 title="🔄 IPO狀態重置",
@@ -812,7 +813,7 @@ async def update_ipo(
         
         # 傳送系統公告到 Telegram Bot
         try:
-            from app.services import AdminService
+            from app.services.admin import AdminService
             admin_service = AdminService(db)
             
             # 構建詳細的公告訊息
@@ -965,7 +966,7 @@ async def reset_all_data(
         # 傳送系統公告到 Telegram Bot
         try:
             # 使用 admin_service 傳送系統公告
-            from app.services import AdminService
+            from app.services.admin import AdminService
             admin_service = AdminService(db)
             await admin_service._send_system_announcement(
                 title="🔄 系統資料重置完成",
@@ -1125,7 +1126,7 @@ async def reset_all_data_except_users(
         
         # 傳送系統公告到 Telegram Bot
         try:
-            from app.services import AdminService
+            from app.services.admin import AdminService
             admin_service = AdminService(db)
             await admin_service._send_system_announcement(
                 title="🔄 系統資料重置完成（保留使用者）",
@@ -1311,7 +1312,7 @@ async def update_ipo_defaults(
         
         # 傳送系統公告到 Telegram Bot
         try:
-            from app.services import AdminService
+            from app.services.admin import AdminService
             admin_service = AdminService(db)
             
             # 構建詳細的公告訊息
@@ -1700,7 +1701,7 @@ async def update_transfer_fee_config(
         
         # 傳送系統公告到 Telegram Bot
         try:
-            from app.services import AdminService
+            from app.services.admin import AdminService
             admin_service = AdminService(db)
             
             # 構建詳細的公告訊息
@@ -2002,7 +2003,7 @@ async def trigger_manual_matching(
         )
     
     try:
-        from app.services import get_matching_scheduler
+        from app.services.matching import get_matching_scheduler
         from datetime import datetime, timezone
         
         # 獲取撮合調度器
@@ -2077,7 +2078,7 @@ async def get_price_limit_info(
         )
     
     try:
-        from app.services import get_user_service
+        from app.services.user_management import get_user_service
         from datetime import datetime, timezone
         
         user_service = get_user_service()

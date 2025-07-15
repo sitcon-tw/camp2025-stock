@@ -2,8 +2,9 @@
 快取管理 API 路由
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.services import get_cache_service
-from app.services import get_cache_invalidator
+# 使用新的模組化架構 - 直接從專門的模組導入
+from app.services.core import get_cache_service
+from app.services.core import get_cache_invalidator
 from app.core.rbac import RBACService, Permission
 from app.core.security import get_current_user
 from typing import Dict, Any

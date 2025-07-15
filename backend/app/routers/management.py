@@ -7,7 +7,8 @@ from app.core.rbac import (
     Permission, require_give_points_permission, require_announcement_permission,
     require_view_all_users_permission, RBACService
 )
-from app.services import AdminService, get_admin_service
+# 使用新的模組化架構 - 直接從專門的模組導入
+from app.services.admin import AdminService, get_admin_service
 from app.schemas.public import (
     UserAssetDetail, GivePointsRequest, GivePointsResponse, 
     AnnouncementRequest, AnnouncementResponse
