@@ -2083,10 +2083,10 @@ async def get_price_limit_info(
         user_service = get_user_service()
         
         # 獲取價格限制資訊
-        limit_info = await user_service._get_price_limit_info(test_price)
+        limit_info = await user_service.market_service.get_price_limit_info(test_price)
         
         # 檢查測試價格是否在限制範圍內
-        is_within_limit = await user_service._check_price_limit(test_price)
+        is_within_limit = await user_service.market_service.check_price_limit(test_price)
         
         logger.info(f"Admin {current_user.get('username')} queried price limit info for price {test_price}")
         

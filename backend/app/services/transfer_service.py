@@ -1,6 +1,6 @@
 from __future__ import annotations
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.core.database import get_database, Collections
+from app.services.base_service import BaseService
+from app.core.database import Collections
 from app.schemas.user import TransferRequest, TransferResponse
 from datetime import datetime, timezone
 from bson import ObjectId
@@ -13,14 +13,8 @@ def get_transfer_service() -> TransferService:
     """TransferService 的依賴注入函數"""
     return TransferService()
 
-class TransferService:
+class TransferService(BaseService):
     """轉帳服務 - 負責處理點數轉帳相關功能"""
-    
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        if db is None:
-            self.db = get_database()
-        else:
-            self.db = db
     
     async def transfer_points(self, from_user_id: str, request: TransferRequest) -> TransferResponse:
         """轉帳點數，帶增強重試機制"""
@@ -352,7 +346,7 @@ class TransferService:
     
     async def _log_point_change(self, user_id, change_type: str, amount: int, 
                               note: str, transaction_id: str = None, session=None):
-        """記錄點數變動"""
+        """記錄點數變動（擴展基類方法以支援 transaction_id）"""
         try:
             # 確保 user_id 是 ObjectId
             if isinstance(user_id, str):
@@ -363,43 +357,18 @@ class TransferService:
             
             log_entry = {
                 "user_id": user_id,
-                "type": change_type,
+                "change_type": change_type,  # 使用 change_type 而不是 type
                 "amount": amount,
-                "note": note,
+                "description": note,  # 使用 description 而不是 note
                 "balance_after": current_balance,
-                "created_at": datetime.now(timezone.utc),
+                "timestamp": datetime.now(timezone.utc),  # 使用 timestamp 而不是 created_at
+                "log_id": str(ObjectId()),
                 "transaction_id": transaction_id
             }
             
             await self.db[Collections.POINT_LOGS].insert_one(log_entry, session=session)
         except Exception as e:
             logger.error(f"Failed to log point change: {e}")
-    
-    async def _validate_transaction_integrity(self, user_ids: list, operation_name: str):
-        """
-        交易完成後驗證所有涉及使用者的點數完整性
-        
-        Args:
-            user_ids: 涉及的使用者ID列表
-            operation_name: 操作名稱
-        """
-        try:
-            negative_detected = False
-            for user_id in user_ids:
-                if isinstance(user_id, str):
-                    user_id = ObjectId(user_id)
-                
-                is_negative = await self._check_and_alert_negative_balance(
-                    user_id=user_id,
-                    operation_context=operation_name
-                )
-                if is_negative:
-                    negative_detected = True
-            
-            if negative_detected:
-                logger.warning(f"Transaction integrity check failed for operation: {operation_name}")
-        except Exception as e:
-            logger.error(f"Failed to validate transaction integrity: {e}")
     
     async def _add_points_with_debt_repay(self, user_id: ObjectId, amount: int, 
                                          operation_note: str, session=None) -> dict:
@@ -513,7 +482,7 @@ class TransferService:
 
     async def _check_and_alert_negative_balance(self, user_id: ObjectId, operation_context: str = "") -> bool:
         """
-        檢查指定使用者是否有負點數，如有則傳送警報
+        檢查指定使用者是否有負點數，如有則傳送警報（擴展基類方法）
         
         Args:
             user_id: 使用者ID
@@ -533,7 +502,7 @@ class TransferService:
                 team = user.get("team", "無")
                 
                 # 記錄警報日誌
-                logger.error(f"NEGATIVE BALANCE DETECTED: User ID: {user_id} has {current_balance} points after {operation_context}")
+                logger.error(f"🚨 NEGATIVE BALANCE ALERT: User {username} ({user_id}) has {current_balance} points after {operation_context}")
                 
                 # 傳送即時警報到 Telegram Bot
                 try:
