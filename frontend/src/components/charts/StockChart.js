@@ -331,13 +331,37 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
         }
     };
 
-    // 這邊會根據當天的漲或跌來決定圖表的顏色
-    // 上漲紅色 下跌或沒變化綠色 (暫時)
-    const lineColor = changePercent > 0 ? "#ef4444" : "#22c55e";
-    const gradientColor =
-        changePercent > 0
-            ? "rgba(239, 68, 68, 0.2)"
-            : "rgba(34, 197, 94, 0.2)";
+    // 計算漲跌幅和顏色邏輯
+    const calculateColorLogic = () => {
+        if (dateRangeMode && chartData.data.length > 0) {
+            // 日期區間模式：比較區間內第一個和最後一個價格
+            const firstPrice = chartData.data[0];
+            const lastPrice = chartData.data[chartData.data.length - 1];
+            const change = lastPrice - firstPrice;
+            const changePercent = firstPrice > 0 ? (change / firstPrice) * 100 : 0;
+            
+            return {
+                changePercent,
+                lineColor: changePercent > 0 ? "#ef4444" : "#22c55e",
+                gradientColor: changePercent > 0 
+                    ? "rgba(239, 68, 68, 0.2)" 
+                    : "rgba(34, 197, 94, 0.2)"
+            };
+        } else {
+            // 即時模式：使用傳入的 changePercent (基於當天開盤價)
+            return {
+                changePercent,
+                lineColor: changePercent > 0 ? "#ef4444" : "#22c55e",
+                gradientColor: changePercent > 0 
+                    ? "rgba(239, 68, 68, 0.2)" 
+                    : "rgba(34, 197, 94, 0.2)"
+            };
+        }
+    };
+
+    const colorLogic = calculateColorLogic();
+    const lineColor = colorLogic.lineColor;
+    const gradientColor = colorLogic.gradientColor;
 
     const options = {
         responsive: true,
@@ -532,6 +556,15 @@ const StockChart = ({ currentPrice = 20.0, changePercent = 0 }) => {
                             <span className="text-xs text-[#AFE1F5]">
                                 {startDate} ~ {endDate}
                             </span>
+                            {chartData.data.length > 0 && (
+                                <span className={`text-xs font-medium ${
+                                    colorLogic.changePercent > 0 ? 'text-red-400' : 
+                                    colorLogic.changePercent < 0 ? 'text-green-400' : 'text-gray-400'
+                                }`}>
+                                    {colorLogic.changePercent > 0 ? '+' : ''}
+                                    {colorLogic.changePercent.toFixed(2)}%
+                                </span>
+                            )}
                             <button
                                 onClick={resetToHourMode}
                                 className="rounded-2xl bg-[#1A325F] px-2 py-1 text-xs font-medium text-[#AFE1F5] transition-colors hover:bg-[#2A4F7F]"
