@@ -358,14 +358,90 @@ class MongoStockRepository(StockRepository):
             logger.error(f"Failed to update stock: {e}")
             return False
     
-    async def delete(self, symbol: str) -> bool:
-        """刪除股票"""
+    async def delete_by_symbol(self, symbol: str) -> bool:
+        """根據股票代碼刪除股票"""
         try:
             result = await self.db[Collections.STOCK_CONFIG].delete_one({"symbol": symbol})
             return result.deleted_count > 0
         except Exception as e:
-            logger.error(f"Failed to delete stock: {e}")
+            logger.error(f"Failed to delete stock by symbol: {e}")
             return False
+    
+    # Repository[Stock] 抽象方法實現
+    async def find_by_id(self, entity_id: ObjectId) -> Optional[Stock]:
+        """根據 ID 查找股票"""
+        try:
+            data = await self.db[Collections.STOCK_CONFIG].find_one({"_id": entity_id})
+            return Stock.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find stock by ID: {e}")
+            return None
+    
+    async def update(self, entity: Stock) -> Stock:
+        """更新股票實體"""
+        try:
+            data = entity.to_dict()
+            await self.db[Collections.STOCK_CONFIG].replace_one({"symbol": entity.symbol}, data, upsert=True)
+            return entity
+        except Exception as e:
+            logger.error(f"Failed to update stock entity: {e}")
+            raise
+    
+    async def delete(self, entity_id: ObjectId) -> bool:
+        """根據 ID 刪除股票"""
+        try:
+            result = await self.db[Collections.STOCK_CONFIG].delete_one({"_id": entity_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete stock by ID: {e}")
+            return False
+    
+    async def exists(self, entity_id: ObjectId) -> bool:
+        """檢查股票是否存在"""
+        try:
+            count = await self.db[Collections.STOCK_CONFIG].count_documents({"_id": entity_id})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Failed to check stock existence: {e}")
+            return False
+    
+    async def count(self) -> int:
+        """計算股票總數"""
+        try:
+            return await self.db[Collections.STOCK_CONFIG].count_documents({})
+        except Exception as e:
+            logger.error(f"Failed to count stocks: {e}")
+            return 0
+    
+    # SpecificationRepository[Stock] 抽象方法實現
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[Stock]:
+        """根據規格查找股票"""
+        try:
+            cursor = self.db[Collections.STOCK_CONFIG].find(specification)
+            stocks = []
+            async for data in cursor:
+                stocks.append(Stock.from_dict(data))
+            return stocks
+        except Exception as e:
+            logger.error(f"Failed to find stocks by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[Stock]:
+        """根據規格查找單一股票"""
+        try:
+            data = await self.db[Collections.STOCK_CONFIG].find_one(specification)
+            return Stock.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find stock by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格計算股票數量"""
+        try:
+            return await self.db[Collections.STOCK_CONFIG].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count stocks by specification: {e}")
+            return 0
 
 
 class MongoOrderRepository(OrderRepository):
