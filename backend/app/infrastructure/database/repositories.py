@@ -183,3 +183,260 @@ class MongoPointLogRepository(PointLogRepository):
         except Exception as e:
             logger.error(f"Failed to delete point logs by user ID: {e}")
             return False
+
+
+class MongoStockRepository(StockRepository):
+    """MongoDB 股票存儲庫實現"""
+    
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        self.db = db or get_database()
+    
+    async def find_by_symbol(self, symbol: str) -> Optional[Stock]:
+        """根據股票代碼查找股票"""
+        try:
+            # 假設股票信息存儲在 STOCK_CONFIG 或類似的集合中
+            data = await self.db[Collections.STOCK_CONFIG].find_one({"symbol": symbol})
+            return Stock.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find stock by symbol {symbol}: {e}")
+            return None
+    
+    async def find_all(self) -> List[Stock]:
+        """查找所有股票"""
+        try:
+            cursor = self.db[Collections.STOCK_CONFIG].find()
+            stocks = []
+            async for data in cursor:
+                stocks.append(Stock.from_dict(data))
+            return stocks
+        except Exception as e:
+            logger.error(f"Failed to find all stocks: {e}")
+            return []
+    
+    async def save(self, stock: Stock) -> Stock:
+        """儲存股票"""
+        try:
+            data = stock.to_dict()
+            await self.db[Collections.STOCK_CONFIG].replace_one(
+                {"symbol": stock.symbol}, 
+                data, 
+                upsert=True
+            )
+            return stock
+        except Exception as e:
+            logger.error(f"Failed to save stock: {e}")
+            raise
+    
+    async def update(self, stock: Stock) -> bool:
+        """更新股票"""
+        try:
+            data = stock.to_dict()
+            result = await self.db[Collections.STOCK_CONFIG].replace_one(
+                {"symbol": stock.symbol}, 
+                data
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Failed to update stock: {e}")
+            return False
+    
+    async def delete(self, symbol: str) -> bool:
+        """刪除股票"""
+        try:
+            result = await self.db[Collections.STOCK_CONFIG].delete_one({"symbol": symbol})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete stock: {e}")
+            return False
+
+
+class MongoOrderRepository(OrderRepository):
+    """MongoDB 訂單存儲庫實現"""
+    
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        self.db = db or get_database()
+    
+    async def find_by_id(self, order_id: ObjectId) -> Optional[StockOrder]:
+        """根據訂單 ID 查找訂單"""
+        try:
+            data = await self.db[Collections.STOCK_ORDERS].find_one({"_id": order_id})
+            return StockOrder.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find order by ID {order_id}: {e}")
+            return None
+    
+    async def find_by_user_id(self, user_id: ObjectId, skip: int = 0, limit: int = 100) -> List[StockOrder]:
+        """根據使用者 ID 查找訂單"""
+        try:
+            cursor = self.db[Collections.STOCK_ORDERS].find({"user_id": user_id}).sort("created_at", -1).skip(skip).limit(limit)
+            orders = []
+            async for data in cursor:
+                orders.append(StockOrder.from_dict(data))
+            return orders
+        except Exception as e:
+            logger.error(f"Failed to find orders by user ID: {e}")
+            return []
+    
+    async def find_by_symbol(self, symbol: str, skip: int = 0, limit: int = 100) -> List[StockOrder]:
+        """根據股票代碼查找訂單"""
+        try:
+            cursor = self.db[Collections.STOCK_ORDERS].find({"symbol": symbol}).sort("created_at", -1).skip(skip).limit(limit)
+            orders = []
+            async for data in cursor:
+                orders.append(StockOrder.from_dict(data))
+            return orders
+        except Exception as e:
+            logger.error(f"Failed to find orders by symbol: {e}")
+            return []
+    
+    async def find_active_orders(self, symbol: str = None) -> List[StockOrder]:
+        """查找活躍訂單"""
+        try:
+            query = {"status": {"$in": ["pending", "partial_filled"]}}
+            if symbol:
+                query["symbol"] = symbol
+            
+            cursor = self.db[Collections.STOCK_ORDERS].find(query).sort("created_at", 1)
+            orders = []
+            async for data in cursor:
+                orders.append(StockOrder.from_dict(data))
+            return orders
+        except Exception as e:
+            logger.error(f"Failed to find active orders: {e}")
+            return []
+    
+    async def find_by_user_and_symbol(self, user_id: ObjectId, symbol: str) -> List[StockOrder]:
+        """根據使用者和股票代碼查找訂單"""
+        try:
+            cursor = self.db[Collections.STOCK_ORDERS].find({
+                "user_id": user_id,
+                "symbol": symbol
+            }).sort("created_at", -1)
+            orders = []
+            async for data in cursor:
+                orders.append(StockOrder.from_dict(data))
+            return orders
+        except Exception as e:
+            logger.error(f"Failed to find orders by user and symbol: {e}")
+            return []
+    
+    async def save(self, order: StockOrder) -> StockOrder:
+        """儲存訂單"""
+        try:
+            data = order.to_dict()
+            if order.id is None:
+                result = await self.db[Collections.STOCK_ORDERS].insert_one(data)
+                order.id = result.inserted_id
+            else:
+                await self.db[Collections.STOCK_ORDERS].replace_one({"_id": order.id}, data)
+            return order
+        except Exception as e:
+            logger.error(f"Failed to save order: {e}")
+            raise
+    
+    async def update(self, order: StockOrder) -> bool:
+        """更新訂單"""
+        try:
+            data = order.to_dict()
+            result = await self.db[Collections.STOCK_ORDERS].replace_one({"_id": order.id}, data)
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Failed to update order: {e}")
+            return False
+    
+    async def delete(self, order_id: ObjectId) -> bool:
+        """刪除訂單"""
+        try:
+            result = await self.db[Collections.STOCK_ORDERS].delete_one({"_id": order_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete order: {e}")
+            return False
+
+
+class MongoUserStockRepository(UserStockRepository):
+    """MongoDB 使用者股票持有存儲庫實現"""
+    
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        self.db = db or get_database()
+    
+    async def find_by_user_id(self, user_id: ObjectId) -> List[UserStock]:
+        """根據使用者 ID 查找股票持有"""
+        try:
+            cursor = self.db[Collections.STOCKS].find({"user_id": user_id})
+            stocks = []
+            async for data in cursor:
+                stocks.append(UserStock.from_dict(data))
+            return stocks
+        except Exception as e:
+            logger.error(f"Failed to find user stocks by user ID: {e}")
+            return []
+    
+    async def find_by_user_and_symbol(self, user_id: ObjectId, symbol: str) -> Optional[UserStock]:
+        """根據使用者和股票代碼查找股票持有"""
+        try:
+            data = await self.db[Collections.STOCKS].find_one({
+                "user_id": user_id,
+                "symbol": symbol
+            })
+            return UserStock.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find user stock by user and symbol: {e}")
+            return None
+    
+    async def save(self, user_stock: UserStock) -> UserStock:
+        """儲存使用者股票持有"""
+        try:
+            data = user_stock.to_dict()
+            await self.db[Collections.STOCKS].replace_one(
+                {
+                    "user_id": user_stock.user_id,
+                    "symbol": user_stock.symbol
+                },
+                data,
+                upsert=True
+            )
+            return user_stock
+        except Exception as e:
+            logger.error(f"Failed to save user stock: {e}")
+            raise
+    
+    async def update(self, user_stock: UserStock) -> bool:
+        """更新使用者股票持有"""
+        try:
+            data = user_stock.to_dict()
+            result = await self.db[Collections.STOCKS].replace_one(
+                {
+                    "user_id": user_stock.user_id,
+                    "symbol": user_stock.symbol
+                },
+                data
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Failed to update user stock: {e}")
+            return False
+    
+    async def delete(self, user_id: ObjectId, symbol: str) -> bool:
+        """刪除使用者股票持有"""
+        try:
+            result = await self.db[Collections.STOCKS].delete_one({
+                "user_id": user_id,
+                "symbol": symbol
+            })
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete user stock: {e}")
+            return False
+    
+    async def find_all(self, skip: int = 0, limit: int = 100) -> List[UserStock]:
+        """查找所有使用者股票持有"""
+        try:
+            cursor = self.db[Collections.STOCKS].find().skip(skip).limit(limit)
+            stocks = []
+            async for data in cursor:
+                stocks.append(UserStock.from_dict(data))
+            return stocks
+        except Exception as e:
+            logger.error(f"Failed to find all user stocks: {e}")
+            return []

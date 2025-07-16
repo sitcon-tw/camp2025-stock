@@ -6,6 +6,9 @@ from functools import lru_cache
 from app.domain.user.repositories import UserRepository, PointLogRepository
 from app.infrastructure.database.repositories import MongoUserRepository, MongoPointLogRepository
 from app.application.user.services import UserApplicationService
+from app.domain.trading.repositories import StockRepository, OrderRepository, UserStockRepository
+from app.infrastructure.database.repositories import MongoStockRepository, MongoOrderRepository, MongoUserStockRepository
+from app.application.trading.services import TradingApplicationService
 
 
 # Repository Dependencies
@@ -21,6 +24,24 @@ def get_point_log_repository() -> PointLogRepository:
     return MongoPointLogRepository()
 
 
+@lru_cache()
+def get_stock_repository() -> StockRepository:
+    """獲取股票存儲庫"""
+    return MongoStockRepository()
+
+
+@lru_cache()
+def get_order_repository() -> OrderRepository:
+    """獲取訂單存儲庫"""
+    return MongoOrderRepository()
+
+
+@lru_cache()
+def get_user_stock_repository() -> UserStockRepository:
+    """獲取使用者股票存儲庫"""
+    return MongoUserStockRepository()
+
+
 # Application Service Dependencies
 @lru_cache()
 def get_user_application_service() -> UserApplicationService:
@@ -31,7 +52,23 @@ def get_user_application_service() -> UserApplicationService:
     )
 
 
+@lru_cache()
+def get_trading_application_service() -> TradingApplicationService:
+    """獲取交易應用服務"""
+    return TradingApplicationService(
+        stock_repository=get_stock_repository(),
+        order_repository=get_order_repository(),
+        user_stock_repository=get_user_stock_repository(),
+        user_repository=get_user_repository()
+    )
+
+
 # Legacy compatibility functions (for gradual migration)
 def get_user_service() -> UserApplicationService:
     """向後兼容的使用者服務獲取函數"""
     return get_user_application_service()
+
+
+def get_trading_service() -> TradingApplicationService:
+    """向後兼容的交易服務獲取函數"""
+    return get_trading_application_service()

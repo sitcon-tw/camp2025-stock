@@ -21,7 +21,8 @@ from ..application.dependencies import get_user_service
 from ..application.user.services import UserApplicationService as UserService
 # TransferService 暫時從現有結構導入，稍後遷移
 # from .user_management import TransferService, get_transfer_service
-from .trading import TradingService, get_trading_service
+from ..application.dependencies import get_trading_service
+from ..application.trading.services import TradingApplicationService as TradingService
 from .market import MarketService, get_market_service
 from .matching import OrderMatchingService, get_order_matching_service
 
