@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from .entities import Stock, StockOrder, UserStock, OrderStatus, OrderType
+from ..common.repositories import Repository, SpecificationRepository
 
 
-class StockRepository(ABC):
+class StockRepository(Repository[Stock], SpecificationRepository[Stock]):
     """股票存儲庫接口"""
     
     @abstractmethod
@@ -37,7 +38,7 @@ class StockRepository(ABC):
         pass
 
 
-class OrderRepository(ABC):
+class OrderRepository(Repository[StockOrder], SpecificationRepository[StockOrder]):
     """訂單存儲庫接口"""
     
     @abstractmethod
@@ -81,7 +82,7 @@ class OrderRepository(ABC):
         pass
 
 
-class UserStockRepository(ABC):
+class UserStockRepository(Repository[UserStock], SpecificationRepository[UserStock]):
     """使用者股票持有存儲庫接口"""
     
     @abstractmethod

@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from .entities import User, PointLog
+from ..common.repositories import Repository, SpecificationRepository
 
 
-class UserRepository(ABC):
+class UserRepository(Repository[User], SpecificationRepository[User]):
     """使用者存儲庫接口"""
     
     @abstractmethod
@@ -57,7 +58,7 @@ class UserRepository(ABC):
         pass
 
 
-class PointLogRepository(ABC):
+class PointLogRepository(Repository[PointLog], SpecificationRepository[PointLog]):
     """點數記錄存儲庫接口"""
     
     @abstractmethod

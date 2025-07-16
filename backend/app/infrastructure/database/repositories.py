@@ -10,6 +10,10 @@ from app.domain.user.repositories import UserRepository, PointLogRepository
 from app.domain.user.entities import User, PointLog
 from app.domain.trading.repositories import StockRepository, OrderRepository, UserStockRepository
 from app.domain.trading.entities import Stock, StockOrder, UserStock
+from app.domain.system.repositories import StudentRepository, UserDebtRepository
+from app.domain.system.entities import Student, UserDebt
+from app.domain.common.exceptions import EntityNotFoundException
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -114,6 +118,44 @@ class MongoUserRepository(UserRepository):
         except Exception as e:
             logger.error(f"Failed to find users by group ID: {e}")
             return []
+    
+    async def exists(self, user_id: ObjectId) -> bool:
+        """檢查使用者是否存在"""
+        try:
+            count = await self.db[Collections.USERS].count_documents({"_id": user_id})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Failed to check user existence: {e}")
+            return False
+    
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[User]:
+        """根據規格查找使用者"""
+        try:
+            cursor = self.db[Collections.USERS].find(specification)
+            users = []
+            async for data in cursor:
+                users.append(User.from_dict(data))
+            return users
+        except Exception as e:
+            logger.error(f"Failed to find users by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[User]:
+        """根據規格查找單一使用者"""
+        try:
+            data = await self.db[Collections.USERS].find_one(specification)
+            return User.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find user by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格計算使用者數量"""
+        try:
+            return await self.db[Collections.USERS].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count users by specification: {e}")
+            return 0
 
 
 class MongoPointLogRepository(PointLogRepository):
@@ -440,3 +482,335 @@ class MongoUserStockRepository(UserStockRepository):
         except Exception as e:
             logger.error(f"Failed to find all user stocks: {e}")
             return []
+
+
+class MongoStudentRepository(StudentRepository):
+    """MongoDB 學生儲存庫實現"""
+    
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        self.db = db or get_database()
+    
+    async def find_by_id(self, student_id: ObjectId) -> Optional[Student]:
+        """根據 ID 查找學生"""
+        try:
+            data = await self.db[Collections.STUDENTS].find_one({"_id": student_id})
+            return Student.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find student by ID: {e}")
+            return None
+    
+    async def find_by_student_id(self, student_id: str) -> Optional[Student]:
+        """根據學生 ID 查找學生"""
+        try:
+            data = await self.db[Collections.STUDENTS].find_one({"student_id": student_id})
+            return Student.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find student by student ID: {e}")
+            return None
+    
+    async def find_by_telegram_id(self, telegram_id: int) -> Optional[Student]:
+        """根據 Telegram ID 查找學生"""
+        try:
+            data = await self.db[Collections.STUDENTS].find_one({"telegram_id": telegram_id})
+            return Student.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find student by telegram ID: {e}")
+            return None
+    
+    async def find_by_group_id(self, group_id: str) -> List[Student]:
+        """根據群組 ID 查找學生"""
+        try:
+            cursor = self.db[Collections.STUDENTS].find({"group_id": group_id})
+            students = []
+            async for data in cursor:
+                students.append(Student.from_dict(data))
+            return students
+        except Exception as e:
+            logger.error(f"Failed to find students by group ID: {e}")
+            return []
+    
+    async def find_active_students(self, skip: int = 0, limit: int = 100) -> List[Student]:
+        """查找活躍學生"""
+        try:
+            cursor = self.db[Collections.STUDENTS].find({"is_active": True}).skip(skip).limit(limit)
+            students = []
+            async for data in cursor:
+                students.append(Student.from_dict(data))
+            return students
+        except Exception as e:
+            logger.error(f"Failed to find active students: {e}")
+            return []
+    
+    async def count_active_students(self) -> int:
+        """計算活躍學生數量"""
+        try:
+            return await self.db[Collections.STUDENTS].count_documents({"is_active": True})
+        except Exception as e:
+            logger.error(f"Failed to count active students: {e}")
+            return 0
+    
+    async def save(self, student: Student) -> Student:
+        """儲存學生"""
+        try:
+            data = student.to_dict()
+            if student.id is None:
+                result = await self.db[Collections.STUDENTS].insert_one(data)
+                student.id = result.inserted_id
+            else:
+                await self.db[Collections.STUDENTS].replace_one({"_id": student.id}, data)
+            return student
+        except Exception as e:
+            logger.error(f"Failed to save student: {e}")
+            raise
+    
+    async def update(self, student: Student) -> bool:
+        """更新學生"""
+        try:
+            data = student.to_dict()
+            result = await self.db[Collections.STUDENTS].replace_one({"_id": student.id}, data)
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Failed to update student: {e}")
+            return False
+    
+    async def delete(self, student_id: ObjectId) -> bool:
+        """刪除學生"""
+        try:
+            result = await self.db[Collections.STUDENTS].delete_one({"_id": student_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete student: {e}")
+            return False
+    
+    async def find_all(self, skip: int = 0, limit: int = 100) -> List[Student]:
+        """查找所有學生"""
+        try:
+            cursor = self.db[Collections.STUDENTS].find().skip(skip).limit(limit)
+            students = []
+            async for data in cursor:
+                students.append(Student.from_dict(data))
+            return students
+        except Exception as e:
+            logger.error(f"Failed to find all students: {e}")
+            return []
+    
+    async def exists(self, student_id: ObjectId) -> bool:
+        """檢查學生是否存在"""
+        try:
+            count = await self.db[Collections.STUDENTS].count_documents({"_id": student_id})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Failed to check student existence: {e}")
+            return False
+    
+    async def count(self) -> int:
+        """計算學生總數"""
+        try:
+            return await self.db[Collections.STUDENTS].count_documents({})
+        except Exception as e:
+            logger.error(f"Failed to count students: {e}")
+            return 0
+    
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[Student]:
+        """根據規格查找學生"""
+        try:
+            cursor = self.db[Collections.STUDENTS].find(specification)
+            students = []
+            async for data in cursor:
+                students.append(Student.from_dict(data))
+            return students
+        except Exception as e:
+            logger.error(f"Failed to find students by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[Student]:
+        """根據規格查找單一學生"""
+        try:
+            data = await self.db[Collections.STUDENTS].find_one(specification)
+            return Student.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find student by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格計算學生數量"""
+        try:
+            return await self.db[Collections.STUDENTS].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count students by specification: {e}")
+            return 0
+
+
+class MongoUserDebtRepository(UserDebtRepository):
+    """MongoDB 使用者債務儲存庫實現"""
+    
+    def __init__(self, db: AsyncIOMotorDatabase = None):
+        self.db = db or get_database()
+    
+    async def find_by_id(self, debt_id: ObjectId) -> Optional[UserDebt]:
+        """根據 ID 查找債務"""
+        try:
+            data = await self.db[Collections.USER_DEBTS].find_one({"_id": debt_id})
+            return UserDebt.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find debt by ID: {e}")
+            return None
+    
+    async def save(self, debt: UserDebt) -> UserDebt:
+        """儲存債務"""
+        try:
+            data = debt.to_dict()
+            if debt.id is None:
+                result = await self.db[Collections.USER_DEBTS].insert_one(data)
+                debt.id = result.inserted_id
+            else:
+                await self.db[Collections.USER_DEBTS].replace_one({"_id": debt.id}, data)
+            return debt
+        except Exception as e:
+            logger.error(f"Failed to save debt: {e}")
+            raise
+    
+    async def update(self, debt: UserDebt) -> bool:
+        """更新債務"""
+        try:
+            data = debt.to_dict()
+            result = await self.db[Collections.USER_DEBTS].replace_one({"_id": debt.id}, data)
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Failed to update debt: {e}")
+            return False
+    
+    async def delete(self, debt_id: ObjectId) -> bool:
+        """刪除債務"""
+        try:
+            result = await self.db[Collections.USER_DEBTS].delete_one({"_id": debt_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete debt: {e}")
+            return False
+    
+    async def find_all(self, skip: int = 0, limit: int = 100) -> List[UserDebt]:
+        """查找所有債務"""
+        try:
+            cursor = self.db[Collections.USER_DEBTS].find().skip(skip).limit(limit).sort("created_at", -1)
+            debts = []
+            async for data in cursor:
+                debts.append(UserDebt.from_dict(data))
+            return debts
+        except Exception as e:
+            logger.error(f"Failed to find all debts: {e}")
+            return []
+    
+    async def exists(self, debt_id: ObjectId) -> bool:
+        """檢查債務是否存在"""
+        try:
+            count = await self.db[Collections.USER_DEBTS].count_documents({"_id": debt_id})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Failed to check debt existence: {e}")
+            return False
+    
+    async def count(self) -> int:
+        """計算債務總數"""
+        try:
+            return await self.db[Collections.USER_DEBTS].count_documents({})
+        except Exception as e:
+            logger.error(f"Failed to count debts: {e}")
+            return 0
+    
+    async def find_by_user_id(self, user_id: ObjectId) -> List[UserDebt]:
+        """根據使用者 ID 查找債務"""
+        try:
+            cursor = self.db[Collections.USER_DEBTS].find({"user_id": user_id}).sort("created_at", -1)
+            debts = []
+            async for data in cursor:
+                debts.append(UserDebt.from_dict(data))
+            return debts
+        except Exception as e:
+            logger.error(f"Failed to find debts by user ID: {e}")
+            return []
+    
+    async def find_active_debts(self, skip: int = 0, limit: int = 100) -> List[UserDebt]:
+        """查找活躍債務"""
+        try:
+            cursor = self.db[Collections.USER_DEBTS].find({"status": "active"}).skip(skip).limit(limit).sort("created_at", -1)
+            debts = []
+            async for data in cursor:
+                debts.append(UserDebt.from_dict(data))
+            return debts
+        except Exception as e:
+            logger.error(f"Failed to find active debts: {e}")
+            return []
+    
+    async def find_by_status(self, status: str, skip: int = 0, limit: int = 100) -> List[UserDebt]:
+        """根據狀態查找債務"""
+        try:
+            cursor = self.db[Collections.USER_DEBTS].find({"status": status}).skip(skip).limit(limit).sort("created_at", -1)
+            debts = []
+            async for data in cursor:
+                debts.append(UserDebt.from_dict(data))
+            return debts
+        except Exception as e:
+            logger.error(f"Failed to find debts by status: {e}")
+            return []
+    
+    async def calculate_total_debt(self, user_id: ObjectId) -> int:
+        """計算使用者總債務"""
+        try:
+            pipeline = [
+                {"$match": {"user_id": user_id, "status": "active"}},
+                {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
+            ]
+            
+            result = await self.db[Collections.USER_DEBTS].aggregate(pipeline).to_list(1)
+            return result[0]["total"] if result else 0
+        except Exception as e:
+            logger.error(f"Failed to calculate total debt: {e}")
+            return 0
+    
+    async def mark_as_resolved(self, debt_id: ObjectId, resolved_by: ObjectId) -> bool:
+        """標記債務為已解決"""
+        try:
+            result = await self.db[Collections.USER_DEBTS].update_one(
+                {"_id": debt_id},
+                {
+                    "$set": {
+                        "status": "resolved",
+                        "resolved_by": resolved_by,
+                        "resolved_at": datetime.utcnow()
+                    }
+                }
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"Failed to mark debt as resolved: {e}")
+            return False
+    
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[UserDebt]:
+        """根據規格查找債務"""
+        try:
+            cursor = self.db[Collections.USER_DEBTS].find(specification)
+            debts = []
+            async for data in cursor:
+                debts.append(UserDebt.from_dict(data))
+            return debts
+        except Exception as e:
+            logger.error(f"Failed to find debts by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[UserDebt]:
+        """根據規格查找單一債務"""
+        try:
+            data = await self.db[Collections.USER_DEBTS].find_one(specification)
+            return UserDebt.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find debt by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格計算債務數量"""
+        try:
+            return await self.db[Collections.USER_DEBTS].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count debts by specification: {e}")
+            return 0
