@@ -1,0 +1,89 @@
+{
+  "environment": "development",
+  "debug": true,
+  "host": "0.0.0.0",
+  "port": 8000,
+  "reload": true,
+  "cors_enabled": true,
+  "cors_origins": ["*"],
+  "api_prefix": "/api/v1",
+  "docs_enabled": true,
+  
+  "database": {
+    "host": "localhost",
+    "port": 27017,
+    "name": "sitcon_stock_dev",
+    "username": null,
+    "password": null,
+    "connection_timeout": 30,
+    "max_pool_size": 100,
+    "min_pool_size": 10
+  },
+  
+  "cache": {
+    "type": "layered",
+    "redis_url": "redis://localhost:6379",
+    "default_ttl": 3600,
+    "key_prefix": "sitcon:",
+    "max_memory_size": 100
+  },
+  
+  "notification": {
+    "telegram": {
+      "enabled": true,
+      "bot_token": "YOUR_BOT_TOKEN_HERE",
+      "base_url": "https://api.telegram.org/bot"
+    },
+    "email": {
+      "enabled": false,
+      "smtp_host": "localhost",
+      "smtp_port": 587,
+      "username": "",
+      "password": "",
+      "use_tls": true
+    },
+    "websocket": {
+      "enabled": true
+    },
+    "default_channels": ["telegram", "websocket"]
+  },
+  
+  "events": {
+    "type": "memory",
+    "redis_url": "redis://localhost:6379",
+    "channel_prefix": "events:",
+    "batch_size": 100,
+    "max_retries": 3,
+    "retry_delay": 1.0
+  },
+  
+  "security": {
+    "secret_key": "your-secret-key-here-change-in-production",
+    "algorithm": "HS256",
+    "token_expire_minutes": 1440,
+    "password_hash_rounds": 12,
+    "max_login_attempts": 5,
+    "lockout_duration": 900
+  },
+  
+  "trading": {
+    "market_open_time": "09:00",
+    "market_close_time": "17:00",
+    "timezone": "Asia/Taipei",
+    "max_order_amount": 1000000,
+    "min_order_amount": 1,
+    "max_orders_per_user": 100,
+    "default_trading_fee": 0.001,
+    "price_precision": 2,
+    "quantity_precision": 0
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file_path": "logs/application.log",
+    "max_file_size": 10,
+    "backup_count": 5,
+    "console_output": true
+  }
+}

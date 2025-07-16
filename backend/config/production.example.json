@@ -1,0 +1,89 @@
+{
+  "environment": "production",
+  "debug": false,
+  "host": "0.0.0.0",
+  "port": 8000,
+  "reload": false,
+  "cors_enabled": true,
+  "cors_origins": ["https://sitcon.camp", "https://api.sitcon.camp"],
+  "api_prefix": "/api/v1",
+  "docs_enabled": false,
+  
+  "database": {
+    "host": "mongodb.sitcon.camp",
+    "port": 27017,
+    "name": "sitcon_stock_prod",
+    "username": "sitcon_user",
+    "password": "CHANGE_ME_IN_PRODUCTION",
+    "connection_timeout": 30,
+    "max_pool_size": 200,
+    "min_pool_size": 20
+  },
+  
+  "cache": {
+    "type": "redis",
+    "redis_url": "redis://redis.sitcon.camp:6379",
+    "default_ttl": 7200,
+    "key_prefix": "sitcon:prod:",
+    "max_memory_size": 500
+  },
+  
+  "notification": {
+    "telegram": {
+      "enabled": true,
+      "bot_token": "PRODUCTION_BOT_TOKEN",
+      "base_url": "https://api.telegram.org/bot"
+    },
+    "email": {
+      "enabled": true,
+      "smtp_host": "smtp.gmail.com",
+      "smtp_port": 587,
+      "username": "noreply@sitcon.camp",
+      "password": "PRODUCTION_EMAIL_PASSWORD",
+      "use_tls": true
+    },
+    "websocket": {
+      "enabled": true
+    },
+    "default_channels": ["telegram", "email", "websocket"]
+  },
+  
+  "events": {
+    "type": "redis",
+    "redis_url": "redis://redis.sitcon.camp:6379",
+    "channel_prefix": "events:prod:",
+    "batch_size": 200,
+    "max_retries": 5,
+    "retry_delay": 2.0
+  },
+  
+  "security": {
+    "secret_key": "PRODUCTION_SECRET_KEY_CHANGE_ME",
+    "algorithm": "HS256",
+    "token_expire_minutes": 720,
+    "password_hash_rounds": 14,
+    "max_login_attempts": 3,
+    "lockout_duration": 1800
+  },
+  
+  "trading": {
+    "market_open_time": "09:00",
+    "market_close_time": "17:00",
+    "timezone": "Asia/Taipei",
+    "max_order_amount": 10000000,
+    "min_order_amount": 1,
+    "max_orders_per_user": 200,
+    "default_trading_fee": 0.001,
+    "price_precision": 2,
+    "quantity_precision": 0
+  },
+  
+  "logging": {
+    "level": "WARNING",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file_path": "/var/log/sitcon/application.log",
+    "max_file_size": 50,
+    "backup_count": 10,
+    "console_output": false
+  }
+}
