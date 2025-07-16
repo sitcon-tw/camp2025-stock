@@ -8,8 +8,7 @@ from app.routers import admin, public, bot, system, auth, web, rbac, management,
 # user_refactored 暫時註解，直到完成 DDD 遷移
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
-# DDD 依賴注入（暫時註解，直到完全遷移）
-# from app.application.dependencies import get_service_container
+from app.application.container import get_service_container
 import logging
 
 # Clean Code 原則：清晰的日誌設定
@@ -146,9 +145,10 @@ async def startup_event():
         # 初始化資料庫索引
         await init_database_indexes()
         
-        # 初始化服務容器
-        # service_container = get_service_container()
-        logger.info("Service container initialized successfully")
+        # 初始化 DDD 服務容器
+        service_container = get_service_container()
+        await service_container.initialize()
+        logger.info("DDD service container initialized successfully")
         
         # 驗證服務狀態
         await validate_services(service_container)
@@ -181,9 +181,9 @@ async def shutdown_event():
         from app.services.matching_scheduler import cleanup_matching_scheduler
         await cleanup_matching_scheduler()
         
-        # 清理服務資源
-        # service_container = get_service_container()
-        await cleanup_services(service_container)
+        # 清理 DDD 服務資源
+        service_container = get_service_container()
+        await service_container.cleanup()
         
         # 關閉資料庫連線
         await close_mongo_connection()
