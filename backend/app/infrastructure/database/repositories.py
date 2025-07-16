@@ -528,8 +528,8 @@ class MongoOrderRepository(OrderRepository):
             logger.error(f"Failed to save order: {e}")
             raise
     
-    async def update(self, order: StockOrder) -> bool:
-        """更新訂單"""
+    async def update_order(self, order: StockOrder) -> bool:
+        """更新訂單 (返回bool)"""
         try:
             data = order.to_dict()
             result = await self.db[Collections.STOCK_ORDERS].replace_one({"_id": order.id}, data)
@@ -546,6 +546,76 @@ class MongoOrderRepository(OrderRepository):
         except Exception as e:
             logger.error(f"Failed to delete order: {e}")
             return False
+    
+    # Repository[StockOrder] 抽象方法實現
+    async def find_all(self, skip: int = 0, limit: int = 100) -> List[StockOrder]:
+        """查找所有訂單"""
+        try:
+            cursor = self.db[Collections.STOCK_ORDERS].find().sort("created_at", -1).skip(skip).limit(limit)
+            orders = []
+            async for data in cursor:
+                orders.append(StockOrder.from_dict(data))
+            return orders
+        except Exception as e:
+            logger.error(f"Failed to find all orders: {e}")
+            return []
+    
+    async def update(self, entity: StockOrder) -> StockOrder:
+        """更新訂單實體"""
+        try:
+            data = entity.to_dict()
+            await self.db[Collections.STOCK_ORDERS].replace_one({"_id": entity.id}, data)
+            return entity
+        except Exception as e:
+            logger.error(f"Failed to update order entity: {e}")
+            raise
+    
+    async def exists(self, entity_id: ObjectId) -> bool:
+        """檢查訂單是否存在"""
+        try:
+            count = await self.db[Collections.STOCK_ORDERS].count_documents({"_id": entity_id})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Failed to check order existence: {e}")
+            return False
+    
+    async def count(self) -> int:
+        """計算訂單總數"""
+        try:
+            return await self.db[Collections.STOCK_ORDERS].count_documents({})
+        except Exception as e:
+            logger.error(f"Failed to count orders: {e}")
+            return 0
+    
+    # SpecificationRepository[StockOrder] 抽象方法實現
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[StockOrder]:
+        """根據規格查找訂單"""
+        try:
+            cursor = self.db[Collections.STOCK_ORDERS].find(specification).sort("created_at", -1)
+            orders = []
+            async for data in cursor:
+                orders.append(StockOrder.from_dict(data))
+            return orders
+        except Exception as e:
+            logger.error(f"Failed to find orders by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[StockOrder]:
+        """根據規格查找單一訂單"""
+        try:
+            data = await self.db[Collections.STOCK_ORDERS].find_one(specification)
+            return StockOrder.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find order by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格計算訂單數量"""
+        try:
+            return await self.db[Collections.STOCK_ORDERS].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count orders by specification: {e}")
+            return 0
 
 
 class MongoUserStockRepository(UserStockRepository):
@@ -634,6 +704,63 @@ class MongoUserStockRepository(UserStockRepository):
         except Exception as e:
             logger.error(f"Failed to find all user stocks: {e}")
             return []
+    
+    # Repository[UserStock] 抽象方法實現
+    async def find_by_id(self, entity_id: ObjectId) -> Optional[UserStock]:
+        """根據 ID 查找使用者股票持有"""
+        try:
+            data = await self.db[Collections.STOCKS].find_one({"_id": entity_id})
+            return UserStock.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find user stock by ID: {e}")
+            return None
+    
+    async def exists(self, entity_id: ObjectId) -> bool:
+        """檢查使用者股票持有是否存在"""
+        try:
+            result = await self.db[Collections.STOCKS].find_one({"_id": entity_id}, {"_id": 1})
+            return result is not None
+        except Exception as e:
+            logger.error(f"Failed to check user stock existence: {e}")
+            return False
+    
+    async def count(self) -> int:
+        """統計使用者股票持有數量"""
+        try:
+            return await self.db[Collections.STOCKS].count_documents({})
+        except Exception as e:
+            logger.error(f"Failed to count user stocks: {e}")
+            return 0
+    
+    # SpecificationRepository[UserStock] 抽象方法實現
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[UserStock]:
+        """根據規格查找使用者股票持有"""
+        try:
+            cursor = self.db[Collections.STOCKS].find(specification)
+            stocks = []
+            async for data in cursor:
+                stocks.append(UserStock.from_dict(data))
+            return stocks
+        except Exception as e:
+            logger.error(f"Failed to find user stocks by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[UserStock]:
+        """根據規格查找單一使用者股票持有"""
+        try:
+            data = await self.db[Collections.STOCKS].find_one(specification)
+            return UserStock.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find user stock by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格統計使用者股票持有數量"""
+        try:
+            return await self.db[Collections.STOCKS].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count user stocks by specification: {e}")
+            return 0
 
 
 class MongoStudentRepository(StudentRepository):
