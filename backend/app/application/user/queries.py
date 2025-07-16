@@ -8,15 +8,15 @@ from datetime import datetime
 from ..common.interfaces import Query
 
 
-@dataclass
 class GetUserByIdQuery(Query):
     """根據ID獲取用戶查詢"""
-    target_user_id: str
-    include_permissions: bool = False
-    include_stats: bool = False
     
-    def __post_init__(self):
-        super().__post_init__()
+    def __init__(self, target_user_id: str, include_permissions: bool = False, include_stats: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self.target_user_id = target_user_id
+        self.include_permissions = include_permissions
+        self.include_stats = include_stats
+        
         if not self.target_user_id:
             raise ValueError("Target user ID is required")
 

@@ -18,26 +18,50 @@ from ..common.exceptions import (
 from ..common.value_objects import Money, Quantity, Price
 
 
-@dataclass
 class TradeExecutedEvent(DomainEvent):
     """交易執行事件"""
-    trade_id: str
-    buyer_id: str
-    seller_id: str
-    symbol: str
-    quantity: int
-    price: int
-    total_amount: int
-    executed_at: datetime
+    
+    def __init__(self, trade_id: str, buyer_id: str, seller_id: str, symbol: str, quantity: int, price: int, total_amount: int, executed_at: datetime, **kwargs):
+        super().__init__(**kwargs)
+        self.trade_id = trade_id
+        self.buyer_id = buyer_id
+        self.seller_id = seller_id
+        self.symbol = symbol
+        self.quantity = quantity
+        self.price = price
+        self.total_amount = total_amount
+        self.executed_at = executed_at
+    
+    def _get_event_data(self) -> Dict[str, Any]:
+        return {
+            "trade_id": self.trade_id,
+            "buyer_id": self.buyer_id,
+            "seller_id": self.seller_id,
+            "symbol": self.symbol,
+            "quantity": self.quantity,
+            "price": self.price,
+            "total_amount": self.total_amount,
+            "executed_at": self.executed_at.isoformat()
+        }
 
 
-@dataclass
 class MarketStateChangedEvent(DomainEvent):
     """市場狀態變更事件"""
-    old_state: str
-    new_state: str
-    symbol: str
-    changed_at: datetime
+    
+    def __init__(self, old_state: str, new_state: str, symbol: str, changed_at: datetime, **kwargs):
+        super().__init__(**kwargs)
+        self.old_state = old_state
+        self.new_state = new_state
+        self.symbol = symbol
+        self.changed_at = changed_at
+    
+    def _get_event_data(self) -> Dict[str, Any]:
+        return {
+            "old_state": self.old_state,
+            "new_state": self.new_state,
+            "symbol": self.symbol,
+            "changed_at": self.changed_at.isoformat()
+        }
 
 
 class TradingAggregate(AggregateRoot):

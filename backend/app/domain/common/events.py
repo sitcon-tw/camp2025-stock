@@ -3,7 +3,7 @@ Domain Events Infrastructure
 """
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Generic, Callable, Awaitable
 from uuid import uuid4
@@ -14,22 +14,17 @@ logger = logging.getLogger(__name__)
 T = TypeVar('T', bound='DomainEvent')
 
 
-@dataclass
 class DomainEvent(ABC):
     """
     領域事件基類
     所有領域事件都應該繼承此類
     """
-    event_id: str
-    occurred_at: datetime
-    event_version: int = 1
-    correlation_id: Optional[str] = None
     
-    def __post_init__(self):
-        if not self.event_id:
-            self.event_id = str(uuid4())
-        if not self.occurred_at:
-            self.occurred_at = datetime.utcnow()
+    def __init__(self, **kwargs):
+        self.event_id = kwargs.get('event_id', str(uuid4()))
+        self.occurred_at = kwargs.get('occurred_at', datetime.utcnow())
+        self.event_version = kwargs.get('event_version', 1)
+        self.correlation_id = kwargs.get('correlation_id', None)
     
     @property
     def event_type(self) -> str:
@@ -230,12 +225,14 @@ class AggregateRoot:
 
 # 具體的領域事件
 
-@dataclass
 class UserCreatedEvent(DomainEvent):
     """使用者創建事件"""
-    user_id: str
-    telegram_id: int
-    username: str
+    
+    def __init__(self, user_id: str, telegram_id: int, username: str, **kwargs):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+        self.telegram_id = telegram_id
+        self.username = username
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -245,15 +242,17 @@ class UserCreatedEvent(DomainEvent):
         }
 
 
-@dataclass
 class PointsChangedEvent(DomainEvent):
     """點數變更事件"""
-    user_id: str
-    old_points: int
-    new_points: int
-    change_amount: int
-    change_type: str
-    description: str
+    
+    def __init__(self, user_id: str, old_points: int, new_points: int, change_amount: int, change_type: str, description: str, **kwargs):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+        self.old_points = old_points
+        self.new_points = new_points
+        self.change_amount = change_amount
+        self.change_type = change_type
+        self.description = description
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -266,15 +265,17 @@ class PointsChangedEvent(DomainEvent):
         }
 
 
-@dataclass
 class OrderCreatedEvent(DomainEvent):
     """訂單創建事件"""
-    order_id: str
-    user_id: str
-    symbol: str
-    order_type: str
-    quantity: int
-    price: int
+    
+    def __init__(self, order_id: str, user_id: str, symbol: str, order_type: str, quantity: int, price: int, **kwargs):
+        super().__init__(**kwargs)
+        self.order_id = order_id
+        self.user_id = user_id
+        self.symbol = symbol
+        self.order_type = order_type
+        self.quantity = quantity
+        self.price = price
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -287,15 +288,17 @@ class OrderCreatedEvent(DomainEvent):
         }
 
 
-@dataclass
 class OrderExecutedEvent(DomainEvent):
     """訂單執行事件"""
-    order_id: str
-    user_id: str
-    symbol: str
-    executed_quantity: int
-    executed_price: int
-    total_amount: int
+    
+    def __init__(self, order_id: str, user_id: str, symbol: str, executed_quantity: int, executed_price: int, total_amount: int, **kwargs):
+        super().__init__(**kwargs)
+        self.order_id = order_id
+        self.user_id = user_id
+        self.symbol = symbol
+        self.executed_quantity = executed_quantity
+        self.executed_price = executed_price
+        self.total_amount = total_amount
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -308,11 +311,13 @@ class OrderExecutedEvent(DomainEvent):
         }
 
 
-@dataclass
 class MarketOpenedEvent(DomainEvent):
     """市場開放事件"""
-    opened_by: str
-    reason: str
+    
+    def __init__(self, opened_by: str, reason: str, **kwargs):
+        super().__init__(**kwargs)
+        self.opened_by = opened_by
+        self.reason = reason
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -321,11 +326,13 @@ class MarketOpenedEvent(DomainEvent):
         }
 
 
-@dataclass
 class MarketClosedEvent(DomainEvent):
     """市場關閉事件"""
-    closed_by: str
-    reason: str
+    
+    def __init__(self, closed_by: str, reason: str, **kwargs):
+        super().__init__(**kwargs)
+        self.closed_by = closed_by
+        self.reason = reason
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -334,12 +341,14 @@ class MarketClosedEvent(DomainEvent):
         }
 
 
-@dataclass
 class StudentRegisteredEvent(DomainEvent):
     """學生註冊事件"""
-    student_id: str
-    real_name: str
-    group_id: str
+    
+    def __init__(self, student_id: str, real_name: str, group_id: str, **kwargs):
+        super().__init__(**kwargs)
+        self.student_id = student_id
+        self.real_name = real_name
+        self.group_id = group_id
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -349,13 +358,15 @@ class StudentRegisteredEvent(DomainEvent):
         }
 
 
-@dataclass
 class DebtCreatedEvent(DomainEvent):
     """債務創建事件"""
-    debt_id: str
-    user_id: str
-    amount: int
-    description: str
+    
+    def __init__(self, debt_id: str, user_id: str, amount: int, description: str, **kwargs):
+        super().__init__(**kwargs)
+        self.debt_id = debt_id
+        self.user_id = user_id
+        self.amount = amount
+        self.description = description
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {
@@ -366,13 +377,15 @@ class DebtCreatedEvent(DomainEvent):
         }
 
 
-@dataclass
 class DebtResolvedEvent(DomainEvent):
     """債務解決事件"""
-    debt_id: str
-    user_id: str
-    resolved_by: str
-    amount: int
+    
+    def __init__(self, debt_id: str, user_id: str, resolved_by: str, amount: int, **kwargs):
+        super().__init__(**kwargs)
+        self.debt_id = debt_id
+        self.user_id = user_id
+        self.resolved_by = resolved_by
+        self.amount = amount
     
     def _get_event_data(self) -> Dict[str, Any]:
         return {

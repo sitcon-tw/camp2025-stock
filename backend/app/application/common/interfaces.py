@@ -27,19 +27,17 @@ class Command:
             raise ValueError("Correlation ID is required")
 
 
-@dataclass
 class Query:
     """查詢基類"""
-    user_id: Optional[str] = None
-    timestamp: datetime = None
-    correlation_id: str = ""
     
-    def __post_init__(self):
-        if not self.timestamp:
-            self.timestamp = datetime.utcnow()
-        if not self.correlation_id:
-            from bson import ObjectId
-            self.correlation_id = str(ObjectId())
+    def __init__(self, **kwargs):
+        self.user_id = kwargs.get('user_id', None)
+        self.timestamp = kwargs.get('timestamp', datetime.utcnow())
+        self.correlation_id = kwargs.get('correlation_id', self._generate_correlation_id())
+    
+    def _generate_correlation_id(self) -> str:
+        from bson import ObjectId
+        return str(ObjectId())
 
 
 @dataclass
