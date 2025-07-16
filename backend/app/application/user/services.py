@@ -242,6 +242,47 @@ class UserApplicationService(ApplicationService):
             logger.error(f"Error transferring points: {e}")
             return CommandResult.failure_result("Failed to transfer points", ["internal_error"])
     
+    # Authentication Methods
+    
+    async def login_user(self, request) -> Dict[str, Any]:
+        """使用者登入"""
+        try:
+            if not self.user_repository:
+                return {"success": False, "message": "Service not initialized"}
+            
+            # 根據 telegram_id 查找使用者
+            user = None
+            if hasattr(request, 'telegram_id') and request.telegram_id:
+                user = await self.user_repository.find_by_telegram_id(request.telegram_id)
+            elif hasattr(request, 'username') and request.username:
+                # 如果沒有 telegram_id，嘗試通過 username 查找
+                # 這裡可能需要額外的查找邏輯
+                pass
+            
+            if not user:
+                return {
+                    "success": False,
+                    "message": "使用者不存在或帳號未啟用"
+                }
+            
+            # 簡化版本，直接返回用戶資訊（在實際系統中可能需要 JWT）
+            return {
+                "success": True,
+                "user": {
+                    "id": str(user.id),
+                    "username": user.username,
+                    "telegram_id": user.telegram_id,
+                    "points": user.points,
+                    "student_id": user.student_id,
+                    "real_name": user.real_name,
+                    "group_id": user.group_id
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Login failed: {e}")
+            return {"success": False, "message": "登入失敗"}
+    
     # Query Handlers
     
     async def get_user_by_id(self, query: GetUserByIdQuery) -> QueryResult[Dict[str, Any]]:
