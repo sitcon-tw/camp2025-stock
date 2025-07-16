@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .base_service import BaseService
+from ..base_service import BaseService
 from ..market import get_market_service
 from ..trading import get_trading_service
 from .transfer_service import get_transfer_service

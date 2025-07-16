@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .base_service import BaseService
+from ..base_service import BaseService
 from app.core.database import Collections
 from app.schemas.user import TransferRequest, TransferResponse
 from datetime import datetime, timezone

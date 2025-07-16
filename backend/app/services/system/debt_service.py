@@ -6,18 +6,15 @@
 import logging
 from typing import Optional, Dict, Any
 from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from ..base_service import BaseService
 from app.core.database import Collections
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 
-class DebtService:
+class DebtService(BaseService):
     """債務管理服務"""
-    
-    def __init__(self, db: AsyncIOMotorDatabase):
-        self.db = db
     
     async def get_user_debt_info(self, user_id: ObjectId) -> Dict[str, Any]:
         """

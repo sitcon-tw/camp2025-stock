@@ -7,7 +7,7 @@
 - TransferService: 點數轉帳服務
 """
 
-from .base_service import BaseService, get_base_service
+from ..base_service import BaseService, get_base_service
 from .user_service import UserService, get_user_service
 from .transfer_service import TransferService, get_transfer_service
 

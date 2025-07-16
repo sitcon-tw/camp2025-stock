@@ -1,6 +1,7 @@
 from __future__ import annotations
 from fastapi import Depends, HTTPException, status
-from app.core.database import get_database, Collections
+from ..base_service import BaseService
+from app.core.database import Collections
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
     GivePointsRequest, GivePointsResponse, AnnouncementRequest,
@@ -13,7 +14,6 @@ from app.core.exceptions import (
     AuthenticationException, UserNotFoundException,
     GroupNotFoundException, AdminException
 )
-from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 import logging
@@ -34,12 +34,7 @@ def get_admin_service() -> AdminService:
 # 管理員服務類別
 
 
-class AdminService:
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        if db is None:
-            self.db = get_database()
-        else:
-            self.db = db
+class AdminService(BaseService):
 
     # 管理員登入
     async def login(self, request: AdminLoginRequest) -> AdminLoginResponse:

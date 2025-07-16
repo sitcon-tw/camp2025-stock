@@ -1,6 +1,6 @@
 from __future__ import annotations
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.core.database import get_database, Collections
+from ..base_service import BaseService
+from app.core.database import Collections
 from datetime import datetime, timezone
 from typing import Optional
 import logging
@@ -12,14 +12,8 @@ def get_ipo_service() -> IPOService:
     """IPOService 的依賴注入函數"""
     return IPOService()
 
-class IPOService:
+class IPOService(BaseService):
     """IPO 服務 - 負責處理 IPO 初次公開發行相關功能"""
-    
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        if db is None:
-            self.db = get_database()
-        else:
-            self.db = db
     
     async def get_or_initialize_ipo_config(self, session=None) -> dict:
         """

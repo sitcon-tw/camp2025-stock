@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.core.database import get_database, Collections
+from ..base_service import BaseService
+from app.core.database import Collections
 from datetime import datetime, timezone
 from typing import List
 import logging
@@ -12,14 +12,8 @@ def get_student_service() -> StudentService:
     """StudentService 的依賴注入函數"""
     return StudentService()
 
-class StudentService:
+class StudentService(BaseService):
     """學生服務 - 負責處理學生管理相關功能"""
-    
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        if db is None:
-            self.db = get_database()
-        else:
-            self.db = db
     
     async def create_student(self, student_id: str, username: str) -> bool:
         """
