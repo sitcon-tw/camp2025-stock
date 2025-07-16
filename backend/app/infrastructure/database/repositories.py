@@ -225,6 +225,82 @@ class MongoPointLogRepository(PointLogRepository):
         except Exception as e:
             logger.error(f"Failed to delete point logs by user ID: {e}")
             return False
+    
+    # Repository[PointLog] 抽象方法實現
+    async def find_by_id(self, entity_id: ObjectId) -> Optional[PointLog]:
+        """根據 ID 查找點數記錄"""
+        try:
+            data = await self.db[Collections.POINT_LOGS].find_one({"_id": entity_id})
+            return PointLog.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find point log by ID: {e}")
+            return None
+    
+    async def update(self, entity: PointLog) -> PointLog:
+        """更新點數記錄"""
+        try:
+            data = entity.to_dict()
+            await self.db[Collections.POINT_LOGS].replace_one({"_id": entity.id}, data)
+            return entity
+        except Exception as e:
+            logger.error(f"Failed to update point log: {e}")
+            raise
+    
+    async def delete(self, entity_id: ObjectId) -> bool:
+        """刪除點數記錄"""
+        try:
+            result = await self.db[Collections.POINT_LOGS].delete_one({"_id": entity_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            logger.error(f"Failed to delete point log: {e}")
+            return False
+    
+    async def exists(self, entity_id: ObjectId) -> bool:
+        """檢查點數記錄是否存在"""
+        try:
+            count = await self.db[Collections.POINT_LOGS].count_documents({"_id": entity_id})
+            return count > 0
+        except Exception as e:
+            logger.error(f"Failed to check point log existence: {e}")
+            return False
+    
+    async def count(self) -> int:
+        """計算點數記錄總數"""
+        try:
+            return await self.db[Collections.POINT_LOGS].count_documents({})
+        except Exception as e:
+            logger.error(f"Failed to count point logs: {e}")
+            return 0
+    
+    # SpecificationRepository[PointLog] 抽象方法實現
+    async def find_by_specification(self, specification: Dict[str, Any]) -> List[PointLog]:
+        """根據規格查找點數記錄"""
+        try:
+            cursor = self.db[Collections.POINT_LOGS].find(specification).sort("timestamp", -1)
+            logs = []
+            async for data in cursor:
+                logs.append(PointLog.from_dict(data))
+            return logs
+        except Exception as e:
+            logger.error(f"Failed to find point logs by specification: {e}")
+            return []
+    
+    async def find_one_by_specification(self, specification: Dict[str, Any]) -> Optional[PointLog]:
+        """根據規格查找單一點數記錄"""
+        try:
+            data = await self.db[Collections.POINT_LOGS].find_one(specification)
+            return PointLog.from_dict(data) if data else None
+        except Exception as e:
+            logger.error(f"Failed to find point log by specification: {e}")
+            return None
+    
+    async def count_by_specification(self, specification: Dict[str, Any]) -> int:
+        """根據規格計算點數記錄數量"""
+        try:
+            return await self.db[Collections.POINT_LOGS].count_documents(specification)
+        except Exception as e:
+            logger.error(f"Failed to count point logs by specification: {e}")
+            return 0
 
 
 class MongoStockRepository(StockRepository):
