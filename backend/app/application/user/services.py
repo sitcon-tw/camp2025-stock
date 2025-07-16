@@ -265,9 +265,19 @@ class UserApplicationService(ApplicationService):
                     "message": "使用者不存在或帳號未啟用"
                 }
             
-            # 簡化版本，直接返回用戶資訊（在實際系統中可能需要 JWT）
+            # 生成 JWT Token
+            from app.core.security import create_access_token
+            token_data = {
+                "sub": str(user.id),
+                "user_id": str(user.id),
+                "username": user.username,
+                "telegram_id": user.telegram_id
+            }
+            token = create_access_token(data=token_data)
+            
             return {
                 "success": True,
+                "token": token,
                 "user": {
                     "id": str(user.id),
                     "username": user.username,
