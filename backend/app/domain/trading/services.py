@@ -2,19 +2,29 @@
 Trading Domain Services
 """
 from __future__ import annotations
-from typing import Optional, List
-from bson import ObjectId
+from typing import List, Dict, Optional, Tuple
+from datetime import datetime
+import logging
+
 from .entities import Stock, StockOrder, UserStock, OrderType, OrderStatus
 from .repositories import StockRepository, OrderRepository, UserStockRepository
+from ..user.entities import User, PointChangeType
 from ..user.repositories import UserRepository
-from app.shared.exceptions import DomainException, InsufficientBalanceException
-import logging
+from ..common.exceptions import (
+    BusinessRuleException, InsufficientResourceException, 
+    ValidationException, MarketClosedException, InvalidOrderException
+)
+from ..common.events import DomainEvent
+from ..common.value_objects import Money, Quantity, Price
 
 logger = logging.getLogger(__name__)
 
 
 class TradingDomainService:
-    """交易領域服務"""
+    """
+    交易領域服務
+    處理複雜的交易業務邏輯和規則
+    """
     
     def __init__(
         self,
