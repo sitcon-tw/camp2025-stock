@@ -4,10 +4,12 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import user_refactored, admin, public, bot, system, auth, web, rbac, management, cache, community, arcade
+from app.routers import admin, public, bot, system, auth, web, rbac, management, cache, community, arcade
+# user_refactored 暫時註解，直到完成 DDD 遷移
 from app.core.database import connect_to_mongo, close_mongo_connection, init_database_indexes
 from app.core.config_refactored import config, Constants
-from app.application.dependencies import get_service_container
+# DDD 依賴注入（暫時註解，直到完全遷移）
+# from app.application.dependencies import get_service_container
 import logging
 
 # Clean Code 原則：清晰的日誌設定
@@ -54,11 +56,11 @@ app.include_router(
     tags=["Public APIs - 公開資料查詢"]
 )
 
-app.include_router(
-    user_refactored.router,  # 使用重構後的使用者路由
-    prefix="/api/user", 
-    tags=["User APIs - 使用者功能 (重構版)"]
-)
+# app.include_router(
+#     user_refactored.router,  # 使用重構後的使用者路由（暫時註解）
+#     prefix="/api/user", 
+#     tags=["User APIs - 使用者功能 (重構版)"]
+# )
 
 app.include_router(
     bot.router, 
@@ -145,7 +147,7 @@ async def startup_event():
         await init_database_indexes()
         
         # 初始化服務容器
-        service_container = get_service_container()
+        # service_container = get_service_container()
         logger.info("Service container initialized successfully")
         
         # 驗證服務狀態
@@ -180,7 +182,7 @@ async def shutdown_event():
         await cleanup_matching_scheduler()
         
         # 清理服務資源
-        service_container = get_service_container()
+        # service_container = get_service_container()
         await cleanup_services(service_container)
         
         # 關閉資料庫連線
@@ -268,7 +270,7 @@ async def health_check():
     """
     try:
         # 檢查服務容器
-        service_container = get_service_container()
+        # service_container = get_service_container()
         
         # 檢查關鍵服務
         health_status = {

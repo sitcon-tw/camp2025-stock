@@ -1,6 +1,6 @@
 from __future__ import annotations
 from fastapi import HTTPException
-from ..base_service import BaseService
+from ...infrastructure.database.base_service import BaseService
 from app.core.database import Collections
 from datetime import datetime, timezone
 from typing import List

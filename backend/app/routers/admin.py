@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 # 使用新的模組化架構 - 直接從專門的模組導入
 from app.services.admin import AdminService, get_admin_service
-from app.services.user_management import UserService, get_user_service
+from app.services import UserService, get_user_service
 from app.services.system import DebtService, get_debt_service
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,
@@ -2078,7 +2078,7 @@ async def get_price_limit_info(
         )
     
     try:
-        from app.services.user_management import get_user_service
+        from app.services import get_user_service
         from datetime import datetime, timezone
         
         user_service = get_user_service()

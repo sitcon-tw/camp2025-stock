@@ -1,6 +1,6 @@
 from __future__ import annotations
 from fastapi import Depends, HTTPException, status
-from ..base_service import BaseService
+from ...infrastructure.database.base_service import BaseService
 from app.core.database import Collections
 from app.schemas.public import (
     AdminLoginRequest, AdminLoginResponse, UserAssetDetail,

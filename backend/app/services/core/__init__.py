@@ -7,8 +7,8 @@
 - RBACService: 權限控制服務
 """
 
-from .cache_service import get_cache_service, CacheService
-from .cache_invalidation import get_cache_invalidator
+from ...infrastructure.cache.cache_service import get_cache_service, CacheService
+from ...infrastructure.cache.cache_invalidation import get_cache_invalidator
 from .public_service import PublicService, get_public_service
 from .rbac_service import RBACManagementService, get_rbac_management_service
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.application.services import AuthenticationApplicationService
-from app.application.dependencies import get_authentication_application_service
+# from app.application.services import AuthenticationApplicationService  # 暫時註解
+# from app.application.dependencies import get_authentication_application_service  # 暫時註解
 from app.schemas.user import TelegramOAuthRequest, TelegramOAuthResponse
 from app.core.security import create_user_token
 from app.core.config_refactored import config
@@ -19,7 +19,7 @@ router = APIRouter()
 )
 async def telegram_oauth(
     auth_request: TelegramOAuthRequest,
-    auth_service: AuthenticationApplicationService = Depends(get_authentication_application_service)
+    # auth_service: AuthenticationApplicationService = Depends(get_authentication_application_service)  # 暫時註解
 ) -> TelegramOAuthResponse:
     """
     Telegram OAuth 認證端點

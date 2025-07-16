@@ -6,7 +6,9 @@ from app.schemas.public import (
     MarketStatus, TradingHoursResponse, OrderBookEntry, MarketTimeSlot, PublicAnnouncement,
     MarketPriceInfo
 )
-from .cache_service import cached, get_cache_service, CacheKeys
+from ...infrastructure.cache.cache_service import cached, get_cache_service
+# CacheKeys 暫時註解，需要重新定義
+# from ...infrastructure.cache.cache_service import CacheKeys
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone, timedelta
 from typing import List

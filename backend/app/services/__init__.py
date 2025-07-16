@@ -16,9 +16,11 @@
 向後相容性導入，保持現有 API 不變
 """
 
-# 向後相容性導入 - 核心服務
-from .user_management import UserService, get_user_service
-from .user_management import TransferService, get_transfer_service
+# 向後相容性導入 - 核心服務 (DDD 遷移)
+from ..application.dependencies import get_user_service
+from ..application.user.services import UserApplicationService as UserService
+# TransferService 暫時從現有結構導入，稍後遷移
+# from .user_management import TransferService, get_transfer_service
 from .trading import TradingService, get_trading_service
 from .market import MarketService, get_market_service
 from .matching import OrderMatchingService, get_order_matching_service
@@ -26,8 +28,9 @@ from .matching import OrderMatchingService, get_order_matching_service
 # 向後相容性導入 - 其他服務
 from .admin import AdminService, get_admin_service
 from .core import PublicService, get_public_service
-from .core import CacheService, get_cache_service
-from .core import get_cache_invalidator
+# 快取服務已移至基礎設施層
+from ..infrastructure.cache.cache_service import CacheService, get_cache_service
+from ..infrastructure.cache.cache_invalidation import get_cache_invalidator
 from .core import RBACManagementService, get_rbac_management_service
 from .system import DebtService, get_debt_service
 from .system import StudentService, get_student_service
@@ -40,8 +43,8 @@ __all__ = [
     # 使用者管理
     "UserService",
     "get_user_service",
-    "TransferService", 
-    "get_transfer_service",
+    # "TransferService", 
+    # "get_transfer_service",
     # 交易
     "TradingService",
     "get_trading_service",

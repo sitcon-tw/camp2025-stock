@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..base_service import BaseService
+from ...infrastructure.database.base_service import BaseService
 from app.core.database import Collections
 from app.core.config_refactored import config
 from datetime import datetime, timezone

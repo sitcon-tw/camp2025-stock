@@ -6,7 +6,7 @@
 import logging
 from typing import Optional, Dict, Any
 from bson import ObjectId
-from ..base_service import BaseService
+from ...infrastructure.database.base_service import BaseService
 from app.core.database import Collections
 from datetime import datetime, timezone
 
