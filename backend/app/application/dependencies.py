@@ -46,21 +46,19 @@ def get_user_stock_repository() -> UserStockRepository:
 @lru_cache()
 def get_user_application_service() -> UserApplicationService:
     """獲取使用者應用服務"""
-    return UserApplicationService(
-        user_repository=get_user_repository(),
-        point_log_repository=get_point_log_repository()
-    )
+    # 使用 DDD 服務容器獲取服務
+    from app.application.container import get_service_container
+    container = get_service_container()
+    return container.user_application_service
 
 
 @lru_cache()
 def get_trading_application_service() -> TradingApplicationService:
     """獲取交易應用服務"""
-    return TradingApplicationService(
-        stock_repository=get_stock_repository(),
-        order_repository=get_order_repository(),
-        user_stock_repository=get_user_stock_repository(),
-        user_repository=get_user_repository()
-    )
+    # 使用 DDD 服務容器獲取服務
+    from app.application.container import get_service_container
+    container = get_service_container()
+    return container.trading_application_service
 
 
 # Legacy compatibility functions (for gradual migration)
