@@ -3,7 +3,8 @@ Unit of Work Implementation
 """
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List, Set
-from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorClient, AsyncIOMotorSession
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorClient
+from pymongo.client_session import ClientSession
 from contextlib import asynccontextmanager
 import logging
 from datetime import datetime
@@ -76,7 +77,7 @@ class MongoUnitOfWork(UnitOfWork):
     def __init__(self, client: AsyncIOMotorClient, database: AsyncIOMotorDatabase):
         self.client = client
         self.database = database
-        self.session: Optional[AsyncIOMotorSession] = None
+        self.session: Optional[ClientSession] = None
         self.transaction_context: Optional[TransactionContext] = None
         self.is_nested = False
         self.nested_transactions: List[TransactionContext] = []
@@ -219,7 +220,7 @@ class MongoUnitOfWork(UnitOfWork):
         self.is_nested = False
         self.nested_transactions.clear()
     
-    def get_session(self) -> Optional[AsyncIOMotorSession]:
+    def get_session(self) -> Optional[ClientSession]:
         """獲取當前會話"""
         return self.session
     
