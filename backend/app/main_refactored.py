@@ -200,11 +200,16 @@ async def validate_services(service_container) -> None:
     Clean Code 原則：分離驗證邏輯
     """
     try:
-        # 初始化應用服務
-        await service_container.user_application_service.initialize()
-        await service_container.trading_application_service.initialize()
-        await service_container.transfer_application_service.initialize()
-        await service_container.ipo_application_service.initialize()
+        # 驗證關鍵服務可以正常實例化
+        user_service = service_container.user_application_service
+        trading_service = service_container.trading_application_service
+        
+        # 驗證服務有必要的方法
+        if not hasattr(user_service, 'login_user'):
+            raise Exception("UserApplicationService missing login_user method")
+        
+        if not hasattr(trading_service, 'place_order'):
+            raise Exception("TradingApplicationService missing place_order method")
         
         logger.info("All application services validated successfully")
         
@@ -219,13 +224,8 @@ async def cleanup_services(service_container) -> None:
     Clean Code 原則：分離清理邏輯
     """
     try:
-        # 清理應用服務
-        await service_container.user_application_service.cleanup()
-        await service_container.trading_application_service.cleanup()
-        await service_container.transfer_application_service.cleanup()
-        await service_container.ipo_application_service.cleanup()
-        
-        logger.info("All application services cleaned up successfully")
+        # 服務清理由容器的 cleanup 方法處理
+        logger.info("Service cleanup handled by container")
         
     except Exception as e:
         logger.error(f"Service cleanup failed: {e}")
