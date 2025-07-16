@@ -113,8 +113,7 @@ class DDDServiceContainer:
         """使用者應用服務"""
         if 'user' not in self._application_services:
             self._application_services['user'] = UserApplicationService(
-                user_repository=self.user_repository,
-                point_log_repository=self.point_log_repository
+                container=self
             )
         return self._application_services['user']
     

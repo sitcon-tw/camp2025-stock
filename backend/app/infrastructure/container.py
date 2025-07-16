@@ -77,6 +77,10 @@ class DIContainer:
         self._services[service_type] = descriptor
         return self
     
+    async def get(self, service_type: Type[T]) -> T:
+        """異步獲取服務（向後兼容）"""
+        return self.resolve(service_type)
+    
     def resolve(self, service_type: Type[T]) -> T:
         """解析服務"""
         if not self._initialized:

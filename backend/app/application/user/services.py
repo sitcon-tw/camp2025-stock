@@ -20,7 +20,7 @@ from ...domain.common.exceptions import (
     EntityNotFoundException, InsufficientPointsException, 
     BusinessRuleException, ValidationException
 )
-from ...infrastructure.container import DIContainer
+# from ...infrastructure.container import DIContainer
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class UserApplicationService(ApplicationService):
     """使用者應用服務"""
     
-    def __init__(self, container: DIContainer):
+    def __init__(self, container):
         super().__init__()
         self.container = container
         self.user_repository: UserRepository = None
@@ -42,13 +42,14 @@ class UserApplicationService(ApplicationService):
     async def initialize(self) -> None:
         """初始化服務"""
         try:
-            self.user_repository = await self.container.get(UserRepository)
-            self.point_log_repository = await self.container.get(PointLogRepository)
-            self.unit_of_work = await self.container.get(UnitOfWork)
-            self.event_publisher = await self.container.get(EventPublisher)
-            self.authorization_service = await self.container.get(AuthorizationService)
-            self.cache_service = await self.container.get(CacheService)
-            self.notification_service = await self.container.get(NotificationService)
+            self.user_repository = self.container.user_repository
+            self.point_log_repository = self.container.point_log_repository
+            # TODO: Add other services as they become available in the container
+            # self.unit_of_work = self.container.unit_of_work
+            # self.event_publisher = self.container.event_publisher
+            # self.authorization_service = self.container.authorization_service
+            # self.cache_service = self.container.cache_service
+            # self.notification_service = self.container.notification_service
         except Exception as e:
             logger.error(f"Error initializing UserApplicationService: {e}")
             # 如果容器服務不可用，使用 None 作為默認值
