@@ -1,8 +1,8 @@
 from __future__ import annotations
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.database import get_database, Collections
-from .core.cache_service import get_cache_service
-from .core.cache_invalidation import get_cache_invalidator
+from ..cache.cache_service import get_cache_service
+from ..cache.cache_invalidation import get_cache_invalidator
 from datetime import datetime, timezone
 from bson import ObjectId
 import logging
