@@ -287,67 +287,97 @@ def configure_container() -> DIContainer:
 
 def _register_repositories(container: DIContainer) -> None:
     """註冊存儲庫"""
-    from app.domain.user.repositories import UserRepository, PointLogRepository
-    from app.domain.trading.repositories import StockRepository, OrderRepository, UserStockRepository
-    from app.domain.system.repositories import StudentRepository, UserDebtRepository
-    from app.infrastructure.database.repositories import (
-        MongoUserRepository, MongoPointLogRepository,
-        MongoStockRepository, MongoOrderRepository, MongoUserStockRepository,
-        MongoStudentRepository, MongoUserDebtRepository
-    )
-    
-    container.register_singleton(UserRepository, MongoUserRepository)
-    container.register_singleton(PointLogRepository, MongoPointLogRepository)
-    container.register_singleton(StockRepository, MongoStockRepository)
-    container.register_singleton(OrderRepository, MongoOrderRepository)
-    container.register_singleton(UserStockRepository, MongoUserStockRepository)
-    container.register_singleton(StudentRepository, MongoStudentRepository)
-    container.register_singleton(UserDebtRepository, MongoUserDebtRepository)
+    try:
+        from app.domain.user.repositories import UserRepository, PointLogRepository
+        from app.domain.trading.repositories import StockRepository, OrderRepository, UserStockRepository
+        from app.domain.system.repositories import StudentRepository, UserDebtRepository
+        from app.infrastructure.database.repositories import (
+            MongoUserRepository, MongoPointLogRepository,
+            MongoStockRepository, MongoOrderRepository, MongoUserStockRepository,
+            MongoStudentRepository, MongoUserDebtRepository
+        )
+        
+        logger.info("Registering repositories in DI container...")
+        container.register_singleton(UserRepository, MongoUserRepository)
+        logger.info("✅ UserRepository registered successfully")
+        container.register_singleton(PointLogRepository, MongoPointLogRepository)
+        container.register_singleton(StockRepository, MongoStockRepository)
+        container.register_singleton(OrderRepository, MongoOrderRepository)
+        container.register_singleton(UserStockRepository, MongoUserStockRepository)
+        container.register_singleton(StudentRepository, MongoStudentRepository)
+        container.register_singleton(UserDebtRepository, MongoUserDebtRepository)
+        logger.info("✅ All repositories registered successfully")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to register repositories: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def _register_domain_services(container: DIContainer) -> None:
     """註冊領域服務"""
-    from app.domain.user.services import UserDomainService
-    from app.domain.trading.services import TradingDomainService
-    from app.domain.trading.data_services import TradingDataDomainService
-    from app.domain.market.services import MarketDomainService
-    from app.domain.market.data_services import MarketDataDomainService
-    from app.domain.admin.services import AdminDomainService
-    from app.domain.system.services import DebtDomainService, StudentDomainService
-    from app.domain.auth.services import RBACDomainService
-    
-    container.register_singleton(UserDomainService, UserDomainService)
-    container.register_singleton(TradingDomainService, TradingDomainService)
-    container.register_singleton(TradingDataDomainService, TradingDataDomainService)
-    container.register_singleton(MarketDomainService, MarketDomainService)
-    container.register_singleton(MarketDataDomainService, MarketDataDomainService)
-    container.register_singleton(AdminDomainService, AdminDomainService)
-    container.register_singleton(DebtDomainService, DebtDomainService)
-    container.register_singleton(StudentDomainService, StudentDomainService)
-    container.register_singleton(RBACDomainService, RBACDomainService)
+    try:
+        from app.domain.user.services import UserDomainService
+        from app.domain.trading.services import TradingDomainService
+        from app.domain.trading.data_services import TradingDataDomainService
+        from app.domain.market.services import MarketDomainService
+        from app.domain.market.data_services import MarketDataDomainService
+        from app.domain.admin.services import AdminDomainService
+        from app.domain.system.services import DebtDomainService, StudentDomainService
+        from app.domain.auth.services import RBACDomainService
+        
+        logger.info("Registering domain services in DI container...")
+        container.register_singleton(UserDomainService, UserDomainService)
+        logger.info("✅ UserDomainService registered successfully")
+        container.register_singleton(TradingDomainService, TradingDomainService)
+        container.register_singleton(TradingDataDomainService, TradingDataDomainService)
+        container.register_singleton(MarketDomainService, MarketDomainService)
+        container.register_singleton(MarketDataDomainService, MarketDataDomainService)
+        container.register_singleton(AdminDomainService, AdminDomainService)
+        container.register_singleton(DebtDomainService, DebtDomainService)
+        container.register_singleton(StudentDomainService, StudentDomainService)
+        container.register_singleton(RBACDomainService, RBACDomainService)
+        logger.info("✅ All domain services registered successfully")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to register domain services: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def _register_application_services(container: DIContainer) -> None:
     """註冊應用服務"""
-    from app.application.admin.services import AdminApplicationService
-    from app.application.user.authentication_service import UserAuthenticationApplicationService
-    from app.application.user.portfolio_service import UserPortfolioApplicationService
-    from app.application.trading.services import TradingApplicationService
-    from app.application.public.services import PublicApplicationService
-    from app.application.auth.services import RBACApplicationService
-    
-    # Legacy services for backward compatibility
-    from app.application.user.services import UserApplicationService
-    
-    container.register_scoped(AdminApplicationService, AdminApplicationService)
-    container.register_scoped(UserAuthenticationApplicationService, UserAuthenticationApplicationService)
-    container.register_scoped(UserPortfolioApplicationService, UserPortfolioApplicationService)
-    container.register_scoped(TradingApplicationService, TradingApplicationService)
-    container.register_scoped(PublicApplicationService, PublicApplicationService)
-    container.register_scoped(RBACApplicationService, RBACApplicationService)
-    
-    # Legacy compatibility
-    container.register_scoped(UserApplicationService, UserApplicationService)
+    try:
+        from app.application.admin.services import AdminApplicationService
+        from app.application.user.authentication_service import UserAuthenticationApplicationService
+        from app.application.user.portfolio_service import UserPortfolioApplicationService
+        from app.application.trading.services import TradingApplicationService
+        from app.application.public.services import PublicApplicationService
+        from app.application.auth.services import RBACApplicationService
+        
+        # Legacy services for backward compatibility
+        from app.application.user.services import UserApplicationService
+        
+        logger.info("Registering application services in DI container...")
+        container.register_scoped(AdminApplicationService, AdminApplicationService)
+        container.register_scoped(UserAuthenticationApplicationService, UserAuthenticationApplicationService)
+        logger.info("✅ UserAuthenticationApplicationService registered successfully")
+        container.register_scoped(UserPortfolioApplicationService, UserPortfolioApplicationService)
+        container.register_scoped(TradingApplicationService, TradingApplicationService)
+        container.register_scoped(PublicApplicationService, PublicApplicationService)
+        container.register_scoped(RBACApplicationService, RBACApplicationService)
+        
+        # Legacy compatibility
+        container.register_scoped(UserApplicationService, UserApplicationService)
+        logger.info("✅ All application services registered successfully")
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to register application services: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 def _register_infrastructure_services(container: DIContainer) -> None:
