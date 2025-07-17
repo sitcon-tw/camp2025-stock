@@ -101,6 +101,7 @@ class UserAuthenticationApplicationService(BaseApplicationService):
         try:
             # 1. 驗證 Telegram OAuth 資料
             logger.debug(f"Received auth data: {auth_data}")
+            logger.debug(f"Bot token for verification: {bot_token[:10] if bot_token else 'None'}...")
             if not self.user_domain_service.verify_telegram_oauth(auth_data.copy(), bot_token):
                 logger.warning(f"Invalid Telegram auth data for user {auth_data.get('id')}")
                 return False, None, "Invalid Telegram authentication data"

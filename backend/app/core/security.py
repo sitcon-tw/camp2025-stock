@@ -143,6 +143,8 @@ def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
     logger.debug(f"Data check string: {data_check_string}")
 
     # 計算預期的 hash
+    logger.debug(f"Bot token length: {len(bot_token) if bot_token else 'None'}")
+    logger.debug(f"Bot token prefix: {bot_token[:10] if bot_token else 'None'}...")
     secret_key = hashlib.sha256(bot_token.encode()).digest()
     expected_hash = hmac.new(
         secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
