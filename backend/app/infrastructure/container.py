@@ -363,7 +363,7 @@ def _register_infrastructure_services(container: DIContainer) -> None:
 async def get_admin_service():
     """向後相容：取得管理員服務"""
     from app.application.admin.services import AdminApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(AdminApplicationService)
 
@@ -371,7 +371,7 @@ async def get_admin_service():
 async def get_user_service():
     """向後相容：取得使用者服務"""
     from app.application.user.services import UserApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(UserApplicationService)
 
@@ -379,7 +379,7 @@ async def get_user_service():
 async def get_trading_service():
     """向後相容：取得交易服務"""
     from app.application.trading.services import TradingApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(TradingApplicationService)
 
@@ -387,7 +387,7 @@ async def get_trading_service():
 async def get_debt_service():
     """向後相容：取得債務服務"""
     from app.domain.system.services import DebtDomainService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(DebtDomainService)
 
@@ -395,7 +395,7 @@ async def get_debt_service():
 async def get_student_service():
     """向後相容：取得學生服務"""
     from app.domain.system.services import StudentDomainService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(StudentDomainService)
 
@@ -403,7 +403,7 @@ async def get_student_service():
 async def get_user_authentication_service():
     """取得使用者認證服務"""
     from app.application.user.authentication_service import UserAuthenticationApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(UserAuthenticationApplicationService)
 
@@ -411,7 +411,7 @@ async def get_user_authentication_service():
 async def get_user_portfolio_service():
     """取得使用者投資組合服務"""
     from app.application.user.portfolio_service import UserPortfolioApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(UserPortfolioApplicationService)
 
@@ -419,7 +419,7 @@ async def get_user_portfolio_service():
 async def get_public_service():
     """向後相容：取得公開服務"""
     from app.application.public.services import PublicApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(PublicApplicationService)
 
@@ -427,6 +427,6 @@ async def get_public_service():
 async def get_rbac_management_service():
     """向後相容：取得RBAC管理服務"""
     from app.application.auth.services import RBACApplicationService
-    container = get_container()
+    container = configure_container()
     await container.initialize()
     return container.resolve(RBACApplicationService)
