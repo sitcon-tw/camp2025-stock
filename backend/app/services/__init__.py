@@ -27,11 +27,13 @@ from ..application.trading.services import TradingApplicationService as TradingS
 from ..application.admin.services import AdminApplicationService as AdminService
 from .market import MarketService, get_market_service
 from .matching import OrderMatchingService, get_order_matching_service
-from .core import PublicService, get_public_service
+# 核心服務已遷移到 DDD 架構，通過 DI 容器取得
+from ..infrastructure.container import get_public_service, get_rbac_management_service
+from ..application.public.services import PublicApplicationService as PublicService
+from ..application.auth.services import RBACApplicationService as RBACManagementService
 # 快取服務已移至基礎設施層
 from ..infrastructure.cache.cache_service import CacheService, get_cache_service
 from ..infrastructure.cache.cache_invalidation import get_cache_invalidator
-from .core import RBACManagementService, get_rbac_management_service
 # DebtService 和 StudentService 已遷移到 DDD 架構，通過 DI 容器取得
 # from ..domain.system.services import DebtDomainService as DebtService
 # from ..domain.system.services import StudentDomainService as StudentService

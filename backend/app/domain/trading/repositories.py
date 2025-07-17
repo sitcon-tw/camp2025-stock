@@ -126,6 +126,16 @@ class TradeRepository(ABC):
         pass
     
     @abstractmethod
+    async def find_recent_trades(self, limit: int) -> List[Dict[str, Any]]:
+        """查找最近的交易記錄"""
+        pass
+    
+    @abstractmethod
+    async def find_trades_after(self, start_time: datetime) -> List[Dict[str, Any]]:
+        """查找指定時間後的交易記錄"""
+        pass
+    
+    @abstractmethod
     async def find_user_buy_trades(self, user_id: ObjectId) -> List[Dict[str, Any]]:
         """查找使用者的買入交易記錄"""
         pass

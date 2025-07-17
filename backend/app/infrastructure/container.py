@@ -304,16 +304,22 @@ def _register_domain_services(container: DIContainer) -> None:
     """註冊領域服務"""
     from app.domain.user.services import UserDomainService
     from app.domain.trading.services import TradingDomainService
+    from app.domain.trading.data_services import TradingDataDomainService
     from app.domain.market.services import MarketDomainService
+    from app.domain.market.data_services import MarketDataDomainService
     from app.domain.admin.services import AdminDomainService
     from app.domain.system.services import DebtDomainService, StudentDomainService
+    from app.domain.auth.services import RBACDomainService
     
     container.register_singleton(UserDomainService, UserDomainService)
     container.register_singleton(TradingDomainService, TradingDomainService)
+    container.register_singleton(TradingDataDomainService, TradingDataDomainService)
     container.register_singleton(MarketDomainService, MarketDomainService)
+    container.register_singleton(MarketDataDomainService, MarketDataDomainService)
     container.register_singleton(AdminDomainService, AdminDomainService)
     container.register_singleton(DebtDomainService, DebtDomainService)
     container.register_singleton(StudentDomainService, StudentDomainService)
+    container.register_singleton(RBACDomainService, RBACDomainService)
 
 
 def _register_application_services(container: DIContainer) -> None:
@@ -322,6 +328,8 @@ def _register_application_services(container: DIContainer) -> None:
     from app.application.user.authentication_service import UserAuthenticationApplicationService
     from app.application.user.portfolio_service import UserPortfolioApplicationService
     from app.application.trading.services import TradingApplicationService
+    from app.application.public.services import PublicApplicationService
+    from app.application.auth.services import RBACApplicationService
     
     # Legacy services for backward compatibility
     from app.application.user.services import UserApplicationService
@@ -330,6 +338,8 @@ def _register_application_services(container: DIContainer) -> None:
     container.register_scoped(UserAuthenticationApplicationService, UserAuthenticationApplicationService)
     container.register_scoped(UserPortfolioApplicationService, UserPortfolioApplicationService)
     container.register_scoped(TradingApplicationService, TradingApplicationService)
+    container.register_scoped(PublicApplicationService, PublicApplicationService)
+    container.register_scoped(RBACApplicationService, RBACApplicationService)
     
     # Legacy compatibility
     container.register_scoped(UserApplicationService, UserApplicationService)
@@ -399,3 +409,19 @@ async def get_user_portfolio_service():
     container = get_container()
     await container.initialize()
     return container.resolve(UserPortfolioApplicationService)
+
+
+async def get_public_service():
+    """向後相容：取得公開服務"""
+    from app.application.public.services import PublicApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(PublicApplicationService)
+
+
+async def get_rbac_management_service():
+    """向後相容：取得RBAC管理服務"""
+    from app.application.auth.services import RBACApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(RBACApplicationService)

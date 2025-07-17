@@ -8,7 +8,8 @@ from app.core.rbac import (
     require_system_admin_permission, require_admin_role
 )
 # 使用新的模組化架構 - 直接從專門的模組導入
-from app.services.core import RBACManagementService, get_rbac_management_service
+from app.infrastructure.container import get_rbac_management_service
+from app.application.auth.services import RBACApplicationService as RBACManagementService
 from app.schemas.rbac import (
     UserRoleInfo, RoleUpdateRequest, RoleUpdateResponse,
     PermissionCheckRequest, PermissionCheckResponse,

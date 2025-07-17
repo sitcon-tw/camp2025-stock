@@ -17,6 +17,21 @@ class MarketConfigRepository(ABC):
         pass
     
     @abstractmethod
+    async def get_trading_hours(self) -> List[Dict[str, Any]]:
+        """取得交易時間設定"""
+        pass
+    
+    @abstractmethod
+    async def get_trading_limit(self) -> Dict[str, Any]:
+        """取得交易限制設定"""
+        pass
+    
+    @abstractmethod
+    async def get_manual_control(self) -> Dict[str, Any]:
+        """取得手動控制設定"""
+        pass
+    
+    @abstractmethod
     async def find_all(self) -> List[MarketConfig]:
         """查找所有配置"""
         pass
