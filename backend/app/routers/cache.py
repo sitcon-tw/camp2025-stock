@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 # 使用新的模組化架構 - 直接從專門的模組導入
-from app.infrastructure.container import get_cache_service
+from app.infrastructure.cache.cache_service import get_cache_service
 from app.infrastructure.cache.cache_invalidation import get_cache_invalidator
 from app.core.rbac import RBACService, Permission
 from app.core.security import get_current_user

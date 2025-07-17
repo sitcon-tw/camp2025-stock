@@ -182,7 +182,8 @@ from app.services.trading import get_trading_service
 from app.services.market import get_market_service
 from app.services.matching import get_order_matching_service
 from app.services.admin import get_admin_service
-from app.infrastructure.container import get_public_service, get_cache_service
+from app.infrastructure.container import get_public_service
+from app.infrastructure.cache.cache_service import get_cache_service
 from app.services.system import get_debt_service, get_student_service
 from app.services.notification import get_notification_service
 from app.services.game import get_game_service
