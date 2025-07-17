@@ -8,7 +8,8 @@ from app.core.rbac import (
     require_view_all_users_permission, RBACService
 )
 # 使用新的模組化架構 - 直接從專門的模組導入
-from app.services.admin import AdminService, get_admin_service
+from app.infrastructure.container import get_admin_service
+from app.application.admin.services import AdminApplicationService as AdminService
 from app.schemas.public import (
     UserAssetDetail, GivePointsRequest, GivePointsResponse, 
     AnnouncementRequest, AnnouncementResponse

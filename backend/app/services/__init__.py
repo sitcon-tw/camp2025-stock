@@ -32,9 +32,9 @@ from .core import PublicService, get_public_service
 from ..infrastructure.cache.cache_service import CacheService, get_cache_service
 from ..infrastructure.cache.cache_invalidation import get_cache_invalidator
 from .core import RBACManagementService, get_rbac_management_service
-# DebtService 和 StudentService 已遷移到 DDD 架構
-from ..domain.system.services import DebtDomainService as DebtService
-from ..domain.system.services import StudentDomainService as StudentService
+# DebtService 和 StudentService 已遷移到 DDD 架構，通過 DI 容器取得
+# from ..domain.system.services import DebtDomainService as DebtService
+# from ..domain.system.services import StudentDomainService as StudentService
 from .notification import NotificationService, get_notification_service
 from .game import GameService, get_game_service
 from .matching import MatchingScheduler, get_matching_scheduler, initialize_matching_scheduler
@@ -71,11 +71,11 @@ __all__ = [
     "get_cache_invalidator",
     "RBACManagementService",
     "get_rbac_management_service",
-    # 系統
-    "DebtService",
-    "get_debt_service",
-    "StudentService",
-    "get_student_service",
+    # 系統 (已遷移到 DDD，通過 DI 容器取得)
+    # "DebtService",
+    # "get_debt_service", 
+    # "StudentService",
+    # "get_student_service",
     # 通知
     "NotificationService",
     "get_notification_service",

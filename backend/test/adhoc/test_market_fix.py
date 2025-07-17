@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.services.user_service import UserService
 from app.services.public_service import PublicService
-from app.services.admin_service import AdminService
+from app.application.admin.services import AdminApplicationService as AdminService
 from app.core.database import get_database
 
 async def test_market_consistency():

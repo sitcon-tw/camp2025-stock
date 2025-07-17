@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 # 使用新的模組化架構 - 直接從專門的模組導入
-from app.services import UserService, get_user_service
-from app.services.admin import AdminService, get_admin_service
+from app.infrastructure.container import get_user_service, get_admin_service
+from app.application.user.services import UserApplicationService as UserService
+from app.application.admin.services import AdminApplicationService as AdminService
 from app.schemas.user import (
     UserPortfolio, StockOrderRequest, StockOrderResponse,
     TransferRequest, TransferResponse, UserPointLog, UserStockOrder, UserBasicInfo

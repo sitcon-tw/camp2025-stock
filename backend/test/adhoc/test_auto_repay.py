@@ -12,7 +12,7 @@ from bson import ObjectId
 sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
 
 from app.core.database import connect_to_mongo, get_database, Collections
-from app.services.admin_service import AdminService
+from app.application.admin.services import AdminApplicationService as AdminService
 from app.schemas.public import GivePointsRequest
 
 async def test_auto_repay():
