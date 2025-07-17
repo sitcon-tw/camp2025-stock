@@ -357,6 +357,10 @@ def _register_repositories(container: DIContainer) -> None:
         container.register_singleton(UserStockRepository, MongoUserStockRepository)
         container.register_singleton(StudentRepository, MongoStudentRepository)
         container.register_singleton(UserDebtRepository, MongoUserDebtRepository)
+        
+        # TODO: Add market repositories when they're implemented
+        # MarketConfigRepository, IPOConfigRepository, AnnouncementRepository
+        
         logger.info("✅ All repositories registered successfully")
         
     except Exception as e:

@@ -120,9 +120,15 @@ def verify_bot_token(token: str = Header(..., alias="token")) -> bool:
 
 def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
     """驗證 Telegram OAuth 認證資料"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.debug(f"Verifying Telegram auth with data: {list(auth_data.keys())}")
+    
     # 取得 hash 值
     received_hash = auth_data.pop('hash', None)
     if not received_hash:
+        logger.error("No hash provided in auth data")
         return False
 
     # 準備驗證字串
@@ -131,13 +137,20 @@ def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
         auth_data_items.append(f"{key}={value}")
 
     data_check_string = '\n'.join(auth_data_items)
+    logger.debug(f"Data check string: {data_check_string}")
 
     # 計算預期的 hash
     secret_key = hashlib.sha256(bot_token.encode()).digest()
     expected_hash = hmac.new(
         secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-
-    return hmac.compare_digest(received_hash, expected_hash)
+    
+    logger.debug(f"Received hash: {received_hash}")
+    logger.debug(f"Expected hash: {expected_hash}")
+    
+    result = hmac.compare_digest(received_hash, expected_hash)
+    logger.info(f"Telegram auth verification result: {result}")
+    
+    return result
 
 
 def create_user_token(user_id: str, telegram_id: int) -> str:
