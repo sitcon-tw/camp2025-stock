@@ -173,8 +173,13 @@ class DIContainer:
             
             # 創建事件總線
             if self._event_bus is None:
-                from app.infrastructure.events import InMemoryEventBus
-                self._event_bus = InMemoryEventBus()
+                import importlib.util
+                import os
+                events_file = os.path.join(os.path.dirname(__file__), "events.py")
+                spec = importlib.util.spec_from_file_location("events_module", events_file)
+                events_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(events_module)
+                self._event_bus = events_module.InMemoryEventBus()
             
             # 初始化核心服務
             await self._initialize_core_services()
