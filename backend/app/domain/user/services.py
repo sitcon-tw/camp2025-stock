@@ -2,11 +2,12 @@
 User Domain Services
 """
 from __future__ import annotations
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from bson import ObjectId
 from .entities import User, PointLog
 from .repositories import UserRepository, PointLogRepository
 from app.shared.exceptions import DomainException
+from app.core.security import verify_telegram_auth
 
 
 class UserDomainService:
@@ -132,3 +133,65 @@ class UserDomainService:
     async def get_user_point_history(self, user_id: ObjectId, skip: int = 0, limit: int = 100) -> List[PointLog]:
         """獲取使用者點數歷史"""
         return await self.point_log_repository.find_by_user_id(user_id, skip, limit)
+    
+    def verify_telegram_oauth(self, auth_data: dict, bot_token: str) -> bool:
+        """
+        驗證 Telegram OAuth 資料
+        委託給核心安全模組處理實際驗證邏輯
+        """
+        try:
+            return verify_telegram_auth(auth_data, bot_token)
+        except Exception:
+            return False
+    
+    def validate_user_eligibility(self, user: Optional[User]) -> Tuple[bool, str]:
+        """
+        驗證使用者登入資格
+        領域邏輯：確認使用者存在且狀態正常
+        """
+        if not user:
+            return False, "使用者不存在"
+        
+        # 檢查使用者是否啟用（如果有 enabled 欄位）
+        if hasattr(user, 'enabled') and not user.enabled:
+            return False, "帳號已停用"
+        
+        # 檢查使用者是否有基本資訊
+        if not user.username:
+            return False, "使用者資料不完整"
+        
+        return True, "使用者資格驗證通過"
+    
+    async def authenticate_user(self, username: str, telegram_id: int) -> Optional[User]:
+        """
+        認證使用者
+        根據使用者名稱和 Telegram ID 查找使用者
+        """
+        # 先嘗試透過 Telegram ID 查找
+        user = await self.user_repository.find_by_telegram_id(telegram_id)
+        if user and user.username == username:
+            return user
+        
+        # 如果找不到或使用者名稱不符，回傳 None
+        return None
+    
+    async def register_user(self, username: str, telegram_id: int, student_id: Optional[str] = None, real_name: Optional[str] = None) -> str:
+        """
+        註冊新使用者
+        """
+        # 檢查是否已存在
+        existing_user = await self.user_repository.find_by_telegram_id(telegram_id)
+        if existing_user:
+            raise ValueError("user_already_exists")
+        
+        # 創建新使用者
+        user = User(
+            telegram_id=telegram_id,
+            username=username,
+            student_id=student_id,
+            real_name=real_name,
+            points=0
+        )
+        
+        saved_user = await self.user_repository.save(user)
+        return str(saved_user.id)
