@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class MongoUserRepository(UserRepository):
     """MongoDB 使用者存儲庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def find_by_id(self, user_id: ObjectId) -> Optional[User]:
         """根據 ID 查找使用者"""
@@ -161,8 +161,8 @@ class MongoUserRepository(UserRepository):
 class MongoPointLogRepository(PointLogRepository):
     """MongoDB 點數記錄存儲庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def save(self, point_log: PointLog) -> PointLog:
         """儲存點數記錄"""
@@ -306,8 +306,8 @@ class MongoPointLogRepository(PointLogRepository):
 class MongoStockRepository(StockRepository):
     """MongoDB 股票存儲庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def find_by_symbol(self, symbol: str) -> Optional[Stock]:
         """根據股票代碼查找股票"""
@@ -447,8 +447,8 @@ class MongoStockRepository(StockRepository):
 class MongoOrderRepository(OrderRepository):
     """MongoDB 訂單存儲庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def find_by_id(self, order_id: ObjectId) -> Optional[StockOrder]:
         """根據訂單 ID 查找訂單"""
@@ -621,8 +621,8 @@ class MongoOrderRepository(OrderRepository):
 class MongoUserStockRepository(UserStockRepository):
     """MongoDB 使用者股票持有存儲庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def find_by_user_id(self, user_id: ObjectId) -> List[UserStock]:
         """根據使用者 ID 查找股票持有"""
@@ -766,8 +766,8 @@ class MongoUserStockRepository(UserStockRepository):
 class MongoStudentRepository(StudentRepository):
     """MongoDB 學生儲存庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def find_by_id(self, student_id: ObjectId) -> Optional[Student]:
         """根據 ID 查找學生"""
@@ -923,8 +923,8 @@ class MongoStudentRepository(StudentRepository):
 class MongoUserDebtRepository(UserDebtRepository):
     """MongoDB 使用者債務儲存庫實現"""
     
-    def __init__(self, db: AsyncIOMotorDatabase = None):
-        self.db = db or get_database()
+    def __init__(self):
+        self.db = get_database()
     
     async def find_by_id(self, debt_id: ObjectId) -> Optional[UserDebt]:
         """根據 ID 查找債務"""
