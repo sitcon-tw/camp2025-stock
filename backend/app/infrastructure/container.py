@@ -353,17 +353,10 @@ def _register_application_services(container: DIContainer) -> None:
 def _register_infrastructure_services(container: DIContainer) -> None:
     """註冊基礎設施服務"""
     from app.infrastructure.database.unit_of_work import MongoUnitOfWork
-    import importlib.util
-    import os
-    
-    # Import InMemoryEventBus from events.py file to avoid conflict with events/ directory
-    events_file = os.path.join(os.path.dirname(__file__), "events.py")
-    spec = importlib.util.spec_from_file_location("events_module", events_file)
-    events_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(events_module)
+    from app.infrastructure.events import InMemoryEventBus
     
     container.register_singleton(UnitOfWork, MongoUnitOfWork)
-    container.register_singleton(DomainEventBus, events_module.InMemoryEventBus)
+    container.register_singleton(DomainEventBus, InMemoryEventBus)
 
 
 # Legacy compatibility functions - 向後相容性函數
