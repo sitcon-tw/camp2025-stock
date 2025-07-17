@@ -110,7 +110,7 @@ class UserAuthenticationApplicationService(BaseApplicationService):
             if not telegram_id:
                 return False, None, "缺少 Telegram ID"
             
-            user = await self.user_repository.get_by_telegram_id(telegram_id)
+            user = await self.user_repository.find_by_telegram_id(telegram_id)
             
             # 3. 驗證使用者資格
             is_eligible, message = self.user_domain_service.validate_user_eligibility(user)

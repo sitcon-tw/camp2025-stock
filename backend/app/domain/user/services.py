@@ -141,7 +141,13 @@ class UserDomainService:
         """
         try:
             return verify_telegram_auth(auth_data, bot_token)
-        except Exception:
+        except Exception as e:
+            # 記錄驗證失敗的詳細原因
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Telegram OAuth verification failed: {e}")
+            logger.debug(f"Auth data keys: {list(auth_data.keys()) if auth_data else 'None'}")
+            logger.debug(f"Bot token present: {bool(bot_token)}")
             return False
     
     def validate_user_eligibility(self, user: Optional[User]) -> Tuple[bool, str]:
