@@ -134,6 +134,9 @@ def verify_telegram_auth(auth_data: dict, bot_token: str) -> bool:
     # 準備驗證字串
     auth_data_items = []
     for key, value in sorted(auth_data.items()):
+        # 跳過 None 值和不應該包含在驗證中的欄位
+        if value is None or key == 'photo_url':
+            continue
         auth_data_items.append(f"{key}={value}")
 
     data_check_string = '\n'.join(auth_data_items)
