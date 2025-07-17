@@ -17,24 +17,24 @@
 """
 
 # 向後相容性導入 - 核心服務 (DDD 遷移)
-from ..application.dependencies import get_user_service
+# 使用統一 DI 容器
+from ..infrastructure.container import (
+    get_user_service, get_trading_service, get_admin_service,
+    get_debt_service, get_student_service
+)
 from ..application.user.services import UserApplicationService as UserService
-# TransferService 暫時從現有結構導入，稍後遷移
-# from .user_management import TransferService, get_transfer_service
-from ..application.dependencies import get_trading_service
 from ..application.trading.services import TradingApplicationService as TradingService
+from ..application.admin.services import AdminApplicationService as AdminService
 from .market import MarketService, get_market_service
 from .matching import OrderMatchingService, get_order_matching_service
-
-# 向後相容性導入 - 其他服務
-from .admin import AdminService, get_admin_service
 from .core import PublicService, get_public_service
 # 快取服務已移至基礎設施層
 from ..infrastructure.cache.cache_service import CacheService, get_cache_service
 from ..infrastructure.cache.cache_invalidation import get_cache_invalidator
 from .core import RBACManagementService, get_rbac_management_service
-from .system import DebtService, get_debt_service
-from .system import StudentService, get_student_service
+# DebtService 和 StudentService 已遷移到 DDD 架構
+from ..domain.system.services import DebtDomainService as DebtService
+from ..domain.system.services import StudentDomainService as StudentService
 from .notification import NotificationService, get_notification_service
 from .game import GameService, get_game_service
 from .matching import MatchingScheduler, get_matching_scheduler, initialize_matching_scheduler

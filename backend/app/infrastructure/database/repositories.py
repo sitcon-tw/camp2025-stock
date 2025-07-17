@@ -1033,19 +1033,8 @@ class MongoUserDebtRepository(UserDebtRepository):
             logger.error(f"Failed to find debts by status: {e}")
             return []
     
-    async def calculate_total_debt(self, user_id: ObjectId) -> int:
-        """計算使用者總債務"""
-        try:
-            pipeline = [
-                {"$match": {"user_id": user_id, "status": "active"}},
-                {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-            ]
-            
-            result = await self.db[Collections.USER_DEBTS].aggregate(pipeline).to_list(1)
-            return result[0]["total"] if result else 0
-        except Exception as e:
-            logger.error(f"Failed to calculate total debt: {e}")
-            return 0
+    # calculate_total_debt method moved to DebtDomainService
+    # Business logic should not be in infrastructure layer
     
     async def mark_as_resolved(self, debt_id: ObjectId, resolved_by: ObjectId) -> bool:
         """標記債務為已解決"""

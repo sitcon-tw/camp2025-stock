@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from .entities import Stock, StockOrder, UserStock, OrderStatus, OrderType
+from datetime import datetime
 from ..common.repositories import Repository, SpecificationRepository
 
 
@@ -113,4 +114,23 @@ class UserStockRepository(Repository[UserStock], SpecificationRepository[UserSto
     @abstractmethod
     async def find_all(self, skip: int = 0, limit: int = 100) -> List[UserStock]:
         """查找所有使用者股票持有"""
+        pass
+
+
+class TradeRepository(ABC):
+    """交易記錄存儲庫接口"""
+    
+    @abstractmethod
+    async def find_recent_trades_with_user_info(self, limit: int) -> List[Dict[str, Any]]:
+        """查找最近的交易記錄並包含使用者資訊"""
+        pass
+    
+    @abstractmethod
+    async def find_user_buy_trades(self, user_id: ObjectId) -> List[Dict[str, Any]]:
+        """查找使用者的買入交易記錄"""
+        pass
+    
+    @abstractmethod
+    async def find_by_user_id(self, user_id: ObjectId, limit: int = 100) -> List[Dict[str, Any]]:
+        """根據使用者 ID 查找交易記錄"""
         pass

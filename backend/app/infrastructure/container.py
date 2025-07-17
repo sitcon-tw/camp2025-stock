@@ -306,20 +306,33 @@ def _register_domain_services(container: DIContainer) -> None:
     from app.domain.trading.services import TradingDomainService
     from app.domain.market.services import MarketDomainService
     from app.domain.admin.services import AdminDomainService
+    from app.domain.system.services import DebtDomainService, StudentDomainService
     
     container.register_singleton(UserDomainService, UserDomainService)
     container.register_singleton(TradingDomainService, TradingDomainService)
     container.register_singleton(MarketDomainService, MarketDomainService)
     container.register_singleton(AdminDomainService, AdminDomainService)
+    container.register_singleton(DebtDomainService, DebtDomainService)
+    container.register_singleton(StudentDomainService, StudentDomainService)
 
 
 def _register_application_services(container: DIContainer) -> None:
     """註冊應用服務"""
-    from app.application.user.services import UserApplicationService
+    from app.application.admin.services import AdminApplicationService
+    from app.application.user.authentication_service import UserAuthenticationApplicationService
+    from app.application.user.portfolio_service import UserPortfolioApplicationService
     from app.application.trading.services import TradingApplicationService
     
-    container.register_scoped(UserApplicationService, UserApplicationService)
+    # Legacy services for backward compatibility
+    from app.application.user.services import UserApplicationService
+    
+    container.register_scoped(AdminApplicationService, AdminApplicationService)
+    container.register_scoped(UserAuthenticationApplicationService, UserAuthenticationApplicationService)
+    container.register_scoped(UserPortfolioApplicationService, UserPortfolioApplicationService)
     container.register_scoped(TradingApplicationService, TradingApplicationService)
+    
+    # Legacy compatibility
+    container.register_scoped(UserApplicationService, UserApplicationService)
 
 
 def _register_infrastructure_services(container: DIContainer) -> None:
@@ -329,3 +342,60 @@ def _register_infrastructure_services(container: DIContainer) -> None:
     
     container.register_singleton(UnitOfWork, MongoUnitOfWork)
     container.register_singleton(DomainEventBus, InMemoryEventBus)
+
+
+# Legacy compatibility functions - 向後相容性函數
+async def get_admin_service():
+    """向後相容：取得管理員服務"""
+    from app.application.admin.services import AdminApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(AdminApplicationService)
+
+
+async def get_user_service():
+    """向後相容：取得使用者服務"""
+    from app.application.user.services import UserApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(UserApplicationService)
+
+
+async def get_trading_service():
+    """向後相容：取得交易服務"""
+    from app.application.trading.services import TradingApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(TradingApplicationService)
+
+
+async def get_debt_service():
+    """向後相容：取得債務服務"""
+    from app.domain.system.services import DebtDomainService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(DebtDomainService)
+
+
+async def get_student_service():
+    """向後相容：取得學生服務"""
+    from app.domain.system.services import StudentDomainService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(StudentDomainService)
+
+
+async def get_user_authentication_service():
+    """取得使用者認證服務"""
+    from app.application.user.authentication_service import UserAuthenticationApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(UserAuthenticationApplicationService)
+
+
+async def get_user_portfolio_service():
+    """取得使用者投資組合服務"""
+    from app.application.user.portfolio_service import UserPortfolioApplicationService
+    container = get_container()
+    await container.initialize()
+    return container.resolve(UserPortfolioApplicationService)
