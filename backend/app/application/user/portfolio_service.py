@@ -6,7 +6,7 @@ import logging
 
 from app.core.base_classes import BaseApplicationService
 from app.domain.user.repositories import UserRepository
-from app.domain.trading.repositories import StockRepository, StockOrderRepository
+from app.domain.trading.repositories import StockRepository, OrderRepository
 from app.schemas.user import UserPortfolio, UserPointLog, UserStockOrder
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class UserPortfolioApplicationService(BaseApplicationService):
         self, 
         user_repository: UserRepository,
         stock_repository: StockRepository,
-        stock_order_repository: StockOrderRepository
+        stock_order_repository: OrderRepository
     ):
         super().__init__("UserPortfolioApplicationService")
         self.user_repository = user_repository
