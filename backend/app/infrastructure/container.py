@@ -143,9 +143,60 @@ class DIContainer:
                 raise ConfigurationException(f"Parameter {param_name} has no type annotation", 
                                            "missing_annotation", param_name)
             
-            kwargs[param_name] = self.resolve(param.annotation)
+            # Handle string annotations (forward references)
+            annotation = param.annotation
+            if isinstance(annotation, str):
+                # Resolve string annotation to actual type
+                annotation = self._resolve_string_annotation(annotation, descriptor.implementation)
+            
+            kwargs[param_name] = self.resolve(annotation)
         
         return descriptor.implementation(**kwargs)
+    
+    def _resolve_string_annotation(self, annotation_str: str, implementation_class: type) -> type:
+        """Resolve string annotation to actual type"""
+        try:
+            # Get the module where the implementation class is defined
+            module = implementation_class.__module__
+            import sys
+            module_obj = sys.modules[module]
+            
+            # Try to get the type from the module's globals
+            if hasattr(module_obj, annotation_str):
+                return getattr(module_obj, annotation_str)
+            
+            # If not found in the module, check if it's imported
+            # Get all globals from the module
+            module_globals = vars(module_obj)
+            if annotation_str in module_globals:
+                return module_globals[annotation_str]
+            
+            # Try to import from common locations
+            common_imports = [
+                f"app.domain.user.repositories.{annotation_str}",
+                f"app.domain.trading.repositories.{annotation_str}",
+                f"app.domain.market.repositories.{annotation_str}",
+                f"app.domain.admin.repositories.{annotation_str}",
+                f"app.domain.system.repositories.{annotation_str}",
+            ]
+            
+            for import_path in common_imports:
+                try:
+                    module_name, class_name = import_path.rsplit('.', 1)
+                    import importlib
+                    imported_module = importlib.import_module(module_name)
+                    if hasattr(imported_module, class_name):
+                        return getattr(imported_module, class_name)
+                except (ImportError, ValueError):
+                    continue
+            
+            raise ConfigurationException(f"Could not resolve string annotation: {annotation_str}", 
+                                       "annotation_resolution_failed", annotation_str)
+                                       
+        except Exception as e:
+            logger.error(f"Failed to resolve string annotation '{annotation_str}': {e}")
+            raise ConfigurationException(f"Could not resolve string annotation: {annotation_str}", 
+                                       "annotation_resolution_failed", annotation_str)
     
     @asynccontextmanager
     async def create_scope(self):
