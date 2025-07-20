@@ -3,6 +3,7 @@ import withPWA from "next-pwa";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: false,
+    output: 'standalone',
     images: {
         remotePatterns: [new URL("https://t.me/i/userpic/**")],
     },
