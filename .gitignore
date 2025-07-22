@@ -400,3 +400,6 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,node,jetbrains+all
 frontend/bun.lock
+
+# kiro
+.kiro/*
