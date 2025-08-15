@@ -403,3 +403,5 @@ frontend/bun.lock
 
 # kiro
 .kiro/*
+*.png
+__pycache__/
