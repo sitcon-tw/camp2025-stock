@@ -33,7 +33,7 @@ SITCON 喵券機是專為 **SITCON Camp 2025** 設計的虛擬點數交易系統
 | 💰 **借貸系統** | 借款、還款、自動扣款機制 |
 | ⚔️ **PvP 對戰** | 玩家間互動對決遊戲 |
 
-## 🛠️ 技術棧
+## 🛠️ 技術堆疊
 
 ```
 Frontend     →  Next.js 14+ / React / TailwindCSS
