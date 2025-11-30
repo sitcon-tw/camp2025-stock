@@ -2,9 +2,14 @@
 
 <img src=uwu.svg width=200>
 
+
+
+
 # SITCON 喵券機
 
 SITCON Camp 2025 點數系統
+
+<img width="1959" height="1000" alt="image" src="https://github.com/user-attachments/assets/e4892990-9447-49a4-a9f1-1acc427e3ffb" />
 
 [![Telegram](https://img.shields.io/badge/-Telegram-169BD7?style=flat-square&logo=Telegram&logoColor=white)](https://t.me/SITCONCamp2025Bot)
 [![網站](https://img.shields.io/badge/-🌐%20Website-585e70?style=flat-square)](https://t.me/SITCONCamp2025Bot)
